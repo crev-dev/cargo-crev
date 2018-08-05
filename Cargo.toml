@@ -1,0 +1,11 @@
+[package]
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+name = "crev"
+version = "0.1.0"
+[dependencies]
+blake2 = "*"
+chrono = "*"
+common_failures = "*"
+ed25519-dalek = "*"
+failure = "*"
+nom = "*"
