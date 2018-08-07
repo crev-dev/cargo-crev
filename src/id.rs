@@ -11,10 +11,24 @@ use rand;
 use rand::OsRng;
 use rand::Rng;
 use serde_yaml;
+use std;
 use util::serde::{as_base64, from_base64};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PassConfig {
+    version: u32,
+    variant: String,
+    iterations: u32,
+    memory_size: u32,
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
+    salt: Vec<u8>,
+}
+
 /// Serialized, stored on disk
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum LockedId {
     Crev {
@@ -36,12 +50,7 @@ pub enum LockedId {
             deserialize_with = "from_base64"
         )]
         seal_nonce: Vec<u8>,
-
-        #[serde(
-            serialize_with = "as_base64",
-            deserialize_with = "from_base64"
-        )]
-        pass_salt: Vec<u8>,
+        pass: PassConfig,
     },
 }
 
@@ -54,17 +63,21 @@ impl LockedId {
                 ref pub_key,
                 ref sealed_sec_key,
                 ref seal_nonce,
-                ref pass_salt,
+                ref pass,
             } => {
                 if *version != 0 {
                     bail!("Unsupported version");
                 }
                 use miscreant::aead::Algorithm;
+
                 let mut hasher = Hasher::default();
 
                 hasher
-                    .configure_memory_size(4096)
-                    .with_salt(pass_salt)
+                    .configure_memory_size(pass.memory_size)
+                    .configure_version(argonautica::config::Version::from_u32(pass.version)?)
+                    .configure_iterations(pass.iterations)
+                    .configure_variant(std::str::FromStr::from_str(&pass.variant)?)
+                    .with_salt(&pass.salt)
                     .configure_hash_len(64)
                     .opt_out_of_secret_key(true);
 
@@ -148,13 +161,22 @@ impl Id {
                     .take(32)
                     .collect();
 
+                let hasher_config = hasher.config();
+
+                assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
                 Ok(LockedId::Crev {
                     version: 0,
                     pub_key: pub_key.to_bytes().to_vec(),
                     sealed_sec_key: siv.seal(&seal_nonce, &[], sec_key.as_bytes()),
                     seal_nonce: seal_nonce,
-                    pass_salt: pwhash.raw_salt_bytes().to_vec(),
                     name: name.clone(),
+                    pass: PassConfig {
+                        salt: pwhash.raw_salt_bytes().to_vec(),
+                        iterations: hasher_config.iterations(),
+                        memory_size: hasher_config.memory_size(),
+                        version: 0x13,
+                        variant: hasher_config.variant().as_str().to_string(),
+                    },
                 })
             }
         }
@@ -176,6 +198,8 @@ fn lock_and_unlock() -> Result<()> {
 
     let id_stored = serde_yaml::to_string(&id.to_locked("pass")?)?;
     let id_restored: Id = serde_yaml::from_str::<LockedId>(&id_stored)?.to_unlocked("pass")?;
+
+    println!("{}", id_stored);
 
     assert_eq!(id.pub_key_as_bytes(), id_restored.pub_key_as_bytes());
     Ok(())
