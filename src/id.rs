@@ -65,12 +65,12 @@ impl LockedId {
                 hasher
                     .configure_memory_size(4096)
                     .with_salt(pass_salt)
+                    .configure_hash_len(64)
                     .opt_out_of_secret_key(true);
 
                 let pwhash = hasher.with_password(passphrase).hash_raw()?;
 
-                // TODO: Use Aes256?
-                let mut siv = miscreant::aead::Aes128Siv::new(pwhash.raw_hash_bytes());
+                let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
 
                 let sec_key = siv.open(&seal_nonce, &[], &sealed_sec_key)?;
                 let sec_key = ed25519_dalek::SecretKey::from_bytes(&sec_key)?;
@@ -136,12 +136,12 @@ impl Id {
 
                 hasher
                     .configure_memory_size(4096)
+                    .configure_hash_len(64)
                     .opt_out_of_secret_key(true);
 
                 let pwhash = hasher.with_password(passphrase).hash_raw()?;
 
-                // TODO: Use Aes256?
-                let mut siv = miscreant::aead::Aes128Siv::new(pwhash.raw_hash_bytes());
+                let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
 
                 let mut seal_nonce: Vec<u8> = rand::thread_rng()
                     .sample_iter(&rand::distributions::Standard)
