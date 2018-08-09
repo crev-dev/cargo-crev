@@ -1,5 +1,6 @@
 use argonautica;
 use argonautica::Hasher;
+use base64;
 use blake2;
 use common_failures::prelude::*;
 use ed25519_dalek;
@@ -97,8 +98,10 @@ impl LockedId {
 
                 Ok(Id::Crev {
                     name: name.clone(),
-                    sec_key: sec_key,
-                    pub_key: calculated_pub_key,
+                    keypair: ed25519_dalek::Keypair {
+                        secret: sec_key,
+                        public: calculated_pub_key,
+                    },
                 })
             }
         }
@@ -106,44 +109,77 @@ impl LockedId {
 }
 
 #[derive(Debug)]
+pub enum PubId {
+    Crev { name: String, id: Vec<u8> },
+}
+
+impl PubId {
+    pub fn from_name_and_id_string(name: String, id_str: &str) -> Result<Self> {
+        let mut split = id_str.split('=');
+        let key = split
+            .next()
+            .map(|s| s.trim())
+            .ok_or_else(|| format_err!("missing key"))?;
+        let val = split
+            .next()
+            .map(|s| s.trim())
+            .ok_or_else(|| format_err!("missing value"))?;
+
+        Ok(match key {
+            "crev" => PubId::Crev {
+                name,
+                id: base64::decode(val)?,
+            },
+            _ => bail!("Unknown id type key {}", val),
+        })
+    }
+}
+
+#[derive(Debug)]
 pub enum Id {
     Crev {
         name: String,
-        sec_key: ed25519_dalek::SecretKey,
-        pub_key: ed25519_dalek::PublicKey,
+        keypair: ed25519_dalek::Keypair,
     },
 }
 
 impl Id {
-    fn pub_key_as_bytes(&self) -> &[u8] {
+    pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         match self {
-            Id::Crev {
-                name,
-                sec_key,
-                pub_key,
-            } => pub_key.as_bytes(),
+            Id::Crev { name, keypair } => keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec(),
         }
     }
+    pub fn to_pubid(&self) -> PubId {
+        match self {
+            Id::Crev { name, keypair } => PubId::Crev {
+                name: name.to_owned(),
+                id: keypair.public.as_bytes().to_vec(),
+            },
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Id::Crev { name, keypair } => name,
+        }
+    }
+    pub fn pub_key_as_bytes(&self) -> &[u8] {
+        match self {
+            Id::Crev { name, keypair } => keypair.public.as_bytes(),
+        }
+    }
+
     fn generate(name: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let sec_key: SecretKey = SecretKey::generate(&mut csprng);
-
-        let pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
-
         Id::Crev {
             name,
-            sec_key,
-            pub_key,
+            keypair: ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng),
         }
     }
 
     fn to_locked(&self, passphrase: &str) -> Result<LockedId> {
         match self {
-            Id::Crev {
-                name,
-                sec_key,
-                pub_key,
-            } => {
+            Id::Crev { name, keypair } => {
                 use miscreant::aead::Algorithm;
                 let mut hasher = Hasher::default();
 
@@ -166,8 +202,8 @@ impl Id {
                 assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
                 Ok(LockedId::Crev {
                     version: 0,
-                    pub_key: pub_key.to_bytes().to_vec(),
-                    sealed_sec_key: siv.seal(&seal_nonce, &[], sec_key.as_bytes()),
+                    pub_key: keypair.public.to_bytes().to_vec(),
+                    sealed_sec_key: siv.seal(&seal_nonce, &[], keypair.secret.as_bytes()),
                     seal_nonce: seal_nonce,
                     name: name.clone(),
                     pass: PassConfig {

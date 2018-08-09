@@ -18,7 +18,7 @@ Review proof:
 
 ```
 date: 2018-08-01 22:43:39-07:00 
-revision: bd049182c8a02c11b4bde3c55335c8653bae7e2e
+revision: git=bd049182c8a02c11b4bde3c55335c8653bae7e2e
 hash: sha-256=2cff6162e5784b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee
 scope: thoroughness=good; understanding=good
 comment: LGTM
@@ -26,6 +26,19 @@ signed-by: Dawid Ciężarkiewicz <dpc@dpc.pw>
 signed-by-id: salty=2ZuU37oJ1erD85AzVohXq6Y74GHv2hjNYB9fu3P5o9rsGSvRo19HK2wTL4MLma3N6gVFqXN81VTqQ6apBhc5Kezq
 signature: 5V1c1P5a8dqDVMPhwqnDF39ZrHpaw7jhetEgHyPUkjM8tYvugPzDJ3xyhD9WdJQ4AjwYkN2XdWhnTB3GTRMJuAEd
 ```
+
+```
+date: 2018-08-01 22:43:39-07:00 
+revision: git=bd049182c8a02c11b4bde3c55335c8653bae7e2e
+hash: sha-256=2cff6162e5784b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee
+thoroughness: good
+understanding: good
+comment: LGTM
+signed-by: Dawid Ciężarkiewicz <dpc@dpc.pw>
+signed-by-id: crev=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
+signature: crev=5V1c1P5a8dqDVMPhwqnDF39ZrHpaw7jhetEgHyPUkjM8tYvugPzDJ3xyhD9WdJQ4AjwYkN2XdWhnTB3GTRMJuAEd
+```
+
 
 
 ## Structure
