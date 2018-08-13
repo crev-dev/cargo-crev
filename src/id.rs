@@ -56,6 +56,15 @@ pub enum LockedId {
 }
 
 impl LockedId {
+    pub fn to_pubid(&self) -> PubId {
+        match self {
+            LockedId::Crev { name, pub_key, .. } => PubId::Crev {
+                name: name.to_owned(),
+                id: pub_key.to_owned(),
+            },
+        }
+    }
+
     fn to_unlocked(&self, passphrase: &str) -> Result<Id> {
         match self {
             LockedId::Crev {
@@ -108,9 +117,18 @@ impl LockedId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum PubId {
-    Crev { name: String, id: Vec<u8> },
+    Crev {
+        name: String,
+
+        #[serde(
+            serialize_with = "as_base64",
+            deserialize_with = "from_base64"
+        )]
+        id: Vec<u8>,
+    },
 }
 
 impl PubId {
@@ -163,13 +181,14 @@ impl Id {
             Id::Crev { name, keypair } => name,
         }
     }
+
     pub fn pub_key_as_bytes(&self) -> &[u8] {
         match self {
             Id::Crev { name, keypair } => keypair.public.as_bytes(),
         }
     }
 
-    fn generate(name: String) -> Self {
+    pub fn generate(name: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
         Id::Crev {
             name,
@@ -177,7 +196,7 @@ impl Id {
         }
     }
 
-    fn to_locked(&self, passphrase: &str) -> Result<LockedId> {
+    pub fn to_locked(&self, passphrase: &str) -> Result<LockedId> {
         match self {
             Id::Crev { name, keypair } => {
                 use miscreant::aead::Algorithm;

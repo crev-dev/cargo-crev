@@ -3,17 +3,27 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 name = "crev"
 version = "0.1.0"
 [dependencies]
-argonautica = { version = "0.1", features = ["serde"] }
+app_dirs = "*"
 base64 = "0.9.0"
 blake2 = "*"
 chrono = "*"
 common_failures = "*"
+derive_builder = "*"
 ed25519-dalek = "*"
 failure = "*"
+file = "*"
 hex = "*"
 miscreant = "0.4.0-beta2"
 nom = "*"
+quicli = "*"
 rand = "*"
+rpassword = "*"
+rprompt = "*"
 serde = "1"
 serde_derive = "1"
 serde_yaml = "0.7"
+structopt = "*"
+
+[dependencies.argonautica]
+features = ["serde"]
+version = "0.1"

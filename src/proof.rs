@@ -7,11 +7,17 @@ use std::collections::{hash_map::Entry, HashMap};
 use std::{io::Write, mem};
 
 #[derive(Debug, Clone)]
-enum Level {
+pub enum Level {
     None,
     Some,
     Good,
     Ultimate,
+}
+
+impl Default for Level {
+    fn default() -> Self {
+        Level::Some
+    }
 }
 
 impl Level {
@@ -24,9 +30,6 @@ impl Level {
             Ultimate => "ultimate",
         }
     }
-}
-
-impl Level {
     fn from_str(s: &str) -> Result<Level> {
         Ok(match s {
             "none" => Level::None,
@@ -38,11 +41,14 @@ impl Level {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Builder, Debug)]
+// TODO: validate setters(no newlines, etc)
+// TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct ReviewProof {
+    #[builder(default = "now()")]
     date: chrono::DateTime<FixedOffset>,
-    revision: String,
-    hash: String,
+    revision: Option<String>,
+    file_hash: Option<String>,
     comment: Option<String>,
     thoroughness: Level,
     understanding: Level,
@@ -50,16 +56,45 @@ pub struct ReviewProof {
 
 use id::Id;
 
+fn now() -> DateTime<FixedOffset> {
+    let date = chrono::offset::Local::now();
+    date.with_timezone(&date.offset())
+}
+
 impl ReviewProof {
-    fn sign(&self, id: &Id) -> SignedReviewProof {
+    /*
+    // TODO: Make a builder
+    pub fn new(
+        revision: String,
+        file_hash: String,
+        thoroughness: Level,
+        understanding: Level,
+    ) -> Self {
+        let date = chrono::offset::Local::now();
+        // TODO: validate (no newlines, etc)
+        Self {
+            date: date.with_timezone(&date.offset()),
+            revision,
+            file_hash,
+            thoroughness,
+            understanding,
+            // TODO:
+            comment: None,
+        }
+    }*/
+
+    pub fn sign(&self, id: &Id) -> SignedReviewProof {
         let mut out = vec![];
-        //let date = chrono::offset::Utc::now();
         write!(out, "date: {}", self.date.to_rfc3339()).unwrap();
-        write!(out, "revision: {}", self.revision).unwrap();
-        write!(out, "hash: {}", self.hash).unwrap();
+        if let Some(ref revision) = self.revision {
+            write!(out, "revision: {}", revision).unwrap();
+        }
+        if let Some(ref file_hash) = self.file_hash {
+            write!(out, "file-hash: {}", file_hash).unwrap();
+        }
         write!(out, "thoroughness: {}", self.thoroughness.as_str()).unwrap();
         write!(out, "understanding: {}", self.understanding.as_str()).unwrap();
-        if let Some(comment) = &self.comment {
+        if let Some(ref comment) = &self.comment {
             write!(out, "comment: {}", comment).unwrap();
         }
         write!(out, "signed-by: {}", id.name()).unwrap();
@@ -70,7 +105,7 @@ impl ReviewProof {
         ).unwrap();
 
         let signature = id.sign(&out);
-        write!(out, "signature: crev={}", base64::encode(&signature)).unwrap();
+        write!(out, "signature: {}", base64::encode(&signature)).unwrap();
         SignedReviewProof {
             serialized: out,
             review_proof: self.to_owned(),
@@ -80,7 +115,7 @@ impl ReviewProof {
     }
 }
 
-#[allow(unused)]
+#[derive(Debug)]
 pub struct SignedReviewProof {
     review_proof: ReviewProof,
     serialized: Vec<u8>,
@@ -154,8 +189,8 @@ impl SignedReviewProof {
             review_proof: ReviewProof {
                 date: chrono::DateTime::parse_from_rfc3339(date)
                     .with_context(|e| format!("While parsing date `{}`: {}", date, e))?,
-                revision: get_single_required(&kvs, "revision")?.to_owned(),
-                hash: get_single_required(&kvs, "hash")?.to_owned(),
+                revision: Some(get_single_required(&kvs, "revision")?.to_owned()),
+                file_hash: Some(get_single_required(&kvs, "file-hash")?.to_owned()),
                 thoroughness: Level::from_str(
                     get_single_maybe(&kvs, "thoroughness")?.unwrap_or("good"),
                 )?,
@@ -270,7 +305,7 @@ revision: a
 hash: a
 signed-by: some name
 signed-by-id: crev=a
-signature: crev=sig
+signature: sig
 "#;
 
     let proofs = SignedReviewProof::parse(&s)?;
