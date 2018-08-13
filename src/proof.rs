@@ -54,7 +54,7 @@ pub struct ReviewProof {
     understanding: Level,
 }
 
-use id::Id;
+use id::OwnId;
 
 fn now() -> DateTime<FixedOffset> {
     let date = chrono::offset::Local::now();
@@ -83,7 +83,7 @@ impl ReviewProof {
         }
     }*/
 
-    pub fn sign(&self, id: &Id) -> SignedReviewProof {
+    pub fn sign(&self, id: &OwnId) -> SignedReviewProof {
         let mut out = vec![];
         write!(out, "date: {}", self.date.to_rfc3339()).unwrap();
         if let Some(ref revision) = self.revision {

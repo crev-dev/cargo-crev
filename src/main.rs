@@ -39,12 +39,9 @@ use opts::*;
 
 fn show_id() -> Result<()> {
     let path = util::user_config_path()?;
-    let mut file = std::fs::File::open(path)?;
-    let mut content = String::new();
-    file.read_to_string(&mut content)?;
-
-    let id = serde_yaml::from_str::<id::LockedId>(&content)?.to_pubid();
-    println!("{}", serde_yaml::to_string(&id)?);
+    let id = id::LockedId::read_from_yaml_file(&path)?;
+    let id = id.to_pubid();
+    print!("{}", &id.to_string());
     Ok(())
 }
 
@@ -56,7 +53,7 @@ fn gen_id() -> Result<()> {
         .open(path)?;
     let name = rprompt::prompt_reply_stdout("Name: ")?;
     let passphrase = util::read_new_passphrase()?;
-    let id = id::Id::generate(name);
+    let id = id::OwnId::generate(name);
     let id = serde_yaml::to_string(&id.to_locked(&passphrase)?)?;
     write!(file, "{}", id)?;
 

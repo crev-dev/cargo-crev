@@ -12,7 +12,11 @@ use rand;
 use rand::OsRng;
 use rand::Rng;
 use serde_yaml;
-use std;
+use std::{
+    self, fs,
+    io::{self, Read, Write},
+    path::Path,
+};
 use util::serde::{as_base64, from_base64};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -65,7 +69,15 @@ impl LockedId {
         }
     }
 
-    fn to_unlocked(&self, passphrase: &str) -> Result<Id> {
+    pub fn read_from_yaml_file(path: &Path) -> Result<Self> {
+        let mut file = std::fs::File::open(path)?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+
+        Ok(serde_yaml::from_str::<LockedId>(&content)?)
+    }
+
+    fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
         match self {
             LockedId::Crev {
                 ref version,
@@ -105,7 +117,7 @@ impl LockedId {
                     bail!("PubKey mismatch");
                 }
 
-                Ok(Id::Crev {
+                Ok(OwnId::Crev {
                     name: name.clone(),
                     keypair: ed25519_dalek::Keypair {
                         secret: sec_key,
@@ -151,25 +163,43 @@ impl PubId {
             _ => bail!("Unknown id type key {}", val),
         })
     }
+
+    pub fn write_to(&self, w: &mut io::Write) -> Result<()> {
+        match self {
+            PubId::Crev { name, id } => {
+                writeln!(w, "name: {}", name)?;
+                writeln!(w, "id: crev={}", base64::encode(id))?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = vec![];
+        self.write_to(&mut s).unwrap();
+        String::from_utf8_lossy(&s).into()
+    }
 }
 
 #[derive(Debug)]
-pub enum Id {
+pub enum OwnId {
     Crev {
         name: String,
         keypair: ed25519_dalek::Keypair,
     },
 }
 
-impl Id {
+impl OwnId {
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         match self {
-            Id::Crev { name, keypair } => keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec(),
+            OwnId::Crev { name, keypair } => {
+                keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec()
+            }
         }
     }
     pub fn to_pubid(&self) -> PubId {
         match self {
-            Id::Crev { name, keypair } => PubId::Crev {
+            OwnId::Crev { name, keypair } => PubId::Crev {
                 name: name.to_owned(),
                 id: keypair.public.as_bytes().to_vec(),
             },
@@ -178,19 +208,19 @@ impl Id {
 
     pub fn name(&self) -> &str {
         match self {
-            Id::Crev { name, keypair } => name,
+            OwnId::Crev { name, keypair } => name,
         }
     }
 
     pub fn pub_key_as_bytes(&self) -> &[u8] {
         match self {
-            Id::Crev { name, keypair } => keypair.public.as_bytes(),
+            OwnId::Crev { name, keypair } => keypair.public.as_bytes(),
         }
     }
 
     pub fn generate(name: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        Id::Crev {
+        OwnId::Crev {
             name,
             keypair: ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng),
         }
@@ -198,7 +228,7 @@ impl Id {
 
     pub fn to_locked(&self, passphrase: &str) -> Result<LockedId> {
         match self {
-            Id::Crev { name, keypair } => {
+            OwnId::Crev { name, keypair } => {
                 use miscreant::aead::Algorithm;
                 let mut hasher = Hasher::default();
 
@@ -240,7 +270,7 @@ impl Id {
 
 #[test]
 fn lock_and_unlock() -> Result<()> {
-    let id = Id::generate("Dawid Ciężarkiewicz".into());
+    let id = OwnId::generate("Dawid Ciężarkiewicz".into());
 
     let id_relocked = id.to_locked("password")?.to_unlocked("password")?;
     assert_eq!(id.pub_key_as_bytes(), id_relocked.pub_key_as_bytes());
@@ -252,7 +282,7 @@ fn lock_and_unlock() -> Result<()> {
     );
 
     let id_stored = serde_yaml::to_string(&id.to_locked("pass")?)?;
-    let id_restored: Id = serde_yaml::from_str::<LockedId>(&id_stored)?.to_unlocked("pass")?;
+    let id_restored: OwnId = serde_yaml::from_str::<LockedId>(&id_stored)?.to_unlocked("pass")?;
 
     println!("{}", id_stored);
 
