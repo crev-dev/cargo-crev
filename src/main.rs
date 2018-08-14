@@ -31,10 +31,10 @@ use std::io::{Read, Write};
 use structopt::StructOpt;
 
 mod id;
+mod index;
+mod opts;
 mod proof;
 mod util;
-
-mod opts;
 use opts::*;
 
 fn show_id() -> Result<()> {
@@ -65,6 +65,18 @@ main!(|opts: opts::Opts| match opts.command {
         opts::IdCommand::Show => show_id()?,
         opts::IdCommand::Gen => gen_id()?,
     },
+    Some(opts::Command::Add(add)) => {
+        let project_dir = util::project_dir_find()?;
+        let index_file = project_dir.join("index");
+        let mut index = index::Index::read_fom_file(&index_file)?;
+        for path in add.paths {
+            index.insert(&path);
+        }
+        index.write_to_file(&index_file)?;
+    }
+    Some(opts::Command::Init) => {
+        util::project_dir_init()?;
+    }
     None => {}
 });
 

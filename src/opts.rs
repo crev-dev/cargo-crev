@@ -16,10 +16,20 @@ pub enum IdCommand {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Add {
+    #[structopt(parse(from_os_str))]
+    pub paths: Vec<PathBuf>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
     /// Set password
     Id(Id),
+    #[structopt(name = "add")]
+    Add(Add),
+    #[structopt(name = "init")]
+    Init,
 }
 
 #[derive(Debug, StructOpt, Clone)]
