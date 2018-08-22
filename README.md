@@ -1,3 +1,20 @@
+<p align="center">
+<!-- 
+  <a href="https://travis-ci.org/dpc/crev">
+      <img src="https://img.shields.io/travis/dpc/crev/master.svg?style=flat-square" alt="Travis CI Build Status">
+  </a>
+  <a href="https://crates.io/crates/crev">
+      <img src="http://meritbadge.herokuapp.com/crev?style=flat-square" alt="crates.io">
+  </a>
+-->
+  <a href="https://gitter.im/dpc/crev">
+      <img src="https://img.shields.io/badge/GITTER-join%20chat-green.svg?style=flat-square" alt="Gitter Chat">
+  </a>
+  <br>
+</p>
+
+
+
 # `crev` - Code REView tool that we desperately need
 
 You're ultimately responsible for vetting your dependencies.
@@ -15,14 +32,14 @@ It's a tool that we desperately need.
 Very early, looking for help.
 
 Name, idea, implementation - all are work in progress. I'm slowly
-working on it, but have very little time.
+working on it, but have little free time.
 
 If you like the idea, please consider contributing. Nothing here is difficult - it's
 all just about writing the necessary code, testing and refining the basic idea.
 
-At very least, please [please consider giving your feedback][feedback]. Thank you!
-
-[feedback]: https://users.rust-lang.org/t/idea-for-scalable-code-review-trust-system)
+At very least, please please consider giving your feedback on the original
+[forum thread](https://users.rust-lang.org/t/idea-for-scalable-code-review-trust-system)
+or [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Overview
 
@@ -165,6 +182,11 @@ Design is open for supporting PGP, Salty, Keybase, and whatever else in the futu
 Note: Systems like that don't carry enough information in itself. Just because you
 verified that someones PGP really belong to them, doesn't mean you trust their
 code review judgment.
+
+> I would to help
+
+[Join crev gitter channel](https://gitter.im/dpc/crev) and let's talk! Or feel free
+to start hacking!
 
 > I don't like the name
 
