@@ -68,6 +68,7 @@ pub struct ReviewProof {
     from: String,
     #[serde(rename = "from-id")]
     from_id: String,
+    project: String,
     #[serde(rename = "from-id-type")]
     from_id_type: String,
     files: Vec<ReviewProofFile>,
@@ -291,7 +292,7 @@ impl SignedReviewProof {
                         }
                     }
                     Stage::Body => {
-                        if line.trim() == "-----BEGIN CODE REVIEW SIGNATURE-----" {
+                        if line.trim() == "-----BEGIN CODE REVIEW PROOF SIGNATURE-----" {
                             self.stage = Stage::Signature;
                         } else {
                             self.body += line;
@@ -433,7 +434,7 @@ fn signed_parse() -> Result<()> {
     let s = r#"
 -----BEGIN CODE REVIEW PROOF-----
 foo
------BEGIN CODE REVIEW SIGNATURE-----
+-----BEGIN CODE REVIEW PROOF SIGNATURE-----
 sig
 -----END CODE REVIEW PROOF-----
 "#;
@@ -450,7 +451,7 @@ fn signed_parse_multiple() -> Result<()> {
     let s = r#"
 -----BEGIN CODE REVIEW PROOF-----
 foo1
------BEGIN CODE REVIEW SIGNATURE-----
+-----BEGIN CODE REVIEW PROOF SIGNATURE-----
 sig1
 -----END CODE REVIEW PROOF-----
 -----BEGIN CODE REVIEW PROOF-----
