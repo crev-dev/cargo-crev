@@ -110,7 +110,7 @@ There's more, but these two artifacts are the core of `crev`.
   others, we would be in much better situation.
 * Trust is fundamentally about people and community, not automatic-scans,
   arbitrary metrics, process or bureaucracy. People have to judge both: code
-  (code coverage, testing, quality, etc.) and other trustworthiness of other
+  (code coverage, testing, quality, etc.) and trustworthiness of other
   people (who's reviews do you trust, and how much).
 * Code review tool should be as tool-agnostic as possible. No language, package manager,
   etc. limitations. Code is code, and can be reviewed.
@@ -157,7 +157,7 @@ and used to check integrity post-release.
 
 In `crev` you don't review "repositories". You review source code. The proof
 of your code review becomes part of the source code itself, just like documentation
-is usually a part of the source too. When the author's of the project release
+is usually a part of the source too. When the maintainers of the project release
 their library on crates.io/NPM/etc. the "tarball" contains the review proofs
 and the integrity of everything can still be verified.
 
@@ -181,19 +181,18 @@ it's own public key based IDs, signing and WoT.
 
 Design is open for supporting PGP, Salty, Keybase, and whatever else in the future.
 
-Note: Systems like that don't carry enough information in itself. Just because you
+Note: Systems like that don't carry enough information. Just because you
 verified that someones PGP really belong to them, doesn't mean you trust their
-code review judgment.
+code review judgment. But the identity/singing system could be reused.
 
-> I would to help
+> I would like to help
 
 [Join crev gitter channel](https://gitter.im/dpc/crev) and let's talk! Or feel free
 to start hacking!
 
 > I don't like the name
 
-I like it. It's a bit like "crew", it maps easily to "Code REView", it's short,
-and doesn't have a lot of hits on Google yet.
+Well, I like it. It's a bit like "crew", it maps easily to "Code REView", it's short,
+and doesn't have a lot of hits on Google yet. I like discoverable names.
 
-[Please suggest other one][feedback]. Very important factor is number of existing results
-when searching it in Google. The less the better. I like discoverable names.
+Please suggest alternatives, though!
