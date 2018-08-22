@@ -15,15 +15,15 @@
 
 
 
-# `crev` - Code REView tool that we desperately need
+# `crev` -  Code REView tool that we desperately need
 
 You're ultimately responsible for vetting your dependencies.
 
 But in a world of NPM/PIP/Cargo/RubyGems - how do you do that? Can
 you keep up with ever-changing ecosystem?
 
-`crev` is a distributed, social, real-"code review" system. 
-(as opposed to typical "code-change review" system.
+`crev` is a scalable, distributed, social, true-"code review" system. 
+(as opposed to more common "code-change review" system).
 
 It's a tool that we desperately need.
 
