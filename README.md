@@ -112,6 +112,8 @@ There's more, but these two artifacts are the core of `crev`.
   arbitrary metrics, process or bureaucracy. People have to judge both: code
   (code coverage, testing, quality, etc.) and other trustworthiness of other
   people (who's reviews do you trust, and how much).
+* Code review tool should be as tool-agnostic as possible. No language, package manager,
+  etc. limitations. Code is code, and can be reviewed.
 * Trust should be spread between many people, so one compromised or malicious
   actor can't abuse the system.
 * Code Review should be stored along the source code itself. Just like tests,
