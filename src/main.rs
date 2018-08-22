@@ -15,6 +15,7 @@ extern crate ed25519_dalek;
 extern crate hex;
 extern crate miscreant;
 extern crate rand;
+extern crate serde_cbor;
 extern crate serde_yaml;
 #[macro_use]
 extern crate derive_builder;
@@ -23,6 +24,7 @@ extern crate quicli;
 #[macro_use]
 extern crate structopt;
 extern crate app_dirs;
+extern crate git2;
 extern crate rpassword;
 extern crate rprompt;
 
@@ -38,24 +40,19 @@ mod util;
 use opts::*;
 
 fn show_id() -> Result<()> {
-    let path = util::user_config_path()?;
-    let id = id::LockedId::read_from_yaml_file(&path)?;
+    let id = id::LockedId::auto_open()?;
     let id = id.to_pubid();
     print!("{}", &id.to_string());
     Ok(())
 }
 
 fn gen_id() -> Result<()> {
-    let path = util::user_config_path()?;
-    let mut file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)?;
     let name = rprompt::prompt_reply_stdout("Name: ")?;
-    let passphrase = util::read_new_passphrase()?;
     let id = id::OwnId::generate(name);
-    let id = serde_yaml::to_string(&id.to_locked(&passphrase)?)?;
-    write!(file, "{}", id)?;
+    let passphrase = util::read_new_passphrase()?;
+    let locked = id.to_locked(&passphrase)?;
+
+    locked.auto_save()?;
 
     Ok(())
 }
@@ -66,13 +63,20 @@ main!(|opts: opts::Opts| match opts.command {
         opts::IdCommand::Gen => gen_id()?,
     },
     Some(opts::Command::Add(add)) => {
-        let project_dir = util::project_dir_find()?;
-        let index_file = project_dir.join("index");
-        let mut index = index::Index::read_fom_file(&index_file)?;
+        let mut staged = index::Staged::auto_open()?;
         for path in add.paths {
-            index.insert(&path);
+            staged.insert(&path);
         }
-        index.write_to_file(&index_file)?;
+        staged.close()?;
+    }
+    Some(opts::Command::Commit) => {
+        let mut staged = index::Staged::auto_open()?;
+        if staged.is_empty() {
+            bail!("No reviews to commit. Use `add` first.");
+        }
+        let passphrase = util::read_passphrase()?;
+        let id = id::OwnId::auto_open(&passphrase)?;
+        let unsigned_proof = proof::ReviewProof::from_staged(&id, &staged);
     }
     Some(opts::Command::Init) => {
         util::project_dir_init()?;

@@ -1,4 +1,5 @@
 use chrono;
+use chrono::offset::FixedOffset;
 use chrono::prelude::*;
 use ed25519_dalek;
 use hex::{self, FromHex, FromHexError};
@@ -65,14 +66,10 @@ where
 {
     use serde::de::Error;
     String::deserialize(deserializer)
-        .and_then(|string| {
-            base64::decode(&string)
-                .map_err(|err| Error::custom(err.to_string()))
-        })
+        .and_then(|string| base64::decode(&string).map_err(|err| Error::custom(err.to_string())))
         .and_then(|ref bytes| {
-            T::try_from(bytes).map_err(|err| {
-                Error::custom(format!("{}", &err as &::std::error::Error))
-            })
+            T::try_from(bytes)
+                .map_err(|err| Error::custom(format!("{}", &err as &::std::error::Error)))
         })
 }
 
@@ -94,11 +91,9 @@ where
         .and_then(|string| {
             FromHex::from_hex(string.as_str())
                 .map_err(|err: FromHexError| Error::custom(err.to_string()))
-        })
-        .and_then(|bytes: Vec<u8>| {
-            T::try_from(&bytes).map_err(|err| {
-                Error::custom(format!("{}", &err as &::std::error::Error))
-            })
+        }).and_then(|bytes: Vec<u8>| {
+            T::try_from(&bytes)
+                .map_err(|err| Error::custom(format!("{}", &err as &::std::error::Error)))
         })
 }
 
@@ -110,9 +105,7 @@ where
     serializer.serialize_str(&hex::encode(key))
 }
 
-pub fn from_rfc3339<'d, D>(
-    deserializer: D,
-) -> Result<chrono::DateTime<Utc>, D::Error>
+pub fn from_rfc3339<'d, D>(deserializer: D) -> Result<chrono::DateTime<Utc>, D::Error>
 where
     D: serde::Deserializer<'d>,
 {
@@ -121,12 +114,30 @@ where
         .and_then(|string| {
             DateTime::<FixedOffset>::parse_from_rfc3339(&string)
                 .map_err(|err| Error::custom(err.to_string()))
-        })
-        .map(|dt| dt.with_timezone(&Utc))
+        }).map(|dt| dt.with_timezone(&Utc))
 }
 
-pub fn as_rfc3339<S>(
-    key: &chrono::DateTime<Utc>,
+pub fn as_rfc3339<S>(key: &chrono::DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&key.to_rfc3339())
+}
+
+pub fn from_rfc3339_fixed<'d, D>(deserializer: D) -> Result<chrono::DateTime<FixedOffset>, D::Error>
+where
+    D: serde::Deserializer<'d>,
+{
+    use serde::de::Error;
+    String::deserialize(deserializer)
+        .and_then(|string| {
+            DateTime::<FixedOffset>::parse_from_rfc3339(&string)
+                .map_err(|err| Error::custom(err.to_string()))
+        }).map(|dt| dt.with_timezone(&dt.timezone()))
+}
+
+pub fn as_rfc3339_fixed<S>(
+    key: &chrono::DateTime<FixedOffset>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where

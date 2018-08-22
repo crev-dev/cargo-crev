@@ -28,6 +28,8 @@ pub enum Command {
     Id(Id),
     #[structopt(name = "add")]
     Add(Add),
+    #[structopt(name = "commit")]
+    Commit,
     #[structopt(name = "init")]
     Init,
 }

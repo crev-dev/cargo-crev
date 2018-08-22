@@ -2,11 +2,15 @@ use base64;
 use blake2::{self, Digest};
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
+use git2;
 use id::PubId;
+use index;
+use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
-use std::{io::Write, mem};
+use std::{io::Write, mem, path::PathBuf};
+use util::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Level {
     None,
     Some,
@@ -41,14 +45,35 @@ impl Level {
     }
 }
 
-#[derive(Clone, Builder, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReviewProofFile {
+    path: PathBuf,
+    #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
+    digest: Vec<u8>,
+    #[serde(rename = "digest-type")]
+    digest_type: String,
+}
+
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
+/// Unsigned proof of code review
 pub struct ReviewProof {
     #[builder(default = "now()")]
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
     date: chrono::DateTime<FixedOffset>,
+    from: String,
+    #[serde(rename = "from-id")]
+    from_id: String,
+    #[serde(rename = "from-id-type")]
+    from_id_type: String,
+    files: Vec<ReviewProofFile>,
     revision: Option<String>,
-    file_hash: Option<String>,
+    #[serde(rename = "revision-type")]
+    revision_type: String,
     comment: Option<String>,
     thoroughness: Level,
     understanding: Level,
@@ -62,6 +87,15 @@ fn now() -> DateTime<FixedOffset> {
 }
 
 impl ReviewProof {
+    pub fn from_staged(own_id: &OwnId, _staged: &index::Staged) -> Result<Self> {
+        let mut proof = ReviewProofBuilder::default();
+
+        proof
+            .from(own_id.name().into())
+            .from_id(own_id.pub_key_as_base64())
+            .from_id_type(own_id.type_as_string());
+        unimplemented!();
+    }
     /*
     // TODO: Make a builder
     pub fn new(
@@ -83,6 +117,19 @@ impl ReviewProof {
         }
     }*/
 
+    pub fn to_string(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(self)?)
+    }
+
+    pub fn sign(&self, id: &OwnId) -> Result<SignedReviewProof> {
+        let body = self.to_string()?;
+        let signature = id.sign(&body.as_bytes());
+        Ok(SignedReviewProof {
+            body: body,
+            signature: base64::encode(&signature),
+        })
+    }
+    /*
     pub fn sign(&self, id: &OwnId) -> SignedReviewProof {
         let mut out = vec![];
         write!(out, "date: {}", self.date.to_rfc3339()).unwrap();
@@ -113,17 +160,19 @@ impl ReviewProof {
             signature: signature,
         }
     }
+    */
 }
 
 #[derive(Debug)]
 pub struct SignedReviewProof {
-    review_proof: ReviewProof,
-    serialized: Vec<u8>,
-    signed_by: PubId,
-    signature: Vec<u8>,
+    //review_proof: ReviewProof,
+    body: String,
+    //signed_by: PubId,
+    signature: String,
 }
 
 impl SignedReviewProof {
+    /*
     pub fn from_map(kvs: HashMap<&str, Vec<&str>>, serialized: Vec<u8>) -> Result<Self> {
         fn get_single_required<'a, 'b>(
             kvs: &'a HashMap<&'a str, Vec<&'a str>>,
@@ -207,7 +256,88 @@ impl SignedReviewProof {
             signature: base64::decode(get_single_required(&kvs, "signature")?)?,
         })
     }
+*/
+    pub fn parse(input: &str) -> Result<Vec<Self>> {
+        #[derive(PartialEq, Eq)]
+        enum Stage {
+            None,
+            Body,
+            Signature,
+        }
 
+        impl Default for Stage {
+            fn default() -> Self {
+                Stage::None
+            }
+        }
+
+        #[derive(Default)]
+        struct State {
+            stage: Stage,
+            body: String,
+            signature: String,
+            proofs: Vec<SignedReviewProof>,
+        }
+
+        impl State {
+            fn process_line(&mut self, line: &str) -> Result<()> {
+                match self.stage {
+                    Stage::None => {
+                        if line.trim().is_empty() {
+                        } else if line.trim() == "-----BEGIN CODE REVIEW PROOF-----" {
+                            self.stage = Stage::Body;
+                        } else {
+                            bail!("Parsing error when looking for start of code review proof");
+                        }
+                    }
+                    Stage::Body => {
+                        if line.trim() == "-----BEGIN CODE REVIEW SIGNATURE-----" {
+                            self.stage = Stage::Signature;
+                        } else {
+                            self.body += line;
+                            self.body += "\n";
+                        }
+                        if self.body.len() > 16_000 {
+                            bail!("Parsed body too long");
+                        }
+                    }
+                    Stage::Signature => {
+                        if line.trim() == "-----END CODE REVIEW PROOF-----" {
+                            self.stage = Stage::None;
+                            self.proofs.push(SignedReviewProof {
+                                body: mem::replace(&mut self.body, String::new()),
+                                signature: mem::replace(&mut self.signature, String::new()),
+                            });
+                        } else {
+                            self.signature += line;
+                            self.signature += "\n";
+                        }
+                        if self.signature.len() > 2000 {
+                            bail!("Signature too long");
+                        }
+                    }
+                }
+                Ok(())
+            }
+
+            fn finish(self) -> Result<Vec<SignedReviewProof>> {
+                if self.stage != Stage::None {
+                    bail!("Unexpected EOF while parsing");
+                }
+                Ok(self.proofs)
+            }
+        }
+
+        let mut state: State = Default::default();
+
+        for line in input.lines() {
+            state.process_line(&line)?;
+        }
+
+        state.finish()
+    }
+
+    /*
     pub fn parse(input: &str) -> Result<Vec<Self>> {
         #[derive(Default)]
         struct State<'a> {
@@ -295,23 +425,76 @@ impl SignedReviewProof {
 
         Ok(state.parsed)
     }
+        */
 }
 
 #[test]
-fn simple() -> Result<()> {
+fn signed_parse() -> Result<()> {
     let s = r#"
-date: 1996-12-19T16:39:57-08:00
-revision: a
-hash: a
-signed-by: some name
-signed-by-id: crev=a
-signature: sig
+-----BEGIN CODE REVIEW PROOF-----
+foo
+-----BEGIN CODE REVIEW SIGNATURE-----
+sig
+-----END CODE REVIEW PROOF-----
 "#;
 
     let proofs = SignedReviewProof::parse(&s)?;
+    assert_eq!(proofs.len(), 1);
+    assert_eq!(proofs[0].body, "foo\n");
+    assert_eq!(proofs[0].signature, "sig\n");
     Ok(())
 }
 
+#[test]
+fn signed_parse_multiple() -> Result<()> {
+    let s = r#"
+-----BEGIN CODE REVIEW PROOF-----
+foo1
+-----BEGIN CODE REVIEW SIGNATURE-----
+sig1
+-----END CODE REVIEW PROOF-----
+-----BEGIN CODE REVIEW PROOF-----
+foo2
+-----BEGIN CODE REVIEW SIGNATURE-----
+sig2
+-----END CODE REVIEW PROOF-----
+"#;
+
+    let proofs = SignedReviewProof::parse(&s)?;
+    assert_eq!(proofs.len(), 2);
+    assert_eq!(proofs[0].body, "foo1\n");
+    assert_eq!(proofs[0].signature, "sig1\n");
+    assert_eq!(proofs[1].body, "foo2\n");
+    assert_eq!(proofs[1].signature, "sig2\n");
+    Ok(())
+}
+
+#[test]
+fn signed_parse_multiple_newlines() -> Result<()> {
+    let s = r#"
+
+-----BEGIN CODE REVIEW PROOF-----
+foo1
+-----BEGIN CODE REVIEW SIGNATURE-----
+sig1
+-----END CODE REVIEW PROOF-----
+
+
+-----BEGIN CODE REVIEW PROOF-----
+foo2
+-----BEGIN CODE REVIEW SIGNATURE-----
+sig2
+-----END CODE REVIEW PROOF-----"#;
+
+    let proofs = SignedReviewProof::parse(&s)?;
+    assert_eq!(proofs.len(), 2);
+    assert_eq!(proofs[0].body, "foo1\n");
+    assert_eq!(proofs[0].signature, "sig1\n");
+    assert_eq!(proofs[1].body, "foo2\n");
+    assert_eq!(proofs[1].signature, "sig2\n");
+    Ok(())
+}
+/*
 #[test]
 fn multiple() -> Result<()> {
     let s = r#"
@@ -358,3 +541,4 @@ signature: sig
 
     Ok(())
 }
+*/
