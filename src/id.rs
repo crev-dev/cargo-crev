@@ -142,8 +142,8 @@ impl LockedId {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "id-type")]
 pub enum PubId {
     Crev {
         name: String,

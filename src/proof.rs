@@ -68,9 +68,9 @@ pub struct ReviewProof {
     from: String,
     #[serde(rename = "from-id")]
     from_id: String,
-    project: String,
     #[serde(rename = "from-id-type")]
     from_id_type: String,
+    project: String,
     files: Vec<ReviewProofFile>,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
@@ -78,6 +78,25 @@ pub struct ReviewProof {
     comment: Option<String>,
     thoroughness: Level,
     understanding: Level,
+    trust: Level,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TrustProof {
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    date: chrono::DateTime<FixedOffset>,
+    from: String,
+    #[serde(rename = "from-id")]
+    from_id: String,
+    #[serde(rename = "from-id-type")]
+    from_id_type: String,
+    ids: Vec<PubId>,
+    #[serde(rename = "revision-type")]
+    comment: Option<String>,
+    trust: Level,
 }
 
 use id::OwnId;
