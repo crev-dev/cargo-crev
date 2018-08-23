@@ -47,11 +47,15 @@ impl Level {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewProofFile {
-    path: PathBuf,
+    pub path: PathBuf,
     #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
-    digest: Vec<u8>,
+    pub digest: Vec<u8>,
     #[serde(rename = "digest-type")]
-    digest_type: String,
+    pub digest_type: String,
+}
+
+fn equals_crev(s: &str) -> bool {
+    s == "crev"
 }
 
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
@@ -69,12 +73,16 @@ pub struct ReviewProof {
     #[serde(rename = "from-id")]
     from_id: String,
     #[serde(rename = "from-id-type")]
+    #[builder(default = "\"crev\".into()")]
+    #[serde(skip_serializing_if = "equals_crev")]
     from_id_type: String,
     project: String,
     files: Vec<ReviewProofFile>,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
+    #[builder(default = "\"git\".into()")]
     revision_type: String,
+    #[builder(default = "None")]
     comment: Option<String>,
     thoroughness: Level,
     understanding: Level,
@@ -186,9 +194,9 @@ impl ReviewProof {
 #[derive(Debug)]
 pub struct SignedReviewProof {
     //review_proof: ReviewProof,
-    body: String,
+    pub body: String,
     //signed_by: PubId,
-    signature: String,
+    pub signature: String,
 }
 
 impl SignedReviewProof {
