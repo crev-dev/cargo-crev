@@ -23,7 +23,7 @@ rprompt = "*"
 serde = "1"
 serde_cbor = "*"
 serde_derive = "1"
-serde_yaml = "0.7"
+serde_yaml = "0.8"
 structopt = "*"
 
 [dependencies.argonautica]

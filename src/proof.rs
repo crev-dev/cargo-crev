@@ -77,7 +77,6 @@ pub struct ReviewProof {
     #[serde(skip_serializing_if = "equals_crev")]
     from_id_type: String,
     project: String,
-    files: Vec<ReviewProofFile>,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
     #[builder(default = "\"git\".into()")]
@@ -87,6 +86,7 @@ pub struct ReviewProof {
     thoroughness: Level,
     understanding: Level,
     trust: Level,
+    files: Vec<ReviewProofFile>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

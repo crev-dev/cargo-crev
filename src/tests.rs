@@ -18,11 +18,18 @@ fn sign_proof_review() -> Result<()> {
         .thoroughness(proof::Level::Some)
         .understanding(proof::Level::Some)
         .trust(proof::Level::Some)
-        .files(vec![proof::ReviewProofFile {
-            path: PathBuf::from("foo.x"),
-            digest: vec![1, 2, 3, 4],
-            digest_type: "sha256".into(),
-        }]).build()
+        .files(vec![
+            proof::ReviewProofFile {
+                path: PathBuf::from("foo.x"),
+                digest: vec![1, 2, 3, 4],
+                digest_type: "sha256".into(),
+            },
+            proof::ReviewProofFile {
+                path: PathBuf::from("foo.x"),
+                digest: vec![1, 2, 3, 4],
+                digest_type: "sha256".into(),
+            },
+        ]).build()
         .map_err(|e| format_err!("{}", e))?;
 
     let signed_review = unsigned_review.sign(&id)?;
