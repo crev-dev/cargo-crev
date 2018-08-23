@@ -475,7 +475,7 @@ sig1
 -----END CODE REVIEW PROOF-----
 -----BEGIN CODE REVIEW PROOF-----
 foo2
------BEGIN CODE REVIEW SIGNATURE-----
+-----BEGIN CODE REVIEW PROOF SIGNATURE-----
 sig2
 -----END CODE REVIEW PROOF-----
 "#;
@@ -495,14 +495,14 @@ fn signed_parse_multiple_newlines() -> Result<()> {
 
 -----BEGIN CODE REVIEW PROOF-----
 foo1
------BEGIN CODE REVIEW SIGNATURE-----
+-----BEGIN CODE REVIEW PROOF SIGNATURE-----
 sig1
 -----END CODE REVIEW PROOF-----
 
 
 -----BEGIN CODE REVIEW PROOF-----
 foo2
------BEGIN CODE REVIEW SIGNATURE-----
+-----BEGIN CODE REVIEW PROOF SIGNATURE-----
 sig2
 -----END CODE REVIEW PROOF-----"#;
 
