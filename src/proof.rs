@@ -4,7 +4,6 @@ use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use git2;
 use id::PubId;
-use index;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
 use std::{fmt, io::Write, mem, path::PathBuf};
@@ -50,11 +49,15 @@ impl Level {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ReviewProofFile {
+pub struct ReviewFile {
     pub path: PathBuf,
     #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
     pub digest: Vec<u8>,
     #[serde(rename = "digest-type")]
+    #[serde(
+        skip_serializing_if = "equals_blake2b",
+        default = "default_blake2b_value"
+    )]
     pub digest_type: String,
 }
 
@@ -64,6 +67,14 @@ fn equals_crev(s: &str) -> bool {
 
 fn default_crev_value() -> String {
     "crev".into()
+}
+
+fn equals_blake2b(s: &str) -> bool {
+    s == "blake2b"
+}
+
+fn default_blake2b_value() -> String {
+    "blake2b".into()
 }
 
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
@@ -97,7 +108,7 @@ pub struct Review {
     thoroughness: Level,
     understanding: Level,
     trust: Level,
-    files: Vec<ReviewProofFile>,
+    files: Vec<ReviewFile>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -126,16 +137,6 @@ fn now() -> DateTime<FixedOffset> {
 }
 
 impl Review {
-    pub fn from_staged(own_id: &OwnId, _staged: &index::Staged) -> Result<Self> {
-        let mut proof = ReviewBuilder::default();
-
-        proof
-            .from(own_id.name().into())
-            .from_id(own_id.pub_key_as_base64())
-            .from_id_type(own_id.type_as_string());
-        unimplemented!();
-    }
-
     pub fn sign(&self, id: &OwnId) -> Result<ReviewProof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());

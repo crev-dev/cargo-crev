@@ -29,15 +29,18 @@ extern crate rpassword;
 extern crate rprompt;
 
 use common_failures::prelude::*;
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    path::PathBuf,
+};
 use structopt::StructOpt;
 
 mod id;
-mod index;
 mod opts;
 mod proof;
 mod util;
 use opts::*;
+mod repo;
 
 fn show_id() -> Result<()> {
     let id = id::LockedId::auto_open()?;
@@ -63,23 +66,24 @@ main!(|opts: opts::Opts| match opts.command {
         opts::IdCommand::Gen => gen_id()?,
     },
     Some(opts::Command::Add(add)) => {
-        let mut staged = index::Staged::auto_open()?;
+        let mut repo = repo::Repo::auto_open()?;
+        let mut staging = repo.staging();
         for path in add.paths {
-            staged.insert(&path);
+            staging.insert(&path);
         }
-        staged.close()?;
+        staging.close()?;
     }
     Some(opts::Command::Commit) => {
-        let mut staged = index::Staged::auto_open()?;
-        if staged.is_empty() {
+        let mut repo = repo::Repo::auto_open()?;
+        if repo.staging().is_empty() {
             bail!("No reviews to commit. Use `add` first.");
         }
         let passphrase = util::read_passphrase()?;
         let id = id::OwnId::auto_open(&passphrase)?;
-        let unsigned_proof = proof::Review::from_staged(&id, &staged);
+        let _review_files = repo.staging().to_review_files();
     }
     Some(opts::Command::Init) => {
-        util::project_dir_init()?;
+        repo::Repo::init(PathBuf::from(".".to_string()))?;
     }
     None => {}
 });

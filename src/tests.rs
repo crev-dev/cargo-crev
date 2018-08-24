@@ -19,12 +19,12 @@ fn sign_proof_review() -> Result<()> {
         .understanding(proof::Level::Some)
         .trust(proof::Level::Some)
         .files(vec![
-            proof::ReviewProofFile {
+            proof::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
             },
-            proof::ReviewProofFile {
+            proof::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
