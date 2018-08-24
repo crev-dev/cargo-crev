@@ -32,6 +32,8 @@ fn find_project_root_dir() -> Result<PathBuf> {
 /// the internals of it.
 pub struct Repo {
     root_dir: PathBuf,
+    // lazily loaded `Staging`
+    staging: Option<staging::Staging>,
 }
 
 impl Repo {
@@ -47,10 +49,16 @@ impl Repo {
 
     pub fn open(root_dir: PathBuf) -> Result<Self> {
         let root_dir = root_dir.canonicalize()?;
-        Ok(Self { root_dir })
+        Ok(Self {
+            root_dir,
+            staging: None,
+        })
     }
 
-    pub fn staging(&mut self) -> &mut staging::Staging {
-        unimplemented!();
+    pub fn staging(&mut self) -> Result<&mut staging::Staging> {
+        if self.staging.is_none() {
+            self.staging = Some(staging::Staging::open(&self.root_dir)?);
+        }
+        Ok(self.staging.as_mut().unwrap())
     }
 }

@@ -58,7 +58,7 @@ impl Staging {
         self.write_to_file(&self.file_path)
     }
 
-    pub fn read(repo_path: &Path) -> Result<Self> {
+    pub fn open(repo_path: &Path) -> Result<Self> {
         let path = repo_path.join(super::CREV_DOT_NAME).join(STAGING_FILE_NAME);
         if !path.exists() {
             return Ok(Self {
