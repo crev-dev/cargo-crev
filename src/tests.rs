@@ -36,5 +36,8 @@ fn sign_proof_review() -> Result<()> {
     let signed_review = unsigned_review.sign(&id)?;
     println!("{}", signed_review);
 
+    let parsed_unsigned = signed_review.parse_review()?;
+    println!("{}", parsed_unsigned);
+
     Ok(())
 }

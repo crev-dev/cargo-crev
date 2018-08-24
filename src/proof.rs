@@ -62,6 +62,10 @@ fn equals_crev(s: &str) -> bool {
     s == "crev"
 }
 
+fn default_crev_value() -> String {
+    "crev".into()
+}
+
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
@@ -78,7 +82,10 @@ pub struct ReviewProof {
     from_id: String,
     #[serde(rename = "from-id-type")]
     #[builder(default = "\"crev\".into()")]
-    #[serde(skip_serializing_if = "equals_crev")]
+    #[serde(
+        skip_serializing_if = "equals_crev",
+        default = "default_crev_value"
+    )]
     from_id_type: String,
     project_urls: Vec<String>,
     revision: Option<String>,
@@ -137,6 +144,10 @@ impl ReviewProof {
             signature: base64::encode(&signature),
         })
     }
+
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
 }
 
 impl fmt::Display for ReviewProof {
@@ -177,6 +188,10 @@ impl fmt::Display for SignedReviewProof {
 }
 
 impl SignedReviewProof {
+    pub fn parse_review(&self) -> Result<ReviewProof> {
+        ReviewProof::parse(&self.body)
+    }
+
     pub fn parse(input: &str) -> Result<Vec<Self>> {
         #[derive(PartialEq, Eq)]
         enum Stage {
@@ -414,51 +429,3 @@ sig2
     assert_eq!(proofs[1].signature, "sig2\n");
     Ok(())
 }
-/*
-#[test]
-fn multiple() -> Result<()> {
-    let s = r#"
-date: 1996-12-19T16:39:57-08:00
-revision: a
-hash: a
-signed-by: a
-signed-by-id: a
-signature: crev=sig
-date: 1996-12-19T16:39:57-00:00
-revision: a
-hash: a
-signed-by: Name
-signed-by-id: crev=aa
-signature: crev=aa
-"#;
-
-    let proofs = SignedReviewProof::parse(&s)?;
-    assert_eq!(proofs.len(), 2);
-    Ok(())
-}
-
-#[test]
-fn missing_value() -> Result<()> {
-    let s = r#"
-date: 1996-12-19T16:39:57-08:00
-revision: a
-hash:
-signed-by: a
-signed-by-id: a
-signature: sig
-"#;
-
-    assert!(SignedReviewProof::parse(&s).is_err());
-
-    let s = r#"
-date: 1996-12-19T16:39:57-08:00
-revision: a
-signed-by: a
-signed-by-id: a
-signature: sig
-"#;
-    assert!(SignedReviewProof::parse(&s).is_err());
-
-    Ok(())
-}
-*/
