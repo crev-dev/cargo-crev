@@ -80,7 +80,7 @@ pub struct ReviewProof {
     #[builder(default = "\"crev\".into()")]
     #[serde(skip_serializing_if = "equals_crev")]
     from_id_type: String,
-    project: String,
+    project_urls: Vec<String>,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
     #[builder(default = "\"git\".into()")]
@@ -128,44 +128,6 @@ impl ReviewProof {
             .from_id_type(own_id.type_as_string());
         unimplemented!();
     }
-    /*
-    // TODO: Make a builder
-    pub fn new(
-        revision: String,
-        file_hash: String,
-        thoroughness: Level,
-        understanding: Level,
-    ) -> Self {
-        let date = chrono::offset::Local::now();
-        // TODO: validate (no newlines, etc)
-        Self {
-            date: date.with_timezone(&date.offset()),
-            revision,
-            file_hash,
-            thoroughness,
-            understanding,
-            // TODO:
-            comment: None,
-        }
-    }*/
-
-    /*
-    // TODO: Optimize
-    pub fn to_string(&self) -> Result<String> {
-        let yaml_document = serde_yaml::to_string(self)?;
-        let mut lines = yaml_document.lines();
-        let dropped_header = lines.next();
-        assert_eq!(dropped_header, Some("---"));
-
-        let res = lines.fold(String::new(), |mut s, line| {
-            s += line;
-            s += "\n";
-            s
-        });
-
-        Ok(res)
-    }
-    */
 
     pub fn sign(&self, id: &OwnId) -> Result<SignedReviewProof> {
         let body = self.to_string();
@@ -175,38 +137,6 @@ impl ReviewProof {
             signature: base64::encode(&signature),
         })
     }
-    /*
-    pub fn sign(&self, id: &OwnId) -> SignedReviewProof {
-        let mut out = vec![];
-        write!(out, "date: {}", self.date.to_rfc3339()).unwrap();
-        if let Some(ref revision) = self.revision {
-            write!(out, "revision: {}", revision).unwrap();
-        }
-        if let Some(ref file_hash) = self.file_hash {
-            write!(out, "file-hash: {}", file_hash).unwrap();
-        }
-        write!(out, "thoroughness: {}", self.thoroughness.as_str()).unwrap();
-        write!(out, "understanding: {}", self.understanding.as_str()).unwrap();
-        if let Some(ref comment) = &self.comment {
-            write!(out, "comment: {}", comment).unwrap();
-        }
-        write!(out, "signed-by: {}", id.name()).unwrap();
-        write!(
-            out,
-            "signed-by-id: crev={}",
-            base64::encode(id.pub_key_as_bytes())
-        ).unwrap();
-
-        let signature = id.sign(&out);
-        write!(out, "signature: {}", base64::encode(&signature)).unwrap();
-        SignedReviewProof {
-            serialized: out,
-            review_proof: self.to_owned(),
-            signed_by: id.to_pubid(),
-            signature: signature,
-        }
-    }
-    */
 }
 
 impl fmt::Display for ReviewProof {
@@ -226,9 +156,7 @@ impl fmt::Display for ReviewProof {
 
 #[derive(Debug)]
 pub struct SignedReviewProof {
-    //review_proof: ReviewProof,
     pub body: String,
-    //signed_by: PubId,
     pub signature: String,
 }
 
@@ -249,91 +177,6 @@ impl fmt::Display for SignedReviewProof {
 }
 
 impl SignedReviewProof {
-    /*
-    pub fn from_map(kvs: HashMap<&str, Vec<&str>>, serialized: Vec<u8>) -> Result<Self> {
-        fn get_single_required<'a, 'b>(
-            kvs: &'a HashMap<&'a str, Vec<&'a str>>,
-            key: &str,
-        ) -> Result<&'a str> {
-            let v = kvs
-                .get(key)
-                .ok_or_else(|| format_err!("`{}` key missing", key))?;
-            if v.is_empty() {
-                bail!("`{}` has no values", key);
-            }
-            if v.len() > 1 {
-                bail!("`{}` has multiple values", key);
-            }
-
-            Ok(v[0])
-        }
-
-        fn get_single_maybe<'a, 'b>(
-            kvs: &'a HashMap<&'a str, Vec<&'a str>>,
-            key: &str,
-        ) -> Result<Option<&'a str>> {
-            let v = kvs.get(key);
-            if v.is_none() {
-                return Ok(None);
-            }
-            let v = v.unwrap();
-
-            if v.len() > 1 {
-                bail!("`{}` has multiple values", key);
-            }
-
-            Ok(Some(v[0]))
-        }
-        fn get_at_least_one<'a, 'b>(
-            kvs: &'a HashMap<&'a str, Vec<&'a str>>,
-            key: &str,
-        ) -> Result<Vec<String>> {
-            Ok(kvs
-                .get(key)
-                .map(|v| v.as_slice())
-                .unwrap_or_else(|| &[])
-                .iter()
-                .map(|s| s.to_string())
-                .collect())
-        }
-
-        fn get_vec<'a, 'b>(
-            kvs: &'a HashMap<&'a str, Vec<&'a str>>,
-            key: &str,
-        ) -> Result<Vec<String>> {
-            Ok(kvs
-                .get(key)
-                .map(|v| v.as_slice())
-                .unwrap_or_else(|| &[])
-                .iter()
-                .map(|s| s.to_string())
-                .collect())
-        }
-
-        let date = get_single_required(&kvs, "date")?;
-        Ok(Self {
-            review_proof: ReviewProof {
-                date: chrono::DateTime::parse_from_rfc3339(date)
-                    .with_context(|e| format!("While parsing date `{}`: {}", date, e))?,
-                revision: Some(get_single_required(&kvs, "revision")?.to_owned()),
-                file_hash: Some(get_single_required(&kvs, "file-hash")?.to_owned()),
-                thoroughness: Level::from_str(
-                    get_single_maybe(&kvs, "thoroughness")?.unwrap_or("good"),
-                )?,
-                understanding: Level::from_str(
-                    get_single_maybe(&kvs, "understanding")?.unwrap_or("good"),
-                )?,
-                comment: get_single_maybe(&kvs, "scope")?.map(|s| s.to_owned()),
-            },
-            serialized: serialized,
-            signed_by: PubId::from_name_and_id_string(
-                get_single_required(&kvs, "signed-by")?.to_owned(),
-                get_single_required(&kvs, "signed-by-id")?,
-            )?,
-            signature: base64::decode(get_single_required(&kvs, "signature")?)?,
-        })
-    }
-*/
     pub fn parse(input: &str) -> Result<Vec<Self>> {
         #[derive(PartialEq, Eq)]
         enum Stage {

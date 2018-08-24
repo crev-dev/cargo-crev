@@ -50,7 +50,14 @@ Using `crev` you can generate Code Review Proofs, e.g.:
 date: 2018-08-01 22:43:39-07:00 
 from: Dawid Ciężarkiewicz <dpc@dpc.pw>
 from-id: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
-project: libcrev
+project-urls:
+   - https://crates.io/crate/somelib
+   - https://github.com/someone/somelib
+thoroughness: good
+understanding: good
+trust: some
+comment: LGTM
+revision: bd049182c8a02c11b4bde3c55335c8653bae7e2e
 files:
    - digest: 2cff6162e5784b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee
      path: src/index.rs
@@ -58,11 +65,6 @@ files:
      path: src/main.rs
    - digest: b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee3cff6162e5784
      path: src/test.rs
-revision: bd049182c8a02c11b4bde3c55335c8653bae7e2e
-thoroughness: good
-understanding: good
-trust: some
-comment: LGTM
 -----BEGIN CODE REVIEW PROOF SIGNATURE-----
 5V1c1P5a8dqDVMPhwqnDF39ZrHpaw7jhetEgHyPUkjM8tYvugPzDJ3xyhD9WdJQ4AjwYkN2XdWhnTB3GTRMJuAEd
 -----END CODE REVIEW PROOF-----

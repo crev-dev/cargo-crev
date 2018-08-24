@@ -13,7 +13,7 @@ fn sign_proof_review() -> Result<()> {
         .from_id_type("crev".into())
         .revision(Some("foobar".into()))
         .revision_type("git".into())
-        .project("somelib".into())
+        .project_urls(vec!["https://github.com/someone/somelib".into()])
         .comment(Some("comment".into()))
         .thoroughness(proof::Level::Some)
         .understanding(proof::Level::Some)
