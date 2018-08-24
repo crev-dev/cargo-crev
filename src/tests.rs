@@ -32,9 +32,9 @@ fn sign_proof_review() -> Result<()> {
         ]).build()
         .map_err(|e| format_err!("{}", e))?;
 
+    println!("{}", unsigned_review);
     let signed_review = unsigned_review.sign(&id)?;
-
-    println!("{}", signed_review.body);
+    println!("{}", signed_review);
 
     Ok(())
 }

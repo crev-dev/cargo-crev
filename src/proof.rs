@@ -7,8 +7,12 @@ use id::PubId;
 use index;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
-use std::{io::Write, mem, path::PathBuf};
+use std::{fmt, io::Write, mem, path::PathBuf};
 use util::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
+
+const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF-----";
+const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF SIGNATURE-----";
+const END_BLOCK: &str = "-----END CODE REVIEW PROOF-----";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Level {
@@ -145,12 +149,26 @@ impl ReviewProof {
         }
     }*/
 
+    /*
+    // TODO: Optimize
     pub fn to_string(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
+        let yaml_document = serde_yaml::to_string(self)?;
+        let mut lines = yaml_document.lines();
+        let dropped_header = lines.next();
+        assert_eq!(dropped_header, Some("---"));
+
+        let res = lines.fold(String::new(), |mut s, line| {
+            s += line;
+            s += "\n";
+            s
+        });
+
+        Ok(res)
     }
+    */
 
     pub fn sign(&self, id: &OwnId) -> Result<SignedReviewProof> {
-        let body = self.to_string()?;
+        let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(SignedReviewProof {
             body: body,
@@ -191,12 +209,43 @@ impl ReviewProof {
     */
 }
 
+impl fmt::Display for ReviewProof {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
+        let mut lines = yaml_document.lines();
+        let dropped_header = lines.next();
+        assert_eq!(dropped_header, Some("---"));
+
+        for line in lines {
+            f.write_str(&line)?;
+            f.write_str("\n")?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct SignedReviewProof {
     //review_proof: ReviewProof,
     pub body: String,
     //signed_by: PubId,
     pub signature: String,
+}
+
+impl fmt::Display for SignedReviewProof {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(BEGIN_BLOCK)?;
+        f.write_str("\n")?;
+        f.write_str(&self.body)?;
+        f.write_str(SIGNATURE_BLOCK)?;
+        f.write_str("\n")?;
+        f.write_str(&self.signature)?;
+        f.write_str("\n")?;
+        f.write_str(END_BLOCK)?;
+        f.write_str("\n")?;
+
+        Ok(())
+    }
 }
 
 impl SignedReviewProof {
@@ -312,14 +361,14 @@ impl SignedReviewProof {
                 match self.stage {
                     Stage::None => {
                         if line.trim().is_empty() {
-                        } else if line.trim() == "-----BEGIN CODE REVIEW PROOF-----" {
+                        } else if line.trim() == BEGIN_BLOCK {
                             self.stage = Stage::Body;
                         } else {
                             bail!("Parsing error when looking for start of code review proof");
                         }
                     }
                     Stage::Body => {
-                        if line.trim() == "-----BEGIN CODE REVIEW PROOF SIGNATURE-----" {
+                        if line.trim() == SIGNATURE_BLOCK {
                             self.stage = Stage::Signature;
                         } else {
                             self.body += line;
@@ -330,7 +379,7 @@ impl SignedReviewProof {
                         }
                     }
                     Stage::Signature => {
-                        if line.trim() == "-----END CODE REVIEW PROOF-----" {
+                        if line.trim() == END_BLOCK {
                             self.stage = Stage::None;
                             self.proofs.push(SignedReviewProof {
                                 body: mem::replace(&mut self.body, String::new()),
