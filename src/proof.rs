@@ -70,7 +70,7 @@ fn default_crev_value() -> String {
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
-pub struct ReviewProof {
+pub struct Review {
     #[builder(default = "now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
@@ -125,9 +125,9 @@ fn now() -> DateTime<FixedOffset> {
     date.with_timezone(&date.offset())
 }
 
-impl ReviewProof {
+impl Review {
     pub fn from_staged(own_id: &OwnId, _staged: &index::Staged) -> Result<Self> {
-        let mut proof = ReviewProofBuilder::default();
+        let mut proof = ReviewBuilder::default();
 
         proof
             .from(own_id.name().into())
@@ -136,10 +136,10 @@ impl ReviewProof {
         unimplemented!();
     }
 
-    pub fn sign(&self, id: &OwnId) -> Result<SignedReviewProof> {
+    pub fn sign(&self, id: &OwnId) -> Result<ReviewProof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
-        Ok(SignedReviewProof {
+        Ok(ReviewProof {
             body: body,
             signature: base64::encode(&signature),
         })
@@ -150,7 +150,7 @@ impl ReviewProof {
     }
 }
 
-impl fmt::Display for ReviewProof {
+impl fmt::Display for Review {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
         let mut lines = yaml_document.lines();
@@ -165,13 +165,14 @@ impl fmt::Display for ReviewProof {
     }
 }
 
+/// A `Review` that was signed by someone
 #[derive(Debug)]
-pub struct SignedReviewProof {
+pub struct ReviewProof {
     pub body: String,
     pub signature: String,
 }
 
-impl fmt::Display for SignedReviewProof {
+impl fmt::Display for ReviewProof {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(BEGIN_BLOCK)?;
         f.write_str("\n")?;
@@ -187,9 +188,9 @@ impl fmt::Display for SignedReviewProof {
     }
 }
 
-impl SignedReviewProof {
-    pub fn parse_review(&self) -> Result<ReviewProof> {
-        ReviewProof::parse(&self.body)
+impl ReviewProof {
+    pub fn parse_review(&self) -> Result<Review> {
+        Review::parse(&self.body)
     }
 
     pub fn parse(input: &str) -> Result<Vec<Self>> {
@@ -211,7 +212,7 @@ impl SignedReviewProof {
             stage: Stage,
             body: String,
             signature: String,
-            proofs: Vec<SignedReviewProof>,
+            proofs: Vec<ReviewProof>,
         }
 
         impl State {
@@ -239,7 +240,7 @@ impl SignedReviewProof {
                     Stage::Signature => {
                         if line.trim() == END_BLOCK {
                             self.stage = Stage::None;
-                            self.proofs.push(SignedReviewProof {
+                            self.proofs.push(ReviewProof {
                                 body: mem::replace(&mut self.body, String::new()),
                                 signature: mem::replace(&mut self.signature, String::new()),
                             });
@@ -255,7 +256,7 @@ impl SignedReviewProof {
                 Ok(())
             }
 
-            fn finish(self) -> Result<Vec<SignedReviewProof>> {
+            fn finish(self) -> Result<Vec<ReviewProof>> {
                 if self.stage != Stage::None {
                     bail!("Unexpected EOF while parsing");
                 }
@@ -278,7 +279,7 @@ impl SignedReviewProof {
         struct State<'a> {
             cur_proof_kvs: HashMap<&'a str, Vec<&'a str>>,
             cur_proof_data_hash: blake2::Blake2b,
-            parsed: Vec<SignedReviewProof>,
+            parsed: Vec<ReviewProof>,
         }
 
         impl<'a> State<'a> {
@@ -339,7 +340,7 @@ impl SignedReviewProof {
                     .or_insert_with(|| vec![v]);
 
                 if k == "signature" {
-                    self.parsed.push(SignedReviewProof::from_map(
+                    self.parsed.push(ReviewProof::from_map(
                         mem::replace(&mut self.cur_proof_kvs, Default::default()),
                         mem::replace(&mut self.cur_proof_data_hash, Default::default())
                             .result()
@@ -373,7 +374,7 @@ sig
 -----END CODE REVIEW PROOF-----
 "#;
 
-    let proofs = SignedReviewProof::parse(&s)?;
+    let proofs = ReviewProof::parse(&s)?;
     assert_eq!(proofs.len(), 1);
     assert_eq!(proofs[0].body, "foo\n");
     assert_eq!(proofs[0].signature, "sig\n");
@@ -395,7 +396,7 @@ sig2
 -----END CODE REVIEW PROOF-----
 "#;
 
-    let proofs = SignedReviewProof::parse(&s)?;
+    let proofs = ReviewProof::parse(&s)?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");
@@ -421,7 +422,7 @@ foo2
 sig2
 -----END CODE REVIEW PROOF-----"#;
 
-    let proofs = SignedReviewProof::parse(&s)?;
+    let proofs = ReviewProof::parse(&s)?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");

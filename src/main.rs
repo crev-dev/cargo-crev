@@ -76,7 +76,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         let passphrase = util::read_passphrase()?;
         let id = id::OwnId::auto_open(&passphrase)?;
-        let unsigned_proof = proof::ReviewProof::from_staged(&id, &staged);
+        let unsigned_proof = proof::Review::from_staged(&id, &staged);
     }
     Some(opts::Command::Init) => {
         util::project_dir_init()?;

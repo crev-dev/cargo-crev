@@ -7,7 +7,7 @@ use std::path::PathBuf;
 fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
 
-    let unsigned_review = proof::ReviewProofBuilder::default()
+    let unsigned_review = proof::ReviewBuilder::default()
         .from("Me <me@me.com>".into())
         .from_id("abcdf".into())
         .from_id_type("crev".into())
