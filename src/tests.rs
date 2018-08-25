@@ -7,7 +7,7 @@ use std::path::PathBuf;
 fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
 
-    let unsigned_review = proof::ReviewBuilder::default()
+    let review = proof::ReviewBuilder::default()
         .from("Me <me@me.com>".into())
         .from_id("abcdf".into())
         .from_id_type("crev".into())
@@ -15,9 +15,9 @@ fn sign_proof_review() -> Result<()> {
         .revision_type("git".into())
         .project_urls(vec!["https://github.com/someone/somelib".into()])
         .comment(Some("comment".into()))
-        .thoroughness(proof::Level::Some)
-        .understanding(proof::Level::Some)
-        .trust(proof::Level::Some)
+        .thoroughness(proof::Level::Low)
+        .understanding(proof::Level::Low)
+        .trust(proof::Level::Low)
         .files(vec![
             proof::ReviewFile {
                 path: PathBuf::from("foo.x"),
@@ -32,12 +32,12 @@ fn sign_proof_review() -> Result<()> {
         ]).build()
         .map_err(|e| format_err!("{}", e))?;
 
-    println!("{}", unsigned_review);
-    let signed_review = unsigned_review.sign(&id)?;
-    println!("{}", signed_review);
+    println!("{}", review);
+    let proof = review.sign(&id)?;
+    println!("{}", proof);
 
-    let parsed_unsigned = signed_review.parse_review()?;
-    println!("{}", parsed_unsigned);
+    let parsed_review = proof.parse_review()?;
+    println!("{}", parsed_review);
 
     Ok(())
 }

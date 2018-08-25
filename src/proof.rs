@@ -14,16 +14,17 @@ const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW PROOF-----";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Level {
     None,
-    Some,
-    Good,
-    Ultimate,
+    Low,
+    Medium,
+    High,
 }
 
 impl Default for Level {
     fn default() -> Self {
-        Level::Some
+        Level::Low
     }
 }
 
@@ -32,17 +33,17 @@ impl Level {
         use self::Level::*;
         match self {
             None => "none",
-            Some => "some",
-            Good => "good",
-            Ultimate => "ultimate",
+            Low => "low",
+            Medium => "medium",
+            High => "high",
         }
     }
     fn from_str(s: &str) -> Result<Level> {
         Ok(match s {
             "none" => Level::None,
-            "some" => Level::Some,
-            "good" => Level::Good,
-            "ultimate" => Level::Ultimate,
+            "low" => Level::Low,
+            "medium" => Level::Medium,
+            "high" => Level::High,
             _ => bail!("Unknown level: {}", s),
         })
     }

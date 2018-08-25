@@ -27,9 +27,11 @@ extern crate app_dirs;
 extern crate git2;
 extern crate rpassword;
 extern crate rprompt;
+extern crate tempdir;
 
 use common_failures::prelude::*;
 use std::{
+    env, ffi,
     io::{Read, Write},
     path::PathBuf,
 };
@@ -40,6 +42,7 @@ mod opts;
 mod proof;
 mod util;
 use opts::*;
+mod commit;
 mod repo;
 
 fn show_id() -> Result<()> {
@@ -75,13 +78,7 @@ main!(|opts: opts::Opts| match opts.command {
     }
     Some(opts::Command::Commit) => {
         let mut repo = repo::Repo::auto_open()?;
-        let mut staging = repo.staging()?;
-        if staging.is_empty() {
-            bail!("No reviews to commit. Use `add` first.");
-        }
-        let passphrase = util::read_passphrase()?;
-        let id = id::OwnId::auto_open(&passphrase)?;
-        let _review_files = staging.to_review_files();
+        repo.commit()?;
     }
     Some(opts::Command::Init) => {
         repo::Repo::init(PathBuf::from(".".to_string()))?;
