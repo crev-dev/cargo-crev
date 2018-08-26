@@ -83,7 +83,10 @@ people to establish trust.
 date: 2018-08-11 12:23:31-07:00 
 from: Dawid Ciężarkiewicz <dpc@dpc.pw>
 from-id: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
-ids:
+from-urls:
+   - "https://mywebpage.pw"
+   - "https://github.com/dpc/crev-trust"
+trusted-ids:
    - name: Adam Smith <adam@smith.com>
      id: U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvRfMbyUrBBK6JNcMTkW/yMTkW/U/EcWQoF2kaCUnevQU82zRvy=
    - name: @codeninja
