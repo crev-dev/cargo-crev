@@ -80,7 +80,7 @@ impl Staging {
     }
 
     fn write_to_file(&self, path: &Path) -> Result<()> {
-        let tmp_path = path.with_file_name("tmp");
+        let tmp_path = path.with_extension("tmp");
         let mut file = fs::File::create(&tmp_path)?;
         serde_cbor::to_writer(&mut file, &self.entries)?;
         file.flush()?;

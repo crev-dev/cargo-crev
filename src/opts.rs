@@ -13,6 +13,26 @@ pub enum IdCommand {
     Gen,
     #[structopt(name = "show")]
     Show,
+    #[structopt(name = "url")]
+    Url(UrlCommand),
+}
+
+/*
+#[derive(Debug, StructOpt, Clone)]
+pub struct Url {
+    #[structopt(subcommand)]
+    pub command: UrlCommand,
+}*/
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct UrlAdd {
+    pub urls: Vec<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum UrlCommand {
+    #[structopt(name = "add")]
+    Add(UrlAdd),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -24,7 +44,6 @@ pub struct Add {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
-    /// Set password
     Id(Id),
     #[structopt(name = "add")]
     Add(Add),

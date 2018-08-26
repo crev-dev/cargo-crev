@@ -4,7 +4,7 @@ use rprompt;
 use std::{
     env, ffi, fs, io,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process,
 };
 use tempdir;
@@ -55,6 +55,25 @@ fn get_editor_to_use() -> ffi::OsString {
     }
 }
 
+pub fn read_file_to_string(path: &Path) -> Result<String> {
+    let mut file = fs::File::open(&path)?;
+    let mut res = String::new();
+    file.read_to_string(&mut res)?;
+
+    Ok(res)
+}
+
+pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
+    fs::create_dir_all(path.parent().expect("Not a root path"));
+    let tmp_path = path.with_extension("tmp");
+    let mut file = fs::File::create(&tmp_path)?;
+    file.write_all(&s.as_bytes())?;
+    file.flush()?;
+    drop(file);
+    fs::rename(tmp_path, path)?;
+    Ok(())
+}
+
 fn edit_text_iteractively(text: String) -> Result<String> {
     let editor = get_editor_to_use();
     let dir = tempdir::TempDir::new("crev")?;
@@ -70,11 +89,7 @@ fn edit_text_iteractively(text: String) -> Result<String> {
         bail!("Editor returned {}", status);
     }
 
-    let mut file = fs::File::open(&file_path)?;
-    let mut res = String::new();
-    file.read_to_string(&mut res)?;
-
-    Ok(res)
+    Ok(read_file_to_string(&file_path)?)
 }
 
 fn yes_or_no_was_y() -> Result<bool> {

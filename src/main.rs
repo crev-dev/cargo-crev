@@ -68,6 +68,9 @@ main!(|opts: opts::Opts| match opts.command {
     Some(opts::Command::Id(id)) => match id.id_command {
         opts::IdCommand::Show => show_id()?,
         opts::IdCommand::Gen => gen_id()?,
+        opts::IdCommand::Url(opts::UrlCommand::Add(add)) => {
+            Local::add_id_urls(add.urls)?;
+        }
     },
     Some(opts::Command::Add(add)) => {
         let mut repo = repo::Repo::auto_open()?;
