@@ -49,14 +49,12 @@ impl Local {
     }
 
     pub fn add_id_urls(urls: Vec<String>) -> Result<()> {
-        eprintln!("Load");
         let mut config = Local::load_user_config()?;
 
         for url in urls {
             config.id_urls.insert(url);
         }
 
-        eprintln!("Store");
         Local::store_user_config(&config)
     }
 
