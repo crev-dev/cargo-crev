@@ -69,11 +69,7 @@ main!(|opts: opts::Opts| match opts.command {
     },
     Some(opts::Command::Add(add)) => {
         let mut repo = repo::Repo::auto_open()?;
-        let mut staging = repo.staging()?;
-        for path in add.paths {
-            staging.insert(&path);
-        }
-        staging.close()?;
+        repo.add(add.paths)?;
     }
     Some(opts::Command::Commit) => {
         let mut repo = repo::Repo::auto_open()?;

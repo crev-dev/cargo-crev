@@ -125,6 +125,7 @@ impl Repo {
         let file_path = self.get_proofs_file();
         self.write_out_proof_to(proof, &file_path)?;
         println!("Proof written to: {}", file_path.display());
+        self.staging()?.wipe()?;
         Ok(())
     }
 
@@ -133,6 +134,16 @@ impl Repo {
         for (k, v) in staging.entries.iter() {
             println!("{}", k.display());
         }
+
+        Ok(())
+    }
+
+    pub fn add(&mut self, file_paths: Vec<PathBuf>) -> Result<()> {
+        let mut staging = self.staging()?;
+        for path in file_paths {
+            staging.insert(&path);
+        }
+        staging.save()?;
 
         Ok(())
     }

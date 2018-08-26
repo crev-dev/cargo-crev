@@ -46,15 +46,15 @@ pub struct Staging {
 const STAGING_FILE_NAME: &str = "staging";
 
 impl Staging {
-    pub fn wipe(mut self) -> Result<()> {
-        Ok(fs::remove_file(self.file_path)?)
+    pub fn wipe(&mut self) -> Result<()> {
+        Ok(fs::remove_file(&self.file_path)?)
     }
 
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
-    pub fn close(&mut self) -> Result<()> {
+    pub fn save(&mut self) -> Result<()> {
         self.write_to_file(&self.file_path)
     }
 
@@ -90,10 +90,14 @@ impl Staging {
     }
 
     pub fn insert(&mut self, path: &Path) -> Result<()> {
+        let full_path = path.canonicalize()?;
+
+        let path = full_path.strip_prefix(&self.root_path)?.to_owned();
+        println!("Adding {}", path.display());
         self.entries.insert(
             path.to_owned(),
             StagingPathInfo {
-                blake_hash: blaze2sum(path)?,
+                blake_hash: blaze2sum(&full_path)?,
             },
         );
 
