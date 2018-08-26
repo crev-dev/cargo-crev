@@ -15,14 +15,10 @@ pub mod serde;
 
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
 
-const APP_INFO: AppInfo = AppInfo {
+pub const APP_INFO: AppInfo = AppInfo {
     name: "crev",
     author: "Dawid Ciężarkiewicz",
 };
-
-pub fn user_config_path() -> Result<PathBuf> {
-    Ok(app_root(AppDataType::UserConfig, &APP_INFO)?.join("crev.yaml"))
-}
 
 pub fn read_passphrase() -> io::Result<String> {
     if let Ok(pass) = env::var("CREV_PASSPHRASE") {

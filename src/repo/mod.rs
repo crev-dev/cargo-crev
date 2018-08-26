@@ -1,5 +1,6 @@
 use chrono;
 use id;
+use local::Local;
 use proof;
 use std::{
     fs,
@@ -100,7 +101,7 @@ impl Repo {
             bail!("No reviews to commit. Use `add` first.");
         }
         let passphrase = util::read_passphrase()?;
-        let id = id::OwnId::auto_open(&passphrase)?;
+        let id = Local::read_unlocked_id(&passphrase)?;
         let files = self.staging()?.to_review_files();
 
         let review = proof::ReviewBuilder::default()

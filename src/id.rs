@@ -67,13 +67,7 @@ impl LockedId {
         }
     }
 
-    pub fn auto_open() -> Result<Self> {
-        let path = util::user_config_path()?;
-        LockedId::read_from_yaml_file(&path)
-    }
-
-    pub fn auto_save(&self) -> Result<()> {
-        let path = util::user_config_path()?;
+    pub fn save_to(&self, path: &Path) -> Result<()> {
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
@@ -92,7 +86,7 @@ impl LockedId {
         Ok(serde_yaml::from_str::<LockedId>(&content)?)
     }
 
-    fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
+    pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
         let LockedId {
             ref version,
             ref name,
@@ -203,12 +197,6 @@ pub enum OwnId {
 }
 
 impl OwnId {
-    pub fn auto_open(passphrase: &str) -> Result<Self> {
-        let locked = LockedId::auto_open()?;
-
-        locked.to_unlocked(passphrase)
-    }
-
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         match self {
             OwnId::Crev { name, keypair } => {

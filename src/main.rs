@@ -42,10 +42,12 @@ mod opts;
 mod proof;
 mod util;
 use opts::*;
+mod local;
+use local::*;
 mod repo;
 
 fn show_id() -> Result<()> {
-    let id = id::LockedId::auto_open()?;
+    let id = Local::read_locked_id()?;
     let id = id.to_pubid();
     print!("{}", &id.to_string());
     Ok(())
@@ -57,7 +59,7 @@ fn gen_id() -> Result<()> {
     let passphrase = util::read_new_passphrase()?;
     let locked = id.to_locked(&passphrase)?;
 
-    locked.auto_save()?;
+    Local::save_locked_id(&locked)?;
 
     Ok(())
 }

@@ -124,7 +124,9 @@ pub struct TrustProof {
     from_id: String,
     #[serde(rename = "from-id-type")]
     from_id_type: String,
-    ids: Vec<PubId>,
+    from_urls: Vec<String>,
+    #[serde(rename = "trusted-ids")]
+    trusted_ids: Vec<PubId>,
     #[serde(rename = "revision-type")]
     comment: Option<String>,
     trust: Level,
