@@ -40,7 +40,7 @@ pub struct StagingPathInfo {
 pub struct Staging {
     root_path: PathBuf,
     file_path: PathBuf,
-    entries: HashMap<PathBuf, StagingPathInfo>,
+    pub entries: HashMap<PathBuf, StagingPathInfo>,
 }
 
 const STAGING_FILE_NAME: &str = "staging";

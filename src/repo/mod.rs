@@ -127,4 +127,13 @@ impl Repo {
         println!("Proof written to: {}", file_path.display());
         Ok(())
     }
+
+    pub fn status(&mut self) -> Result<()> {
+        let staging = self.staging()?;
+        for (k, v) in staging.entries.iter() {
+            println!("{}", k.display());
+        }
+
+        Ok(())
+    }
 }

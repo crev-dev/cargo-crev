@@ -32,6 +32,8 @@ pub enum Command {
     Commit,
     #[structopt(name = "init")]
     Init,
+    #[structopt(name = "status")]
+    Status,
 }
 
 #[derive(Debug, StructOpt, Clone)]

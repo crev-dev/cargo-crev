@@ -42,7 +42,6 @@ mod opts;
 mod proof;
 mod util;
 use opts::*;
-mod commit;
 mod repo;
 
 fn show_id() -> Result<()> {
@@ -82,6 +81,10 @@ main!(|opts: opts::Opts| match opts.command {
     }
     Some(opts::Command::Init) => {
         repo::Repo::init(PathBuf::from(".".to_string()))?;
+    }
+    Some(opts::Command::Status) => {
+        let mut repo = repo::Repo::auto_open()?;
+        repo.status()?;
     }
     None => {}
 });
