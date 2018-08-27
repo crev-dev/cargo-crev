@@ -42,6 +42,12 @@ pub struct Add {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Remove {
+    #[structopt(parse(from_os_str))]
+    pub paths: Vec<PathBuf>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
     Id(Id),
@@ -53,6 +59,8 @@ pub enum Command {
     Init,
     #[structopt(name = "status")]
     Status,
+    #[structopt(name = "rm")]
+    Remove(Remove),
 }
 
 #[derive(Debug, StructOpt, Clone)]

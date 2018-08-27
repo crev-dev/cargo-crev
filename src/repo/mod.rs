@@ -150,4 +150,14 @@ impl Repo {
 
         Ok(())
     }
+
+    pub fn remove(&mut self, file_paths: Vec<PathBuf>) -> Result<()> {
+        let mut staging = self.staging()?;
+        for path in file_paths {
+            staging.remove(&path);
+        }
+        staging.save()?;
+
+        Ok(())
+    }
 }

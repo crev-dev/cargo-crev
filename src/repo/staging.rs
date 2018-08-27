@@ -104,6 +104,18 @@ impl Staging {
         Ok(())
     }
 
+    pub fn remove(&mut self, path: &Path) -> Result<()> {
+        let full_path = path.canonicalize()?;
+
+        let path = full_path.strip_prefix(&self.root_path)?.to_owned();
+        println!("Removing {}", path.display());
+
+        self.entries.remove(&path);
+
+        Ok(())
+
+    }
+
     pub fn to_review_files(&self) -> Vec<ReviewFile> {
         self.entries
             .iter()
