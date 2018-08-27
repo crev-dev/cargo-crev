@@ -1,12 +1,13 @@
-use id::{LockedId, OwnId};
-use std::{collections::HashSet, path::PathBuf};
-use util;
-use Result;
-
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
-use proof::TrustProof;
+use id;
+use id::{LockedId, OwnId};
+use review::ReviewProof;
 use serde_yaml;
+use std::{collections::HashSet, path::PathBuf};
+use trust::TrustProof;
+use util;
 use util::APP_INFO;
+use Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
@@ -86,13 +87,50 @@ impl Local {
         self.user_dir_path().join("trust")
     }
 
+    fn trust_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
+        let id_str = pub_id.id_as_base64();
+        self.trust_proof_dir_path().join(id_str)
+    }
+
     fn review_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("review")
     }
 
-    pub fn load_all_trust_proof_from(&self, id: String) -> Result<Vec<TrustProof>> {
-        let content = util::read_file_to_string(&self.trust_proof_dir_path().join(id))?;
+    fn review_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
+        let id_str = pub_id.id_as_base64();
+        self.review_proof_dir_path().join(id_str)
+    }
 
-        unimplemented!();
+    pub fn load_all_trust_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<TrustProof>> {
+        let path = self.trust_proof_dir_path_for_id(pub_id);
+        if !path.exists() {
+            return Ok(vec![]);
+        }
+        let content = util::read_file_to_string(&path)?;
+
+        TrustProof::parse(&content)
+    }
+
+    pub fn store_all_trust_proof_from(
+        &self,
+        pub_id: &id::PubId,
+        proofs: &[TrustProof],
+    ) -> Result<()> {
+        util::store_to_file_with(&self.trust_proof_dir_path_for_id(pub_id), |w| {
+            for proof in proofs {
+                w.write_all(proof.to_string().as_bytes())?;
+            }
+            Ok(())
+        })
+    }
+
+    pub fn load_all_review_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<ReviewProof>> {
+        let path = &self.review_proof_dir_path_for_id(pub_id);
+        if !path.exists() {
+            return Ok(vec![]);
+        }
+        let content = util::read_file_to_string(&path)?;
+
+        ReviewProof::parse(&content)
     }
 }

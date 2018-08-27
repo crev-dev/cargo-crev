@@ -4,6 +4,7 @@ use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use git2;
 use id::PubId;
+use level::Level;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
 use std::{fmt, io::Write, mem, path::PathBuf};
@@ -12,42 +13,6 @@ use util::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF-----";
 const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW PROOF-----";
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Level {
-    None,
-    Low,
-    Medium,
-    High,
-}
-
-impl Default for Level {
-    fn default() -> Self {
-        Level::Low
-    }
-}
-
-impl Level {
-    fn as_str(&self) -> &str {
-        use self::Level::*;
-        match self {
-            None => "none",
-            Low => "low",
-            Medium => "medium",
-            High => "high",
-        }
-    }
-    fn from_str(s: &str) -> Result<Level> {
-        Ok(match s {
-            "none" => Level::None,
-            "low" => Level::Low,
-            "medium" => Level::Medium,
-            "high" => Level::High,
-            _ => bail!("Unknown level: {}", s),
-        })
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewFile {
@@ -110,26 +75,6 @@ pub struct Review {
     understanding: Level,
     trust: Level,
     files: Vec<ReviewFile>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TrustProof {
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    date: chrono::DateTime<FixedOffset>,
-    from: String,
-    #[serde(rename = "from-id")]
-    from_id: String,
-    #[serde(rename = "from-id-type")]
-    from_id_type: String,
-    from_urls: Vec<String>,
-    #[serde(rename = "trusted-ids")]
-    trusted_ids: Vec<PubId>,
-    #[serde(rename = "revision-type")]
-    comment: Option<String>,
-    trust: Level,
 }
 
 use id::OwnId;
@@ -276,96 +221,6 @@ impl ReviewProof {
 
         state.finish()
     }
-
-    /*
-    pub fn parse(input: &str) -> Result<Vec<Self>> {
-        #[derive(Default)]
-        struct State<'a> {
-            cur_proof_kvs: HashMap<&'a str, Vec<&'a str>>,
-            cur_proof_data_hash: blake2::Blake2b,
-            parsed: Vec<ReviewProof>,
-        }
-
-        impl<'a> State<'a> {
-            fn new() -> Self {
-                Default::default()
-            }
-
-            fn is_started(&self) -> bool {
-                !self.cur_proof_kvs.is_empty()
-            }
-
-            fn hash_line(&mut self, line: &str) {
-                use blake2::Digest;
-                self.cur_proof_data_hash.input(line.as_bytes())
-            }
-
-            fn process_line(&mut self, untrimmed_line: &'a str) -> Result<()> {
-                let line = untrimmed_line.trim();
-                if line.is_empty() {
-                    if self.is_started() {
-                        self.hash_line(&untrimmed_line);
-                    }
-                    return Ok(());
-                }
-
-                let mut kv = line.splitn(2, ":");
-                let k = if let Some(k) = kv.next() {
-                    k.trim()
-                } else {
-                    bail!("missing key");
-                };
-
-                let v = if let Some(v) = kv.next() {
-                    v.trim()
-                } else {
-                    bail!("missing value for key {}", k);
-                };
-
-                if k.is_empty() {
-                    bail!("empty key");
-                }
-
-                if v.is_empty() {
-                    bail!("value for key {} is empty", k);
-                }
-
-                if k == "date" {
-                    if self.is_started() {
-                        bail!("new `date` key found, before finishing previous one");
-                    }
-                }
-                if k != "signature" {
-                    self.hash_line(untrimmed_line);
-                }
-                self.cur_proof_kvs
-                    .entry(k)
-                    .and_modify(|e| e.push(v))
-                    .or_insert_with(|| vec![v]);
-
-                if k == "signature" {
-                    self.parsed.push(ReviewProof::from_map(
-                        mem::replace(&mut self.cur_proof_kvs, Default::default()),
-                        mem::replace(&mut self.cur_proof_data_hash, Default::default())
-                            .result()
-                            .as_slice()
-                            .into(),
-                    )?);
-                }
-
-                Ok(())
-            }
-        }
-
-        let mut state = State::new();
-
-        for line in input.lines() {
-            state.process_line(&line)?;
-        }
-
-        Ok(state.parsed)
-    }
-        */
 }
 
 #[test]

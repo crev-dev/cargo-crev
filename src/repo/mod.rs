@@ -1,14 +1,15 @@
 use chrono;
 use id;
 use local::Local;
-use proof;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
+use trust;
 use util;
 use Result;
+use {level, review};
 
 pub mod staging;
 
@@ -82,7 +83,7 @@ impl Repo {
             .with_extension("crev")
     }
 
-    fn write_out_proof_to(&mut self, proof: proof::ReviewProof, file_path: &Path) -> Result<()> {
+    fn write_out_proof_to(&mut self, proof: review::ReviewProof, file_path: &Path) -> Result<()> {
         fs::create_dir_all(file_path.parent().expect("Not a root dir"))?;
         let mut file = fs::OpenOptions::new()
             .append(true)
@@ -105,7 +106,7 @@ impl Repo {
         let id = local.read_unlocked_id(&passphrase)?;
         let files = self.staging()?.to_review_files();
 
-        let review = proof::ReviewBuilder::default()
+        let review = review::ReviewBuilder::default()
             .from(id.name().into())
             .from_id(id.pub_key_as_base64())
             .from_id_type(id.type_as_string())
@@ -113,9 +114,9 @@ impl Repo {
             .revision_type("git".into())
             .project_urls(vec![])
             .comment(Some("".into()))
-            .thoroughness(proof::Level::Low)
-            .understanding(proof::Level::Low)
-            .trust(proof::Level::Low)
+            .thoroughness(level::Level::Low)
+            .understanding(level::Level::Low)
+            .trust(level::Level::Low)
             .files(files)
             .build()
             .map_err(|e| format_err!("{}", e))?;

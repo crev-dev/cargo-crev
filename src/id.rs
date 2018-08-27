@@ -181,6 +181,12 @@ impl PubId {
         Ok(())
     }
 
+    pub fn id_as_base64(&self) -> String {
+        match self {
+            PubId::Crev { name, id } => base64::encode(id),
+        }
+    }
+
     pub fn to_string(&self) -> String {
         let mut s = vec![];
         self.write_to(&mut s).unwrap();

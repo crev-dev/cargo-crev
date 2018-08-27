@@ -1,6 +1,6 @@
 use blake2::{self, digest::FixedOutput, Digest};
 use common_failures::prelude::*;
-use proof::ReviewFile;
+use review::ReviewFile;
 use serde_cbor;
 use std::{
     collections::HashMap,

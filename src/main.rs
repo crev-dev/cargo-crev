@@ -38,8 +38,10 @@ use std::{
 use structopt::StructOpt;
 
 mod id;
+mod level;
 mod opts;
-mod proof;
+mod review;
+mod trust;
 mod util;
 use opts::*;
 mod local;

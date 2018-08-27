@@ -9,7 +9,7 @@ use std::{
 };
 use tempdir;
 use Result;
-use {id, proof, repo, util};
+use {id, repo, review, util};
 
 pub mod serde;
 
@@ -74,6 +74,17 @@ pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn store_to_file_with(path: &Path, f: impl Fn(&mut io::Write) -> Result<()>) -> Result<()> {
+    fs::create_dir_all(path.parent().expect("Not a root path"));
+    let tmp_path = path.with_extension("tmp");
+    let mut file = fs::File::create(&tmp_path)?;
+    f(&mut file)?;
+    file.flush()?;
+    drop(file);
+    fs::rename(tmp_path, path)?;
+    Ok(())
+}
+
 fn edit_text_iteractively(text: String) -> Result<String> {
     let editor = get_editor_to_use();
     let dir = tempdir::TempDir::new("crev")?;
@@ -104,11 +115,11 @@ fn yes_or_no_was_y() -> Result<bool> {
     }
 }
 
-pub fn edit_review_iteractively(review: proof::Review) -> Result<proof::Review> {
+pub fn edit_review_iteractively(review: review::Review) -> Result<review::Review> {
     let mut text = review.to_string();
     loop {
         text = edit_text_iteractively(text)?;
-        match proof::Review::parse(&text) {
+        match review::Review::parse(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing review: {}", e);
                 if !yes_or_no_was_y()? {

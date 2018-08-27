@@ -1,5 +1,6 @@
 use super::*;
 use common_failures::prelude::*;
+use level::Level;
 
 use std::path::PathBuf;
 
@@ -7,7 +8,7 @@ use std::path::PathBuf;
 fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
 
-    let review = proof::ReviewBuilder::default()
+    let review = review::ReviewBuilder::default()
         .from("Me <me@me.com>".into())
         .from_id("abcdf".into())
         .from_id_type("crev".into())
@@ -15,16 +16,16 @@ fn sign_proof_review() -> Result<()> {
         .revision_type("git".into())
         .project_urls(vec!["https://github.com/someone/somelib".into()])
         .comment(Some("comment".into()))
-        .thoroughness(proof::Level::Low)
-        .understanding(proof::Level::Low)
-        .trust(proof::Level::Low)
+        .thoroughness(Level::Low)
+        .understanding(Level::Low)
+        .trust(Level::Low)
         .files(vec![
-            proof::ReviewFile {
+            review::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
             },
-            proof::ReviewFile {
+            review::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
