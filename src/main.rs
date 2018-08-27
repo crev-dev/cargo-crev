@@ -92,6 +92,10 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = repo::Repo::auto_open()?;
         repo.status()?;
     }
+    Some(opts::Command::Remove(remove)) => {
+        let mut repo = repo::Repo::auto_open()?;
+        repo.remove(remove.paths)?;
+    }
     None => {}
 });
 
