@@ -47,7 +47,8 @@ use local::*;
 mod repo;
 
 fn show_id() -> Result<()> {
-    let id = Local::read_locked_id()?;
+    let local = Local::auto_open()?;
+    let id = local.read_locked_id()?;
     let id = id.to_pubid();
     print!("{}", &id.to_string());
     Ok(())
@@ -59,7 +60,8 @@ fn gen_id() -> Result<()> {
     let passphrase = util::read_new_passphrase()?;
     let locked = id.to_locked(&passphrase)?;
 
-    Local::save_locked_id(&locked)?;
+    let local = Local::auto_open()?;
+    local.save_locked_id(&locked)?;
 
     Ok(())
 }
@@ -69,7 +71,8 @@ main!(|opts: opts::Opts| match opts.command {
         opts::IdCommand::Show => show_id()?,
         opts::IdCommand::Gen => gen_id()?,
         opts::IdCommand::Url(opts::UrlCommand::Add(add)) => {
-            Local::add_id_urls(add.urls)?;
+            let local = Local::auto_open()?;
+            local.add_id_urls(add.urls)?;
         }
     },
     Some(opts::Command::Add(add)) => {

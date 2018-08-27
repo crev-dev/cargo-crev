@@ -101,7 +101,8 @@ impl Repo {
             bail!("No reviews to commit. Use `add` first.");
         }
         let passphrase = util::read_passphrase()?;
-        let id = Local::read_unlocked_id(&passphrase)?;
+        let local = Local::auto_open()?;
+        let id = local.read_unlocked_id(&passphrase)?;
         let files = self.staging()?.to_review_files();
 
         let review = proof::ReviewBuilder::default()
