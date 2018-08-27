@@ -105,8 +105,10 @@ queries like:
 
 * Which of my dependencies don't have a sufficient (arbitrary) level of code review/trust?
 * What were the changes in a project X, since I last reviewed it?
+* and more!
 
-There's more, but these two artifacts are the core of `crev`.
+These two artifacts are the core of `crev`, and hopefully your can already extrapolate
+all the other possibilities.
 
 ## Fundamental ideas behind `crev`:
 
