@@ -13,9 +13,9 @@ use util::{
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
 
-const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF-----";
-const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF SIGNATURE-----";
-const END_BLOCK: &str = "-----END CODE REVIEW PROOF-----";
+const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
+const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
+const END_BLOCK: &str = "-----END CODE REVIEW-----";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewFile {
@@ -224,11 +224,11 @@ impl ReviewProof {
 #[test]
 fn signed_parse() -> Result<()> {
     let s = r#"
------BEGIN CODE REVIEW PROOF-----
+-----BEGIN CODE REVIEW-----
 foo
------BEGIN CODE REVIEW PROOF SIGNATURE-----
+-----BEGIN CODE REVIEW SIGNATURE-----
 sig
------END CODE REVIEW PROOF-----
+-----END CODE REVIEW-----
 "#;
 
     let proofs = ReviewProof::parse(&s)?;
@@ -241,16 +241,16 @@ sig
 #[test]
 fn signed_parse_multiple() -> Result<()> {
     let s = r#"
------BEGIN CODE REVIEW PROOF-----
+-----BEGIN CODE REVIEW-----
 foo1
------BEGIN CODE REVIEW PROOF SIGNATURE-----
+-----BEGIN CODE REVIEW SIGNATURE-----
 sig1
------END CODE REVIEW PROOF-----
------BEGIN CODE REVIEW PROOF-----
+-----END CODE REVIEW-----
+-----BEGIN CODE REVIEW-----
 foo2
------BEGIN CODE REVIEW PROOF SIGNATURE-----
+-----BEGIN CODE REVIEW SIGNATURE-----
 sig2
------END CODE REVIEW PROOF-----
+-----END CODE REVIEW-----
 "#;
 
     let proofs = ReviewProof::parse(&s)?;
@@ -266,18 +266,18 @@ sig2
 fn signed_parse_multiple_newlines() -> Result<()> {
     let s = r#"
 
------BEGIN CODE REVIEW PROOF-----
+-----BEGIN CODE REVIEW-----
 foo1
------BEGIN CODE REVIEW PROOF SIGNATURE-----
+-----BEGIN CODE REVIEW SIGNATURE-----
 sig1
------END CODE REVIEW PROOF-----
+-----END CODE REVIEW-----
 
 
------BEGIN CODE REVIEW PROOF-----
+-----BEGIN CODE REVIEW-----
 foo2
------BEGIN CODE REVIEW PROOF SIGNATURE-----
+-----BEGIN CODE REVIEW SIGNATURE-----
 sig2
------END CODE REVIEW PROOF-----"#;
+-----END CODE REVIEW-----"#;
 
     let proofs = ReviewProof::parse(&s)?;
     assert_eq!(proofs.len(), 2);

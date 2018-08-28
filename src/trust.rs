@@ -14,9 +14,9 @@ use util::{
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
 
-const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST PROOF-----";
-const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST PROOF SIGNATURE-----";
-const END_BLOCK: &str = "-----END CODE REVIEW TRUST PROOF-----";
+const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
+const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";
+const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
@@ -34,7 +34,7 @@ pub struct Trust {
     from_urls: Vec<String>,
     #[serde(rename = "trusted-ids")]
     trusted_ids: Vec<String>,
-    #[serde(rename = "revision-type")]
+    #[serde(rename = "comment")]
     comment: Option<String>,
     trust: Level,
 }

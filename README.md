@@ -46,28 +46,30 @@ or [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 Using `crev` you can generate Code Review Proofs, e.g.:
 
 ```
------BEGIN CODE REVIEW PROOF-----
-date: 2018-08-01 22:43:39-07:00 
-from: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
-from-name: Dawid Ciężarkiewicz <dpc@dpc.pw>
-project-urls:
-   - https://crates.io/crate/somelib
-   - https://github.com/someone/somelib
-thoroughness: good
-understanding: good
-trust: some
-comment: LGTM
-revision: bd049182c8a02c11b4bde3c55335c8653bae7e2e
+-----BEGIN CODE REVIEW-----
+date: "2018-08-27T22:40:06.639220203-07:00"
+from: "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
+"from-name": Dawid Ciężarkiewicz
+project_urls:
+  - "https://github.com/dpc/crev"
+revision: 2267845bd1e397e9e41c3e87fea21441fc629ce8
+"revision-type": git
+comment: "I'm the author"
+thoroughness: medium
+understanding: high
+trust: high
 files:
-   - digest: 2cff6162e5784b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee
-     path: src/index.rs
-   - digest: 701008060fb47c24b06d6303cff6162e5784b263c6755b6d8b5a7933064956ee
-     path: src/main.rs
-   - digest: b263c6755b6d8b5a7933064956701008060fb47c24b06d630ee3cff6162e5784
-     path: src/test.rs
------BEGIN CODE REVIEW PROOF SIGNATURE-----
-5V1c1P5a8dqDVMPhwqnDF39ZrHpaw7jhetEgHyPUkjM8tYvugPzDJ3xyhD9WdJQ4AjwYkN2XdWhnTB3GTRMJuAEd
------END CODE REVIEW PROOF-----
+  - path: README.md
+    digest: 2a092866507c63b00022d233f36a7f3bd9f2b68fdcbdcab77ba3886319a08bdb2a33479dd05bd897d59c17cade18d10794c6e37acd933fd393d129a16ca51092
+  - path: src/proof.rs
+    digest: 56457bf6df215eb64fff035c28244951c509d77c6e46edfa66105a7a72382051d222bb6a6d66bad415fc325fdd80c50d27c2b076914315cbcb369d3c4f6857fb
+  - path: src/main.rs
+    digest: 012b46b4d10bdca817ae2638814d7d23c8909b1651fb85742f454fc868fbb82cb7937fb38591da1c01006fa60edc9da20ae4dcdb301c006060a0283cef6be247
+  - path: src/index.rs
+    digest: 786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce
+-----BEGIN CODE REVIEW SIGNATURE-----
+mZxQ60ol+MRGLQC863ITf+FjkEAWmD0N4CtJANl5ZRa4c7kFyWCRXljI63UWm23oyNA2ZngZ2S4ndanJIiOMBw==
+-----END CODE REVIEW-----
 ```
 
 and include it in your source code, submit a PR to the original project, a even
@@ -79,22 +81,19 @@ While your own reviews are very valuable, `crev` allows reviewing identities of 
 people to establish trust.
 
 ```
------BEGIN CODE REVIEW TRUST PROOF-----
-date: 2018-08-11 12:23:31-07:00 
-from: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
-from-name: Dawid Ciężarkiewicz <dpc@dpc.pw>
-from-urls:
-   - "https://mywebpage.pw"
-   - "https://github.com/dpc/crev-trust"
+-----BEGIN CODE REVIEW TRUST-----
+date: "2018-08-27T22:44:49.855361810-07:00"
+from: "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
+from-name: Dawid Ciężarkiewicz
+from-id-type: crev
+from_urls:
+  - http://github.com/dpc/crev-trust
 trusted-ids:
-   - name: Adam Smith <adam@smith.com>
-     id: U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvRfMbyUrBBK6JNcMTkW/yMTkW/U/EcWQoF2kaCUnevQU82zRvy=
-   - name: @codeninja
-     id: W/yMTkW/U/EcWQoF2kaCUnevQU82zRvyU/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvRfMbyUrBBK6JNcMTk=
-trust: good
+  - "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
+trust: high
 -----BEGIN CODE REVIEW TRUST SIGNATURE-----
-rHpaw7jhetEgHyPUkjM8tYvugPzDJ3xyhD9WdJQ4AjwYkN2XdWhnTB3GTRMJuAEd5V1c1P5a8dqDVMPhwqnDF39Z
------END CODE REVIEW PROOF-----
+zoykKIakR0Ao/Jt53/blblUfQ9+SGFUucEfRFfpaTT71e+0GAT2KagvbAkiKsaPredF3mHh6PwyTQzHkpFBwAg==
+-----END CODE REVIEW TRUST-----
 ```
 
 Similarity to Code Review Proofs, Code Review Trust Proofs are stored along the code: in personal,
