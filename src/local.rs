@@ -1,10 +1,11 @@
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
 use id;
 use id::{LockedId, OwnId};
+use level;
 use review::ReviewProof;
 use serde_yaml;
 use std::{collections::HashSet, path::PathBuf};
-use trust::TrustProof;
+use trust::{self, TrustProof};
 use util;
 use util::APP_INFO;
 use Result;
@@ -124,6 +125,35 @@ impl Local {
         })
     }
 
+    pub fn trust_ids(&self, pub_ids: Vec<String>) -> Result<()> {
+        if pub_ids.is_empty() {
+            bail!("No ids to trust. Use `add` first.");
+        }
+        let passphrase = util::read_passphrase()?;
+        let id = self.read_unlocked_id(&passphrase)?;
+        let pub_id = id.to_pubid();
+
+        let trust = trust::TrustBuilder::default()
+            .from(id.pub_key_as_base64())
+            .from_name(id.name().into())
+            .from_type(id.type_as_string())
+            .from_urls(vec!["TODO".into()])
+            .comment(Some("".into()))
+            .trust(level::Level::Medium)
+            .trusted_ids(pub_ids)
+            .build()
+            .map_err(|e| format_err!("{}", e))?;
+
+        let redacted = util::edit_trust_iteractively(trust)?;
+
+        let proof = redacted.sign(&id)?;
+
+        self.add_trust_proof_from(&pub_id, proof.clone())?;
+        println!("{}", proof);
+        eprintln!("Trust Proof added to your trust store");
+        Ok(())
+    }
+
     pub fn load_all_review_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<ReviewProof>> {
         let path = &self.review_proof_dir_path_for_id(pub_id);
         if !path.exists() {
@@ -132,5 +162,26 @@ impl Local {
         let content = util::read_file_to_string(&path)?;
 
         ReviewProof::parse(&content)
+    }
+
+    pub fn store_all_review_proof_from(
+        &self,
+        pub_id: &id::PubId,
+        proofs: &[ReviewProof],
+    ) -> Result<()> {
+        util::store_to_file_with(&self.review_proof_dir_path_for_id(pub_id), |w| {
+            for proof in proofs {
+                w.write_all(proof.to_string().as_bytes())?;
+            }
+            Ok(())
+        })
+    }
+
+    pub fn add_trust_proof_from(&self, pub_id: &id::PubId, proof: TrustProof) -> Result<()> {
+        let mut proofs = self.load_all_trust_proof_from(pub_id)?;
+        proofs.push(proof);
+        self.store_all_trust_proof_from(pub_id, &proofs)?;
+
+        Ok(())
     }
 }

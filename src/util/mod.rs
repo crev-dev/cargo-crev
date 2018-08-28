@@ -1,3 +1,4 @@
+use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use rpassword;
 use rprompt;
@@ -8,9 +9,9 @@ use std::{
     process,
 };
 use tempdir;
+use trust;
 use Result;
 use {id, repo, review, util};
-
 pub mod serde;
 
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
@@ -129,4 +130,25 @@ pub fn edit_review_iteractively(review: review::Review) -> Result<review::Review
             Ok(review) => return Ok(review),
         }
     }
+}
+
+pub fn edit_trust_iteractively(trust: trust::Trust) -> Result<trust::Trust> {
+    let mut text = trust.to_string();
+    loop {
+        text = edit_text_iteractively(text)?;
+        match trust::Trust::parse(&text) {
+            Err(e) => {
+                eprintln!("There was an error parsing trust: {}", e);
+                if !yes_or_no_was_y()? {
+                    bail!("User canceled");
+                }
+            }
+            Ok(trust) => return Ok(trust),
+        }
+    }
+}
+
+pub fn now() -> DateTime<FixedOffset> {
+    let date = chrono::offset::Local::now();
+    date.with_timezone(&date.offset())
 }

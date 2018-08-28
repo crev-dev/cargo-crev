@@ -48,8 +48,8 @@ Using `crev` you can generate Code Review Proofs, e.g.:
 ```
 -----BEGIN CODE REVIEW PROOF-----
 date: 2018-08-01 22:43:39-07:00 
-from: Dawid Ciężarkiewicz <dpc@dpc.pw>
-from-id: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
+from: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
+from-name: Dawid Ciężarkiewicz <dpc@dpc.pw>
 project-urls:
    - https://crates.io/crate/somelib
    - https://github.com/someone/somelib
@@ -81,8 +81,8 @@ people to establish trust.
 ```
 -----BEGIN CODE REVIEW TRUST PROOF-----
 date: 2018-08-11 12:23:31-07:00 
-from: Dawid Ciężarkiewicz <dpc@dpc.pw>
-from-id: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
+from: RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=RfMbyUrBBK6JNcoF2kaCUnevQU82zRvyMTkW/U/EcWQ=
+from-name: Dawid Ciężarkiewicz <dpc@dpc.pw>
 from-urls:
    - "https://mywebpage.pw"
    - "https://github.com/dpc/crev-trust"

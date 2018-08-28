@@ -3,37 +3,73 @@ use blake2::{self, Digest};
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use git2;
+use id::OwnId;
 use id::PubId;
 use level::Level;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
 use std::{fmt, io::Write, mem, path::PathBuf};
-use util::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
+use util::{
+    self,
+    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
+};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST PROOF-----";
 const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST PROOF SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW TRUST PROOF-----";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
+    #[builder(default = "util::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"
     )]
     date: chrono::DateTime<FixedOffset>,
     from: String,
-    #[serde(rename = "from-id")]
-    from_id: String,
+    #[serde(rename = "from-name")]
+    from_name: String,
     #[serde(rename = "from-id-type")]
-    from_id_type: String,
+    from_type: String,
     from_urls: Vec<String>,
     #[serde(rename = "trusted-ids")]
-    trusted_ids: Vec<PubId>,
+    trusted_ids: Vec<String>,
     #[serde(rename = "revision-type")]
     comment: Option<String>,
     trust: Level,
 }
 
+impl fmt::Display for Trust {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
+        let mut lines = yaml_document.lines();
+        let dropped_header = lines.next();
+        assert_eq!(dropped_header, Some("---"));
+
+        for line in lines {
+            f.write_str(&line)?;
+            f.write_str("\n")?;
+        }
+        Ok(())
+    }
+}
+
+impl Trust {
+    pub fn sign(&self, id: &OwnId) -> Result<TrustProof> {
+        let body = self.to_string();
+        let signature = id.sign(&body.as_bytes());
+        Ok(TrustProof {
+            body: body,
+            signature: base64::encode(&signature),
+        })
+    }
+
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct TrustProof {
     pub body: String,
     pub signature: String,

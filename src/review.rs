@@ -8,7 +8,10 @@ use level::Level;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
 use std::{fmt, io::Write, mem, path::PathBuf};
-use util::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
+use util::{
+    self,
+    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
+};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF-----";
 const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW PROOF SIGNATURE-----";
@@ -48,22 +51,22 @@ fn default_blake2b_value() -> String {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
 pub struct Review {
-    #[builder(default = "now()")]
+    #[builder(default = "util::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"
     )]
     date: chrono::DateTime<FixedOffset>,
     from: String,
-    #[serde(rename = "from-id")]
-    from_id: String,
+    #[serde(rename = "from-name")]
+    from_name: String,
     #[serde(rename = "from-id-type")]
     #[builder(default = "\"crev\".into()")]
     #[serde(
         skip_serializing_if = "equals_crev",
         default = "default_crev_value"
     )]
-    from_id_type: String,
+    from_type: String,
     project_urls: Vec<String>,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
@@ -78,11 +81,6 @@ pub struct Review {
 }
 
 use id::OwnId;
-
-fn now() -> DateTime<FixedOffset> {
-    let date = chrono::offset::Local::now();
-    date.with_timezone(&date.offset())
-}
 
 impl Review {
     pub fn sign(&self, id: &OwnId) -> Result<ReviewProof> {

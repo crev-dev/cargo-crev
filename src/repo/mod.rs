@@ -107,9 +107,9 @@ impl Repo {
         let files = self.staging()?.to_review_files();
 
         let review = review::ReviewBuilder::default()
-            .from(id.name().into())
-            .from_id(id.pub_key_as_base64())
-            .from_id_type(id.type_as_string())
+            .from(id.pub_key_as_base64())
+            .from_name(id.name().into())
+            .from_type(id.type_as_string())
             .revision(Some("TODO".into()))
             .revision_type("git".into())
             .project_urls(vec![])

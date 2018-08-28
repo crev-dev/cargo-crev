@@ -77,6 +77,10 @@ main!(|opts: opts::Opts| match opts.command {
             local.add_id_urls(add.urls)?;
         }
     },
+    Some(opts::Command::Trust(trust)) => {
+        let local = Local::auto_open()?;
+        local.trust_ids(trust.pub_ids)?;
+    }
     Some(opts::Command::Add(add)) => {
         let mut repo = repo::Repo::auto_open()?;
         repo.add(add.paths)?;

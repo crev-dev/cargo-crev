@@ -17,13 +17,6 @@ pub enum IdCommand {
     Url(UrlCommand),
 }
 
-/*
-#[derive(Debug, StructOpt, Clone)]
-pub struct Url {
-    #[structopt(subcommand)]
-    pub command: UrlCommand,
-}*/
-
 #[derive(Debug, StructOpt, Clone)]
 pub struct UrlAdd {
     pub urls: Vec<String>,
@@ -48,6 +41,11 @@ pub struct Remove {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Trust {
+    pub pub_ids: Vec<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
     Id(Id),
@@ -61,6 +59,8 @@ pub enum Command {
     Status,
     #[structopt(name = "rm")]
     Remove(Remove),
+    #[structopt(name = "trust")]
+    Trust(Trust),
 }
 
 #[derive(Debug, StructOpt, Clone)]

@@ -9,9 +9,9 @@ fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
 
     let review = review::ReviewBuilder::default()
-        .from("Me <me@me.com>".into())
-        .from_id("abcdf".into())
-        .from_id_type("crev".into())
+        .from("abcdf".into())
+        .from_name("Me <me@me.com>".into())
+        .from_type("crev".into())
         .revision(Some("foobar".into()))
         .revision_type("git".into())
         .project_urls(vec!["https://github.com/someone/somelib".into()])
