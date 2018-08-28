@@ -174,8 +174,8 @@ impl PubId {
     pub fn write_to(&self, w: &mut io::Write) -> Result<()> {
         match self {
             PubId::Crev { name, id } => {
+                writeln!(w, "id: {}", base64::encode(id))?;
                 writeln!(w, "name: {}", name)?;
-                writeln!(w, "id: crev={}", base64::encode(id))?;
             }
         }
         Ok(())
