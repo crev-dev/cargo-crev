@@ -104,6 +104,7 @@ impl Repo {
         let passphrase = util::read_passphrase()?;
         let local = Local::auto_open()?;
         let id = local.read_unlocked_id(&passphrase)?;
+        let pub_id = id.to_pubid();
         let files = self.staging()?.to_review_files();
 
         let review = review::ReviewBuilder::default()
@@ -125,9 +126,13 @@ impl Repo {
 
         let proof = redacted.sign(&id)?;
 
+        println!("{}", proof.clone());
         let file_path = self.get_proofs_file();
-        self.write_out_proof_to(proof, &file_path)?;
-        println!("Proof written to: {}", file_path.display());
+        self.write_out_proof_to(proof.clone(), &file_path)?;
+        eprintln!("Review Proof written to: {}", file_path.display());
+        let local = Local::auto_open()?;
+        local.add_review_proof_from(&pub_id, proof.clone());
+        eprintln!("Review Proof added to your trust store");
         self.staging()?.wipe()?;
         Ok(())
     }

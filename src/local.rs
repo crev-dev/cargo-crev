@@ -184,4 +184,12 @@ impl Local {
 
         Ok(())
     }
+
+    pub fn add_review_proof_from(&self, pub_id: &id::PubId, proof: ReviewProof) -> Result<()> {
+        let mut proofs = self.load_all_review_proof_from(pub_id)?;
+        proofs.push(proof);
+        self.store_all_review_proof_from(pub_id, &proofs)?;
+
+        Ok(())
+    }
 }

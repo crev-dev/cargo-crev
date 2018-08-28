@@ -113,7 +113,7 @@ impl fmt::Display for Review {
 }
 
 /// A `Review` that was signed by someone
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReviewProof {
     pub body: String,
     pub signature: String,
