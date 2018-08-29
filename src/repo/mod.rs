@@ -112,11 +112,11 @@ impl Repo {
 
         let review = review::ReviewBuilder::default()
             .from(id.pub_key_as_base64())
-            .from_name(id.name().into())
+            .from_url(id.url().into())
             .from_type(id.type_as_string())
             .revision(Some("TODO".into()))
             .revision_type("git".into())
-            .project_urls(vec![])
+            .project_url("TODO".into())
             .comment(Some("".into()))
             .thoroughness(level::Level::Low)
             .understanding(level::Level::Low)

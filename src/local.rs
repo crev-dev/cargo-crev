@@ -186,9 +186,9 @@ impl Local {
 
         let trust = trust::TrustBuilder::default()
             .from(id.pub_key_as_base64())
-            .from_name(id.name().into())
+            .from_url(id.url().into())
             .from_type(id.type_as_string())
-            .from_urls(vec!["TODO".into()])
+            .from_url("TODO".into())
             .comment(Some("".into()))
             .trust(level::Level::Medium)
             .trusted_ids(pub_ids)

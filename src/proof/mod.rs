@@ -41,7 +41,7 @@ pub trait Content:
 
     fn date(&self) -> chrono::DateTime<FixedOffset>;
     fn from_pubid(&self) -> String;
-    fn from_name(&self) -> String;
+    fn from_url(&self) -> String;
 
     fn rel_store_path(&self) -> PathBuf {
         PathBuf::from(self.from_pubid())
@@ -184,4 +184,20 @@ impl<T: Content> Proof<T> {
 
         state.finish()
     }
+}
+
+fn equals_crev(s: &str) -> bool {
+    s == "crev"
+}
+
+fn default_crev_value() -> String {
+    "crev".into()
+}
+
+fn equals_blake2b(s: &str) -> bool {
+    s == "blake2b"
+}
+
+fn default_blake2b_value() -> String {
+    "blake2b".into()
 }

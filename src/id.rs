@@ -33,7 +33,7 @@ pub struct PassConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LockedId {
     version: u16,
-    name: String,
+    url: String,
     #[serde(
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
@@ -56,7 +56,7 @@ pub struct LockedId {
 impl LockedId {
     pub fn to_pubid(&self) -> PubId {
         PubId::Crev {
-            name: self.name.to_owned(),
+            url: self.url.to_owned(),
             id: self.pub_key.to_owned(),
         }
     }
@@ -83,7 +83,7 @@ impl LockedId {
     pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
         let LockedId {
             ref version,
-            ref name,
+            ref url,
             ref pub_key,
             ref sealed_sec_key,
             ref seal_nonce,
@@ -120,7 +120,7 @@ impl LockedId {
             }
 
             Ok(OwnId::Crev {
-                name: name.clone(),
+                url: url.clone(),
                 keypair: ed25519_dalek::Keypair {
                     secret: sec_key,
                     public: calculated_pub_key,
@@ -134,7 +134,7 @@ impl LockedId {
 #[serde(tag = "id-type")]
 pub enum PubId {
     Crev {
-        name: String,
+        url: String,
 
         #[serde(
             serialize_with = "as_base64",
@@ -145,31 +145,11 @@ pub enum PubId {
 }
 
 impl PubId {
-    pub fn from_name_and_id_string(name: String, id_str: &str) -> Result<Self> {
-        let mut split = id_str.split('=');
-        let key = split
-            .next()
-            .map(|s| s.trim())
-            .ok_or_else(|| format_err!("missing key"))?;
-        let val = split
-            .next()
-            .map(|s| s.trim())
-            .ok_or_else(|| format_err!("missing value"))?;
-
-        Ok(match key {
-            "crev" => PubId::Crev {
-                name,
-                id: base64::decode_config(val, base64::URL_SAFE)?,
-            },
-            _ => bail!("Unknown id type key {}", val),
-        })
-    }
-
     pub fn write_to(&self, w: &mut io::Write) -> Result<()> {
         match self {
-            PubId::Crev { name, id } => {
+            PubId::Crev { url, id } => {
                 writeln!(w, "id: {}", base64::encode_config(id, base64::URL_SAFE))?;
-                writeln!(w, "name: {}", name)?;
+                writeln!(w, "url: {}", url)?;
             }
         }
         Ok(())
@@ -177,7 +157,7 @@ impl PubId {
 
     pub fn id_as_base64(&self) -> String {
         match self {
-            PubId::Crev { name, id } => base64::encode_config(id, base64::URL_SAFE),
+            PubId::Crev { url, id } => base64::encode_config(id, base64::URL_SAFE),
         }
     }
 
@@ -191,7 +171,7 @@ impl PubId {
 #[derive(Debug)]
 pub enum OwnId {
     Crev {
-        name: String,
+        url: String,
         keypair: ed25519_dalek::Keypair,
     },
 }
@@ -199,7 +179,7 @@ pub enum OwnId {
 impl OwnId {
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         match self {
-            OwnId::Crev { name, keypair } => {
+            OwnId::Crev { url, keypair } => {
                 keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec()
             }
         }
@@ -212,22 +192,22 @@ impl OwnId {
     }
     pub fn to_pubid(&self) -> PubId {
         match self {
-            OwnId::Crev { name, keypair } => PubId::Crev {
-                name: name.to_owned(),
+            OwnId::Crev { url, keypair } => PubId::Crev {
+                url: url.to_owned(),
                 id: keypair.public.as_bytes().to_vec(),
             },
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn url(&self) -> &str {
         match self {
-            OwnId::Crev { name, keypair } => name,
+            OwnId::Crev { url, keypair } => url,
         }
     }
 
     pub fn pub_key_as_bytes(&self) -> &[u8] {
         match self {
-            OwnId::Crev { name, keypair } => keypair.public.as_bytes(),
+            OwnId::Crev { url, keypair } => keypair.public.as_bytes(),
         }
     }
 
@@ -235,17 +215,17 @@ impl OwnId {
         base64::encode_config(&self.pub_key_as_bytes(), base64::URL_SAFE)
     }
 
-    pub fn generate(name: String) -> Self {
+    pub fn generate(url: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
         OwnId::Crev {
-            name,
+            url,
             keypair: ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng),
         }
     }
 
     pub fn to_locked(&self, passphrase: &str) -> Result<LockedId> {
         match self {
-            OwnId::Crev { name, keypair } => {
+            OwnId::Crev { url, keypair } => {
                 use miscreant::aead::Algorithm;
                 let mut hasher = Hasher::default();
 
@@ -271,7 +251,7 @@ impl OwnId {
                     pub_key: keypair.public.to_bytes().to_vec(),
                     sealed_sec_key: siv.seal(&seal_nonce, &[], keypair.secret.as_bytes()),
                     seal_nonce: seal_nonce,
-                    name: name.clone(),
+                    url: url.clone(),
                     pass: PassConfig {
                         salt: pwhash.raw_salt_bytes().to_vec(),
                         iterations: hasher_config.iterations(),

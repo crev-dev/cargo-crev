@@ -11,11 +11,11 @@ fn sign_proof_review() -> Result<()> {
 
     let review = review::ReviewBuilder::default()
         .from("abcdf".into())
-        .from_name("Me <me@me.com>".into())
         .from_type("crev".into())
+        .from_url("https://github.com/someone/crev-trust".into())
         .revision(Some("foobar".into()))
         .revision_type("git".into())
-        .project_urls(vec!["https://github.com/someone/somelib".into()])
+        .project_url("https://github.com/someone/somelib".into())
         .comment(Some("comment".into()))
         .thoroughness(Level::Low)
         .understanding(Level::Low)
