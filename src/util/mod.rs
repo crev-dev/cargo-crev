@@ -1,5 +1,6 @@
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
+use proof::Content;
 use rpassword;
 use rprompt;
 use std::{
@@ -12,9 +13,10 @@ use tempdir;
 use trust;
 use Result;
 use {id, repo, review, util};
-pub mod serde;
 
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
+
+pub mod serde;
 
 pub const APP_INFO: AppInfo = AppInfo {
     name: "crev",

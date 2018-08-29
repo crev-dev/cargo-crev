@@ -1,97 +1,82 @@
+//! Some common stuff for both Review and Trust Proofs
+
 use base64;
 use blake2::{self, Digest};
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use git2;
-use id::OwnId;
-use id::PubId;
+use id;
 use level::Level;
+use serde;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
-use std::{fmt, io::Write, mem, path::PathBuf};
+use std::{self, default, fmt, io::Write, marker, mem, path::PathBuf};
 use util::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
 
-const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
-const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";
-const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
+pub mod review;
+pub mod trust;
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
-pub struct Trust {
-    #[builder(default = "util::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    date: chrono::DateTime<FixedOffset>,
-    from: String,
-    #[serde(rename = "from-name")]
-    from_name: String,
-    #[serde(rename = "from-id-type")]
-    from_type: String,
-    from_urls: Vec<String>,
-    #[serde(rename = "trusted-ids")]
-    trusted_ids: Vec<String>,
-    #[serde(rename = "comment")]
-    comment: Option<String>,
-    trust: Level,
-}
+pub use review::*;
+pub use trust::*;
 
-impl fmt::Display for Trust {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
-        let mut lines = yaml_document.lines();
-        let dropped_header = lines.next();
-        assert_eq!(dropped_header, Some("---"));
+use Result;
 
-        for line in lines {
-            f.write_str(&line)?;
-            f.write_str("\n")?;
-        }
-        Ok(())
-    }
-}
+pub trait Content:
+    Sized + for<'a> serde::Deserialize<'a> + serde::Serialize + fmt::Display
+{
+    const BEGIN_BLOCK: &'static str;
+    const BEGIN_SIGNATURE: &'static str;
+    const END_BLOCK: &'static str;
 
-impl Trust {
-    pub fn sign(&self, id: &OwnId) -> Result<TrustProof> {
+    fn date(&self) -> chrono::DateTime<FixedOffset>;
+
+    fn sign(&self, id: &id::OwnId) -> Result<Proof<Self>> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
-        Ok(TrustProof {
+        Ok(Proof {
             body: body,
             signature: base64::encode(&signature),
+            phantom: marker::PhantomData,
         })
     }
 
-    pub fn parse(s: &str) -> Result<Self> {
+    fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct TrustProof {
+/// A `Review` that was signed by someone
+#[derive(Debug, Clone)]
+pub struct Proof<T> {
     pub body: String,
     pub signature: String,
+    phantom: marker::PhantomData<T>,
 }
 
-impl fmt::Display for TrustProof {
+impl<T: Content> fmt::Display for Proof<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(BEGIN_BLOCK)?;
+        f.write_str(T::BEGIN_BLOCK)?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;
-        f.write_str(SIGNATURE_BLOCK)?;
+        f.write_str(T::BEGIN_SIGNATURE)?;
         f.write_str("\n")?;
         f.write_str(&self.signature)?;
         f.write_str("\n")?;
-        f.write_str(END_BLOCK)?;
+        f.write_str(T::END_BLOCK)?;
         f.write_str("\n")?;
 
         Ok(())
     }
 }
 
-impl TrustProof {
+impl<T: Content> Proof<T> {
+    pub fn parse_review(&self) -> Result<T> {
+        <T as Content>::parse(&self.body)
+    }
+
     pub fn parse(input: &str) -> Result<Vec<Self>> {
         #[derive(PartialEq, Eq)]
         enum Stage {
@@ -106,29 +91,37 @@ impl TrustProof {
             }
         }
 
-        #[derive(Default)]
-        struct State {
+        struct State<T> {
             stage: Stage,
             body: String,
             signature: String,
-            proofs: Vec<TrustProof>,
+            proofs: Vec<Proof<T>>,
         }
 
-        impl State {
+        impl<T> default::Default for State<T> {
+            fn default() -> Self {
+                State {
+                    stage: Default::default(),
+                    body: Default::default(),
+                    signature: Default::default(),
+                    proofs: vec![],
+                }
+            }
+        }
+
+        impl<T: Content> State<T> {
             fn process_line(&mut self, line: &str) -> Result<()> {
                 match self.stage {
                     Stage::None => {
                         if line.trim().is_empty() {
-                        } else if line.trim() == BEGIN_BLOCK {
+                        } else if line.trim() == T::BEGIN_BLOCK {
                             self.stage = Stage::Body;
                         } else {
-                            bail!(
-                                "Parsing error when looking for start of code review trust proof"
-                            );
+                            bail!("Parsing error when looking for start of code review proof");
                         }
                     }
                     Stage::Body => {
-                        if line.trim() == SIGNATURE_BLOCK {
+                        if line.trim() == T::BEGIN_SIGNATURE {
                             self.stage = Stage::Signature;
                         } else {
                             self.body += line;
@@ -139,11 +132,12 @@ impl TrustProof {
                         }
                     }
                     Stage::Signature => {
-                        if line.trim() == END_BLOCK {
+                        if line.trim() == T::END_BLOCK {
                             self.stage = Stage::None;
-                            self.proofs.push(TrustProof {
+                            self.proofs.push(Proof {
                                 body: mem::replace(&mut self.body, String::new()),
                                 signature: mem::replace(&mut self.signature, String::new()),
+                                phantom: marker::PhantomData,
                             });
                         } else {
                             self.signature += line;
@@ -157,7 +151,7 @@ impl TrustProof {
                 Ok(())
             }
 
-            fn finish(self) -> Result<Vec<TrustProof>> {
+            fn finish(self) -> Result<Vec<Proof<T>>> {
                 if self.stage != Stage::None {
                     bail!("Unexpected EOF while parsing");
                 }
@@ -165,7 +159,7 @@ impl TrustProof {
             }
         }
 
-        let mut state: State = Default::default();
+        let mut state: State<T> = Default::default();
 
         for line in input.lines() {
             state.process_line(&line)?;
@@ -174,9 +168,3 @@ impl TrustProof {
         state.finish()
     }
 }
-
-/*
-struct TrustGraph {
-    ids: HashMap<usize, Pub
-}
-*/

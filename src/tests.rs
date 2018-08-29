@@ -1,6 +1,7 @@
 use super::*;
 use common_failures::prelude::*;
 use level::Level;
+use proof::Content;
 
 use std::path::PathBuf;
 

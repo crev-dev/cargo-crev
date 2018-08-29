@@ -5,16 +5,17 @@ use common_failures::prelude::*;
 use git2;
 use id::PubId;
 use level::Level;
+use proof;
 use serde_yaml;
 use std::collections::{hash_map::Entry, HashMap};
-use std::{fmt, io::Write, mem, path::PathBuf};
+use std::{fmt, io::Write, marker, mem, path::PathBuf};
 use util::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
-const SIGNATURE_BLOCK: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
+const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -82,18 +83,13 @@ pub struct Review {
 
 use id::OwnId;
 
-impl Review {
-    pub fn sign(&self, id: &OwnId) -> Result<ReviewProof> {
-        let body = self.to_string();
-        let signature = id.sign(&body.as_bytes());
-        Ok(ReviewProof {
-            body: body,
-            signature: base64::encode(&signature),
-        })
-    }
+impl proof::Content for Review {
+    const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
+    const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
+    const END_BLOCK: &'static str = END_BLOCK;
 
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+    fn date(&self) -> chrono::DateTime<FixedOffset> {
+        self.date
     }
 }
 
@@ -112,114 +108,7 @@ impl fmt::Display for Review {
     }
 }
 
-/// A `Review` that was signed by someone
-#[derive(Debug, Clone)]
-pub struct ReviewProof {
-    pub body: String,
-    pub signature: String,
-}
-
-impl fmt::Display for ReviewProof {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(BEGIN_BLOCK)?;
-        f.write_str("\n")?;
-        f.write_str(&self.body)?;
-        f.write_str(SIGNATURE_BLOCK)?;
-        f.write_str("\n")?;
-        f.write_str(&self.signature)?;
-        f.write_str("\n")?;
-        f.write_str(END_BLOCK)?;
-        f.write_str("\n")?;
-
-        Ok(())
-    }
-}
-
-impl ReviewProof {
-    pub fn parse_review(&self) -> Result<Review> {
-        Review::parse(&self.body)
-    }
-
-    pub fn parse(input: &str) -> Result<Vec<Self>> {
-        #[derive(PartialEq, Eq)]
-        enum Stage {
-            None,
-            Body,
-            Signature,
-        }
-
-        impl Default for Stage {
-            fn default() -> Self {
-                Stage::None
-            }
-        }
-
-        #[derive(Default)]
-        struct State {
-            stage: Stage,
-            body: String,
-            signature: String,
-            proofs: Vec<ReviewProof>,
-        }
-
-        impl State {
-            fn process_line(&mut self, line: &str) -> Result<()> {
-                match self.stage {
-                    Stage::None => {
-                        if line.trim().is_empty() {
-                        } else if line.trim() == BEGIN_BLOCK {
-                            self.stage = Stage::Body;
-                        } else {
-                            bail!("Parsing error when looking for start of code review proof");
-                        }
-                    }
-                    Stage::Body => {
-                        if line.trim() == SIGNATURE_BLOCK {
-                            self.stage = Stage::Signature;
-                        } else {
-                            self.body += line;
-                            self.body += "\n";
-                        }
-                        if self.body.len() > 16_000 {
-                            bail!("Parsed body too long");
-                        }
-                    }
-                    Stage::Signature => {
-                        if line.trim() == END_BLOCK {
-                            self.stage = Stage::None;
-                            self.proofs.push(ReviewProof {
-                                body: mem::replace(&mut self.body, String::new()),
-                                signature: mem::replace(&mut self.signature, String::new()),
-                            });
-                        } else {
-                            self.signature += line;
-                            self.signature += "\n";
-                        }
-                        if self.signature.len() > 2000 {
-                            bail!("Signature too long");
-                        }
-                    }
-                }
-                Ok(())
-            }
-
-            fn finish(self) -> Result<Vec<ReviewProof>> {
-                if self.stage != Stage::None {
-                    bail!("Unexpected EOF while parsing");
-                }
-                Ok(self.proofs)
-            }
-        }
-
-        let mut state: State = Default::default();
-
-        for line in input.lines() {
-            state.process_line(&line)?;
-        }
-
-        state.finish()
-    }
-}
+pub type ReviewProof = super::Proof<Review>;
 
 #[test]
 fn signed_parse() -> Result<()> {

@@ -2,6 +2,7 @@ use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
 use id;
 use id::{LockedId, OwnId};
 use level;
+use proof::Content;
 use review::ReviewProof;
 use serde_yaml;
 use std::{collections::HashSet, path::PathBuf};

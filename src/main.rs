@@ -40,12 +40,17 @@ use structopt::StructOpt;
 mod id;
 mod level;
 mod opts;
-mod review;
-mod trust;
+pub mod review {
+    pub use super::proof::review::*;
+}
+pub mod trust {
+    pub use super::proof::trust::*;
+}
 mod util;
 use opts::*;
 mod local;
 use local::*;
+mod proof;
 mod repo;
 
 fn show_id() -> Result<()> {

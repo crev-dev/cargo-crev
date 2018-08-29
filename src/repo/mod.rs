@@ -1,6 +1,7 @@
 use chrono;
 use id;
 use local::Local;
+use proof::Content;
 use std::{
     fs,
     io::Write,
