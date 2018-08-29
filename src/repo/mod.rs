@@ -133,7 +133,10 @@ impl Repo {
 
         println!("{}", proof.clone());
         self.append_proof_at(proof.clone(), &rel_store_path)?;
-        eprintln!("Proof written to: {}", rel_store_path.display());
+        eprintln!(
+            "Proof written to: {}",
+            PathBuf::from(".crev").join(rel_store_path).display()
+        );
         let local = Local::auto_open()?;
         local.append_proof(&proof, &review);
         eprintln!("Proof added to your store");
