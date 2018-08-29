@@ -48,7 +48,7 @@ pub trait Content:
     }
 }
 
-/// A `Review` that was signed by someone
+/// A signed proof containing some signed `Content`
 #[derive(Debug, Clone)]
 pub struct Proof<T> {
     pub body: String,
@@ -73,7 +73,7 @@ impl<T: Content> fmt::Display for Proof<T> {
 }
 
 impl<T: Content> Proof<T> {
-    pub fn parse_review(&self) -> Result<T> {
+    pub fn parse_content(&self) -> Result<T> {
         <T as Content>::parse(&self.body)
     }
 
