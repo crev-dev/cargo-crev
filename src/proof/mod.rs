@@ -9,8 +9,14 @@ use id;
 use level::Level;
 use serde;
 use serde_yaml;
-use std::collections::{hash_map::Entry, HashMap};
-use std::{self, default, fmt, io::Write, marker, mem, path::PathBuf};
+use std::{
+    self,
+    collections::{hash_map::Entry, HashMap},
+    default, fmt,
+    io::Write,
+    marker, mem,
+    path::PathBuf,
+};
 use util::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
@@ -37,7 +43,7 @@ pub trait Content:
     fn from_pubid(&self) -> String;
     fn from_name(&self) -> String;
 
-    fn store_path(&self) -> PathBuf {
+    fn rel_store_path(&self) -> PathBuf {
         PathBuf::from(self.from_pubid())
             .join(Self::CONTENT_TYPE_NAME)
             .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
@@ -49,7 +55,7 @@ pub trait Content:
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
             body: body,
-            signature: base64::encode(&signature),
+            signature: base64::encode_config(&signature, base64::URL_SAFE),
             phantom: marker::PhantomData,
         })
     }

@@ -1,6 +1,6 @@
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
-use proof::Content;
+use proof::{self, Content};
 use rpassword;
 use rprompt;
 use std::{
@@ -118,34 +118,18 @@ fn yes_or_no_was_y() -> Result<bool> {
     }
 }
 
-pub fn edit_review_iteractively(review: review::Review) -> Result<review::Review> {
-    let mut text = review.to_string();
+pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result<T> {
+    let mut text = content.to_string();
     loop {
         text = edit_text_iteractively(text)?;
-        match review::Review::parse(&text) {
+        match T::parse(&text) {
             Err(e) => {
-                eprintln!("There was an error parsing review: {}", e);
+                eprintln!("There was an error parsing content: {}", e);
                 if !yes_or_no_was_y()? {
                     bail!("User canceled");
                 }
             }
-            Ok(review) => return Ok(review),
-        }
-    }
-}
-
-pub fn edit_trust_iteractively(trust: trust::Trust) -> Result<trust::Trust> {
-    let mut text = trust.to_string();
-    loop {
-        text = edit_text_iteractively(text)?;
-        match trust::Trust::parse(&text) {
-            Err(e) => {
-                eprintln!("There was an error parsing trust: {}", e);
-                if !yes_or_no_was_y()? {
-                    bail!("User canceled");
-                }
-            }
-            Ok(trust) => return Ok(trust),
+            Ok(content) => return Ok(content),
         }
     }
 }

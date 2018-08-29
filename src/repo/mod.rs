@@ -1,7 +1,9 @@
 use chrono;
 use id;
+use level;
 use local::Local;
-use proof::Content;
+use proof::{self, Content};
+use review;
 use std::{
     fs,
     io::Write,
@@ -10,14 +12,13 @@ use std::{
 use trust;
 use util;
 use Result;
-use {level, review};
 
 pub mod staging;
 
 const CREV_DOT_NAME: &str = ".crev";
 
 #[derive(Fail, Debug)]
-#[fail(display = "`.crew` project dir not found")]
+#[fail(display = "`.crew` project dir not found. Use `crev init`?")]
 struct ProjectDirNotFound;
 
 fn find_project_root_dir() -> Result<PathBuf> {
@@ -75,27 +76,28 @@ impl Repo {
         Ok(self.staging.as_mut().unwrap())
     }
 
-    fn get_proofs_file(&self) -> PathBuf {
-        let year_month = chrono::Utc::now().format("%Y-%m").to_string();
+    fn append_proof_at<T: proof::Content>(
+        &mut self,
+        proof: proof::Proof<T>,
+        rel_store_path: &Path,
+    ) -> Result<()> {
+        let path = self.dot_crev_path().join(rel_store_path);
 
-        self.dot_crev_path()
-            .join("proofs")
-            .join(year_month)
-            .with_extension("crev")
-    }
-
-    fn write_out_proof_to(&mut self, proof: review::ReviewProof, file_path: &Path) -> Result<()> {
-        fs::create_dir_all(file_path.parent().expect("Not a root dir"))?;
+        fs::create_dir_all(path.parent().expect("Not a root dir"))?;
         let mut file = fs::OpenOptions::new()
             .append(true)
             .create(true)
             .write(true)
-            .open(file_path)?;
+            .open(path)?;
 
         file.write_all(proof.to_string().as_bytes())?;
         file.flush()?;
 
         Ok(())
+    }
+
+    pub fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
+        PathBuf::from("proof").join(content.rel_store_path())
     }
 
     pub fn commit(&mut self) -> Result<()> {
@@ -123,17 +125,18 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let redacted = util::edit_review_iteractively(review)?;
+        let review = util::edit_proof_content_iteractively(&review)?;
 
-        let proof = redacted.sign(&id)?;
+        let proof = review.sign(&id)?;
+
+        let rel_store_path = self.get_proof_rel_store_path(&review);
 
         println!("{}", proof.clone());
-        let file_path = self.get_proofs_file();
-        self.write_out_proof_to(proof.clone(), &file_path)?;
-        eprintln!("Review Proof written to: {}", file_path.display());
+        self.append_proof_at(proof.clone(), &rel_store_path)?;
+        eprintln!("Proof written to: {}", rel_store_path.display());
         let local = Local::auto_open()?;
-        local.add_review_proof_from(&pub_id, proof.clone());
-        eprintln!("Review Proof added to your trust store");
+        local.append_proof(&proof, &review);
+        eprintln!("Proof added to your store");
         self.staging()?.wipe()?;
         Ok(())
     }

@@ -1,14 +1,17 @@
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
-use id;
-use id::{LockedId, OwnId};
+use id::{self, LockedId, OwnId};
 use level;
-use proof::Content;
+use proof::{self, Content};
 use review::ReviewProof;
 use serde_yaml;
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use trust::{self, TrustProof};
-use util;
-use util::APP_INFO;
+use util::{self, APP_INFO};
 use Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -85,6 +88,7 @@ impl Local {
         id.save_to(&self.id_path())
     }
 
+    /*
     fn trust_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("trust")
     }
@@ -126,34 +130,6 @@ impl Local {
         })
     }
 
-    pub fn trust_ids(&self, pub_ids: Vec<String>) -> Result<()> {
-        if pub_ids.is_empty() {
-            bail!("No ids to trust. Use `add` first.");
-        }
-        let passphrase = util::read_passphrase()?;
-        let id = self.read_unlocked_id(&passphrase)?;
-        let pub_id = id.to_pubid();
-
-        let trust = trust::TrustBuilder::default()
-            .from(id.pub_key_as_base64())
-            .from_name(id.name().into())
-            .from_type(id.type_as_string())
-            .from_urls(vec!["TODO".into()])
-            .comment(Some("".into()))
-            .trust(level::Level::Medium)
-            .trusted_ids(pub_ids)
-            .build()
-            .map_err(|e| format_err!("{}", e))?;
-
-        let redacted = util::edit_trust_iteractively(trust)?;
-
-        let proof = redacted.sign(&id)?;
-
-        self.add_trust_proof_from(&pub_id, proof.clone())?;
-        println!("{}", proof);
-        eprintln!("Trust Proof added to your trust store");
-        Ok(())
-    }
 
     pub fn load_all_review_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<ReviewProof>> {
         let path = &self.review_proof_dir_path_for_id(pub_id);
@@ -190,6 +166,72 @@ impl Local {
         let mut proofs = self.load_all_review_proof_from(pub_id)?;
         proofs.push(proof);
         self.store_all_review_proof_from(pub_id, &proofs)?;
+
+        Ok(())
+    }
+
+    */
+
+    fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
+        PathBuf::from("proof").join(content.rel_store_path())
+    }
+
+    pub fn trust_ids(&self, pub_ids: Vec<String>) -> Result<()> {
+        if pub_ids.is_empty() {
+            bail!("No ids to trust. Use `add` first.");
+        }
+        let passphrase = util::read_passphrase()?;
+        let id = self.read_unlocked_id(&passphrase)?;
+        let pub_id = id.to_pubid();
+
+        let trust = trust::TrustBuilder::default()
+            .from(id.pub_key_as_base64())
+            .from_name(id.name().into())
+            .from_type(id.type_as_string())
+            .from_urls(vec!["TODO".into()])
+            .comment(Some("".into()))
+            .trust(level::Level::Medium)
+            .trusted_ids(pub_ids)
+            .build()
+            .map_err(|e| format_err!("{}", e))?;
+
+        let trust = util::edit_proof_content_iteractively(&trust)?;
+
+        let rel_store_path = self.get_proof_rel_store_path(&trust);
+
+        let proof = trust.sign(&id)?;
+
+        self.append_proof_at(&proof, &rel_store_path)?;
+        println!("{}", proof);
+        eprintln!("Proof added to your store");
+        Ok(())
+    }
+
+    pub fn append_proof<T: proof::Content>(
+        &self,
+        proof: &proof::Proof<T>,
+        content: &T,
+    ) -> Result<()> {
+        let rel_store_path = self.get_proof_rel_store_path(content);
+        self.append_proof_at(&proof, &rel_store_path)
+    }
+
+    fn append_proof_at<T: proof::Content>(
+        &self,
+        proof: &proof::Proof<T>,
+        rel_store_path: &Path,
+    ) -> Result<()> {
+        let path = self.user_dir_path().join(rel_store_path);
+
+        fs::create_dir_all(path.parent().expect("Not a root dir"))?;
+        let mut file = fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .write(true)
+            .open(path)?;
+
+        file.write_all(proof.to_string().as_bytes())?;
+        file.flush()?;
 
         Ok(())
     }

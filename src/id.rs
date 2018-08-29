@@ -1,16 +1,10 @@
-use argonautica;
-use argonautica::Hasher;
+use argonautica::{self, Hasher};
 use base64;
 use blake2;
 use common_failures::prelude::*;
-use ed25519_dalek;
-use ed25519_dalek::PublicKey;
-use ed25519_dalek::SecretKey;
-use ed25519_dalek::Signature;
+use ed25519_dalek::{self, PublicKey, SecretKey, Signature};
 use miscreant;
-use rand;
-use rand::OsRng;
-use rand::Rng;
+use rand::{self, OsRng, Rng};
 use serde_yaml;
 use std::{
     self, fs,
@@ -165,7 +159,7 @@ impl PubId {
         Ok(match key {
             "crev" => PubId::Crev {
                 name,
-                id: base64::decode(val)?,
+                id: base64::decode_config(val, base64::URL_SAFE)?,
             },
             _ => bail!("Unknown id type key {}", val),
         })
@@ -174,7 +168,7 @@ impl PubId {
     pub fn write_to(&self, w: &mut io::Write) -> Result<()> {
         match self {
             PubId::Crev { name, id } => {
-                writeln!(w, "id: {}", base64::encode(id))?;
+                writeln!(w, "id: {}", base64::encode_config(id, base64::URL_SAFE))?;
                 writeln!(w, "name: {}", name)?;
             }
         }
@@ -183,7 +177,7 @@ impl PubId {
 
     pub fn id_as_base64(&self) -> String {
         match self {
-            PubId::Crev { name, id } => base64::encode(id),
+            PubId::Crev { name, id } => base64::encode_config(id, base64::URL_SAFE),
         }
     }
 
@@ -238,7 +232,7 @@ impl OwnId {
     }
 
     pub fn pub_key_as_base64(&self) -> String {
-        base64::encode(&self.pub_key_as_bytes())
+        base64::encode_config(&self.pub_key_as_bytes(), base64::URL_SAFE)
     }
 
     pub fn generate(name: String) -> Self {

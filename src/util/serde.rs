@@ -1,11 +1,9 @@
-use chrono;
-use chrono::offset::FixedOffset;
-use chrono::prelude::*;
+use base64;
+use chrono::{self, offset::FixedOffset, prelude::*};
 use ed25519_dalek;
 use hex::{self, FromHex, FromHexError};
-use serde::Deserialize;
+use serde::{self, Deserialize};
 use std::io;
-use {base64, serde};
 
 pub trait MyTryFromBytes: Sized {
     type Err: 'static + Sized + ::std::error::Error;
@@ -66,8 +64,10 @@ where
 {
     use serde::de::Error;
     String::deserialize(deserializer)
-        .and_then(|string| base64::decode(&string).map_err(|err| Error::custom(err.to_string())))
-        .and_then(|ref bytes| {
+        .and_then(|string| {
+            base64::decode_config(&string, base64::URL_SAFE)
+                .map_err(|err| Error::custom(err.to_string()))
+        }).and_then(|ref bytes| {
             T::try_from(bytes)
                 .map_err(|err| Error::custom(format!("{}", &err as &::std::error::Error)))
         })
@@ -78,7 +78,7 @@ where
     T: AsRef<[u8]>,
     S: serde::Serializer,
 {
-    serializer.serialize_str(&base64::encode(key.as_ref()))
+    serializer.serialize_str(&base64::encode_config(key.as_ref(), base64::URL_SAFE))
 }
 
 pub fn from_hex<'d, T, D>(deserializer: D) -> Result<T, D::Error>
