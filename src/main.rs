@@ -74,7 +74,7 @@ fn gen_id() -> Result<()> {
 }
 
 main!(|opts: opts::Opts| match opts.command {
-    Some(opts::Command::Id(id)) => match id.id_command {
+    opts::Command::Id(id) => match id.id_command {
         opts::IdCommand::Show => show_id()?,
         opts::IdCommand::Gen => gen_id()?,
         opts::IdCommand::Url(opts::UrlCommand::Add(add)) => {
@@ -82,30 +82,31 @@ main!(|opts: opts::Opts| match opts.command {
             local.add_id_urls(add.urls)?;
         }
     },
-    Some(opts::Command::Trust(trust)) => {
-        let local = Local::auto_open()?;
-        local.trust_ids(trust.pub_ids)?;
-    }
-    Some(opts::Command::Add(add)) => {
+    opts::Command::Trust(trust) => match trust {
+        opts::Trust::Add(trust) => {
+            let local = Local::auto_open()?;
+            local.trust_ids(trust.pub_ids)?;
+        }
+    },
+    opts::Command::Add(add) => {
         let mut repo = repo::Repo::auto_open()?;
         repo.add(add.paths)?;
     }
-    Some(opts::Command::Commit) => {
+    opts::Command::Commit => {
         let mut repo = repo::Repo::auto_open()?;
         repo.commit()?;
     }
-    Some(opts::Command::Init) => {
+    opts::Command::Init => {
         repo::Repo::init(PathBuf::from(".".to_string()))?;
     }
-    Some(opts::Command::Status) => {
+    opts::Command::Status => {
         let mut repo = repo::Repo::auto_open()?;
         repo.status()?;
     }
-    Some(opts::Command::Remove(remove)) => {
+    opts::Command::Remove(remove) => {
         let mut repo = repo::Repo::auto_open()?;
         repo.remove(remove.paths)?;
     }
-    None => {}
 });
 
 #[cfg(test)]

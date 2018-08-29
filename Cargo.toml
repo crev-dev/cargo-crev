@@ -8,7 +8,7 @@ license = "MPL-2.0"
 name = "crev"
 readme = "README.md"
 repository = "https://github.com/dpc/crev"
-version = "0.1.0"
+version = "0.0.1"
 [dependencies]
 app_dirs = "*"
 base64 = "0.9.0"
