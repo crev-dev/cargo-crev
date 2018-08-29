@@ -15,20 +15,6 @@ pub enum IdCommand {
     #[structopt(name = "show")]
     /// Show CrevID information
     Show,
-    #[structopt(name = "url")]
-    /// Manage URLs associated with the id
-    Url(UrlCommand),
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct UrlAdd {
-    pub urls: Vec<String>,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub enum UrlCommand {
-    #[structopt(name = "add")]
-    Add(UrlAdd),
 }
 
 #[derive(Debug, StructOpt, Clone)]

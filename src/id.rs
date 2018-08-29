@@ -38,7 +38,7 @@ pub struct LockedId {
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
     )]
-    pub_key: Vec<u8>,
+    pub pub_key: Vec<u8>,
     #[serde(
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
@@ -59,6 +59,10 @@ impl LockedId {
             url: self.url.to_owned(),
             id: self.pub_key.to_owned(),
         }
+    }
+
+    pub fn pub_key_as_base64(&self) -> String {
+        base64::encode_config(&self.pub_key, base64::URL_SAFE)
     }
 
     pub fn to_string(&self) -> Result<String> {

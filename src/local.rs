@@ -1,4 +1,5 @@
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
+use base64;
 use id::{self, LockedId, OwnId};
 use level;
 use proof::{self, Content};
@@ -16,8 +17,8 @@ use Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
-    #[serde(rename = "id-urls")]
-    pub id_urls: HashSet<String>,
+    #[serde(rename = "current-id")]
+    current_id: String,
 }
 
 /// Local config stored in `~/.config/crev`
@@ -27,17 +28,40 @@ pub struct Local {
 
 impl Local {
     pub fn auto_open() -> Result<Self> {
-        Ok(Self {
-            root_path: app_root(AppDataType::UserConfig, &APP_INFO)?,
-        })
+        let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
+        if !root_path.exists() {
+            bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
+        }
+        let res = Self { root_path };
+
+        if !res.user_config_path().exists() {
+            bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
+        }
+
+        Ok(res)
+    }
+
+    pub fn auto_create() -> Result<Self> {
+        let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
+        fs::create_dir_all(&root_path)?;
+        Ok(Self { root_path })
+    }
+    pub fn save_current_id(&self, id: &id::OwnId) -> Result<()> {
+        let mut config = self.load_user_config()?;
+        config.current_id = id.pub_key_as_base64();
+        self.store_user_config(&config)?;
+
+        Ok(())
     }
 
     pub fn user_dir_path(&self) -> PathBuf {
         self.root_path.clone()
     }
 
-    fn id_path(&self) -> PathBuf {
-        self.user_dir_path().join("id.yaml")
+    fn id_path(&self, id_str: &str) -> PathBuf {
+        self.user_dir_path()
+            .join("ids")
+            .join(format!("{}.yaml", id_str))
     }
 
     fn user_config_path(&self) -> PathBuf {
@@ -63,18 +87,9 @@ impl Local {
         util::store_str_to_file(&path, &config_str)
     }
 
-    pub fn add_id_urls(&self, urls: Vec<String>) -> Result<()> {
-        let mut config = self.load_user_config()?;
-
-        for url in urls {
-            config.id_urls.insert(url);
-        }
-
-        self.store_user_config(&config)
-    }
-
     pub fn read_locked_id(&self) -> Result<LockedId> {
-        let path = self.id_path();
+        let mut config = self.load_user_config()?;
+        let path = self.id_path(&config.current_id);
         LockedId::read_from_yaml_file(&path)
     }
 
@@ -84,8 +99,10 @@ impl Local {
         locked.to_unlocked(passphrase)
     }
 
-    pub fn save_locked_id(&self, id: &LockedId) -> Result<()> {
-        id.save_to(&self.id_path())
+    pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
+        let path = self.id_path(&id.pub_key_as_base64());
+        fs::create_dir_all(&path.parent().expect("Not /"));
+        id.save_to(&path)
     }
 
     /*

@@ -71,7 +71,7 @@ fn gen_id() -> Result<()> {
         url = rprompt::prompt_reply_stdout("Git URL: ")?;
         eprintln!("");
         eprintln!("You've entered: {}", url);
-        if util::yes_or_no_was_y("Is this correct? (y/n)")? {
+        if util::yes_or_no_was_y("Is this correct? (y/n) ")? {
             break;
         }
     }
@@ -82,8 +82,10 @@ fn gen_id() -> Result<()> {
     let passphrase = util::read_new_passphrase()?;
     let locked = id.to_locked(&passphrase)?;
 
-    let local = Local::auto_open()?;
+    let local = Local::auto_create()?;
     local.save_locked_id(&locked)?;
+    local.save_current_id(&id)?;
+
     eprintln!("Your CrevID was created and will be printed blow in encrypted form.");
     eprintln!("Make sure to back it up on another device, to prevent loosing it.");
 
@@ -95,10 +97,6 @@ main!(|opts: opts::Opts| match opts.command {
     opts::Command::Id(id) => match id.id_command {
         opts::IdCommand::Show => show_id()?,
         opts::IdCommand::Gen => gen_id()?,
-        opts::IdCommand::Url(opts::UrlCommand::Add(add)) => {
-            let local = Local::auto_open()?;
-            local.add_id_urls(add.urls)?;
-        }
     },
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {
