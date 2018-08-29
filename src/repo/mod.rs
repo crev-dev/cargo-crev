@@ -97,7 +97,7 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
-        PathBuf::from("proof").join(content.rel_store_path())
+        PathBuf::from("proofs").join(content.rel_store_path())
     }
 
     pub fn commit(&mut self) -> Result<()> {

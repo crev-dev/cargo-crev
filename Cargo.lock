@@ -306,7 +306,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "crev"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "argonautica 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
