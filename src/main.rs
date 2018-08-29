@@ -62,14 +62,32 @@ fn show_id() -> Result<()> {
 }
 
 fn gen_id() -> Result<()> {
-    let name = rprompt::prompt_reply_stdout("Name: ")?;
-    let id = id::OwnId::generate(name);
+    eprintln!("Crev relies on personal, publicly accessible repositories to circulate proofs.");
+    eprintln!("Enter public git address you're planing to use for your CrevID.");
+    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
+    eprintln!("Changing it later will require manual config file editing.");
+    let mut url = String::new();
+    loop {
+        url = rprompt::prompt_reply_stdout("Git URL: ")?;
+        eprintln!("");
+        eprintln!("You've entered: {}", url);
+        if util::yes_or_no_was_y("Is this correct? (y/n)")? {
+            break;
+        }
+    }
+
+    let id = id::OwnId::generate(url);
+    eprintln!("Your CrevID will be protected by a passphrase.");
+    eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = util::read_new_passphrase()?;
     let locked = id.to_locked(&passphrase)?;
 
     let local = Local::auto_open()?;
     local.save_locked_id(&locked)?;
+    eprintln!("Your CrevID was created and will be printed blow in encrypted form.");
+    eprintln!("Make sure to back it up on another device, to prevent loosing it.");
 
+    println!("{}", locked.to_string()?);
     Ok(())
 }
 

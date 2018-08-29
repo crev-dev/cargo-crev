@@ -1,18 +1,21 @@
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
+use id;
 use proof::{self, Content};
+use repo;
+use review;
 use rpassword;
 use rprompt;
 use std::{
-    env, ffi, fs, io,
-    io::{Read, Write},
+    env, ffi, fs,
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     process,
 };
 use tempdir;
 use trust;
+use util;
 use Result;
-use {id, repo, review, util};
 
 use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
 
@@ -106,9 +109,9 @@ fn edit_text_iteractively(text: String) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
-fn yes_or_no_was_y() -> Result<bool> {
+pub fn yes_or_no_was_y(msg: &str) -> Result<bool> {
     loop {
-        let reply = rprompt::prompt_reply_stderr("Try again (y/n)")?;
+        let reply = rprompt::prompt_reply_stderr(msg)?;
 
         match reply.as_str() {
             "y" | "Y" => return Ok(true),
@@ -125,7 +128,7 @@ pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result
         match T::parse(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
-                if !yes_or_no_was_y()? {
+                if !yes_or_no_was_y("Try again (y/n)")? {
                     bail!("User canceled");
                 }
             }

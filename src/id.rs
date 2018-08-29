@@ -61,12 +61,16 @@ impl LockedId {
         }
     }
 
+    pub fn to_string(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(&self)?)
+    }
+
     pub fn save_to(&self, path: &Path) -> Result<()> {
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(path)?;
-        let id = serde_yaml::to_string(&self)?;
+        let id = self.to_string()?;
         write!(file, "{}", id)?;
 
         Ok(())
