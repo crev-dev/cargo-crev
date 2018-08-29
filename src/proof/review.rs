@@ -87,9 +87,16 @@ impl proof::Content for Review {
     const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
+    const CONTENT_TYPE_NAME: &'static str = "review";
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
+    }
+    fn from_pubid(&self) -> String {
+        self.from.clone()
+    }
+    fn from_name(&self) -> String {
+        self.from_name.clone()
     }
 }
 

@@ -31,7 +31,18 @@ pub trait Content:
     const BEGIN_SIGNATURE: &'static str;
     const END_BLOCK: &'static str;
 
+    const CONTENT_TYPE_NAME: &'static str;
+
     fn date(&self) -> chrono::DateTime<FixedOffset>;
+    fn from_pubid(&self) -> String;
+    fn from_name(&self) -> String;
+
+    fn store_path(&self) -> PathBuf {
+        PathBuf::from(self.from_pubid())
+            .join(Self::CONTENT_TYPE_NAME)
+            .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
+            .with_extension("crev")
+    }
 
     fn sign(&self, id: &id::OwnId) -> Result<Proof<Self>> {
         let body = self.to_string();
