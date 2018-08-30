@@ -45,6 +45,17 @@ pub enum Trust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Verify {
+    depth: u64,
+    #[structopt(long = "high-cost")]
+    high_cost: u64,
+    #[structopt(long = "medium-cost")]
+    medium_cost: u64,
+    #[structopt(long = "low-cost")]
+    low_cost: u64,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
     /// CrevID management
@@ -64,6 +75,8 @@ pub enum Command {
     #[structopt(name = "rm")]
     /// Remove path from reviewed list
     Remove(Remove),
+    /// Verify review coverage of the project
+    Verify(Verify),
     #[structopt(name = "trust")]
     /// Trust Store management
     Trust(Trust),

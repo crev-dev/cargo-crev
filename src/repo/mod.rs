@@ -10,6 +10,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use trust;
+use trust_graph;
 use util;
 use Result;
 
@@ -98,6 +99,20 @@ impl Repo {
 
     pub fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
         PathBuf::from("proofs").join(content.rel_store_path())
+    }
+
+    pub fn verify(&mut self) -> Result<()> {
+        let local = Local::auto_open()?;
+        let user_config = local.load_user_config()?;
+        let cur_id = user_config.current_id;
+        let graph = trust_graph::TrustGraph; /* TODO: calculate trust graph */
+        /*
+        let user_config = Local::read_unlocked_id
+        let trust_graph = Local::calculate_trust_graph_for(&id);
+        */
+
+        unimplemented!();
+        Ok(())
     }
 
     pub fn commit(&mut self) -> Result<()> {

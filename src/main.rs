@@ -52,6 +52,7 @@ mod local;
 use local::*;
 mod proof;
 mod repo;
+mod trust_graph;
 
 fn show_id() -> Result<()> {
     let local = Local::auto_open()?;
@@ -122,6 +123,10 @@ main!(|opts: opts::Opts| match opts.command {
     opts::Command::Remove(remove) => {
         let mut repo = repo::Repo::auto_open()?;
         repo.remove(remove.paths)?;
+    }
+    opts::Command::Verify(verify_opts) => {
+        let mut repo = repo::Repo::auto_open()?;
+        repo.verify();
     }
 });
 

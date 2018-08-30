@@ -18,7 +18,7 @@ use Result;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
     #[serde(rename = "current-id")]
-    current_id: String,
+    pub current_id: String,
 }
 
 /// Local config stored in `~/.config/crev`
@@ -46,6 +46,7 @@ impl Local {
         fs::create_dir_all(&root_path)?;
         Ok(Self { root_path })
     }
+
     pub fn save_current_id(&self, id: &id::OwnId) -> Result<()> {
         let mut config = self.load_user_config()?;
         config.current_id = id.pub_key_as_base64();
