@@ -1,9 +1,11 @@
+use base64;
 use chrono;
 use id;
 use level;
 use local::Local;
 use proof::{self, Content};
 use review;
+use serde_yaml;
 use std::{
     fs,
     io::Write,
@@ -16,10 +18,19 @@ use Result;
 
 pub mod staging;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ProjectConfig {
+    pub version: u64,
+    #[serde(rename = "project-id")]
+    pub project_id: String,
+    #[serde(rename = "project-trust-root")]
+    pub project_trust_root: String,
+}
+
 const CREV_DOT_NAME: &str = ".crev";
 
 #[derive(Fail, Debug)]
-#[fail(display = "`.crew` project dir not found. Use `crev init`?")]
+#[fail(display = "Project config not-initialized. Use `crev init` to generate it.")]
 struct ProjectDirNotFound;
 
 fn find_project_root_dir() -> Result<PathBuf> {
@@ -48,22 +59,52 @@ pub struct Repo {
 }
 
 impl Repo {
-    pub fn init(path: PathBuf) -> Result<Self> {
-        fs::create_dir_all(CREV_DOT_NAME)?;
-        Self::open(path)
+    pub fn init(path: PathBuf, id_str: String) -> Result<Self> {
+        let repo = Self::new(path)?;
+
+        fs::create_dir_all(repo.dot_crev_path())?;
+
+        let config_path = repo.project_config_path();
+        if config_path.exists() {
+            bail!("`{}` already exists", config_path.display());
+        }
+        util::store_to_file_with(&config_path, move |w| {
+            serde_yaml::to_writer(
+                w,
+                &ProjectConfig {
+                    version: 0,
+                    project_id: util::random_id_str(),
+                    project_trust_root: id_str.clone(),
+                },
+            )?;
+
+            Ok(())
+        })?;
+
+        Ok(repo)
     }
 
     pub fn auto_open() -> Result<Self> {
-        let root_dir = find_project_root_dir()?;
-        Self::open(root_dir)
+        let root_path = find_project_root_dir()?;
+        let res = Self::new(root_path)?;
+
+        if !res.project_config_path().exists() {
+            bail!("Project config not-initialized. Use `crev init` to generate it.");
+        }
+
+        Ok(res)
     }
 
-    pub fn open(root_dir: PathBuf) -> Result<Self> {
+    pub fn new(root_dir: PathBuf) -> Result<Self> {
         let root_dir = root_dir.canonicalize()?;
         Ok(Self {
             root_dir,
             staging: None,
         })
+    }
+
+    fn project_config_path(&self) -> PathBuf {
+        self.dot_crev_path().join("config.yaml")
     }
 
     pub fn dot_crev_path(&self) -> PathBuf {

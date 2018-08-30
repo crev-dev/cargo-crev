@@ -114,7 +114,9 @@ main!(|opts: opts::Opts| match opts.command {
         repo.commit()?;
     }
     opts::Command::Init => {
-        repo::Repo::init(PathBuf::from(".".to_string()))?;
+        let local = Local::auto_open()?;
+        let cur_id = local.read_current_id()?;
+        repo::Repo::init(PathBuf::from(".".to_string()), cur_id)?;
     }
     opts::Command::Status => {
         let mut repo = repo::Repo::auto_open()?;

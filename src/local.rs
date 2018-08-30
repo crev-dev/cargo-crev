@@ -17,6 +17,7 @@ use Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
+    pub version: u64,
     #[serde(rename = "current-id")]
     pub current_id: String,
 }
@@ -45,6 +46,10 @@ impl Local {
         let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
         fs::create_dir_all(&root_path)?;
         Ok(Self { root_path })
+    }
+
+    pub fn read_current_id(&self) -> Result<String> {
+        Ok(self.load_user_config()?.current_id)
     }
 
     pub fn save_current_id(&self, id: &id::OwnId) -> Result<()> {

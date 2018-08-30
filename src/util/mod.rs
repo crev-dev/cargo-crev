@@ -1,7 +1,9 @@
+use base64;
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
 use id;
 use proof::{self, Content};
+use rand::{self, OsRng, Rng};
 use repo;
 use review;
 use rpassword;
@@ -140,4 +142,12 @@ pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result
 pub fn now() -> DateTime<FixedOffset> {
     let date = chrono::offset::Local::now();
     date.with_timezone(&date.offset())
+}
+
+pub fn random_id_str() -> String {
+    let project_id: Vec<u8> = rand::thread_rng()
+        .sample_iter(&rand::distributions::Standard)
+        .take(32)
+        .collect();
+    base64::encode_config(&project_id, base64::URL_SAFE)
 }
