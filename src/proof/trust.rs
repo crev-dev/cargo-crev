@@ -70,9 +70,13 @@ impl super::Content for Trust {
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
     const CONTENT_TYPE_NAME: &'static str = "trust";
+    const PROOF_EXTENSIONS: &'static str = "trust.crev";
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
+    }
+    fn project_id(&self) -> Option<&str> {
+        None
     }
     fn from_pubid(&self) -> String {
         self.from.clone()

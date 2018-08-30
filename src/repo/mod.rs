@@ -107,6 +107,14 @@ impl Repo {
         self.dot_crev_path().join("config.yaml")
     }
 
+    fn load_project_config(&self) -> Result<ProjectConfig> {
+        let path = self.project_config_path();
+
+        let config_str = util::read_file_to_string(&path)?;
+
+        Ok(serde_yaml::from_str(&config_str)?)
+    }
+
     pub fn dot_crev_path(&self) -> PathBuf {
         self.root_dir.join(CREV_DOT_NAME)
     }
@@ -139,7 +147,7 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
-        PathBuf::from("proofs").join(content.rel_store_path())
+        PathBuf::from("proofs").join(content.rel_project_path())
     }
 
     pub fn verify(&mut self) -> Result<()> {
@@ -165,6 +173,7 @@ impl Repo {
         let id = local.read_unlocked_id(&passphrase)?;
         let pub_id = id.to_pubid();
         let files = self.staging()?.to_review_files();
+        let project_config = self.load_project_config()?;
 
         let review = review::ReviewBuilder::default()
             .from(id.pub_key_as_base64())
@@ -172,7 +181,7 @@ impl Repo {
             .from_type(id.type_as_string())
             .revision(Some("TODO".into()))
             .revision_type("git".into())
-            .project_url("TODO".into())
+            .project_id(project_config.project_id)
             .comment(Some("".into()))
             .thoroughness(level::Level::Low)
             .understanding(level::Level::Low)

@@ -130,7 +130,7 @@ pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result
         match T::parse(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
-                if !yes_or_no_was_y("Try again (y/n)")? {
+                if !yes_or_no_was_y("Try again (y/n) ")? {
                     bail!("User canceled");
                 }
             }

@@ -57,7 +57,8 @@ pub struct Review {
         default = "proof::default_crev_value"
     )]
     from_type: String,
-    project_url: String,
+    #[serde(rename = "project-id")]
+    project_id: String,
     revision: Option<String>,
     #[serde(rename = "revision-type")]
     #[builder(default = "\"git\".into()")]
@@ -77,9 +78,14 @@ impl proof::Content for Review {
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
     const CONTENT_TYPE_NAME: &'static str = "review";
+    const PROOF_EXTENSIONS: &'static str = "rev.crev";
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
+    }
+
+    fn project_id(&self) -> Option<&str> {
+        Some(&self.project_id)
     }
     fn from_pubid(&self) -> String {
         self.from.clone()

@@ -76,9 +76,6 @@ impl Local {
 
     pub fn load_user_config(&self) -> Result<UserConfig> {
         let path = self.user_config_path();
-        if !path.exists() {
-            return Ok(Default::default());
-        }
 
         let config_str = util::read_file_to_string(&path)?;
 

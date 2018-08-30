@@ -15,7 +15,7 @@ fn sign_proof_review() -> Result<()> {
         .from_url("https://github.com/someone/crev-trust".into())
         .revision(Some("foobar".into()))
         .revision_type("git".into())
-        .project_url("https://github.com/someone/somelib".into())
+        .project_id("dfasdfasdfadfmkjnsdklfj".into())
         .comment(Some("comment".into()))
         .thoroughness(Level::Low)
         .understanding(Level::Low)

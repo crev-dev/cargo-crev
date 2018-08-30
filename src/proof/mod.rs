@@ -38,16 +38,31 @@ pub trait Content:
     const END_BLOCK: &'static str;
 
     const CONTENT_TYPE_NAME: &'static str;
+    const PROOF_EXTENSIONS: &'static str;
 
     fn date(&self) -> chrono::DateTime<FixedOffset>;
     fn from_pubid(&self) -> String;
     fn from_url(&self) -> String;
+    fn project_id(&self) -> Option<&str>;
 
-    fn rel_store_path(&self) -> PathBuf {
+    /// The path to use under project `.crev/`
+    fn rel_project_path(&self) -> PathBuf {
         PathBuf::from(self.from_pubid())
             .join(Self::CONTENT_TYPE_NAME)
             .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension("crev")
+            .with_extension(Self::PROOF_EXTENSIONS)
+    }
+
+    /// The path to use under user store
+    fn rel_store_path(&self) -> PathBuf {
+        let mut path = PathBuf::from(self.from_pubid());
+        if let Some(project_id) = self.project_id() {
+            path = path.join(project_id)
+        }
+
+        path.join(Self::CONTENT_TYPE_NAME)
+            .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
+            .with_extension(Self::PROOF_EXTENSIONS)
     }
 
     fn sign(&self, id: &id::OwnId) -> Result<Proof<Self>> {
