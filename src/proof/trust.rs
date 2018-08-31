@@ -34,8 +34,6 @@ pub struct Trust {
     from: String,
     #[serde(rename = "from-url")]
     from_url: String,
-    #[serde(rename = "from-name")]
-    from_name: String,
     #[serde(
         rename = "from-type",
         skip_serializing_if = "proof::equals_crev",

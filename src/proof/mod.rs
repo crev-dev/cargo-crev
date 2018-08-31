@@ -55,13 +55,13 @@ pub trait Content:
 
     /// The path to use under user store
     fn rel_store_path(&self) -> PathBuf {
-        let mut path = PathBuf::from(self.from_pubid());
+        let mut path = PathBuf::from(self.from_pubid()).join(Self::CONTENT_TYPE_NAME);
+
         if let Some(project_id) = self.project_id() {
             path = path.join(project_id)
         }
 
-        path.join(Self::CONTENT_TYPE_NAME)
-            .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
+        path.join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
             .with_extension(Self::PROOF_EXTENSIONS)
     }
 

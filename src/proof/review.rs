@@ -78,7 +78,7 @@ impl proof::Content for Review {
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
     const CONTENT_TYPE_NAME: &'static str = "review";
-    const PROOF_EXTENSIONS: &'static str = "rev.crev";
+    const PROOF_EXTENSIONS: &'static str = "review.crev";
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date

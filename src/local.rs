@@ -28,24 +28,34 @@ pub struct Local {
 }
 
 impl Local {
-    pub fn auto_open() -> Result<Self> {
+    fn new() -> Result<Self> {
         let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
-        if !root_path.exists() {
+        Ok(Self { root_path })
+    }
+    pub fn auto_open() -> Result<Self> {
+        let repo = Self::new()?;
+        if !repo.root_path.exists() {
             bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
         }
-        let res = Self { root_path };
 
-        if !res.user_config_path().exists() {
+        if !repo.user_config_path().exists() {
             bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
         }
 
-        Ok(res)
+        Ok(repo)
     }
 
     pub fn auto_create() -> Result<Self> {
-        let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
-        fs::create_dir_all(&root_path)?;
-        Ok(Self { root_path })
+        let repo = Self::new()?;
+        fs::create_dir_all(&repo.root_path)?;
+
+        let config_path = repo.user_config_path();
+        if config_path.exists() {
+            bail!("User config already exists");
+        }
+        let config: UserConfig = Default::default();
+        repo.store_user_config(&config)?;
+        Ok(repo)
     }
 
     pub fn read_current_id(&self) -> Result<String> {
@@ -208,7 +218,6 @@ impl Local {
             .from(id.pub_key_as_base64())
             .from_url(id.url().into())
             .from_type(id.type_as_string())
-            .from_url("TODO".into())
             .comment(Some("".into()))
             .trust(level::Level::Medium)
             .trusted_ids(pub_ids)
