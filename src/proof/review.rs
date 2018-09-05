@@ -59,7 +59,7 @@ pub struct Review {
     from_type: String,
     #[serde(rename = "project-id")]
     project_id: String,
-    revision: Option<String>,
+    revision: String,
     #[serde(rename = "revision-type")]
     #[builder(default = "\"git\".into()")]
     revision_type: String,
