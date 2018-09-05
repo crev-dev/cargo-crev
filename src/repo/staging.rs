@@ -5,8 +5,8 @@ use serde_cbor;
 use std::{
     collections::HashMap,
     ffi::OsString,
-    fs, io,
-    io::{BufRead, BufReader, Write},
+    fs,
+    io::{self, BufRead, BufReader, Write},
     os::unix::ffi::OsStringExt,
     path::{Path, PathBuf},
 };
@@ -113,7 +113,6 @@ impl Staging {
         self.entries.remove(&path);
 
         Ok(())
-
     }
 
     pub fn to_review_files(&self) -> Vec<ReviewFile> {
@@ -124,5 +123,20 @@ impl Staging {
                 digest: v.blake_hash.clone(),
                 digest_type: "blake2b".into(),
             }).collect()
+    }
+
+    pub fn enforce_current(&self) -> Result<()> {
+        for (rel_path, info) in self.entries.iter() {
+            let path = self.root_path.join(rel_path);
+            if blaze2sum(&path)? != info.blake_hash {
+                bail!(
+                    "File {} not current. Review again use `crev add` to
+                      update.",
+                    rel_path.display()
+                );
+            }
+        }
+
+        Ok(())
     }
 }

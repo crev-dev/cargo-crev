@@ -222,10 +222,10 @@ impl Repo {
         let local = Local::auto_open()?;
         let id = local.read_unlocked_id(&passphrase)?;
         let pub_id = id.to_pubid();
-        let files = self.staging()?.to_review_files();
         let project_config = self.load_project_config()?;
-
         let revision = self.read_revision()?;
+        self.staging()?.enforce_current()?;
+        let files = self.staging()?.to_review_files();
 
         let review = review::ReviewBuilder::default()
             .from(id.pub_key_as_base64())
