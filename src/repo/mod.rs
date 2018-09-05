@@ -231,7 +231,7 @@ impl Repo {
             .from(id.pub_key_as_base64())
             .from_url(id.url().into())
             .from_type(id.type_as_string())
-            .revision(Some(revision.revision))
+            .revision(revision.revision)
             .revision_type(revision.type_)
             .project_id(project_config.project_id)
             .comment(Some("".into()))

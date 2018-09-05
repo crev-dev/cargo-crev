@@ -104,6 +104,10 @@ main!(|opts: opts::Opts| match opts.command {
             let local = Local::auto_open()?;
             local.trust_ids(trust.pub_ids)?;
         }
+        opts::Trust::Update => {
+            let local = Local::auto_open()?;
+            local.trust_update()?;
+        }
     },
     opts::Command::Add(add) => {
         let mut repo = repo::Repo::auto_open()?;

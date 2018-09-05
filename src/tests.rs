@@ -13,7 +13,7 @@ fn sign_proof_review() -> Result<()> {
         .from("abcdf".into())
         .from_type("crev".into())
         .from_url("https://github.com/someone/crev-trust".into())
-        .revision(Some("foobar".into()))
+        .revision("foobar".into())
         .revision_type("git".into())
         .project_id("dfasdfasdfadfmkjnsdklfj".into())
         .comment(Some("comment".into()))

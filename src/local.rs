@@ -236,6 +236,10 @@ impl Local {
         Ok(())
     }
 
+    pub fn trust_update(&self) -> Result<()> {
+        unimplemented!();
+    }
+
     pub fn append_proof<T: proof::Content>(
         &self,
         proof: &proof::Proof<T>,

@@ -42,6 +42,9 @@ pub enum Trust {
     #[structopt(name = "add")]
     /// Create a new Trust Proof
     Add(TrustAdd),
+    #[structopt(name = "update")]
+    /// Update trustdb by fetching updates from trusted sources
+    Update,
 }
 
 #[derive(Debug, StructOpt, Clone)]
