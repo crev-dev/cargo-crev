@@ -1,5 +1,6 @@
 use base64;
 use chrono;
+use git2;
 use id;
 use level;
 use local::Local;
@@ -17,6 +18,11 @@ use util;
 use Result;
 
 pub mod staging;
+
+struct RevisionInfo {
+    pub type_: String,
+    pub revision: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ProjectConfig {
@@ -164,6 +170,50 @@ impl Repo {
         Ok(())
     }
 
+    fn try_read_git_revision(&self) -> Result<Option<RevisionInfo>> {
+        let dot_git_path = self.root_dir.join(".git");
+        if !dot_git_path.exists() {
+            return Ok(None);
+        }
+        let git_repo = git2::Repository::open(&self.root_dir)?;
+
+        if git_repo.state() != git2::RepositoryState::Clean {
+            bail!("Git repository is not in a clean state");
+        }
+        let mut status_opts = git2::StatusOptions::new();
+        status_opts.include_untracked(false);
+        if git_repo
+            .statuses(Some(&mut status_opts))?
+            .iter()
+            .any(|entry| {
+                if entry.status() != git2::Status::CURRENT {
+                    eprintln!("{}", entry.path().unwrap());
+                    true
+                } else {
+                    false
+                }
+            }) {
+            bail!("Git repository is not in a clean state");
+        }
+        let head = git_repo.head()?;
+        let rev = head
+            .resolve()?
+            .target()
+            .ok_or_else(|| format_err!("HEAD target does not resolve to oid"))?
+            .to_string();
+        Ok(Some(RevisionInfo {
+            type_: "git".into(),
+            revision: rev,
+        }))
+    }
+
+    fn read_revision(&self) -> Result<RevisionInfo> {
+        if let Some(info) = self.try_read_git_revision()? {
+            return Ok(info);
+        }
+        bail!("Couldn't identify revision info");
+    }
+
     pub fn commit(&mut self) -> Result<()> {
         if self.staging()?.is_empty() {
             bail!("No reviews to commit. Use `add` first.");
@@ -175,12 +225,14 @@ impl Repo {
         let files = self.staging()?.to_review_files();
         let project_config = self.load_project_config()?;
 
+        let revision = self.read_revision()?;
+
         let review = review::ReviewBuilder::default()
             .from(id.pub_key_as_base64())
             .from_url(id.url().into())
             .from_type(id.type_as_string())
-            .revision(Some("TODO".into()))
-            .revision_type("git".into())
+            .revision(Some(revision.revision))
+            .revision_type(revision.type_)
             .project_id(project_config.project_id)
             .comment(Some("".into()))
             .thoroughness(level::Level::Low)
