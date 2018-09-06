@@ -105,25 +105,6 @@ where
     serializer.serialize_str(&hex::encode(key))
 }
 
-pub fn from_rfc3339<'d, D>(deserializer: D) -> Result<chrono::DateTime<Utc>, D::Error>
-where
-    D: serde::Deserializer<'d>,
-{
-    use serde::de::Error;
-    String::deserialize(deserializer)
-        .and_then(|string| {
-            DateTime::<FixedOffset>::parse_from_rfc3339(&string)
-                .map_err(|err| Error::custom(err.to_string()))
-        }).map(|dt| dt.with_timezone(&Utc))
-}
-
-pub fn as_rfc3339<S>(key: &chrono::DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&key.to_rfc3339())
-}
-
 pub fn from_rfc3339_fixed<'d, D>(deserializer: D) -> Result<chrono::DateTime<FixedOffset>, D::Error>
 where
     D: serde::Deserializer<'d>,

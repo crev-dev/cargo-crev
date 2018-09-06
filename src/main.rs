@@ -1,6 +1,4 @@
-#![allow(unused)]
 #![allow(deprecated)]
-
 #[macro_use]
 extern crate failure;
 extern crate blake2;
@@ -21,21 +19,16 @@ extern crate serde_yaml;
 extern crate derive_builder;
 #[macro_use]
 extern crate quicli;
-#[macro_use]
-extern crate structopt;
 extern crate app_dirs;
 extern crate git2;
 extern crate rpassword;
 extern crate rprompt;
+extern crate structopt;
 extern crate tempdir;
 extern crate walkdir;
 
 use common_failures::prelude::*;
-use std::{
-    env, ffi,
-    io::{Read, Write},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 mod id;
@@ -47,9 +40,8 @@ pub mod review {
 pub mod trust {
     pub use super::proof::trust::*;
 }
-mod util;
-use opts::*;
 mod local;
+mod util;
 use local::*;
 mod proof;
 mod repo;
@@ -68,7 +60,7 @@ fn gen_id() -> Result<()> {
     eprintln!("Enter public git address you're planing to use for your CrevID.");
     eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
     eprintln!("Changing it later will require manual config file editing.");
-    let mut url = String::new();
+    let mut url;
     loop {
         url = rprompt::prompt_reply_stdout("Git URL: ")?;
         eprintln!("");
@@ -131,9 +123,9 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = repo::Repo::auto_open()?;
         repo.remove(remove.paths)?;
     }
-    opts::Command::Verify(verify_opts) => {
+    opts::Command::Verify(_verify_opts) => {
         let mut repo = repo::Repo::auto_open()?;
-        repo.verify();
+        repo.verify()?;
     }
 });
 

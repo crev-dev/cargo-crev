@@ -1,19 +1,9 @@
-use base64;
-use blake2::{self, Digest};
 use chrono::{self, prelude::*};
 use common_failures::prelude::*;
-use git2;
-use id::PubId;
 use level::Level;
 use proof;
 use serde_yaml;
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    fmt,
-    io::Write,
-    marker, mem,
-    path::PathBuf,
-};
+use std::{fmt, path::PathBuf};
 use util::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
@@ -71,8 +61,6 @@ pub struct Review {
     trust: Level,
     files: Vec<ReviewFile>,
 }
-
-use id::OwnId;
 
 impl proof::Content for Review {
     const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;

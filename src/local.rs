@@ -1,17 +1,14 @@
-use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
-use base64;
+use app_dirs::{app_root, AppDataType};
 use id::{self, LockedId, OwnId};
 use level;
 use proof::{self, Content};
-use review::ReviewProof;
 use serde_yaml;
 use std::{
-    collections::HashSet,
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use trust::{self, TrustProof};
+use trust;
 use trust_graph;
 use util::{self, APP_INFO};
 use Result;
@@ -102,7 +99,7 @@ impl Local {
     }
 
     pub fn read_locked_id(&self) -> Result<LockedId> {
-        let mut config = self.load_user_config()?;
+        let config = self.load_user_config()?;
         let path = self.id_path(&config.current_id);
         LockedId::read_from_yaml_file(&path)
     }
@@ -115,7 +112,7 @@ impl Local {
 
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
         let path = self.id_path(&id.pub_key_as_base64());
-        fs::create_dir_all(&path.parent().expect("Not /"));
+        fs::create_dir_all(&path.parent().expect("Not /"))?;
         id.save_to(&path)
     }
 
@@ -217,7 +214,6 @@ impl Local {
         }
         let passphrase = util::read_passphrase()?;
         let id = self.read_unlocked_id(&passphrase)?;
-        let pub_id = id.to_pubid();
 
         let trust = trust::TrustBuilder::default()
             .from(id.pub_key_as_base64())
@@ -242,7 +238,7 @@ impl Local {
     }
 
     pub fn trust_update(&self) -> Result<()> {
-        let graph = trust_graph::TrustGraph::load_from(&self.get_proofs_dir_path())?;
+        let _graph = trust_graph::TrustGraph::load_from(&self.get_proofs_dir_path())?;
         unimplemented!();
     }
 

@@ -1,13 +1,10 @@
-use blake2::{self, digest::FixedOutput, Digest};
 use common_failures::prelude::*;
 use review::ReviewFile;
 use serde_cbor;
 use std::{
     collections::HashMap,
-    ffi::OsString,
     fs,
-    io::{self, BufRead, BufReader, Write},
-    os::unix::ffi::OsStringExt,
+    io::Write,
     path::{Path, PathBuf},
 };
 use util;

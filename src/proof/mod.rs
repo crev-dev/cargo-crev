@@ -1,26 +1,15 @@
 //! Some common stuff for both Review and Trust Proofs
 
 use base64;
-use blake2::{self, Digest};
 use chrono::{self, prelude::*};
-use common_failures::prelude::*;
-use git2;
 use id;
-use level::Level;
 use serde;
 use serde_yaml;
 use std::{
-    self,
-    collections::{hash_map::Entry, HashMap},
-    default, fmt,
-    io::Write,
-    marker, mem,
+    default, fmt, marker, mem,
     path::{Path, PathBuf},
 };
-use util::{
-    self,
-    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
-};
+use util;
 
 pub mod review;
 pub mod trust;

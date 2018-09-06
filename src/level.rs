@@ -16,6 +16,7 @@ impl Default for Level {
 }
 
 impl Level {
+    #[allow(unused)]
     fn as_str(&self) -> &str {
         use self::Level::*;
         match self {
@@ -25,6 +26,7 @@ impl Level {
             High => "high",
         }
     }
+    #[allow(unused)]
     fn from_str(s: &str) -> Result<Level> {
         Ok(match s {
             "none" => Level::None,

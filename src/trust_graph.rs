@@ -10,11 +10,11 @@ impl TrustGraph {
         TrustGraph
     }
 
-    fn add_review_proof(&mut self, review: &proof::ReviewProof) {
+    fn add_review_proof(&mut self, _review: &proof::ReviewProof) {
         unimplemented!();
     }
 
-    fn add_trust_proof(&mut self, review: &proof::TrustProof) {
+    fn add_trust_proof(&mut self, _review: &proof::TrustProof) {
         unimplemented!();
     }
 
@@ -22,13 +22,13 @@ impl TrustGraph {
         let review_osext: &OsStr = proof::review::PROOF_EXTENSION.as_ref();
         let trust_osext: &OsStr = proof::trust::PROOF_EXTENSION.as_ref();
         match path.extension() {
-            Some(review_osext) => {
+            Some(osext) if osext == review_osext => {
                 let proofs = proof::ReviewProof::parse_from(path)?;
                 for proof in proofs.into_iter() {
                     self.add_review_proof(&proof);
                 }
             }
-            Some(trust_osext) => {
+            Some(osext) if osext == trust_osext => {
                 let proofs = proof::TrustProof::parse_from(path)?;
                 for proof in proofs.into_iter() {
                     self.add_trust_proof(&proof);

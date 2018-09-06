@@ -1,7 +1,4 @@
-use base64;
-use chrono;
 use git2;
-use id;
 use level;
 use local::Local;
 use proof::{self, Content};
@@ -12,7 +9,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use trust;
 use trust_graph;
 use util;
 use Result;
@@ -159,15 +155,14 @@ impl Repo {
     pub fn verify(&mut self) -> Result<()> {
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
-        let cur_id = user_config.current_id;
-        let graph = trust_graph::TrustGraph; /* TODO: calculate trust graph */
+        let _cur_id = user_config.current_id;
+        let _graph = trust_graph::TrustGraph; /* TODO: calculate trust graph */
         /*
         let user_config = Local::read_unlocked_id
         let trust_graph = Local::calculate_trust_graph_for(&id);
         */
 
         unimplemented!();
-        Ok(())
     }
 
     fn try_read_git_revision(&self) -> Result<Option<RevisionInfo>> {
@@ -221,7 +216,7 @@ impl Repo {
         let passphrase = util::read_passphrase()?;
         let local = Local::auto_open()?;
         let id = local.read_unlocked_id(&passphrase)?;
-        let pub_id = id.to_pubid();
+        let _pub_id = id.to_pubid();
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
@@ -255,7 +250,7 @@ impl Repo {
             PathBuf::from(".crev").join(rel_store_path).display()
         );
         let local = Local::auto_open()?;
-        local.append_proof(&proof, &review);
+        local.append_proof(&proof, &review)?;
         eprintln!("Proof added to your store");
         self.staging()?.wipe()?;
         Ok(())
@@ -263,7 +258,7 @@ impl Repo {
 
     pub fn status(&mut self) -> Result<()> {
         let staging = self.staging()?;
-        for (k, v) in staging.entries.iter() {
+        for (k, _v) in staging.entries.iter() {
             println!("{}", k.display());
         }
 
@@ -271,9 +266,9 @@ impl Repo {
     }
 
     pub fn add(&mut self, file_paths: Vec<PathBuf>) -> Result<()> {
-        let mut staging = self.staging()?;
+        let staging = self.staging()?;
         for path in file_paths {
-            staging.insert(&path);
+            staging.insert(&path)?;
         }
         staging.save()?;
 
@@ -281,9 +276,9 @@ impl Repo {
     }
 
     pub fn remove(&mut self, file_paths: Vec<PathBuf>) -> Result<()> {
-        let mut staging = self.staging()?;
+        let staging = self.staging()?;
         for path in file_paths {
-            staging.remove(&path);
+            staging.remove(&path)?;
         }
         staging.save()?;
 

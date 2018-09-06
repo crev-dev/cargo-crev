@@ -1,30 +1,23 @@
+use app_dirs;
 use base64;
 use blake2::{self, digest::FixedOutput, Digest};
 use chrono::{self, prelude::*};
-use common_failures::prelude::*;
-use id;
-use proof::{self, Content};
-use rand::{self, OsRng, Rng};
-use repo;
-use review;
+use proof;
+use rand::{self, Rng};
 use rpassword;
 use rprompt;
 use std::{
     env, ffi, fs,
-    io::{self, BufRead, BufReader, Read, Write},
-    path::{Path, PathBuf},
+    io::{self, BufRead, Read, Write},
+    path::Path,
     process,
 };
 use tempdir;
-use trust;
-use util;
 use Result;
-
-use app_dirs::{app_root, get_app_root, AppDataType, AppInfo};
 
 pub mod serde;
 
-pub const APP_INFO: AppInfo = AppInfo {
+pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",
     author: "Dawid Ciężarkiewicz",
 };
@@ -73,7 +66,7 @@ pub fn read_file_to_string(path: &Path) -> Result<String> {
 }
 
 pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
-    fs::create_dir_all(path.parent().expect("Not a root path"));
+    fs::create_dir_all(path.parent().expect("Not a root path"))?;
     let tmp_path = path.with_extension("tmp");
     let mut file = fs::File::create(&tmp_path)?;
     file.write_all(&s.as_bytes())?;
@@ -84,7 +77,7 @@ pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
 }
 
 pub fn store_to_file_with(path: &Path, f: impl Fn(&mut io::Write) -> Result<()>) -> Result<()> {
-    fs::create_dir_all(path.parent().expect("Not a root path"));
+    fs::create_dir_all(path.parent().expect("Not a root path"))?;
     let tmp_path = path.with_extension("tmp");
     let mut file = fs::File::create(&tmp_path)?;
     f(&mut file)?;

@@ -1,22 +1,11 @@
-use base64;
-use blake2::{self, Digest};
 use chrono::{self, prelude::*};
-use common_failures::prelude::*;
-use git2;
-use id::{OwnId, PubId};
 use level::Level;
-use proof::{self, Content};
+use proof;
 use serde_yaml;
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    fmt,
-    io::Write,
-    mem,
-    path::PathBuf,
-};
+use std::fmt;
 use util::{
     self,
-    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
+    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";

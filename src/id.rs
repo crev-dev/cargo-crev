@@ -2,19 +2,16 @@ use argonautica::{self, Hasher};
 use base64;
 use blake2;
 use common_failures::prelude::*;
-use ed25519_dalek::{self, PublicKey, SecretKey, Signature};
+use ed25519_dalek::{self, PublicKey};
 use miscreant;
 use rand::{self, OsRng, Rng};
 use serde_yaml;
 use std::{
-    self, fs,
+    self,
     io::{self, Read, Write},
     path::Path,
 };
-use util::{
-    self,
-    serde::{as_base64, from_base64},
-};
+use util::serde::{as_base64, from_base64};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PassConfig {
@@ -165,7 +162,7 @@ impl PubId {
 
     pub fn id_as_base64(&self) -> String {
         match self {
-            PubId::Crev { url, id } => base64::encode_config(id, base64::URL_SAFE),
+            PubId::Crev { id, .. } => base64::encode_config(id, base64::URL_SAFE),
         }
     }
 
@@ -187,7 +184,7 @@ pub enum OwnId {
 impl OwnId {
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         match self {
-            OwnId::Crev { url, keypair } => {
+            OwnId::Crev { keypair, .. } => {
                 keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec()
             }
         }
@@ -209,13 +206,13 @@ impl OwnId {
 
     pub fn url(&self) -> &str {
         match self {
-            OwnId::Crev { url, keypair } => url,
+            OwnId::Crev { url, .. } => url,
         }
     }
 
     pub fn pub_key_as_bytes(&self) -> &[u8] {
         match self {
-            OwnId::Crev { url, keypair } => keypair.public.as_bytes(),
+            OwnId::Crev { keypair, .. } => keypair.public.as_bytes(),
         }
     }
 
