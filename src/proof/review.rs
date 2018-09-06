@@ -1,5 +1,4 @@
 use chrono::{self, prelude::*};
-use common_failures::prelude::*;
 use level::Level;
 use proof;
 use serde_yaml;
@@ -8,10 +7,12 @@ use util::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
+use Result;
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
+
 pub const PROOF_EXTENSION: &str = "review.crev";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
