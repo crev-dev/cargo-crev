@@ -93,6 +93,7 @@ pub struct Serialized<T> {
 pub struct Parsed<T> {
     pub body: String,
     pub signature: String,
+    pub digest: Vec<u8>,
     pub content: T,
 }
 
@@ -132,6 +133,7 @@ impl<T: Content> Serialized<T> {
         Ok(Parsed {
             body: self.body.clone(),
             signature: self.signature.clone(),
+            digest: util::blaze2sum(&self.body.as_bytes()),
             content: <T as Content>::parse(&self.body)?,
         })
     }

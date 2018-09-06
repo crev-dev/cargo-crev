@@ -12,26 +12,6 @@ use std::{
 };
 use util;
 
-fn blaze2sum(path: &Path) -> Result<Vec<u8>> {
-    let file = fs::File::open(path)?;
-
-    let mut reader = io::BufReader::new(file);
-    let mut hasher = blake2::Blake2b::new();
-
-    loop {
-        let length = {
-            let buffer = reader.fill_buf()?;
-            hasher.input(buffer);
-            buffer.len()
-        };
-        if length == 0 {
-            break;
-        }
-        reader.consume(length);
-    }
-    Ok(hasher.fixed_result().to_vec())
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StagingPathInfo {
     blake_hash: Vec<u8>,
@@ -97,7 +77,7 @@ impl Staging {
         self.entries.insert(
             path.to_owned(),
             StagingPathInfo {
-                blake_hash: blaze2sum(&full_path)?,
+                blake_hash: util::blaze2sum_file(&full_path)?,
             },
         );
 
@@ -128,7 +108,7 @@ impl Staging {
     pub fn enforce_current(&self) -> Result<()> {
         for (rel_path, info) in self.entries.iter() {
             let path = self.root_path.join(rel_path);
-            if blaze2sum(&path)? != info.blake_hash {
+            if util::blaze2sum_file(&path)? != info.blake_hash {
                 bail!(
                     "File {} not current. Review again use `crev add` to
                       update.",
