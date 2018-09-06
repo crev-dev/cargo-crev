@@ -248,7 +248,7 @@ impl Local {
 
     pub fn append_proof<T: proof::Content>(
         &self,
-        proof: &proof::Proof<T>,
+        proof: &proof::Serialized<T>,
         content: &T,
     ) -> Result<()> {
         let rel_store_path = self.get_proof_rel_store_path(content);
@@ -257,7 +257,7 @@ impl Local {
 
     fn append_proof_at<T: proof::Content>(
         &self,
-        proof: &proof::Proof<T>,
+        proof: &proof::Serialized<T>,
         rel_store_path: &Path,
     ) -> Result<()> {
         let path = self.user_dir_path().join(rel_store_path);

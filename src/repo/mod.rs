@@ -134,7 +134,7 @@ impl Repo {
 
     fn append_proof_at<T: proof::Content>(
         &mut self,
-        proof: proof::Proof<T>,
+        proof: proof::Serialized<T>,
         rel_store_path: &Path,
     ) -> Result<()> {
         let path = self.dot_crev_path().join(rel_store_path);

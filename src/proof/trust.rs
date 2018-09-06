@@ -85,4 +85,4 @@ impl super::Content for Trust {
     }
 }
 
-pub type TrustProof = super::Proof<Trust>;
+pub type TrustProof = super::Serialized<Trust>;

@@ -111,7 +111,7 @@ impl fmt::Display for Review {
     }
 }
 
-pub type ReviewProof = super::Proof<Review>;
+pub type ReviewProof = super::Serialized<Review>;
 
 #[test]
 fn signed_parse() -> Result<()> {

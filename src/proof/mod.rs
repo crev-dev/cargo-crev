@@ -65,10 +65,10 @@ pub trait Content:
             .with_extension(Self::PROOF_EXTENSION)
     }
 
-    fn sign(&self, id: &id::OwnId) -> Result<Proof<Self>> {
+    fn sign(&self, id: &id::OwnId) -> Result<Serialized<Self>> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
-        Ok(Proof {
+        Ok(Serialized {
             body: body,
             signature: base64::encode_config(&signature, base64::URL_SAFE),
             phantom: marker::PhantomData,
@@ -82,13 +82,21 @@ pub trait Content:
 
 /// A signed proof containing some signed `Content`
 #[derive(Debug, Clone)]
-pub struct Proof<T> {
+pub struct Serialized<T> {
     pub body: String,
     pub signature: String,
     phantom: marker::PhantomData<T>,
 }
 
-impl<T: Content> fmt::Display for Proof<T> {
+#[derive(Debug, Clone)]
+/// A `Proof` with it's content parsed and ready.
+pub struct Parsed<T> {
+    pub body: String,
+    pub signature: String,
+    pub content: T,
+}
+
+impl<T: Content> fmt::Display for Serialized<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(T::BEGIN_BLOCK)?;
         f.write_str("\n")?;
@@ -104,9 +112,28 @@ impl<T: Content> fmt::Display for Proof<T> {
     }
 }
 
-impl<T: Content> Proof<T> {
-    pub fn parse_content(&self) -> Result<T> {
-        <T as Content>::parse(&self.body)
+impl<T: Content> fmt::Display for Parsed<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(T::BEGIN_BLOCK)?;
+        f.write_str("\n")?;
+        f.write_str(&self.body)?;
+        f.write_str(T::BEGIN_SIGNATURE)?;
+        f.write_str("\n")?;
+        f.write_str(&self.signature)?;
+        f.write_str("\n")?;
+        f.write_str(T::END_BLOCK)?;
+        f.write_str("\n")?;
+
+        Ok(())
+    }
+}
+impl<T: Content> Serialized<T> {
+    pub fn to_parsed(&self) -> Result<Parsed<T>> {
+        Ok(Parsed {
+            body: self.body.clone(),
+            signature: self.signature.clone(),
+            content: <T as Content>::parse(&self.body)?,
+        })
     }
 
     pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
@@ -132,7 +159,7 @@ impl<T: Content> Proof<T> {
             stage: Stage,
             body: String,
             signature: String,
-            proofs: Vec<Proof<T>>,
+            proofs: Vec<Serialized<T>>,
         }
 
         impl<T> default::Default for State<T> {
@@ -171,7 +198,7 @@ impl<T: Content> Proof<T> {
                     Stage::Signature => {
                         if line.trim() == T::END_BLOCK {
                             self.stage = Stage::None;
-                            self.proofs.push(Proof {
+                            self.proofs.push(Serialized {
                                 body: mem::replace(&mut self.body, String::new()),
                                 signature: mem::replace(&mut self.signature, String::new()),
                                 phantom: marker::PhantomData,
@@ -188,7 +215,7 @@ impl<T: Content> Proof<T> {
                 Ok(())
             }
 
-            fn finish(self) -> Result<Vec<Proof<T>>> {
+            fn finish(self) -> Result<Vec<Serialized<T>>> {
                 if self.stage != Stage::None {
                     bail!("Unexpected EOF while parsing");
                 }
