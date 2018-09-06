@@ -12,6 +12,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use trust::{self, TrustProof};
+use trust_graph;
 use util::{self, APP_INFO};
 use Result;
 
@@ -206,6 +207,10 @@ impl Local {
         PathBuf::from("proofs").join(content.rel_store_path())
     }
 
+    fn get_proofs_dir_path(&self) -> PathBuf {
+        self.root_path.join("proofs")
+    }
+
     pub fn trust_ids(&self, pub_ids: Vec<String>) -> Result<()> {
         if pub_ids.is_empty() {
             bail!("No ids to trust. Use `add` first.");
@@ -237,6 +242,7 @@ impl Local {
     }
 
     pub fn trust_update(&self) -> Result<()> {
+        let graph = trust_graph::TrustGraph::load_from(&self.get_proofs_dir_path())?;
         unimplemented!();
     }
 

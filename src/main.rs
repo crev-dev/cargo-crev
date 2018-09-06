@@ -28,6 +28,7 @@ extern crate git2;
 extern crate rpassword;
 extern crate rprompt;
 extern crate tempdir;
+extern crate walkdir;
 
 use common_failures::prelude::*;
 use std::{

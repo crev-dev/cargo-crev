@@ -22,6 +22,7 @@ use util::{
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
+pub const PROOF_EXTENSION: &str = "trust.crev";
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
@@ -68,7 +69,7 @@ impl super::Content for Trust {
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
     const CONTENT_TYPE_NAME: &'static str = "trust";
-    const PROOF_EXTENSIONS: &'static str = "trust.crev";
+    const PROOF_EXTENSION: &'static str = PROOF_EXTENSION;
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date

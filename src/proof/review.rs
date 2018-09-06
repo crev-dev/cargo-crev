@@ -22,6 +22,7 @@ use util::{
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
+pub const PROOF_EXTENSION: &str = "review.crev";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewFile {
@@ -78,7 +79,7 @@ impl proof::Content for Review {
     const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     const END_BLOCK: &'static str = END_BLOCK;
     const CONTENT_TYPE_NAME: &'static str = "review";
-    const PROOF_EXTENSIONS: &'static str = "review.crev";
+    const PROOF_EXTENSION: &'static str = PROOF_EXTENSION;
 
     fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date

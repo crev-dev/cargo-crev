@@ -15,7 +15,7 @@ use std::{
     default, fmt,
     io::Write,
     marker, mem,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use util::{
     self,
@@ -38,7 +38,7 @@ pub trait Content:
     const END_BLOCK: &'static str;
 
     const CONTENT_TYPE_NAME: &'static str;
-    const PROOF_EXTENSIONS: &'static str;
+    const PROOF_EXTENSION: &'static str;
 
     fn date(&self) -> chrono::DateTime<FixedOffset>;
     fn from_pubid(&self) -> String;
@@ -50,7 +50,7 @@ pub trait Content:
         PathBuf::from(self.from_pubid())
             .join(Self::CONTENT_TYPE_NAME)
             .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension(Self::PROOF_EXTENSIONS)
+            .with_extension(Self::PROOF_EXTENSION)
     }
 
     /// The path to use under user store
@@ -62,7 +62,7 @@ pub trait Content:
         }
 
         path.join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension(Self::PROOF_EXTENSIONS)
+            .with_extension(Self::PROOF_EXTENSION)
     }
 
     fn sign(&self, id: &id::OwnId) -> Result<Proof<Self>> {
@@ -107,6 +107,11 @@ impl<T: Content> fmt::Display for Proof<T> {
 impl<T: Content> Proof<T> {
     pub fn parse_content(&self) -> Result<T> {
         <T as Content>::parse(&self.body)
+    }
+
+    pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
+        let s = util::read_file_to_string(path)?;
+        Self::parse(&s)
     }
 
     pub fn parse(input: &str) -> Result<Vec<Self>> {
