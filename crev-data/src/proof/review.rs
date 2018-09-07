@@ -100,4 +100,3 @@ impl fmt::Display for Review {
 }
 
 pub type ReviewProof = super::Serialized<Review>;
-

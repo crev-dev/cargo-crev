@@ -1,5 +1,4 @@
-use proof::Serialized;
-use proof::review::Review;
+use proof::{review::Review, Serialized};
 use Result;
 
 #[test]

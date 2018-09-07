@@ -5,11 +5,7 @@ use chrono::{self, prelude::*};
 use id;
 use serde;
 use serde_yaml;
-use std::{
-    io,
-    default, fmt, marker, mem,
-    path::{PathBuf},
-};
+use std::{default, fmt, io, marker, mem, path::PathBuf};
 use util;
 
 pub mod review;
@@ -127,7 +123,6 @@ impl<T: Content> Serialized<T> {
             content: <T as Content>::parse(&self.body)?,
         })
     }
-
 
     pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
         #[derive(PartialEq, Eq)]
