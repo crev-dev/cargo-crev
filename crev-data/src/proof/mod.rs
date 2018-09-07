@@ -6,8 +6,9 @@ use id;
 use serde;
 use serde_yaml;
 use std::{
+    io,
     default, fmt, marker, mem,
-    path::{Path, PathBuf},
+    path::{PathBuf},
 };
 use util;
 
@@ -127,12 +128,8 @@ impl<T: Content> Serialized<T> {
         })
     }
 
-    pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
-        let s = util::read_file_to_string(path)?;
-        Self::parse(&s)
-    }
 
-    pub fn parse(input: &str) -> Result<Vec<Self>> {
+    pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
         #[derive(PartialEq, Eq)]
         enum Stage {
             None,
@@ -216,8 +213,8 @@ impl<T: Content> Serialized<T> {
 
         let mut state: State<T> = Default::default();
 
-        for line in input.lines() {
-            state.process_line(&line)?;
+        for line in reader.lines() {
+            state.process_line(&line?)?;
         }
 
         state.finish()

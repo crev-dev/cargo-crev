@@ -34,12 +34,7 @@ use structopt::StructOpt;
 mod id;
 mod level;
 mod opts;
-pub mod review {
-    pub use super::proof::review::*;
-}
-pub mod trust {
-    pub use super::proof::trust::*;
-}
+
 mod local;
 mod util;
 use local::*;

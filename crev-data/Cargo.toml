@@ -1,43 +1,29 @@
 [package]
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
-description = "Scalable, social, Code REView system that we desperately need"
+description = "Scalable, social, Code REView system that we desperately need - abstract data library"
 documentation = "https://docs.rs/crev"
 homepage = "https://github.com/dpc/crev"
 keywords = ["code", "review", "tool", "distributed"]
 license = "MPL-2.0"
-name = "crev"
+name = "crev-data"
 readme = "README.md"
 repository = "https://github.com/dpc/crev"
 version = "0.0.1"
 
-[workspace]
-members = [
-	"crev-data"
-]
-
 [dependencies]
-crev-data = { path = "crev-data" }
-app_dirs = "*"
+base64 = "0.9.0"
+blake2 = "*"
+chrono = "*"
 common_failures = "*"
-derive_builder = "*"
+miscreant = "0.4.0-beta2"
 ed25519-dalek = "*"
 failure = "*"
-file = "*"
-git2 = "*"
-hex = "*"
-miscreant = "0.4.0-beta2"
-nom = "*"
-quicli = "*"
-rand = "*"
-rpassword = "*"
-rprompt = "*"
 serde = "1"
-serde_cbor = "*"
 serde_derive = "1"
 serde_yaml = "0.8"
-structopt = "*"
-tempdir = "*"
-walkdir = "*"
+hex = "*"
+rand = "*"
+derive_builder = "*"
 
 [dependencies.argonautica]
 features = ["serde"]
