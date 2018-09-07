@@ -3,9 +3,7 @@ use level::Level;
 use proof;
 use serde_yaml;
 use std::{fmt, path::PathBuf};
-use util::{
-    self,
-};
+use crev_common;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 
@@ -33,7 +31,7 @@ pub struct ReviewFile {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
 pub struct Review {
-    #[builder(default = "util::now()")]
+    #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"

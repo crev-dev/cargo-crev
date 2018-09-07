@@ -11,6 +11,7 @@ repository = "https://github.com/dpc/crev"
 version = "0.0.1"
 
 [dependencies]
+crev-common = { path = "../crev-common" }
 crev-data = { path = "../crev-data" }
 app_dirs = "*"
 common_failures = "*"
@@ -18,12 +19,13 @@ derive_builder = "*"
 ed25519-dalek = "*"
 failure = "*"
 file = "*"
+base64 = "*"
 git2 = "*"
 hex = "*"
 miscreant = "0.4.0-beta2"
 nom = "*"
 quicli = "*"
-rand = "*"
+rand = "0.5.5"
 rpassword = "*"
 rprompt = "*"
 serde = "1"

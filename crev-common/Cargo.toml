@@ -5,6 +5,8 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 
 [dependencies]
 serde = "*"
+serde_yaml = "*"
 base64 = "*"
 hex = "*"
 chrono = "*"
+blake2 = "*"

@@ -1,115 +1,90 @@
-use argonautica::{self, Hasher};
 use base64;
 use blake2;
-use common_failures::prelude::*;
-use ed25519_dalek::{self, PublicKey};
-use miscreant;
-use rand::{self, OsRng, Rng};
-use serde_yaml;
+use ed25519_dalek::{self, SecretKey, PublicKey};
+use rand::OsRng;
 use std::{
-    self,
-    io::{self, Read, Write},
-    path::Path,
+    fmt
 };
-use crev_common::serde::{as_base64, from_base64};
-
+use crev_common::{self, serde::{as_base64, from_base64}};
+use Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "id-type")]
+pub enum IdType {
+#[serde(rename = "crev")]
+    Crev
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 /// Public CrevId of someone
 pub struct PubId {
-    // One Variant, because I love slowing myself down for no good reason :/
-    Crev {
-        url: String,
+    pub url: String,
+    #[serde(rename = "type")]
+    pub type_: IdType,
 
-        #[serde(
-            serialize_with = "as_base64",
-            deserialize_with = "from_base64"
-        )]
-        id: Vec<u8>,
-    },
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
+    pub id: Vec<u8>,
 }
 
 impl PubId {
-
-    // TODO: This function sucks; it should be something else, or named better
-    // or whatever
-    pub fn write_to(&self, w: &mut io::Write) -> Result<()> {
-        match self {
-            PubId::Crev { url, id } => {
-                writeln!(w, "id: {}", base64::encode_config(id, base64::URL_SAFE))?;
-                writeln!(w, "url: {}", url)?;
-            }
-        }
-        Ok(())
-    }
-
-    pub fn id_as_base64(&self) -> String {
-        match self {
-            PubId::Crev { id, .. } => base64::encode_config(id, base64::URL_SAFE),
+    pub fn new(url: String, id: Vec<u8>) -> Self {
+        Self {
+            url,
+            id,
+            type_: IdType::Crev,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        let mut s = vec![];
-        self.write_to(&mut s).unwrap();
-        String::from_utf8_lossy(&s).into()
+impl fmt::Display for PubId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }
 
 #[derive(Debug)]
-pub enum OwnId {
-    Crev {
-        url: String,
-        keypair: ed25519_dalek::Keypair,
-    },
+pub struct OwnId {
+    pub id: PubId,
+    pub keypair: ed25519_dalek::Keypair,
 }
 
 impl OwnId {
+    pub fn new(url: String, sec_key: Vec<u8>) -> Result<Self> {
+
+        let sec_key = SecretKey::from_bytes(&sec_key)?;
+        let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
+
+        Ok(Self {
+
+            id: PubId::new(url, calculated_pub_key.as_bytes().to_vec()),
+            keypair: ed25519_dalek::Keypair {
+                secret: sec_key,
+                public: calculated_pub_key,
+            },
+        })
+    }
+
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
-        match self {
-            OwnId::Crev { keypair, .. } => {
-                keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec()
-            }
-        }
+        self.keypair.sign::<blake2::Blake2b>(&msg).to_bytes().to_vec()
     }
 
     pub fn type_as_string(&self) -> String {
-        match self {
-            OwnId::Crev { .. } => "crev".into(),
-        }
-    }
-    pub fn to_pubid(&self) -> PubId {
-        match self {
-            OwnId::Crev { url, keypair } => PubId::Crev {
-                url: url.to_owned(),
-                id: keypair.public.as_bytes().to_vec(),
-            },
-        }
+        "crev".into()
     }
 
-    pub fn url(&self) -> &str {
-        match self {
-            OwnId::Crev { url, .. } => url,
-        }
-    }
-
-    pub fn pub_key_as_bytes(&self) -> &[u8] {
-        match self {
-            OwnId::Crev { keypair, .. } => keypair.public.as_bytes(),
-        }
-    }
 
     pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.pub_key_as_bytes(), base64::URL_SAFE)
+        base64::encode_config(&self.id.id, base64::URL_SAFE)
     }
 
     pub fn generate(url: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        OwnId::Crev {
-            url,
-            keypair: ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng),
+        let keypair = ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng);
+        Self {
+            id: PubId::new(url, keypair.public.as_bytes().to_vec()),
+            keypair,
         }
     }
 }
-

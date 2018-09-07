@@ -1,7 +1,6 @@
 use chrono::{self, prelude::*};
 use level::Level;
 use proof;
-use serde_yaml;
 use std::fmt;
 use crev_common::{self, serde::{as_rfc3339_fixed, from_rfc3339_fixed}};
 
@@ -37,16 +36,7 @@ pub struct Trust {
 
 impl fmt::Display for Trust {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
-        let mut lines = yaml_document.lines();
-        let dropped_header = lines.next();
-        assert_eq!(dropped_header, Some("---"));
-
-        for line in lines {
-            f.write_str(&line)?;
-            f.write_str("\n")?;
-        }
-        Ok(())
+        crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }
 

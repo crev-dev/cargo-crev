@@ -6,7 +6,10 @@ use base64;
 use hex::{self, FromHex, FromHexError};
 use self::serde::{Deserialize};
 use chrono::{self, offset::FixedOffset, prelude::*};
+use std::{fmt, io};
+use serde_yaml;
 
+// {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {
     type Err: 'static + Sized + ::std::error::Error;
     fn try_from(&[u8]) -> Result<Self, Self::Err>;
@@ -83,3 +86,29 @@ where
 {
     serializer.serialize_str(&key.to_rfc3339())
 }
+
+impl MyTryFromBytes for Vec<u8> {
+    type Err = io::Error;
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Err> {
+        Ok(Vec::from(slice))
+    }
+}
+// }}}
+
+/// Write out a value as YAML without a `---` prefix
+///
+/// This is how a lot of stuff in `Crev` is serialized
+pub fn write_as_headerless_yaml<T: self::serde::Serialize>(t : &T, f: &mut fmt::Formatter) -> fmt::Result {
+    // TODO: Don't serialize to string, and instead serialize to writer
+    let yaml_document = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;
+    let mut lines = yaml_document.lines();
+    let dropped_header = lines.next();
+    assert_eq!(dropped_header, Some("---"));
+
+    for line in lines {
+        f.write_str(&line)?;
+        f.write_str("\n")?;
+    }
+    Ok(())
+}
+

@@ -4,7 +4,6 @@ use level::Level;
 use proof::{self, Content};
 use std::path::PathBuf;
 use Result;
-use serde_yaml;
 
 #[test]
 fn signed_parse() -> Result<()> {

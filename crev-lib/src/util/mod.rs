@@ -1,21 +1,16 @@
 use app_dirs;
 use base64;
-use blake2::{self, digest::FixedOutput, Digest};
-use chrono::{self, prelude::*};
-use proof;
-use rand::{self, Rng};
+use crev_data::proof;
 use rpassword;
 use rprompt;
 use std::{
     env, ffi, fs,
-    io::{self, BufRead, Read, Write},
+    io::{self, Read, Write},
     path::Path,
     process,
 };
 use tempdir;
 use Result;
-
-pub mod serde;
 
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",
@@ -134,6 +129,7 @@ pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result
 }
 
 pub fn random_id_str() -> String {
+    use rand::{self, Rng};
     let project_id: Vec<u8> = rand::thread_rng()
         .sample_iter(&rand::distributions::Standard)
         .take(32)
@@ -141,28 +137,3 @@ pub fn random_id_str() -> String {
     base64::encode_config(&project_id, base64::URL_SAFE)
 }
 
-pub fn blaze2sum_file(path: &Path) -> Result<Vec<u8>> {
-    let file = fs::File::open(path)?;
-
-    let mut reader = io::BufReader::new(file);
-    let mut hasher = blake2::Blake2b::new();
-
-    loop {
-        let length = {
-            let buffer = reader.fill_buf()?;
-            hasher.input(buffer);
-            buffer.len()
-        };
-        if length == 0 {
-            break;
-        }
-        reader.consume(length);
-    }
-    Ok(hasher.fixed_result().to_vec())
-}
-
-pub fn blaze2sum(bytes: &[u8]) -> Vec<u8> {
-    let mut hasher = blake2::Blake2b::new();
-    hasher.input(bytes);
-    hasher.fixed_result().to_vec()
-}

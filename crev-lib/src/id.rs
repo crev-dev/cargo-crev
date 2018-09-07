@@ -1,20 +1,22 @@
-/*use argonautica::{self, Hasher};
+use argonautica::{self, Hasher};
+use rand::{self, Rng};
 use base64;
+/*
 use blake2;
 use common_failures::prelude::*;
-use ed25519_dalek::{self, PublicKey};
-use miscreant;
-use rand::{self, OsRng, Rng};
-use serde_yaml;
 */
+use serde_yaml;
+use miscreant;
 use std::{
+    fmt,
     self,
-    io::{self, Read, Write},
+    io::{Read, Write},
     path::Path,
 };
-use util::serde::{as_base64, from_base64};
+use crev_common::serde::{as_base64, from_base64};
 
-use crev_data::id::OwndId;
+use crev_data::id::{OwnId, PubId};
+use Result;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PassConfig {
@@ -53,72 +55,67 @@ pub struct LockedId {
     pass: PassConfig,
 }
 
+
+impl fmt::Display for LockedId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // https://github.com/dtolnay/serde-yaml/issues/103
+        f.write_str(&serde_yaml::to_string(self).map_err(|_| fmt::Error)?)
+    }
+}
+
 impl LockedId {
+    pub fn from_own_id(own_id: &OwnId, passphrase: &str) -> Result<LockedId> {
+        use miscreant::aead::Algorithm;
+        let mut hasher = Hasher::default();
 
+        hasher
+            .configure_memory_size(4096)
+            .configure_hash_len(64)
+            .opt_out_of_secret_key(true);
 
-    pub fn lock_own_id(&own: OwnId, passphrase: &str) -> Result<LockedId> {
-        match self {
-            OwnId::Crev { url, keypair } => {
-                use miscreant::aead::Algorithm;
-                let mut hasher = Hasher::default();
+        let pwhash = hasher.with_password(passphrase).hash_raw()?;
 
-                hasher
-                    .configure_memory_size(4096)
-                    .configure_hash_len(64)
-                    .opt_out_of_secret_key(true);
+        let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
 
-                let pwhash = hasher.with_password(passphrase).hash_raw()?;
+        let seal_nonce: Vec<u8> = rand::thread_rng()
+            .sample_iter(&rand::distributions::Standard)
+            .take(32)
+            .collect();
 
-                let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
+        let hasher_config = hasher.config();
 
-                let mut seal_nonce: Vec<u8> = rand::thread_rng()
-                    .sample_iter(&rand::distributions::Standard)
-                    .take(32)
-                    .collect();
-
-                let hasher_config = hasher.config();
-
-                assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
-                Ok(LockedId {
-                    version: 0,
-                    pub_key: keypair.public.to_bytes().to_vec(),
-                    sealed_sec_key: siv.seal(&seal_nonce, &[], keypair.secret.as_bytes()),
-                    seal_nonce: seal_nonce,
-                    url: url.clone(),
-                    pass: PassConfig {
-                        salt: pwhash.raw_salt_bytes().to_vec(),
-                        iterations: hasher_config.iterations(),
-                        memory_size: hasher_config.memory_size(),
-                        version: 0x13,
-                        variant: hasher_config.variant().as_str().to_string(),
-                    },
-                })
-            }
-        }
+        assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
+        Ok(LockedId {
+            version: 0,
+            pub_key: own_id.keypair.public.to_bytes().to_vec(),
+            sealed_sec_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
+            seal_nonce: seal_nonce,
+            url: own_id.id.url.clone(),
+            pass: PassConfig {
+                salt: pwhash.raw_salt_bytes().to_vec(),
+                iterations: hasher_config.iterations(),
+                memory_size: hasher_config.memory_size(),
+                version: 0x13,
+                variant: hasher_config.variant().as_str().to_string(),
+            },
+        })
     }
 
     pub fn to_pubid(&self) -> PubId {
-        PubId::Crev {
-            url: self.url.to_owned(),
-            id: self.pub_key.to_owned(),
-        }
+        PubId::new(self.url.to_owned(),self.pub_key.to_owned())
     }
 
     pub fn pub_key_as_base64(&self) -> String {
         base64::encode_config(&self.pub_key, base64::URL_SAFE)
     }
 
-    pub fn to_string(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(&self)?)
-    }
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(path)?;
-        let id = self.to_string()?;
-        write!(file, "{}", id)?;
+        write!(file, "{}", self)?;
 
         Ok(())
     }
@@ -162,21 +159,14 @@ impl LockedId {
             let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
 
             let sec_key = siv.open(&seal_nonce, &[], &sealed_sec_key)?;
-            let sec_key = ed25519_dalek::SecretKey::from_bytes(&sec_key)?;
 
-            let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
+            let res = OwnId::new(url.to_owned(), sec_key)?;
 
-            if ed25519_dalek::PublicKey::from_bytes(&pub_key)? != calculated_pub_key {
+            if pub_key != &res.keypair.public.to_bytes() {
                 bail!("PubKey mismatch");
             }
 
-            Ok(OwnId::Crev {
-                url: url.clone(),
-                keypair: ed25519_dalek::Keypair {
-                    secret: sec_key,
-                    public: calculated_pub_key,
-                },
-            })
+            Ok(res)
         }
     }
 }

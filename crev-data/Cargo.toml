@@ -23,7 +23,7 @@ serde = "1"
 serde_derive = "1"
 serde_yaml = "0.8"
 hex = "*"
-rand = "*"
+rand = "0.5.5"
 derive_builder = "*"
 
 [dependencies.argonautica]
