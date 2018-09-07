@@ -10,16 +10,16 @@ pub fn now() -> DateTime<FixedOffset> {
     date.with_timezone(&date.offset())
 }
 
+pub fn blaze2sum(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = blake2::Blake2b::new();
+    hasher.input(bytes);
+    hasher.fixed_result().to_vec()
+}
+
 pub fn random_id_str() -> String {
     let project_id: Vec<u8> = rand::thread_rng()
         .sample_iter(&rand::distributions::Standard)
         .take(32)
         .collect();
     base64::encode_config(&project_id, base64::URL_SAFE)
-}
-
-pub fn blaze2sum(bytes: &[u8]) -> Vec<u8> {
-    let mut hasher = blake2::Blake2b::new();
-    hasher.input(bytes);
-    hasher.fixed_result().to_vec()
 }

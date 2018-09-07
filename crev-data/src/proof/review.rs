@@ -5,8 +5,9 @@ use serde_yaml;
 use std::{fmt, path::PathBuf};
 use util::{
     self,
-    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
 };
+
+use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";

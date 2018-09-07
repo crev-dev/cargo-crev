@@ -1,0 +1,10 @@
+[package]
+name = "crev-common"
+version = "0.1.0"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+
+[dependencies]
+serde = "*"
+base64 = "*"
+hex = "*"
+chrono = "*"

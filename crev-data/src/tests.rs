@@ -4,6 +4,7 @@ use level::Level;
 use proof::{self, Content};
 use std::path::PathBuf;
 use Result;
+use serde_yaml;
 
 #[test]
 fn signed_parse() -> Result<()> {
@@ -71,6 +72,7 @@ sig2
     assert_eq!(proofs[1].signature, "sig2\n");
     Ok(())
 }
+
 #[test]
 fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
@@ -109,3 +111,4 @@ fn sign_proof_review() -> Result<()> {
 
     Ok(())
 }
+

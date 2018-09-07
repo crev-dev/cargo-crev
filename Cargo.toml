@@ -1,5 +1,6 @@
 [workspace]
 members = [
+	"crev-common",
 	"crev-data",
 	"crev-lib",
 	"crev-bin"

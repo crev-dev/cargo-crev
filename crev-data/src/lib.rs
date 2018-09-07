@@ -19,6 +19,7 @@ extern crate serde_derive;
 extern crate serde_yaml;
 #[macro_use]
 extern crate derive_builder;
+extern crate crev_common;
 
 use common_failures::prelude::*;
 

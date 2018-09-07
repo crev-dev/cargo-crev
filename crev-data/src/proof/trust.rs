@@ -3,10 +3,7 @@ use level::Level;
 use proof;
 use serde_yaml;
 use std::fmt;
-use util::{
-    self,
-    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
-};
+use crev_common::{self, serde::{as_rfc3339_fixed, from_rfc3339_fixed}};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";
@@ -15,7 +12,7 @@ pub const PROOF_EXTENSION: &str = "trust.crev";
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
-    #[builder(default = "util::now()")]
+    #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"

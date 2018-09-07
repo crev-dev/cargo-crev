@@ -11,6 +11,7 @@ repository = "https://github.com/dpc/crev"
 version = "0.0.1"
 
 [dependencies]
+crev-data = { path = "../crev-data" }
 app_dirs = "*"
 common_failures = "*"
 derive_builder = "*"
