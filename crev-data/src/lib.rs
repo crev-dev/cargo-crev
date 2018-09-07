@@ -28,6 +28,7 @@ pub mod review {
 pub mod trust {
     pub use super::proof::trust::*;
 }
+
 pub mod id;
 pub mod level;
 pub mod proof;

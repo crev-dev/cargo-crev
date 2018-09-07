@@ -31,16 +31,7 @@ use common_failures::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-mod id;
-mod level;
 mod opts;
-
-mod local;
-mod util;
-use local::*;
-mod proof;
-mod repo;
-mod trust_graph;
 
 fn show_id() -> Result<()> {
     let local = Local::auto_open()?;
@@ -124,5 +115,3 @@ main!(|opts: opts::Opts| match opts.command {
     }
 });
 
-#[cfg(test)]
-mod tests;

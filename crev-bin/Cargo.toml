@@ -1,0 +1,16 @@
+[package]
+name = "crev-bin"
+version = "0.1.0"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+
+[[bin]]
+name = "crev"
+path = "src/main.rs"
+
+[dependencies]
+failure = "*"
+quicli = "*"
+rpassword = "*"
+rprompt = "*"
+structopt = "*"
+crev-lib = { path = "../crev-lib" }
