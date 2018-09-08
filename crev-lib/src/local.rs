@@ -203,7 +203,7 @@ impl Local {
 
     */
 
-    fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
+    fn get_proof_rel_store_path(&self, content: &impl ::proof::ContentExt) -> PathBuf {
         PathBuf::from("proofs").join(content.rel_store_path())
     }
 

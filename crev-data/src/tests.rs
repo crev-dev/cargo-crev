@@ -1,6 +1,6 @@
 use id;
 use level::Level;
-use proof::{self, review::Review, Content, Serialized};
+use proof::{self, Serialized};
 use std::path::PathBuf;
 use Result;
 
@@ -14,7 +14,7 @@ sig
 -----END CODE REVIEW-----
 "#;
 
-    let proofs = Serialized::<Review>::parse(s.as_bytes())?;
+    let proofs = Serialized::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 1);
     assert_eq!(proofs[0].body, "foo\n");
     assert_eq!(proofs[0].signature, "sig\n");
@@ -36,7 +36,7 @@ sig2
 -----END CODE REVIEW-----
 "#;
 
-    let proofs = Serialized::<Review>::parse(s.as_bytes())?;
+    let proofs = Serialized::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");
@@ -62,7 +62,7 @@ foo2
 sig2
 -----END CODE REVIEW-----"#;
 
-    let proofs = Serialized::<Review>::parse(s.as_bytes())?;
+    let proofs = Serialized::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");

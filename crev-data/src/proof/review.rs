@@ -4,14 +4,13 @@ use level::Level;
 use proof;
 use serde_yaml;
 use std::{fmt, path::PathBuf};
+use Result;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
-
-pub const PROOF_EXTENSION: &str = "review.crev";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewFile {
@@ -61,25 +60,26 @@ pub struct Review {
     files: Vec<ReviewFile>,
 }
 
-impl proof::Content for Review {
-    const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-    const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-    const END_BLOCK: &'static str = END_BLOCK;
-    const CONTENT_TYPE_NAME: &'static str = "review";
-    const PROOF_EXTENSION: &'static str = PROOF_EXTENSION;
+impl Review {
+    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
+    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
+    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 
-    fn date(&self) -> chrono::DateTime<FixedOffset> {
+    pub fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
     }
 
-    fn project_id(&self) -> Option<&str> {
+    pub fn project_id(&self) -> Option<&str> {
         Some(&self.project_id)
     }
-    fn from_pubid(&self) -> String {
+    pub fn from_pubid(&self) -> String {
         self.from.clone()
     }
-    fn from_url(&self) -> String {
+    pub fn from_url(&self) -> String {
         self.from_url.clone()
+    }
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
     }
 }
 
@@ -97,5 +97,3 @@ impl fmt::Display for Review {
         Ok(())
     }
 }
-
-pub type ReviewProof = super::Serialized<Review>;

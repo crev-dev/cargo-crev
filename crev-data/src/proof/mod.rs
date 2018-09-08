@@ -4,11 +4,9 @@ use base64;
 use chrono::{self, prelude::*};
 use crev_common;
 use id;
-use serde;
-use serde_yaml;
 use std::{
-    default, fmt, fs, io, marker, mem,
-    path::{Path, PathBuf},
+    default, fmt, fs, io, mem,
+    path::{Path},
 };
 
 pub mod review;
@@ -19,117 +17,182 @@ pub use trust::*;
 
 use Result;
 
+/*
 pub trait Content:
     Sized + for<'a> serde::Deserialize<'a> + serde::Serialize + fmt::Display
 {
     const BEGIN_BLOCK: &'static str;
     const BEGIN_SIGNATURE: &'static str;
     const END_BLOCK: &'static str;
-
     const CONTENT_TYPE_NAME: &'static str;
-    const PROOF_EXTENSION: &'static str;
+    const PROOF_TYPE: ProofType;
 
     fn date(&self) -> chrono::DateTime<FixedOffset>;
     fn from_pubid(&self) -> String;
     fn from_url(&self) -> String;
     fn project_id(&self) -> Option<&str>;
 
-    /// The path to use under project `.crev/`
-    fn rel_project_path(&self) -> PathBuf {
-        PathBuf::from(self.from_pubid())
-            .join(Self::CONTENT_TYPE_NAME)
-            .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension(Self::PROOF_EXTENSION)
-    }
+}
+*/
 
-    /// The path to use under user store
-    fn rel_store_path(&self) -> PathBuf {
-        let mut path = PathBuf::from(self.from_pubid()).join(Self::CONTENT_TYPE_NAME);
+#[derive(Copy, Clone, Debug)]
+pub enum ProofType {
+    Review,
+    Trust,
+}
 
-        if let Some(project_id) = self.project_id() {
-            path = path.join(project_id)
+impl ProofType {
+    fn begin_block(&self) -> &'static str {
+        match self {
+            ProofType::Review => Review::BEGIN_BLOCK,
+            ProofType::Trust => Trust::BEGIN_BLOCK,
         }
-
-        path.join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension(Self::PROOF_EXTENSION)
     }
-
-    fn sign(&self, id: &id::OwnId) -> Result<Serialized<Self>> {
-        let body = self.to_string();
-        let signature = id.sign(&body.as_bytes());
-        Ok(Serialized {
-            body: body,
-            signature: base64::encode_config(&signature, base64::URL_SAFE),
-            phantom: marker::PhantomData,
-        })
+    fn begin_signature(&self) -> &'static str {
+        match self {
+            ProofType::Review => Review::BEGIN_SIGNATURE,
+            ProofType::Trust => Trust::BEGIN_SIGNATURE,
+        }
     }
-
-    fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+    fn end_block(&self) -> &'static str {
+        match self {
+            ProofType::Review => Review::END_BLOCK,
+            ProofType::Trust => Trust::END_BLOCK,
+        }
     }
 }
 
 /// A signed proof containing some signed `Content`
 #[derive(Debug, Clone)]
-pub struct Serialized<T> {
+pub(crate) struct Serialized {
     pub body: String,
     pub signature: String,
-    phantom: marker::PhantomData<T>,
+    pub type_: ProofType,
+}
+
+#[derive(Debug, Clone)]
+pub enum Content {
+    Trust(Trust),
+    Review(Review),
+}
+
+impl fmt::Display for Content {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.fmt(f),
+            Review(review) => review.fmt(f),
+        }
+    }
+}
+
+impl Content {
+
+    pub fn sign(&self, id: &id::OwnId) -> Result<Proof> {
+
+        let body = self.to_string();
+        let signature = id.sign(&body.as_bytes());
+        Ok(Proof {
+            digest: crev_common::blake2sum(&body.as_bytes()),
+            body: body,
+            signature: base64::encode_config(&signature, base64::URL_SAFE),
+            content: self.clone(),
+        })
+    }
+
+    pub fn proof_type(&self) -> ProofType {
+        use self::Content::*;
+        match self {
+            Trust(_trust) => ProofType::Trust,
+            Review(_review) => ProofType::Review,
+        }
+    }
+
+    pub fn date(&self) -> chrono::DateTime<FixedOffset> {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.date(),
+            Review(review) => review.date(),
+        }
+    }
+
+    pub fn from_pubid(&self) -> String {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.from_pubid(),
+            Review(review) => review.from_pubid(),
+        }
+    }
+
+    pub fn from_url(&self) -> String {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.from_url(),
+            Review(review) => review.from_url(),
+        }
+    }
+
+    pub fn project_id(&self) -> Option<&str> {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.project_id(),
+            Review(review) => review.project_id(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 /// A `Proof` with it's content parsed and ready.
-pub struct Parsed<T> {
+pub struct Proof {
     pub body: String,
     pub signature: String,
     pub digest: Vec<u8>,
-    pub content: T,
+    pub content: Content,
 }
 
-impl<T: Content> fmt::Display for Serialized<T> {
+impl fmt::Display for Serialized {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(T::BEGIN_BLOCK)?;
+        f.write_str(self.type_.begin_block())?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;
-        f.write_str(T::BEGIN_SIGNATURE)?;
+        f.write_str(self.type_.begin_signature())?;
         f.write_str("\n")?;
         f.write_str(&self.signature)?;
         f.write_str("\n")?;
-        f.write_str(T::END_BLOCK)?;
+        f.write_str(self.type_.end_block())?;
         f.write_str("\n")?;
 
         Ok(())
     }
 }
 
-impl<T: Content> fmt::Display for Parsed<T> {
+impl fmt::Display for Proof {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(T::BEGIN_BLOCK)?;
+        f.write_str(self.content.proof_type().begin_block())?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;
-        f.write_str(T::BEGIN_SIGNATURE)?;
+        f.write_str(self.content.proof_type().begin_signature())?;
         f.write_str("\n")?;
         f.write_str(&self.signature)?;
         f.write_str("\n")?;
-        f.write_str(T::END_BLOCK)?;
+        f.write_str(self.content.proof_type().end_block())?;
         f.write_str("\n")?;
 
         Ok(())
     }
 }
-impl<T: Content> Serialized<T> {
-    pub fn to_parsed(&self) -> Result<Parsed<T>> {
-        Ok(Parsed {
+
+impl Serialized {
+    pub fn to_parsed(&self) -> Result<Proof> {
+        Ok(Proof {
             body: self.body.clone(),
             signature: self.signature.clone(),
             digest: crev_common::blake2sum(&self.body.as_bytes()),
-            content: <T as Content>::parse(&self.body)?,
+            content: match self.type_ {
+                ProofType::Review  => Content::Review(Review::parse(&self.body)?),
+                ProofType::Trust => Content::Trust(Trust::parse(&self.body)?)
+            },
         })
-    }
-
-    pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
-        let file = fs::File::open(path)?;
-        Self::parse(io::BufReader::new(file))
     }
 
     pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
@@ -146,53 +209,59 @@ impl<T: Content> Serialized<T> {
             }
         }
 
-        struct State<T> {
+        struct State {
             stage: Stage,
             body: String,
             signature: String,
-            proofs: Vec<Serialized<T>>,
+            type_: ProofType,
+            proofs: Vec<Serialized>,
         }
 
-        impl<T> default::Default for State<T> {
+        impl default::Default for State {
             fn default() -> Self {
                 State {
                     stage: Default::default(),
                     body: Default::default(),
                     signature: Default::default(),
+                    type_: ProofType::Trust, // whatever
                     proofs: vec![],
                 }
             }
         }
 
-        impl<T: Content> State<T> {
+        impl State {
             fn process_line(&mut self, line: &str) -> Result<()> {
                 match self.stage {
                     Stage::None => {
                         if line.trim().is_empty() {
-                        } else if line.trim() == T::BEGIN_BLOCK {
+                        } else if line.trim() == ProofType::Review.begin_block() {
+                            self.type_ = ProofType::Review;
+                            self.stage = Stage::Body;
+                        } else if line.trim() == ProofType::Trust.begin_block() {
+                            self.type_ = ProofType::Trust;
                             self.stage = Stage::Body;
                         } else {
                             bail!("Parsing error when looking for start of code review proof");
                         }
                     }
                     Stage::Body => {
-                        if line.trim() == T::BEGIN_SIGNATURE {
+                        if line.trim() == self.type_.begin_signature() {
                             self.stage = Stage::Signature;
                         } else {
                             self.body += line;
                             self.body += "\n";
                         }
                         if self.body.len() > 16_000 {
-                            bail!("Parsed body too long");
+                            bail!("Proof body too long");
                         }
                     }
                     Stage::Signature => {
-                        if line.trim() == T::END_BLOCK {
+                        if line.trim() == self.type_.end_block() {
                             self.stage = Stage::None;
                             self.proofs.push(Serialized {
                                 body: mem::replace(&mut self.body, String::new()),
                                 signature: mem::replace(&mut self.signature, String::new()),
-                                phantom: marker::PhantomData,
+                                type_: self.type_,
                             });
                         } else {
                             self.signature += line;
@@ -206,7 +275,7 @@ impl<T: Content> Serialized<T> {
                 Ok(())
             }
 
-            fn finish(self) -> Result<Vec<Serialized<T>>> {
+            fn finish(self) -> Result<Vec<Serialized>> {
                 if self.stage != Stage::None {
                     bail!("Unexpected EOF while parsing");
                 }
@@ -214,7 +283,7 @@ impl<T: Content> Serialized<T> {
             }
         }
 
-        let mut state: State<T> = Default::default();
+        let mut state: State = Default::default();
 
         for line in reader.lines() {
             state.process_line(&line?)?;
@@ -222,7 +291,25 @@ impl<T: Content> Serialized<T> {
 
         state.finish()
     }
+
 }
+
+impl Proof {
+
+    pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
+        let file = fs::File::open(path)?;
+        Self::parse(io::BufReader::new(file))
+    }
+
+    pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
+        let mut v = vec![];
+        for serialized in Serialized::parse(reader)?.into_iter() {
+            v.push(serialized.to_parsed()?)
+        }
+        Ok(v)
+    }
+}
+
 
 fn equals_crev(s: &str) -> bool {
     s == "crev"

@@ -14,6 +14,7 @@ extern crate serde_cbor;
 extern crate serde_yaml;
 extern crate tempdir;
 extern crate walkdir;
+extern crate chrono;
 
 use common_failures::prelude::*;
 
@@ -25,6 +26,7 @@ pub mod id;
 pub mod index;
 pub mod local;
 pub mod repo;
+pub mod proof;
 pub mod trust_graph;
 mod util;
 
