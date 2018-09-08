@@ -135,7 +135,6 @@ all the other possibilities.
 * Web of Trust is personal and subjective, islands of Trust emerge spontaneously
   and overlap.
 
-
 ## MVP
 
 * `crev` - command line tool, that works a bit like `git`, for personal and per-project use
