@@ -1,8 +1,10 @@
+use crev_data::{
+    level,
+    proof::{self, Content},
+    review,
+};
 use git2;
-use crev_data::level;
 use local::Local;
-use crev_data::proof::{self, Content};
-use crev_data::review;
 use serde_yaml;
 use std::{
     fs,

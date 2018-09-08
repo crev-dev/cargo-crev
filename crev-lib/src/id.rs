@@ -1,19 +1,18 @@
 use argonautica::{self, Hasher};
-use rand::{self, Rng};
 use base64;
+use rand::{self, Rng};
 /*
 use blake2;
 use common_failures::prelude::*;
 */
-use serde_yaml;
+use crev_common::serde::{as_base64, from_base64};
 use miscreant;
+use serde_yaml;
 use std::{
-    fmt,
-    self,
+    self, fmt,
     io::{Read, Write},
     path::Path,
 };
-use crev_common::serde::{as_base64, from_base64};
 
 use crev_data::id::{OwnId, PubId};
 use Result;
@@ -54,7 +53,6 @@ pub struct LockedId {
     seal_nonce: Vec<u8>,
     pass: PassConfig,
 }
-
 
 impl fmt::Display for LockedId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -102,13 +100,12 @@ impl LockedId {
     }
 
     pub fn to_pubid(&self) -> PubId {
-        PubId::new(self.url.to_owned(),self.pub_key.to_owned())
+        PubId::new(self.url.to_owned(), self.pub_key.to_owned())
     }
 
     pub fn pub_key_as_base64(&self) -> String {
         base64::encode_config(&self.pub_key, base64::URL_SAFE)
     }
-
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
         let mut file = std::fs::OpenOptions::new()

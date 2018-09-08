@@ -1,5 +1,5 @@
-use std::{io, env};
 use rpassword;
+use std::{env, io};
 
 pub fn read_passphrase() -> io::Result<String> {
     if let Ok(pass) = env::var("CREV_PASSPHRASE") {

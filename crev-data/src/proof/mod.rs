@@ -2,11 +2,14 @@
 
 use base64;
 use chrono::{self, prelude::*};
+use crev_common;
 use id;
 use serde;
 use serde_yaml;
-use std::{fs, default, fmt, io, marker, mem, path::{PathBuf, Path}};
-use crev_common;
+use std::{
+    default, fmt, fs, io, marker, mem,
+    path::{Path, PathBuf},
+};
 
 pub mod review;
 pub mod trust;

@@ -1,4 +1,5 @@
 use common_failures::prelude::*;
+use crev_common;
 use crev_data::review::ReviewFile;
 use serde_cbor;
 use std::{
@@ -7,7 +8,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use crev_common;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StagingPathInfo {

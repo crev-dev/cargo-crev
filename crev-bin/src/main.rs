@@ -1,24 +1,24 @@
 #![allow(deprecated)]
 //#[macro_use]
-extern crate failure;
 extern crate common_failures;
+extern crate failure;
 #[macro_use]
 extern crate quicli;
+extern crate crev_common;
+extern crate crev_data;
+extern crate crev_lib;
 extern crate rpassword;
 extern crate rprompt;
 extern crate structopt;
-extern crate crev_lib;
-extern crate crev_data;
-extern crate crev_common;
 
 use common_failures::prelude::*;
+use crev_data::id::OwnId;
+use crev_lib::{id::LockedId, local::Local, repo::Repo};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use crev_lib::{local::Local, repo::Repo, id::LockedId};
-use crev_data::id::OwnId;
 
-mod util;
 mod opts;
+mod util;
 
 fn show_id() -> Result<()> {
     let local = Local::auto_open()?;
@@ -68,7 +68,7 @@ main!(|opts: opts::Opts| match opts.command {
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {
             let local = Local::auto_open()?;
-        let passphrase = util::read_passphrase()?;
+            let passphrase = util::read_passphrase()?;
             local.trust_ids(trust.pub_ids, passphrase)?;
         }
         opts::Trust::Update => {
@@ -103,4 +103,3 @@ main!(|opts: opts::Opts| match opts.command {
         repo.verify()?;
     }
 });
-

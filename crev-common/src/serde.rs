@@ -2,19 +2,18 @@
 // so we have to import serde crate here
 extern crate serde;
 
+use self::serde::Deserialize;
 use base64;
-use hex::{self, FromHex, FromHexError};
-use self::serde::{Deserialize};
 use chrono::{self, offset::FixedOffset, prelude::*};
-use std::{fmt, io};
+use hex::{self, FromHex, FromHexError};
 use serde_yaml;
+use std::{fmt, io};
 
 // {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {
     type Err: 'static + Sized + ::std::error::Error;
     fn try_from(&[u8]) -> Result<Self, Self::Err>;
 }
-
 
 pub fn from_base64<'d, T, D>(deserializer: D) -> Result<T, D::Error>
 where
@@ -64,7 +63,6 @@ where
     serializer.serialize_str(&hex::encode(key))
 }
 
-
 pub fn from_rfc3339_fixed<'d, D>(deserializer: D) -> Result<chrono::DateTime<FixedOffset>, D::Error>
 where
     D: serde::Deserializer<'d>,
@@ -98,7 +96,10 @@ impl MyTryFromBytes for Vec<u8> {
 /// Write out a value as YAML without a `---` prefix
 ///
 /// This is how a lot of stuff in `Crev` is serialized
-pub fn write_as_headerless_yaml<T: self::serde::Serialize>(t : &T, f: &mut fmt::Formatter) -> fmt::Result {
+pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
+    t: &T,
+    f: &mut fmt::Formatter,
+) -> fmt::Result {
     // TODO: Don't serialize to string, and instead serialize to writer
     let yaml_document = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;
     let mut lines = yaml_document.lines();
@@ -111,4 +112,3 @@ pub fn write_as_headerless_yaml<T: self::serde::Serialize>(t : &T, f: &mut fmt::
     }
     Ok(())
 }
-

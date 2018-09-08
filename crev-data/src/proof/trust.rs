@@ -1,8 +1,11 @@
 use chrono::{self, prelude::*};
+use crev_common::{
+    self,
+    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
+};
 use level::Level;
 use proof;
 use std::fmt;
-use crev_common::{self, serde::{as_rfc3339_fixed, from_rfc3339_fixed}};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";

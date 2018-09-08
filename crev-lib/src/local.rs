@@ -1,6 +1,11 @@
 use app_dirs::{app_root, AppDataType};
-use id::{self, LockedId };
-use crev_data::{level, trust,proof::{self, Content}, id::OwnId};
+use crev_data::{
+    id::OwnId,
+    level,
+    proof::{self, Content},
+    trust,
+};
+use id::{self, LockedId};
 use serde_yaml;
 use std::{
     fs,

@@ -1,9 +1,9 @@
 use chrono::{self, prelude::*};
+use crev_common;
 use level::Level;
 use proof;
 use serde_yaml;
 use std::{fmt, path::PathBuf};
-use crev_common;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 

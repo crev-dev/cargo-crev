@@ -1,5 +1,6 @@
 use app_dirs;
 use base64;
+use crev_common;
 use crev_data::proof;
 use std::{
     env, ffi, fs,
@@ -9,7 +10,6 @@ use std::{
 };
 use tempdir;
 use Result;
-use crev_common;
 
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",
@@ -74,7 +74,6 @@ fn edit_text_iteractively(text: String) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
-
 pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result<T> {
     let mut text = content.to_string();
     loop {
@@ -99,4 +98,3 @@ pub fn random_id_str() -> String {
         .collect();
     base64::encode_config(&project_id, base64::URL_SAFE)
 }
-

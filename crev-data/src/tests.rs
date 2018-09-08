@@ -1,7 +1,6 @@
-use proof::{review::Review, Serialized};
 use id;
 use level::Level;
-use proof::{self, Content};
+use proof::{self, review::Review, Content, Serialized};
 use std::path::PathBuf;
 use Result;
 
@@ -110,4 +109,3 @@ fn sign_proof_review() -> Result<()> {
 
     Ok(())
 }
-

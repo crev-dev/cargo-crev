@@ -2,14 +2,18 @@
 
 pub mod serde;
 extern crate base64;
-extern crate hex;
-extern crate chrono;
-extern crate serde_yaml;
 extern crate blake2;
+extern crate chrono;
+extern crate hex;
 extern crate rprompt;
+extern crate serde_yaml;
 
 use blake2::{digest::FixedOutput, Digest};
-use std::{fs, io::{self, BufRead}, path::Path};
+use std::{
+    fs,
+    io::{self, BufRead},
+    path::Path,
+};
 
 /// Now with a fixed offset of the current system timezone
 pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {

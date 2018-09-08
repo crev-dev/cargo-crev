@@ -1,6 +1,6 @@
 use super::*;
 
-use crev_data::id::{OwnId };
+use crev_data::id::OwnId;
 
 #[test]
 fn lock_and_unlock() -> Result<()> {
@@ -16,7 +16,8 @@ fn lock_and_unlock() -> Result<()> {
     );
 
     let id_stored = serde_yaml::to_string(&id::LockedId::from_own_id(&id, "pass")?)?;
-    let id_restored: OwnId = serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
+    let id_restored: OwnId =
+        serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
 
     println!("{}", id_stored);
 
