@@ -1,14 +1,12 @@
 use app_dirs::{app_root, AppDataType};
-use id::{self, LockedId, OwnId};
-use level;
-use proof::{self, Content};
+use id::{self, LockedId };
+use crev_data::{level, trust,proof::{self, Content}, id::OwnId};
 use serde_yaml;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use trust;
 use trust_graph;
 use util::{self, APP_INFO};
 use Result;
@@ -60,7 +58,7 @@ impl Local {
         Ok(self.load_user_config()?.current_id)
     }
 
-    pub fn save_current_id(&self, id: &id::OwnId) -> Result<()> {
+    pub fn save_current_id(&self, id: &OwnId) -> Result<()> {
         let mut config = self.load_user_config()?;
         config.current_id = id.pub_key_as_base64();
         self.store_user_config(&config)?;
@@ -208,17 +206,16 @@ impl Local {
         self.root_path.join("proofs")
     }
 
-    pub fn trust_ids(&self, pub_ids: Vec<String>) -> Result<()> {
+    pub fn trust_ids(&self, pub_ids: Vec<String>, passphrase: String) -> Result<()> {
         if pub_ids.is_empty() {
             bail!("No ids to trust. Use `add` first.");
         }
-        let passphrase = util::read_passphrase()?;
         let id = self.read_unlocked_id(&passphrase)?;
 
         let trust = trust::TrustBuilder::default()
             .from(id.pub_key_as_base64())
-            .from_url(id.url().into())
-            .from_type(id.type_as_string())
+            .from_url(id.id.url.to_owned())
+            .from_type(id.id.type_.to_string())
             .comment(Some("".into()))
             .trust(level::Level::Medium)
             .trusted_ids(pub_ids)

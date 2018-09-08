@@ -1,8 +1,6 @@
 use app_dirs;
 use base64;
 use crev_data::proof;
-use rpassword;
-use rprompt;
 use std::{
     env, ffi, fs,
     io::{self, Read, Write},
@@ -11,37 +9,13 @@ use std::{
 };
 use tempdir;
 use Result;
+use crev_common;
 
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",
     author: "Dawid Ciężarkiewicz",
 };
 
-pub fn read_passphrase() -> io::Result<String> {
-    if let Ok(pass) = env::var("CREV_PASSPHRASE") {
-        eprint!("Using passphrase set in CREV_PASSPHRASE\n");
-        return Ok(pass);
-    }
-    eprint!("Enter passphrase to unlock: ");
-    rpassword::read_password()
-}
-
-pub fn read_new_passphrase() -> io::Result<String> {
-    if let Ok(pass) = env::var("CREV_PASSPHRASE") {
-        eprint!("Using passphrase set in CREV_PASSPHRASE\n");
-        return Ok(pass);
-    }
-    loop {
-        eprint!("Enter new passphrase: ");
-        let p1 = rpassword::read_password()?;
-        eprint!("Enter new passphrase again: ");
-        let p2 = rpassword::read_password()?;
-        if p1 == p2 {
-            return Ok(p1);
-        }
-        eprintln!("\nPassphrases don't match, try again.");
-    }
-}
 fn get_editor_to_use() -> ffi::OsString {
     if let Some(v) = env::var_os("VISUAL") {
         return v;
@@ -100,17 +74,6 @@ fn edit_text_iteractively(text: String) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
-pub fn yes_or_no_was_y(msg: &str) -> Result<bool> {
-    loop {
-        let reply = rprompt::prompt_reply_stderr(msg)?;
-
-        match reply.as_str() {
-            "y" | "Y" => return Ok(true),
-            "n" | "N" => return Ok(false),
-            _ => {}
-        }
-    }
-}
 
 pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result<T> {
     let mut text = content.to_string();
@@ -119,7 +82,7 @@ pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result
         match T::parse(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
-                if !yes_or_no_was_y("Try again (y/n) ")? {
+                if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {
                     bail!("User canceled");
                 }
             }

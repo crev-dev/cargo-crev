@@ -1,5 +1,5 @@
 use common_failures::prelude::*;
-use review::ReviewFile;
+use crev_data::review::ReviewFile;
 use serde_cbor;
 use std::{
     collections::HashMap,
@@ -7,7 +7,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use util;
+use crev_common;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StagingPathInfo {
@@ -74,7 +74,7 @@ impl Staging {
         self.entries.insert(
             path.to_owned(),
             StagingPathInfo {
-                blake_hash: util::blaze2sum_file(&full_path)?,
+                blake_hash: crev_common::blake2sum_file(&full_path)?,
             },
         );
 
@@ -105,7 +105,7 @@ impl Staging {
     pub fn enforce_current(&self) -> Result<()> {
         for (rel_path, info) in self.entries.iter() {
             let path = self.root_path.join(rel_path);
-            if util::blaze2sum_file(&path)? != info.blake_hash {
+            if crev_common::blake2sum_file(&path)? != info.blake_hash {
                 bail!(
                     "File {} not current. Review again use `crev add` to
                       update.",

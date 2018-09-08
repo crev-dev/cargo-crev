@@ -1,4 +1,4 @@
-use proof;
+use crev_data::proof;
 use std::{ffi::OsStr, path::Path};
 use walkdir::WalkDir;
 use Result;

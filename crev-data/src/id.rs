@@ -14,6 +14,15 @@ pub enum IdType {
     Crev
 }
 
+impl fmt::Display for IdType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::IdType::*;
+        f.write_str(match self {
+            Crev => "crev",
+        })
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Public CrevId of someone
 pub struct PubId {

@@ -1,4 +1,5 @@
 use Result;
+use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -15,17 +16,19 @@ impl Default for Level {
     }
 }
 
-impl Level {
-    #[allow(unused)]
-    fn as_str(&self) -> &str {
+impl fmt::Display for Level {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Level::*;
-        match self {
+        f.write_str(match self {
             None => "none",
             Low => "low",
             Medium => "medium",
             High => "high",
-        }
+        })
     }
+}
+
+impl Level {
     #[allow(unused)]
     fn from_str(s: &str) -> Result<Level> {
         Ok(match s {

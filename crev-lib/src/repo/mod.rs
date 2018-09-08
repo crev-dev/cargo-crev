@@ -1,8 +1,8 @@
 use git2;
-use level;
+use crev_data::level;
 use local::Local;
-use proof::{self, Content};
-use review;
+use crev_data::proof::{self, Content};
+use crev_data::review;
 use serde_yaml;
 use std::{
     fs,
@@ -209,14 +209,12 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn commit(&mut self) -> Result<()> {
+    pub fn commit(&mut self, passphrase: String) -> Result<()> {
         if self.staging()?.is_empty() {
             bail!("No reviews to commit. Use `add` first.");
         }
-        let passphrase = util::read_passphrase()?;
         let local = Local::auto_open()?;
         let id = local.read_unlocked_id(&passphrase)?;
-        let _pub_id = id.to_pubid();
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
@@ -224,7 +222,7 @@ impl Repo {
 
         let review = review::ReviewBuilder::default()
             .from(id.pub_key_as_base64())
-            .from_url(id.url().into())
+            .from_url(id.id.url.to_owned())
             .from_type(id.type_as_string())
             .revision(revision.revision)
             .revision_type(revision.type_)

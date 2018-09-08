@@ -5,7 +5,7 @@ use chrono::{self, prelude::*};
 use id;
 use serde;
 use serde_yaml;
-use std::{default, fmt, io, marker, mem, path::PathBuf};
+use std::{fs, default, fmt, io, marker, mem, path::{PathBuf, Path}};
 use crev_common;
 
 pub mod review;
@@ -122,6 +122,11 @@ impl<T: Content> Serialized<T> {
             digest: crev_common::blake2sum(&self.body.as_bytes()),
             content: <T as Content>::parse(&self.body)?,
         })
+    }
+
+    pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
+        let file = fs::File::open(path)?;
+        Self::parse(io::BufReader::new(file))
     }
 
     pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
