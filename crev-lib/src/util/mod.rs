@@ -74,11 +74,14 @@ fn edit_text_iteractively(text: String) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
-pub fn edit_proof_content_iteractively<T: proof::Content>(content: &T) -> Result<T> {
+pub fn edit_proof_content_iteractively(
+    content: &proof::Content,
+    type_: proof::ProofType,
+) -> Result<proof::Content> {
     let mut text = content.to_string();
     loop {
         text = edit_text_iteractively(text)?;
-        match T::parse(&text) {
+        match proof::Content::parse(&text, type_) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
                 if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {

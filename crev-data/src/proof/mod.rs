@@ -4,10 +4,7 @@ use base64;
 use chrono::{self, prelude::*};
 use crev_common;
 use id;
-use std::{
-    default, fmt, fs, io, mem,
-    path::{Path},
-};
+use std::{default, fmt, fs, io, mem, path::Path};
 
 pub mod review;
 pub mod trust;
@@ -86,10 +83,27 @@ impl fmt::Display for Content {
     }
 }
 
+impl From<Review> for Content {
+    fn from(review: Review) -> Self {
+        Content::Review(review)
+    }
+}
+
+impl From<Trust> for Content {
+    fn from(review: Trust) -> Self {
+        Content::Trust(review)
+    }
+}
+
 impl Content {
+    pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
+        Ok(match type_ {
+            ProofType::Review => Content::Review(Review::parse(&s)?),
+            ProofType::Trust => Content::Trust(Trust::parse(&s)?),
+        })
+    }
 
     pub fn sign(&self, id: &id::OwnId) -> Result<Proof> {
-
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
@@ -189,8 +203,8 @@ impl Serialized {
             signature: self.signature.clone(),
             digest: crev_common::blake2sum(&self.body.as_bytes()),
             content: match self.type_ {
-                ProofType::Review  => Content::Review(Review::parse(&self.body)?),
-                ProofType::Trust => Content::Trust(Trust::parse(&self.body)?)
+                ProofType::Review => Content::Review(Review::parse(&self.body)?),
+                ProofType::Trust => Content::Trust(Trust::parse(&self.body)?),
             },
         })
     }
@@ -291,11 +305,9 @@ impl Serialized {
 
         state.finish()
     }
-
 }
 
 impl Proof {
-
     pub fn parse_from(path: &Path) -> Result<Vec<Self>> {
         let file = fs::File::open(path)?;
         Self::parse(io::BufReader::new(file))
@@ -309,7 +321,6 @@ impl Proof {
         Ok(v)
     }
 }
-
 
 fn equals_crev(s: &str) -> bool {
     s == "crev"

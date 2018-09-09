@@ -3,9 +3,10 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use serde_yaml;
+use id;
 use level::Level;
-use proof;
+use proof::{self, Proof};
+use serde_yaml;
 use std::fmt;
 use Result;
 
@@ -44,10 +45,10 @@ impl fmt::Display for Trust {
     }
 }
 
-impl  Trust {
-    pub(crate)  const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-    pub(crate)   const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-    pub(crate)    const END_BLOCK: &'static str = END_BLOCK;
+impl Trust {
+    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
+    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
+    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 
     pub fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
@@ -65,4 +66,7 @@ impl  Trust {
         Ok(serde_yaml::from_str(&s)?)
     }
 
+    pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
+        super::Content::from(self).sign(id)
+    }
 }

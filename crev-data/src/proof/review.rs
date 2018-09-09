@@ -1,7 +1,8 @@
 use chrono::{self, prelude::*};
 use crev_common;
+use id;
 use level::Level;
-use proof;
+use proof::{self, Proof};
 use serde_yaml;
 use std::{fmt, path::PathBuf};
 use Result;
@@ -80,6 +81,10 @@ impl Review {
     }
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
+    }
+
+    pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
+        super::Content::from(self).sign(id)
     }
 }
 

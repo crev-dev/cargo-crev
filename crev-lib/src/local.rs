@@ -1,10 +1,5 @@
 use app_dirs::{app_root, AppDataType};
-use crev_data::{
-    id::OwnId,
-    level,
-    proof::{self, Content},
-    trust,
-};
+use crev_data::{id::OwnId, level, proof, trust};
 use id::{self, LockedId};
 use serde_yaml;
 use std::{
@@ -203,8 +198,8 @@ impl Local {
 
     */
 
-    fn get_proof_rel_store_path(&self, content: &impl ::proof::ContentExt) -> PathBuf {
-        PathBuf::from("proofs").join(content.rel_store_path())
+    fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
+        PathBuf::from("proofs").join(::proof::rel_store_path(&proof.content))
     }
 
     fn get_proofs_dir_path(&self) -> PathBuf {
@@ -227,11 +222,10 @@ impl Local {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let trust = util::edit_proof_content_iteractively(&trust)?;
-
-        let rel_store_path = self.get_proof_rel_store_path(&trust);
+        let trust = util::edit_proof_content_iteractively(&trust.into(), proof::ProofType::Trust)?;
 
         let proof = trust.sign(&id)?;
+        let rel_store_path = self.get_proof_rel_store_path(&proof);
 
         self.append_proof_at(&proof, &rel_store_path)?;
         println!("{}", proof);
@@ -244,20 +238,12 @@ impl Local {
         unimplemented!();
     }
 
-    pub fn append_proof<T: proof::Content>(
-        &self,
-        proof: &proof::Serialized<T>,
-        content: &T,
-    ) -> Result<()> {
-        let rel_store_path = self.get_proof_rel_store_path(content);
+    pub fn append_proof(&self, proof: &proof::Proof) -> Result<()> {
+        let rel_store_path = self.get_proof_rel_store_path(proof);
         self.append_proof_at(&proof, &rel_store_path)
     }
 
-    fn append_proof_at<T: proof::Content>(
-        &self,
-        proof: &proof::Serialized<T>,
-        rel_store_path: &Path,
-    ) -> Result<()> {
+    fn append_proof_at(&self, proof: &proof::Proof, rel_store_path: &Path) -> Result<()> {
         let path = self.user_dir_path().join(rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;

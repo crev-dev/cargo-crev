@@ -1,8 +1,4 @@
-use crev_data::{
-    level,
-    proof::{self, Content},
-    review,
-};
+use crev_data::{level, proof, review};
 use git2;
 use local::Local;
 use serde_yaml;
@@ -130,11 +126,7 @@ impl Repo {
         Ok(self.staging.as_mut().unwrap())
     }
 
-    fn append_proof_at<T: proof::Content>(
-        &mut self,
-        proof: proof::Serialized<T>,
-        rel_store_path: &Path,
-    ) -> Result<()> {
+    fn append_proof_at(&mut self, proof: proof::Proof, rel_store_path: &Path) -> Result<()> {
         let path = self.dot_crev_path().join(rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;
@@ -150,7 +142,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn get_proof_rel_store_path(&self, content: &impl proof::Content) -> PathBuf {
+    pub fn get_proof_rel_store_path(&self, content: &proof::Proof) -> PathBuf {
         PathBuf::from("proofs").join(content.rel_project_path())
     }
 

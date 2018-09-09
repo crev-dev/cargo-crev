@@ -1,33 +1,43 @@
-use crev_data::{self, trust::Trust, review::Review};
-use std::path::PathBuf;
 use chrono::prelude::*;
+use crev_data::proof::Content;
+use std::path::PathBuf;
 
-pub trait ContentExt {
-    fn extension(&self) -> String {
-        format!("{}.crev", Self::PROOF_EXTENSION)
-    }
-
-    /// The path to use under project `.crev/`
-    fn rel_project_path(&self) -> PathBuf {
-        PathBuf::from(self.from_pubid())
-            .join(Self::CONTENT_TYPE_NAME)
-            .join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension(format!("{}.crev", Self::PROOF_EXTENSION))
-    }
-
-    /// The path to use under user store
-    fn rel_store_path(&self) -> PathBuf {
-        let mut path = PathBuf::from(self.from_pubid()).join(Self::CONTENT_TYPE_NAME);
-
-        if let Some(project_id) = self.project_id() {
-            path = path.join(project_id)
-        }
-
-        path.join(self.date().with_timezone(&Utc).format("%Y-%m").to_string())
-            .with_extension()
+fn type_name(content: &Content) -> &str {
+    match content {
+        Content::Trust(_) => "trust",
+        Content::Review(_) => "review",
     }
 }
 
-impl<T: crev_data::proof::Content> ContentExt for T { }
+/// The path to use under project `.crev/`
+pub(crate) fn rel_project_path(content: &Content) -> PathBuf {
+    let type_name = type_name(content);
 
+    PathBuf::from(content.from_pubid())
+        .join(type_name)
+        .join(
+            content
+                .date()
+                .with_timezone(&Utc)
+                .format("%Y-%m")
+                .to_string(),
+        ).with_extension(format!("{}.crev", type_name))
+}
 
+/// The path to use under user store
+pub(crate) fn rel_store_path(content: &Content) -> PathBuf {
+    let type_name = type_name(content);
+    let mut path = PathBuf::from(content.from_pubid()).join(type_name);
+
+    if let Some(project_id) = content.project_id() {
+        path = path.join(project_id)
+    }
+
+    path.join(
+        content
+            .date()
+            .with_timezone(&Utc)
+            .format("%Y-%m")
+            .to_string(),
+    ).with_extension(format!("{}.crev", type_name))
+}
