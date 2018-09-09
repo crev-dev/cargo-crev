@@ -5,6 +5,7 @@ use level::Level;
 use proof::{self, Proof};
 use serde_yaml;
 use std::{fmt, path::PathBuf};
+
 use Result;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
@@ -73,12 +74,15 @@ impl Review {
     pub fn project_id(&self) -> Option<&str> {
         Some(&self.project_id)
     }
+
     pub fn from_pubid(&self) -> String {
         self.from.clone()
     }
+
     pub fn from_url(&self) -> String {
         self.from_url.clone()
     }
+
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }

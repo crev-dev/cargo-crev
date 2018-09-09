@@ -142,8 +142,8 @@ impl Repo {
         Ok(())
     }
 
-    pub fn get_proof_rel_store_path(&self, content: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(content.rel_project_path())
+    pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
+        PathBuf::from("proofs").join(::proof::rel_project_path(&proof.content))
     }
 
     pub fn verify(&mut self) -> Result<()> {
@@ -229,11 +229,12 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review = util::edit_proof_content_iteractively(&review)?;
+        let review =
+            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Review)?;
 
         let proof = review.sign(&id)?;
 
-        let rel_store_path = self.get_proof_rel_store_path(&review);
+        let rel_store_path = self.get_proof_rel_store_path(&proof);
 
         println!("{}", proof.clone());
         self.append_proof_at(proof.clone(), &rel_store_path)?;
@@ -242,7 +243,7 @@ impl Repo {
             PathBuf::from(".crev").join(rel_store_path).display()
         );
         let local = Local::auto_open()?;
-        local.append_proof(&proof, &review)?;
+        local.append_proof(&proof)?;
         eprintln!("Proof added to your store");
         self.staging()?.wipe()?;
         Ok(())

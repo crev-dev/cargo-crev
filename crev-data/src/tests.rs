@@ -104,8 +104,5 @@ fn sign_proof_review() -> Result<()> {
     let proof = review.sign(&id)?;
     println!("{}", proof);
 
-    let parsed_review = proof.to_parsed()?;
-    println!("{}", parsed_review);
-
     Ok(())
 }
