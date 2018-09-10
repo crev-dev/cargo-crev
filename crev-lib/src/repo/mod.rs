@@ -170,18 +170,16 @@ impl Repo {
             bail!("Git repository is not in a clean state");
         }
         let mut status_opts = git2::StatusOptions::new();
+        status_opts.include_unmodified(true);
         status_opts.include_untracked(false);
-        if git_repo
-            .statuses(Some(&mut status_opts))?
-            .iter()
-            .any(|entry| {
-                if entry.status() != git2::Status::CURRENT {
-                    eprintln!("{}", entry.path().unwrap());
-                    true
-                } else {
-                    false
-                }
-            }) {
+        let mut unclean_found = false;
+        for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
+            if entry.status() != git2::Status::CURRENT {
+                eprintln!("{}", entry.path().unwrap());
+                unclean_found = true;
+            }
+        }
+        if unclean_found {
             bail!("Git repository is not in a clean state");
         }
         let head = git_repo.head()?;

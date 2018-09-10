@@ -22,6 +22,7 @@ pub struct PassConfig {
     version: u32,
     variant: String,
     iterations: u32,
+    #[serde(rename = "memory-size")]
     memory_size: u32,
     #[serde(
         serialize_with = "as_base64",
@@ -39,17 +40,20 @@ pub struct LockedId {
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
     )]
-    pub pub_key: Vec<u8>,
+    #[serde(rename = "public-key")]
+    pub public_key: Vec<u8>,
     #[serde(
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
     )]
-    sealed_sec_key: Vec<u8>,
+    #[serde(rename = "sealed-secret-key")]
+    sealed_secret_key: Vec<u8>,
 
     #[serde(
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
     )]
+    #[serde(rename = "seal-nonce")]
     seal_nonce: Vec<u8>,
     pass: PassConfig,
 }
@@ -85,8 +89,8 @@ impl LockedId {
         assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
         Ok(LockedId {
             version: 0,
-            pub_key: own_id.keypair.public.to_bytes().to_vec(),
-            sealed_sec_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
+            public_key: own_id.keypair.public.to_bytes().to_vec(),
+            sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce: seal_nonce,
             url: own_id.id.url.clone(),
             pass: PassConfig {
@@ -100,11 +104,11 @@ impl LockedId {
     }
 
     pub fn to_pubid(&self) -> PubId {
-        PubId::new(self.url.to_owned(), self.pub_key.to_owned())
+        PubId::new(self.url.to_owned(), self.public_key.to_owned())
     }
 
     pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.pub_key, base64::URL_SAFE)
+        base64::encode_config(&self.public_key, base64::URL_SAFE)
     }
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
@@ -129,8 +133,8 @@ impl LockedId {
         let LockedId {
             ref version,
             ref url,
-            ref pub_key,
-            ref sealed_sec_key,
+            ref public_key,
+            ref sealed_secret_key,
             ref seal_nonce,
             ref pass,
         } = self;
@@ -155,11 +159,11 @@ impl LockedId {
 
             let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
 
-            let sec_key = siv.open(&seal_nonce, &[], &sealed_sec_key)?;
+            let sec_key = siv.open(&seal_nonce, &[], &sealed_secret_key)?;
 
             let res = OwnId::new(url.to_owned(), sec_key)?;
 
-            if pub_key != &res.keypair.public.to_bytes() {
+            if public_key != &res.keypair.public.to_bytes() {
                 bail!("PubKey mismatch");
             }
 
