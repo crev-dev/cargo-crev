@@ -1,24 +1,33 @@
-use crev_data::proof;
-use std::{ffi::OsStr, path::Path};
+use crev_data::{self, proof};
+use std::{collections::HashMap, ffi::OsStr, path::Path};
 use walkdir::WalkDir;
 use Result;
 
-pub struct TrustGraph;
+struct TrustInfo {
+    #[allow(unused)]
+    level: crev_data::level::Level,
+}
+
+pub struct TrustGraph {
+    #[allow(unused)]
+    id_to_trusted: HashMap<String, HashMap<String, TrustInfo>>,
+}
 
 impl TrustGraph {
-    fn new() -> Self {
-        TrustGraph
+    pub fn new() -> Self {
+        TrustGraph {
+            id_to_trusted: Default::default(),
+        }
     }
 
     fn add_proof(&mut self, _proof: &proof::Proof) {
         unimplemented!();
     }
 
-    fn import_from_file(&mut self, path: &Path) -> Result<()> {
-        let review_osext: &OsStr = "review.crev".as_ref();
-        let trust_osext: &OsStr = "trust.crev".as_ref();
+    fn import_file(&mut self, path: &Path) -> Result<()> {
+        let osext_match: &OsStr = "crev".as_ref();
         match path.extension() {
-            Some(osext) if osext == review_osext || osext == trust_osext => {
+            Some(osext) if osext == osext_match => {
                 let proofs = proof::Proof::parse_from(path)?;
                 for proof in proofs.into_iter() {
                     self.add_proof(&proof);
@@ -30,7 +39,7 @@ impl TrustGraph {
         Ok(())
     }
 
-    pub fn load_from(path: &Path) -> Result<Self> {
+    pub fn import_recursively(path: &Path) -> Result<Self> {
         let mut graph = TrustGraph::new();
 
         for entry in WalkDir::new(path).into_iter().filter_map(|e| match e {
@@ -42,7 +51,11 @@ impl TrustGraph {
         }) {
             let path = entry.path();
 
-            match graph.import_from_file(&path) {
+            if !path.is_file() {
+                continue;
+            }
+
+            match graph.import_file(&path) {
                 Err(e) => eprintln!("Error importing {}: {}", path.display(), e),
                 Ok(_) => {}
             }

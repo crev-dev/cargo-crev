@@ -150,7 +150,7 @@ impl Repo {
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
         let _cur_id = user_config.current_id;
-        let _graph = trust_graph::TrustGraph; /* TODO: calculate trust graph */
+        let _graph = trust_graph::TrustGraph::new(); /* TODO: calculate trust graph */
         /*
         let user_config = Local::read_unlocked_id
         let trust_graph = Local::calculate_trust_graph_for(&id);

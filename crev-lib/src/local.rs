@@ -234,7 +234,7 @@ impl Local {
     }
 
     pub fn trust_update(&self) -> Result<()> {
-        let _graph = trust_graph::TrustGraph::load_from(&self.get_proofs_dir_path())?;
+        let _graph = trust_graph::TrustGraph::import_recursively(&self.get_proofs_dir_path())?;
         unimplemented!();
     }
 
