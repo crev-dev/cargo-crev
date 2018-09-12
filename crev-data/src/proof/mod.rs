@@ -1,8 +1,10 @@
 //! Some common stuff for both Review and Trust Proofs
 
 use base64;
+use blake2;
 use chrono::{self, prelude::*};
 use crev_common;
+use ed25519_dalek;
 use id;
 use std::{default, fmt, fs, io, mem, path::Path};
 
@@ -319,6 +321,30 @@ impl Proof {
             v.push(serialized.to_parsed()?)
         }
         Ok(v)
+    }
+
+    pub fn signature(&self) -> Result<Vec<u8>> {
+        Ok(base64::decode_config(&self.signature, base64::URL_SAFE)?)
+    }
+
+    pub fn verify(&self) -> Result<()> {
+        let pubkey_str = self.content.from_pubid();
+        eprintln!("{}", pubkey_str);
+        let pubkey_bytes = base64::decode_config(&pubkey_str, base64::URL_SAFE)?;
+        eprintln!("{:?}", pubkey_bytes);
+        let pubkey = ed25519_dalek::PublicKey::from_bytes(&pubkey_bytes)?;
+
+        let signature = ed25519_dalek::Signature::from_bytes(&self.signature()?)?;
+
+        pubkey.verify::<blake2::Blake2b>(self.body.as_bytes(), &signature)?;
+        /*
+        let pub_key =
+            ed25519_dalek::PublicKey::from_bytes();
+
+        let signature = id.(&body.as_bytes());
+        */
+
+        Ok(())
     }
 }
 

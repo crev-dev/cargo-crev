@@ -76,7 +76,7 @@ fn sign_proof_review() -> Result<()> {
     let id = id::OwnId::generate("John Doe <doe@john.com>".into());
 
     let review = proof::review::ReviewBuilder::default()
-        .from("abcdf".into())
+        .from(id.pub_key_as_base64())
         .from_type("crev".into())
         .from_url("https://github.com/someone/crev-trust".into())
         .revision("foobar".into())
@@ -102,6 +102,7 @@ fn sign_proof_review() -> Result<()> {
 
     println!("{}", review);
     let proof = review.sign(&id)?;
+    proof.verify()?;
     println!("{}", proof);
 
     Ok(())

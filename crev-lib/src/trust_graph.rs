@@ -20,7 +20,8 @@ impl TrustGraph {
         }
     }
 
-    fn add_proof(&mut self, _proof: &proof::Proof) {
+    fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
+        proof.verify()?;
         unimplemented!();
     }
 
@@ -30,7 +31,8 @@ impl TrustGraph {
             Some(osext) if osext == osext_match => {
                 let proofs = proof::Proof::parse_from(path)?;
                 for proof in proofs.into_iter() {
-                    self.add_proof(&proof);
+                    // TODO: report&ignore errors?
+                    self.add_proof(&proof)?;
                 }
             }
             _ => bail!("Wrong type"),
