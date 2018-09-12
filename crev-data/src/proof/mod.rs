@@ -16,24 +16,6 @@ pub use trust::*;
 
 use Result;
 
-/*
-pub trait Content:
-    Sized + for<'a> serde::Deserialize<'a> + serde::Serialize + fmt::Display
-{
-    const BEGIN_BLOCK: &'static str;
-    const BEGIN_SIGNATURE: &'static str;
-    const END_BLOCK: &'static str;
-    const CONTENT_TYPE_NAME: &'static str;
-    const PROOF_TYPE: ProofType;
-
-    fn date(&self) -> chrono::DateTime<FixedOffset>;
-    fn from_pubid(&self) -> String;
-    fn from_url(&self) -> String;
-    fn project_id(&self) -> Option<&str>;
-
-}
-*/
-
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
     Review,

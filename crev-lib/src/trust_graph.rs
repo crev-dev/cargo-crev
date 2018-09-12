@@ -1,4 +1,7 @@
-use crev_data::{self, proof};
+use crev_data::{
+    self,
+    proof::{self, Content},
+};
 use std::{collections::HashMap, ffi::OsStr, path::Path};
 use walkdir::WalkDir;
 use Result;
@@ -20,9 +23,22 @@ impl TrustGraph {
         }
     }
 
+    fn add_review(&mut self, review: &proof::Review) {
+        unimplemented!();
+    }
+
+    fn add_trust(&mut self, review: &proof::Trust) {
+        unimplemented!();
+    }
+
     fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
         proof.verify()?;
-        unimplemented!();
+        match proof.content {
+            Content::Review(review) => self.add_review(&review),
+            Content::Trust(trust) => self.add_trust(&trust),
+        }
+
+        Ok(())
     }
 
     fn import_file(&mut self, path: &Path) -> Result<()> {
@@ -31,7 +47,7 @@ impl TrustGraph {
             Some(osext) if osext == osext_match => {
                 let proofs = proof::Proof::parse_from(path)?;
                 for proof in proofs.into_iter() {
-                    // TODO: report&ignore errors?
+                    // TODO: report&ignore errors
                     self.add_proof(&proof)?;
                 }
             }
