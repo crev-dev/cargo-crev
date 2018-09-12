@@ -1,6 +1,6 @@
-use id;
+use id::OwnId;
 use level::Level;
-use proof::{self, Serialized};
+use proof::{self, Proof, Serialized};
 use std::path::PathBuf;
 use Result;
 
@@ -71,9 +71,8 @@ sig2
     Ok(())
 }
 
-#[test]
-fn sign_proof_review() -> Result<()> {
-    let id = id::OwnId::generate("John Doe <doe@john.com>".into());
+fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
+    let id = OwnId::generate("John Doe <doe@john.com>".into());
 
     let review = proof::review::ReviewBuilder::default()
         .from(id.pub_key_as_base64())
@@ -100,10 +99,28 @@ fn sign_proof_review() -> Result<()> {
         ]).build()
         .map_err(|e| format_err!("{}", e))?;
 
-    println!("{}", review);
     let proof = review.sign(&id)?;
+
+    Ok((id, proof))
+}
+
+#[test]
+fn sign_proof_review() -> Result<()> {
+    let (_id, proof) = generate_id_and_proof()?;
+
     proof.verify()?;
     println!("{}", proof);
+
+    Ok(())
+}
+
+#[test]
+fn verify_works() -> Result<()> {
+    let (_id, mut proof) = generate_id_and_proof()?;
+
+    proof.body += "\n";
+
+    assert!(proof.verify().is_err());
 
     Ok(())
 }
