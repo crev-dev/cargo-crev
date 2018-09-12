@@ -23,19 +23,19 @@ impl TrustGraph {
         }
     }
 
-    fn add_review(&mut self, review: &proof::Review) {
+    fn add_review(&mut self, _review: &proof::Review) {
         unimplemented!();
     }
 
-    fn add_trust(&mut self, review: &proof::Trust) {
+    fn add_trust(&mut self, _trust: &proof::Trust) {
         unimplemented!();
     }
 
     fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
         proof.verify()?;
         match proof.content {
-            Content::Review(review) => self.add_review(&review),
-            Content::Trust(trust) => self.add_trust(&trust),
+            Content::Review(ref review) => self.add_review(&review),
+            Content::Trust(ref trust) => self.add_trust(&trust),
         }
 
         Ok(())

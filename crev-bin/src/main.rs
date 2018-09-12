@@ -9,6 +9,7 @@ extern crate crev_data;
 extern crate crev_lib;
 extern crate rpassword;
 extern crate rprompt;
+#[macro_use]
 extern crate structopt;
 
 use common_failures::prelude::*;
