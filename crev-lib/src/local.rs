@@ -7,7 +7,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use trust_graph;
+use trustdb;
 use util::{self, APP_INFO};
 use Result;
 
@@ -234,7 +234,7 @@ impl Local {
     }
 
     pub fn trust_update(&self) -> Result<()> {
-        let _graph = trust_graph::TrustGraph::import_recursively(&self.get_proofs_dir_path())?;
+        let _graph = trustdb::TrustDB::import_recursively(&self.get_proofs_dir_path())?;
         unimplemented!();
     }
 

@@ -21,8 +21,7 @@ pub struct ReviewFile {
     pub digest: Vec<u8>,
     #[serde(rename = "digest-type")]
     #[serde(
-        skip_serializing_if = "proof::equals_blake2b",
-        default = "proof::default_blake2b_value"
+        skip_serializing_if = "proof::equals_blake2b", default = "proof::default_blake2b_value"
     )]
     pub digest_type: String,
 }
@@ -33,12 +32,9 @@ pub struct ReviewFile {
 /// Unsigned proof of code review
 pub struct Review {
     #[builder(default = "crev_common::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
+    #[serde(serialize_with = "as_rfc3339_fixed", deserialize_with = "from_rfc3339_fixed")]
     date: chrono::DateTime<FixedOffset>,
-    from: String,
+    pub from: String,
     #[serde(rename = "from-url")]
     from_url: String,
     #[builder(default = "\"crev\".into()")]
@@ -56,10 +52,10 @@ pub struct Review {
     revision_type: String,
     #[builder(default = "None")]
     comment: Option<String>,
-    thoroughness: Level,
-    understanding: Level,
-    trust: Level,
-    files: Vec<ReviewFile>,
+    pub thoroughness: Level,
+    pub understanding: Level,
+    pub trust: Level,
+    pub files: Vec<ReviewFile>,
 }
 
 impl Review {

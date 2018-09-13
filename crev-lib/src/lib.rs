@@ -6,6 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate app_dirs;
 extern crate base64;
+extern crate chrono;
 extern crate common_failures;
 extern crate git2;
 extern crate miscreant;
@@ -14,7 +15,6 @@ extern crate serde_cbor;
 extern crate serde_yaml;
 extern crate tempdir;
 extern crate walkdir;
-extern crate chrono;
 
 use common_failures::prelude::*;
 
@@ -23,11 +23,11 @@ extern crate failure;
 
 pub mod id;
 
-pub mod index;
 pub mod local;
-pub mod repo;
 pub mod proof;
-pub mod trust_graph;
+pub mod repo;
+pub mod staging;
+pub mod trustdb;
 mod util;
 
 #[cfg(test)]

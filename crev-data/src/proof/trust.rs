@@ -17,26 +17,23 @@ const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
     #[builder(default = "crev_common::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    date: chrono::DateTime<FixedOffset>,
-    from: String,
+    #[serde(serialize_with = "as_rfc3339_fixed", deserialize_with = "from_rfc3339_fixed")]
+    pub date: chrono::DateTime<FixedOffset>,
+    pub from: String,
     #[serde(rename = "from-url")]
-    from_url: String,
+    pub from_url: String,
     #[serde(
         rename = "from-type",
         skip_serializing_if = "proof::equals_crev",
         default = "proof::default_crev_value"
     )]
     #[builder(default = "\"crev\".into()")]
-    from_type: String,
+    pub from_type: String,
     #[serde(rename = "trusted-ids")]
-    trusted_ids: Vec<String>,
+    pub trusted_ids: Vec<String>,
     #[serde(rename = "comment")]
-    comment: Option<String>,
-    trust: Level,
+    pub comment: Option<String>,
+    pub trust: Level,
 }
 
 impl fmt::Display for Trust {
