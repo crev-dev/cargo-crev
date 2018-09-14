@@ -17,7 +17,10 @@ const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
     #[builder(default = "crev_common::now()")]
-    #[serde(serialize_with = "as_rfc3339_fixed", deserialize_with = "from_rfc3339_fixed")]
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
     pub date: chrono::DateTime<FixedOffset>,
     pub from: String,
     #[serde(rename = "from-url")]
@@ -50,6 +53,11 @@ impl Trust {
     pub fn date(&self) -> chrono::DateTime<FixedOffset> {
         self.date
     }
+
+    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
+        self.date().with_timezone(&Utc)
+    }
+
     pub fn project_id(&self) -> Option<&str> {
         None
     }

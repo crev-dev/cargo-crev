@@ -234,7 +234,21 @@ impl Local {
     }
 
     pub fn trust_update(&self) -> Result<()> {
-        let _graph = trustdb::TrustDB::import_recursively(&self.get_proofs_dir_path())?;
+        let mut db = trustdb::TrustDB::new();
+        let user_config = self.load_user_config()?;
+        db.import_recursively(&self.get_proofs_dir_path())?;
+        let params = trustdb::TrustDistanceParams {
+            max_distance: 10,
+            high_trust_distance: 0,
+            medium_trust_distance: 1,
+            low_trust_distance: 5,
+        };
+
+        let trust_set = db.calculate_trust_set(user_config.current_id, &params);
+
+        for id in &trust_set {
+            println!("{}", id);
+        }
         unimplemented!();
     }
 
