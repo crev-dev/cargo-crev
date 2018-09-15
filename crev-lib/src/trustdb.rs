@@ -85,7 +85,7 @@ impl TrustDB {
         for file in &review.files {
             match self
                 .id_to_review
-                .entry(from.clone())
+                .entry(from.id.clone())
                 .or_insert_with(|| HashMap::new())
                 .entry(file.digest.to_owned())
             {
@@ -113,8 +113,8 @@ impl TrustDB {
 
     pub fn add_trust(&mut self, trust: &proof::Trust) {
         let from = &trust.from;
-        for to in &trust.trusted_ids {
-            self.add_trust_raw(from, to, trust.date_utc(), trust.trust)
+        for to in &trust.trusted {
+            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust)
         }
     }
 

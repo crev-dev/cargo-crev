@@ -74,10 +74,12 @@ sig2
 fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     let id = OwnId::generate("John Doe <doe@john.com>".into());
 
+    let mut from: proof::Id = (&id).into();
+
+    from.set_git_url("https://github.com/someone/crev-trust".into());
+
     let review = proof::review::ReviewBuilder::default()
-        .from(id.pub_key_as_base64())
-        .from_type("crev".into())
-        .from_url("https://github.com/someone/crev-trust".into())
+        .from(from)
         .revision("foobar".into())
         .revision_type("git".into())
         .project_id("dfasdfasdfadfmkjnsdklfj".into())

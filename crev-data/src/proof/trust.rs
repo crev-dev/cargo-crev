@@ -22,18 +22,9 @@ pub struct Trust {
         deserialize_with = "from_rfc3339_fixed"
     )]
     pub date: chrono::DateTime<FixedOffset>,
-    pub from: String,
-    #[serde(rename = "from-url")]
-    pub from_url: String,
-    #[serde(
-        rename = "from-type",
-        skip_serializing_if = "proof::equals_crev",
-        default = "proof::default_crev_value"
-    )]
-    #[builder(default = "\"crev\".into()")]
-    pub from_type: String,
-    #[serde(rename = "trusted-ids")]
-    pub trusted_ids: Vec<String>,
+    pub from: proof::Id,
+    #[serde(rename = "trusted")]
+    pub trusted: Vec<proof::Id>,
     #[serde(rename = "comment")]
     pub comment: Option<String>,
     pub trust: Level,
@@ -62,10 +53,10 @@ impl Trust {
         None
     }
     pub fn from_pubid(&self) -> String {
-        self.from.clone()
+        self.from.id.clone()
     }
-    pub fn from_url(&self) -> String {
-        self.from_url.clone()
+    pub fn from_url(&self) -> Option<String> {
+        self.from.url.as_ref().map(|v| v.url.clone())
     }
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)

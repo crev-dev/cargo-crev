@@ -212,13 +212,20 @@ impl Local {
         }
         let id = self.read_unlocked_id(&passphrase)?;
 
+        let mut from: proof::Id = (&id).into();
+
+        from.set_git_url("https://github.com/someone/crev-trust".into());
+
+        let pub_ids = pub_ids
+            .into_iter()
+            .map(|s| proof::Id::new_from_string(s))
+            .collect();
+
         let trust = trust::TrustBuilder::default()
-            .from(id.pub_key_as_base64())
-            .from_url(id.id.url.to_owned())
-            .from_type(id.id.type_.to_string())
+            .from(from)
             .comment(Some("".into()))
             .trust(level::Level::Medium)
-            .trusted_ids(pub_ids)
+            .trusted(pub_ids)
             .build()
             .map_err(|e| format_err!("{}", e))?;
 

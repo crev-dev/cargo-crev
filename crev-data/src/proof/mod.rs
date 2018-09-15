@@ -16,6 +16,65 @@ pub use trust::*;
 
 use Result;
 
+#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
+pub struct IdUrl {
+    url: String,
+    #[serde(
+        rename = "url-type",
+        skip_serializing_if = "equals_default_url_type",
+        default = "default_url_type"
+    )]
+    url_type: String,
+}
+
+#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
+pub struct Id {
+    pub id: String,
+    #[serde(
+        rename = "id-type",
+        skip_serializing_if = "equals_default_id_type",
+        default = "default_id_type"
+    )]
+    pub id_type: String,
+    #[serde(flatten)]
+    pub url: Option<IdUrl>,
+}
+
+impl<'a> From<&'a id::OwnId> for Id {
+    fn from(id: &id::OwnId) -> Self {
+        Self::from(&id.id)
+    }
+}
+
+impl<'a> From<&'a id::PubId> for Id {
+    fn from(id: &id::PubId) -> Self {
+        Id {
+            id: id.pub_key_as_base64(),
+            id_type: default_id_type(),
+            url: Some(IdUrl {
+                url: id.url.clone(),
+                url_type: default_url_type(),
+            }),
+        }
+    }
+}
+
+impl Id {
+    pub fn new_from_string(s: String) -> Self {
+        Id {
+            id: s,
+            id_type: default_id_type(),
+            url: None,
+        }
+    }
+    pub fn set_git_url(&mut self, url: String) {
+        self.url = Some(IdUrl {
+            url,
+            url_type: default_url_type(),
+        })
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
     Review,
@@ -122,7 +181,7 @@ impl Content {
         }
     }
 
-    pub fn from_url(&self) -> String {
+    pub fn from_url(&self) -> Option<String> {
         use self::Content::*;
         match self {
             Trust(trust) => trust.from_url(),
@@ -323,18 +382,26 @@ impl Proof {
     }
 }
 
-fn equals_crev(s: &str) -> bool {
-    s == "crev"
+fn equals_default_id_type(s: &str) -> bool {
+    s == default_id_type()
 }
 
-fn default_crev_value() -> String {
+fn default_id_type() -> String {
     "crev".into()
 }
 
-fn equals_blake2b(s: &str) -> bool {
-    s == "blake2b"
+fn equals_default_url_type(s: &str) -> bool {
+    s == default_url_type()
 }
 
-fn default_blake2b_value() -> String {
+fn default_url_type() -> String {
+    "git".into()
+}
+
+fn equals_default_digest_type(s: &str) -> bool {
+    s == default_digest_type()
+}
+
+fn default_digest_type() -> String {
     "blake2b".into()
 }

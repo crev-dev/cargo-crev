@@ -46,6 +46,10 @@ impl PubId {
             type_: IdType::Crev,
         }
     }
+
+    pub fn pub_key_as_base64(&self) -> String {
+        base64::encode_config(&self.id, base64::URL_SAFE)
+    }
 }
 
 impl fmt::Display for PubId {
@@ -86,7 +90,7 @@ impl OwnId {
     }
 
     pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.id.id, base64::URL_SAFE)
+        self.id.pub_key_as_base64()
     }
 
     pub fn generate(url: String) -> Self {

@@ -21,8 +21,8 @@ pub struct ReviewFile {
     pub digest: Vec<u8>,
     #[serde(rename = "digest-type")]
     #[serde(
-        skip_serializing_if = "proof::equals_blake2b",
-        default = "proof::default_blake2b_value"
+        skip_serializing_if = "proof::equals_default_digest_type",
+        default = "proof::default_digest_type"
     )]
     pub digest_type: String,
 }
@@ -38,16 +38,7 @@ pub struct Review {
         deserialize_with = "from_rfc3339_fixed"
     )]
     date: chrono::DateTime<FixedOffset>,
-    pub from: String,
-    #[serde(rename = "from-url")]
-    from_url: String,
-    #[builder(default = "\"crev\".into()")]
-    #[serde(
-        rename = "from-type",
-        skip_serializing_if = "proof::equals_crev",
-        default = "proof::default_crev_value"
-    )]
-    from_type: String,
+    pub from: proof::Id,
     #[serde(rename = "project-id")]
     project_id: String,
     revision: String,
@@ -80,11 +71,11 @@ impl Review {
     }
 
     pub fn from_pubid(&self) -> String {
-        self.from.clone()
+        self.from.id.clone()
     }
 
-    pub fn from_url(&self) -> String {
-        self.from_url.clone()
+    pub fn from_url(&self) -> Option<String> {
+        self.from.url.as_ref().map(|v| v.url.to_owned())
     }
 
     pub fn parse(s: &str) -> Result<Self> {

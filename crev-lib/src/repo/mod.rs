@@ -212,10 +212,10 @@ impl Repo {
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
 
+        let from: proof::Id = (&id).into();
+
         let review = review::ReviewBuilder::default()
-            .from(id.pub_key_as_base64())
-            .from_url(id.id.url.to_owned())
-            .from_type(id.type_as_string())
+            .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
             .project_id(project_config.project_id)
