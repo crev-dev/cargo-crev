@@ -5,71 +5,17 @@ use blake2;
 use chrono::{self, prelude::*};
 use crev_common;
 use ed25519_dalek;
-use id;
 use std::{default, fmt, fs, io, mem, path::Path};
 
+pub mod id;
 pub mod review;
 pub mod trust;
 
-pub use review::*;
-pub use trust::*;
+pub use self::id::*;
+pub use self::review::*;
+pub use self::trust::*;
 
-use std::borrow::Borrow;
 use Result;
-
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
-pub struct IdUrl {
-    url: String,
-    #[serde(
-        rename = "url-type",
-        skip_serializing_if = "equals_default_url_type",
-        default = "default_url_type"
-    )]
-    url_type: String,
-}
-
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
-pub struct Id {
-    pub id: String,
-    #[serde(
-        rename = "id-type",
-        skip_serializing_if = "equals_default_id_type",
-        default = "default_id_type"
-    )]
-    pub id_type: String,
-    #[serde(flatten)]
-    pub url: Option<IdUrl>,
-}
-
-impl<T: Borrow<id::PubId>> From<T> for Id {
-    fn from(id: T) -> Self {
-        let id = id.borrow();
-        Id {
-            id: id.pub_key_as_base64(),
-            id_type: default_id_type(),
-            url: Some(IdUrl {
-                url: id.url.clone(),
-                url_type: default_url_type(),
-            }),
-        }
-    }
-}
-
-impl Id {
-    pub fn new_from_string(s: String) -> Self {
-        Id {
-            id: s,
-            id_type: default_id_type(),
-            url: None,
-        }
-    }
-    pub fn set_git_url(&mut self, url: String) {
-        self.url = Some(IdUrl {
-            url,
-            url_type: default_url_type(),
-        })
-    }
-}
 
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
@@ -142,7 +88,7 @@ impl Content {
         })
     }
 
-    pub fn sign(&self, id: &id::OwnId) -> Result<Proof> {
+    pub fn sign(&self, id: &::id::OwnId) -> Result<Proof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
@@ -376,22 +322,6 @@ impl Proof {
 
         Ok(())
     }
-}
-
-fn equals_default_id_type(s: &str) -> bool {
-    s == default_id_type()
-}
-
-fn default_id_type() -> String {
-    "crev".into()
-}
-
-fn equals_default_url_type(s: &str) -> bool {
-    s == default_url_type()
-}
-
-fn default_url_type() -> String {
-    "git".into()
 }
 
 fn equals_default_digest_type(s: &str) -> bool {
