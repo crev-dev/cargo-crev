@@ -27,15 +27,14 @@ impl fmt::Display for IdType {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Public CrevId of someone
 pub struct PubId {
-    pub url: String,
-    #[serde(rename = "type")]
-    pub type_: IdType,
-
     #[serde(
         serialize_with = "as_base64",
         deserialize_with = "from_base64"
     )]
     pub id: Vec<u8>,
+    #[serde(rename = "id-type")]
+    pub id_type: IdType,
+    pub url: String,
 }
 
 impl PubId {
@@ -43,7 +42,7 @@ impl PubId {
         Self {
             url,
             id,
-            type_: IdType::Crev,
+            id_type: IdType::Crev,
         }
     }
 

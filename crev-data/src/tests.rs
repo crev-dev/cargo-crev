@@ -72,9 +72,9 @@ sig2
 }
 
 fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
-    let id = OwnId::generate("John Doe <doe@john.com>".into());
+    let id = OwnId::generate("https://mypage.com/trust.git".into());
 
-    let mut from: proof::Id = id.id.into();
+    let mut from = proof::Id::from(&id.id);
 
     from.set_git_url("https://github.com/someone/crev-trust".into());
 
