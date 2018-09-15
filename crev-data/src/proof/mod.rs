@@ -14,6 +14,7 @@ pub mod trust;
 pub use review::*;
 pub use trust::*;
 
+use std::borrow::Borrow;
 use Result;
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
@@ -40,14 +41,9 @@ pub struct Id {
     pub url: Option<IdUrl>,
 }
 
-impl<'a> From<&'a id::OwnId> for Id {
-    fn from(id: &id::OwnId) -> Self {
-        Self::from(&id.id)
-    }
-}
-
-impl<'a> From<&'a id::PubId> for Id {
-    fn from(id: &id::PubId) -> Self {
+impl<T: Borrow<id::PubId>> From<T> for Id {
+    fn from(id: T) -> Self {
+        let id = id.borrow();
         Id {
             id: id.pub_key_as_base64(),
             id_type: default_id_type(),

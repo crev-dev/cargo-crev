@@ -212,7 +212,7 @@ impl Local {
         }
         let id = self.read_unlocked_id(&passphrase)?;
 
-        let mut from: proof::Id = (&id).into();
+        let mut from = proof::Id::from(&id.id);
 
         from.set_git_url("https://github.com/someone/crev-trust".into());
 

@@ -212,7 +212,7 @@ impl Repo {
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
 
-        let from: proof::Id = (&id).into();
+        let from = proof::Id::from(&id.id);
 
         let review = review::ReviewBuilder::default()
             .from(from)
