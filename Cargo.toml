@@ -5,6 +5,3 @@ members = [
 	"crev-lib",
 	"crev-bin"
 ]
-
-[patch.crates-io]
-yaml-rust = { git = "https://github.com/chyh1990/yaml-rust" }
