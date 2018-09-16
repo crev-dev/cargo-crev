@@ -4,8 +4,8 @@ use id;
 use level::Level;
 use proof::{self, Proof};
 use serde_yaml;
-use std::{fmt, path::PathBuf};
-
+use std::default::Default;
+use std::{self, fmt, path::PathBuf};
 use Result;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
@@ -42,14 +42,34 @@ pub struct Review {
     #[serde(rename = "project-id")]
     project_id: String,
     revision: String,
-    #[serde(rename = "revision-type")]
+    #[serde(
+        rename = "revision-type",
+        skip_serializing_if = "proof::equals_default_revision_type",
+        default = "proof::default_revision_type"
+    )]
     #[builder(default = "\"git\".into()")]
     revision_type: String,
     #[builder(default = "None")]
     comment: Option<String>,
+    #[builder(default = "None")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default = "Default::default"
+    )]
+    digest: Option<String>,
+    #[serde(
+        skip_serializing_if = "proof::equals_default_digest_type",
+        default = "proof::default_digest_type"
+    )]
+    #[builder(default = "proof::default_digest_type()")]
+    digest_type: String,
     pub thoroughness: Level,
     pub understanding: Level,
     pub trust: Level,
+    #[serde(
+        skip_serializing_if = "std::vec::Vec::is_empty",
+        default = "std::vec::Vec::new"
+    )]
     pub files: Vec<ReviewFile>,
 }
 

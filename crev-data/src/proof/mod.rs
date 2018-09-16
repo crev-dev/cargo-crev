@@ -331,3 +331,11 @@ fn equals_default_digest_type(s: &str) -> bool {
 fn default_digest_type() -> String {
     "blake2b".into()
 }
+
+fn equals_default_revision_type(s: &str) -> bool {
+    s == default_revision_type()
+}
+
+fn default_revision_type() -> String {
+    "git".into()
+}
