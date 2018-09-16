@@ -1,4 +1,4 @@
-use crev_data::{level, proof, review};
+use crev_data::{proof, review};
 use git2;
 use local::Local;
 use serde_yaml;
