@@ -12,7 +12,7 @@ pub enum Level {
 
 impl Default for Level {
     fn default() -> Self {
-        Level::Low
+        Level::Medium
     }
 }
 

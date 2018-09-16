@@ -68,8 +68,11 @@ pub struct Review {
     )]
     #[builder(default = "proof::default_digest_type()")]
     digest_type: String,
+    #[builder(default = "Default::default()")]
     pub thoroughness: Level,
+    #[builder(default = "Default::default()")]
     pub understanding: Level,
+    #[builder(default = "Default::default()")]
     pub trust: Level,
     #[serde(
         skip_serializing_if = "std::vec::Vec::is_empty",

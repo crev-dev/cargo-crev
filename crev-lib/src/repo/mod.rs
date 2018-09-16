@@ -219,9 +219,6 @@ impl Repo {
             .revision(revision.revision)
             .revision_type(revision.type_)
             .project_id(project_config.project_id)
-            .thoroughness(level::Level::Low)
-            .understanding(level::Level::Low)
-            .trust(level::Level::Low)
             .files(files)
             .build()
             .map_err(|e| format_err!("{}", e))?;

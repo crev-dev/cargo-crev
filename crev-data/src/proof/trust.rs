@@ -30,6 +30,7 @@ pub struct Trust {
     )]
     #[builder(default = "Default::default()")]
     comment: String,
+    #[builder(default = "Default::default()")]
     pub trust: Level,
 }
 
