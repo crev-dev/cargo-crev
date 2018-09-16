@@ -206,20 +206,31 @@ impl Local {
         self.root_path.join("proofs")
     }
 
+    fn trust_auto_read(&self) -> Result<trustdb::TrustDB> {
+        let mut graph = trustdb::TrustDB::new();
+        graph.import_recursively(&self.get_proofs_dir_path())?;
+        Ok(graph)
+    }
+
     pub fn trust_ids(&self, pub_ids: Vec<String>, passphrase: String) -> Result<()> {
         if pub_ids.is_empty() {
             bail!("No ids to trust. Use `add` first.");
         }
+        let trustdb = self.trust_auto_read()?;
         let id = self.read_unlocked_id(&passphrase)?;
 
-        let mut from = proof::Id::from(&id.id);
-
-        from.set_git_url("https://github.com/someone/crev-trust".into());
+        let from = proof::Id::from(&id.id);
 
         let pub_ids = pub_ids
             .into_iter()
-            .map(|s| proof::Id::new_from_string(s))
-            .collect();
+            .map(|s| {
+                let mut id = proof::Id::new_from_string(s);
+
+                if let Some(url) = trustdb.lookup_url(&id.id) {
+                    id.set_git_url(url.to_owned())
+                }
+                id
+            }).collect();
 
         let trust = trust::TrustBuilder::default()
             .from(from)

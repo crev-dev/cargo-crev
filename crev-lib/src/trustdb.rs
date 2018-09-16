@@ -5,7 +5,7 @@ use crev_data::{
     proof::{self, Content},
 };
 use std::{
-    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{hash_map, BTreeSet, HashMap, HashSet},
     ffi::OsStr,
     path::Path,
 };
@@ -64,27 +64,46 @@ impl ReviewInfo {
     }
 }
 
+struct UrlInfo {
+    #[allow(unused)]
+    date: chrono::DateTime<Utc>,
+    url: proof::IdUrl,
+}
+
+impl UrlInfo {
+    fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &proof::IdUrl) {
+        if date > &self.date {
+            self.url = url.clone()
+        }
+    }
+}
+
 pub struct TrustDB {
     #[allow(unused)]
-    id_to_trust: HashMap<String, HashMap<String, TrustInfo>>, // who -(trusts)-> whom
-    id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what
-    id_to_urls: HashMap<String, BTreeMap<chrono::DateTime<Utc>, String>>,
+    trust_id_to_id: HashMap<String, HashMap<String, TrustInfo>>, // who -(trusts)-> whom
+    trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what
+    url_by_id: HashMap<String, UrlInfo>,
+    url_by_id_secondary: HashMap<String, UrlInfo>,
+    trusted_ids: HashSet<String>,
 }
 
 impl TrustDB {
     pub fn new() -> Self {
         TrustDB {
-            id_to_trust: Default::default(),
-            id_to_review: Default::default(),
-            id_to_urls: Default::default(),
+            trust_id_to_id: Default::default(),
+            trust_id_to_review: Default::default(),
+            url_by_id: Default::default(),
+            url_by_id_secondary: Default::default(),
+            trusted_ids: Default::default(),
         }
     }
 
     fn add_review(&mut self, review: &proof::Review) {
         let from = &review.from;
+        self.record_url_from_from_field(&review.date_utc(), &from);
         for file in &review.files {
             match self
-                .id_to_review
+                .trust_id_to_review
                 .entry(from.id.clone())
                 .or_insert_with(|| HashMap::new())
                 .entry(file.digest.to_owned())
@@ -97,9 +116,9 @@ impl TrustDB {
         }
     }
 
-    pub fn add_trust_raw(&mut self, from: &str, to: &str, date: DateTime<Utc>, trust: Level) {
+    fn add_trust_raw(&mut self, from: &str, to: &str, date: DateTime<Utc>, trust: Level) {
         match self
-            .id_to_trust
+            .trust_id_to_id
             .entry(from.to_owned())
             .or_insert_with(|| HashMap::new())
             .entry(to.to_owned())
@@ -111,10 +130,43 @@ impl TrustDB {
         }
     }
 
-    pub fn add_trust(&mut self, trust: &proof::Trust) {
+    fn add_trust(&mut self, trust: &proof::Trust) {
         let from = &trust.from;
+        self.record_url_from_from_field(&trust.date_utc(), &from);
         for to in &trust.trusted {
-            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust)
+            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
+        }
+        if self.trusted_ids.contains(&from.id) {
+            for to in &trust.trusted {
+                self.record_url_from_to_field(&trust.date_utc(), &to)
+            }
+        }
+    }
+
+    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &proof::Id) {
+        if let Some(url) = to.url.as_ref() {
+            self.url_by_id_secondary
+                .entry(to.id.clone())
+                .or_insert_with(|| UrlInfo {
+                    url: url.clone(),
+                    date: date.clone(),
+                });
+        }
+    }
+
+    fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &proof::Id) {
+        if let Some(url) = from.url.as_ref() {
+            match self.url_by_id.entry(from.id.clone()) {
+                hash_map::Entry::Occupied(mut entry) => {
+                    entry.get_mut().maybe_update_with(date, &url)
+                }
+                hash_map::Entry::Vacant(entry) => {
+                    entry.insert(UrlInfo {
+                        url: url.clone(),
+                        date: date.clone(),
+                    });
+                }
+            }
         }
     }
 
@@ -168,7 +220,7 @@ impl TrustDB {
     }
 
     fn get_id_trusted_by(&self, id: &str) -> impl Iterator<Item = (Level, &str)> {
-        if let Some(map) = self.id_to_trust.get(id) {
+        if let Some(map) = self.trust_id_to_id.get(id) {
             Some(
                 map.iter()
                     .map(|(id, trust_info)| (trust_info.trust, id.as_str())),
@@ -237,6 +289,13 @@ impl TrustDB {
         }
 
         visited.keys().map(|s| s.to_string()).collect()
+    }
+
+    pub fn lookup_url(&self, id_str: &str) -> Option<&str> {
+        self.url_by_id
+            .get(id_str)
+            .or_else(|| self.url_by_id_secondary.get(id_str))
+            .map(|url_info| url_info.url.url.as_str())
     }
 }
 
