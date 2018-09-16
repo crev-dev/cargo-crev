@@ -181,19 +181,20 @@ impl TrustDB {
     }
 
     fn import_file(&mut self, path: &Path) -> Result<()> {
-        let osext_match: &OsStr = "crev".as_ref();
-        match path.extension() {
-            Some(osext) if osext == osext_match => {
-                let proofs = proof::Proof::parse_from(path)?;
-                for proof in proofs.into_iter() {
-                    // TODO: report&ignore errors
-                    self.add_proof(&proof)?;
-                }
-            }
-            _ => bail!("Wrong type"),
+        let proofs = proof::Proof::parse_from(path)?;
+        for proof in proofs.into_iter() {
+            // TODO: report&ignore errors
+            self.add_proof(&proof)?;
         }
 
         Ok(())
+    }
+    fn maybe_import_file(&mut self, path: &Path) -> Option<Result<()>> {
+        let osext_match: &OsStr = "crev".as_ref();
+        match path.extension() {
+            Some(osext) if osext == osext_match => Some(self.import_file(path)),
+            _ => None,
+        }
     }
 
     pub fn import_recursively(&mut self, path: &Path) -> Result<()> {
@@ -210,9 +211,9 @@ impl TrustDB {
                 continue;
             }
 
-            match self.import_file(&path) {
-                Err(e) => eprintln!("Error importing {}: {}", path.display(), e),
-                Ok(_) => {}
+            match self.maybe_import_file(&path) {
+                Some(Err(e)) => eprintln!("Error importing {}: {}", path.display(), e),
+                _ => {}
             }
         }
 

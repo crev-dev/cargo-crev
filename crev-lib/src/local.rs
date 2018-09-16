@@ -1,5 +1,8 @@
 use app_dirs::{app_root, AppDataType};
+use base64;
+use crev_common;
 use crev_data::{id::OwnId, level, proof, trust};
+use git2;
 use id::{self, LockedId};
 use serde_yaml;
 use std::{
@@ -21,15 +24,21 @@ pub struct UserConfig {
 /// Local config stored in `~/.config/crev`
 pub struct Local {
     root_path: PathBuf,
+    cache_path: PathBuf,
 }
 
 impl Local {
     fn new() -> Result<Self> {
         let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
-        Ok(Self { root_path })
+        let cache_path = app_root(AppDataType::UserCache, &APP_INFO)?;
+        Ok(Self {
+            root_path,
+            cache_path,
+        })
     }
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
+        fs::create_dir_all(&repo.cache_remotes_path())?;
         if !repo.root_path.exists() {
             bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
         }
@@ -78,6 +87,10 @@ impl Local {
 
     fn user_config_path(&self) -> PathBuf {
         self.user_dir_path().join("config.yaml")
+    }
+
+    fn cache_remotes_path(&self) -> PathBuf {
+        self.cache_path.join("remotes")
     }
 
     pub fn load_user_config(&self) -> Result<UserConfig> {
@@ -255,6 +268,7 @@ impl Local {
         let mut db = trustdb::TrustDB::new();
         let user_config = self.load_user_config()?;
         db.import_recursively(&self.get_proofs_dir_path())?;
+        db.import_recursively(&self.cache_remotes_path())?;
         let params = trustdb::TrustDistanceParams {
             max_distance: 10,
             high_trust_distance: 0,
@@ -265,9 +279,33 @@ impl Local {
         let trust_set = db.calculate_trust_set(user_config.current_id, &params);
 
         for id in &trust_set {
-            println!("{}", id);
+            if let Some(url) = db.lookup_url(id) {
+                eprintln!("Fetching {}", url);
+                util::err_eprint_and_ignore(self.fetch_remote_git(id, url));
+            } else {
+                eprintln!("No URL for {}", id);
+            }
         }
         unimplemented!();
+    }
+
+    pub fn fetch_remote_git(&self, id: &str, url: &str) -> Result<()> {
+        let digest = crev_common::blake2sum(url.as_bytes());
+        let digest = base64::encode_config(&digest, base64::URL_SAFE);
+        let dir = self.cache_remotes_path().join(id).join(digest);
+
+        if dir.exists() {
+            let repo = git2::Repository::open(dir)?;
+            repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+            repo.set_head("FETCH_HEAD")?;
+            let mut opts = git2::build::CheckoutBuilder::new();
+            opts.force();
+            repo.checkout_head(Some(&mut opts))?;
+        } else {
+            git2::Repository::clone(url, dir)?;
+        }
+
+        Ok(())
     }
 
     pub fn append_proof(&self, proof: &proof::Proof) -> Result<()> {

@@ -3,7 +3,7 @@ use base64;
 use crev_common;
 use crev_data::proof;
 use std::{
-    env, ffi, fs,
+    self, env, ffi, fmt, fs,
     io::{self, Read, Write},
     path::Path,
     process,
@@ -100,4 +100,11 @@ pub fn random_id_str() -> String {
         .take(32)
         .collect();
     base64::encode_config(&project_id, base64::URL_SAFE)
+}
+
+pub fn err_eprint_and_ignore<O, E: fmt::Display>(res: std::result::Result<O, E>) {
+    match res {
+        Err(e) => eprintln!("{}", e),
+        Ok(_) => {}
+    }
 }
