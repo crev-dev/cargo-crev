@@ -49,8 +49,13 @@ pub struct Review {
     )]
     #[builder(default = "\"git\".into()")]
     revision_type: String,
-    #[builder(default = "None")]
-    comment: Option<String>,
+
+    #[serde(
+        skip_serializing_if = "String::is_empty",
+        default = "Default::default"
+    )]
+    #[builder(default = "Default::default()")]
+    comment: String,
     #[builder(default = "None")]
     #[serde(
         skip_serializing_if = "Option::is_none",

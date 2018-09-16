@@ -23,10 +23,13 @@ pub struct Trust {
     )]
     pub date: chrono::DateTime<FixedOffset>,
     pub from: proof::Id,
-    #[serde(rename = "trusted")]
     pub trusted: Vec<proof::Id>,
-    #[serde(rename = "comment")]
-    pub comment: Option<String>,
+    #[serde(
+        skip_serializing_if = "String::is_empty",
+        default = "Default::default"
+    )]
+    #[builder(default = "Default::default()")]
+    comment: String,
     pub trust: Level,
 }
 

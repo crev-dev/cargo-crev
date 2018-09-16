@@ -83,7 +83,7 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
         .revision("foobar".into())
         .revision_type("git".into())
         .project_id("dfasdfasdfadfmkjnsdklfj".into())
-        .comment(Some("comment".into()))
+        .comment("comment".into())
         .thoroughness(Level::Low)
         .understanding(Level::Low)
         .trust(Level::Low)

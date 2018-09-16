@@ -223,7 +223,7 @@ impl Local {
 
         let trust = trust::TrustBuilder::default()
             .from(from)
-            .comment(Some("".into()))
+            .comment("".into())
             .trust(level::Level::Medium)
             .trusted(pub_ids)
             .build()
