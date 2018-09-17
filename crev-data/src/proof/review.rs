@@ -116,7 +116,7 @@ impl Review {
 }
 
 impl fmt::Display for Review {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
         let mut lines = yaml_document.lines();
         let dropped_header = lines.next();

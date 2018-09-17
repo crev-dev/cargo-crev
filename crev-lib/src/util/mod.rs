@@ -45,7 +45,7 @@ pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn store_to_file_with(path: &Path, f: impl Fn(&mut io::Write) -> Result<()>) -> Result<()> {
+pub fn store_to_file_with(path: &Path, f: impl Fn(&mut dyn io::Write) -> Result<()>) -> Result<()> {
     fs::create_dir_all(path.parent().expect("Not a root path"))?;
     let tmp_path = path.with_extension("tmp");
     let mut file = fs::File::create(&tmp_path)?;

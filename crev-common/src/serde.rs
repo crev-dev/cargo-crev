@@ -1,6 +1,6 @@
 // Oh dear, this module is called serde, and is in the root
 // so we have to import serde crate here
-extern crate serde;
+use serde;
 
 use self::serde::Deserialize;
 use base64;
@@ -27,7 +27,7 @@ where
                 .map_err(|err| Error::custom(err.to_string()))
         }).and_then(|ref bytes| {
             T::try_from(bytes)
-                .map_err(|err| Error::custom(format!("{}", &err as &::std::error::Error)))
+                .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
 }
 
@@ -51,7 +51,7 @@ where
                 .map_err(|err: FromHexError| Error::custom(err.to_string()))
         }).and_then(|bytes: Vec<u8>| {
             T::try_from(&bytes)
-                .map_err(|err| Error::custom(format!("{}", &err as &::std::error::Error)))
+                .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
 }
 
@@ -98,7 +98,7 @@ impl MyTryFromBytes for Vec<u8> {
 /// This is how a lot of stuff in `Crev` is serialized
 pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
     t: &T,
-    f: &mut fmt::Formatter,
+    f: &mut fmt::Formatter<'_>,
 ) -> fmt::Result {
     // TODO: Don't serialize to string, and instead serialize to writer
     let yaml_document = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;

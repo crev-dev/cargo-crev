@@ -1,14 +1,14 @@
 #![allow(deprecated)]
 //#[macro_use]
-extern crate common_failures;
-extern crate failure;
+
+
 #[macro_use]
 extern crate quicli;
-extern crate crev_common;
-extern crate crev_data;
-extern crate crev_lib;
-extern crate rpassword;
-extern crate rprompt;
+use crev_common;
+
+
+
+use rprompt;
 #[macro_use]
 extern crate structopt;
 

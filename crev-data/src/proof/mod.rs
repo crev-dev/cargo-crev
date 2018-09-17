@@ -59,7 +59,7 @@ pub enum Content {
 }
 
 impl fmt::Display for Content {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Content::*;
         match self {
             Trust(trust) => trust.fmt(f),
@@ -150,7 +150,7 @@ pub struct Proof {
 }
 
 impl fmt::Display for Serialized {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.type_.begin_block())?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;
@@ -166,7 +166,7 @@ impl fmt::Display for Serialized {
 }
 
 impl fmt::Display for Proof {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.content.proof_type().begin_block())?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;

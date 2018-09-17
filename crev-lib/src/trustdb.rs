@@ -109,7 +109,7 @@ impl TrustDB {
                 .entry(file.digest.to_owned())
             {
                 hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(&review),
-                hash_map::Entry::Vacant(mut entry) => {
+                hash_map::Entry::Vacant(entry) => {
                     entry.insert(ReviewInfo::from(review));
                 }
             }

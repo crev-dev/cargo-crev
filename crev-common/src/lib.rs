@@ -1,12 +1,12 @@
 //! Bunch of code that is auxiliary and common for all `crev`
 
 pub mod serde;
-extern crate base64;
-extern crate blake2;
-extern crate chrono;
-extern crate hex;
-extern crate rprompt;
-extern crate serde_yaml;
+
+use blake2;
+use chrono;
+
+use rprompt;
+
 
 use blake2::{digest::FixedOutput, Digest};
 use std::{

@@ -35,7 +35,7 @@ pub struct Trust {
 }
 
 impl fmt::Display for Trust {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }
