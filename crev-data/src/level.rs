@@ -1,5 +1,5 @@
 use std::fmt;
-use Result;
+use crate::Result;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

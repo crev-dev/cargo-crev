@@ -9,7 +9,7 @@ use std::{
     process,
 };
 use tempdir;
-use Result;
+use crate::Result;
 
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",

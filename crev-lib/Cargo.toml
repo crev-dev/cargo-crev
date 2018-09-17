@@ -1,4 +1,7 @@
+cargo-features = ["edition"]
+
 [package]
+edition = '2018'
 name = "crev-lib"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "Scalable, social, Code REView system that we desperately need"

@@ -12,7 +12,7 @@ use std::{fmt, io};
 // {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {
     type Err: 'static + Sized + ::std::error::Error;
-    fn try_from(&[u8]) -> Result<Self, Self::Err>;
+    fn try_from(_: &[u8]) -> Result<Self, Self::Err>;
 }
 
 pub fn from_base64<'d, T, D>(deserializer: D) -> Result<T, D::Error>

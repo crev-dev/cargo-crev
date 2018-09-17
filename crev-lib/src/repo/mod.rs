@@ -1,15 +1,15 @@
 use crev_data::{proof, review};
 use git2;
-use local::Local;
+use crate::local::Local;
 use serde_yaml;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use trustdb;
-use util;
-use Result;
+use crate::trustdb;
+use crate::util;
+use crate::Result;
 
 pub mod staging;
 
@@ -143,7 +143,7 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(::proof::rel_project_path(&proof.content))
+        PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
     }
 
     pub fn verify(&mut self) -> Result<()> {

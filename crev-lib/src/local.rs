@@ -3,16 +3,16 @@ use base64;
 use crev_common;
 use crev_data::{id::OwnId, level, proof, trust};
 use git2;
-use id::{self, LockedId};
+use crate::id::{self, LockedId};
 use serde_yaml;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use trustdb;
-use util::{self, APP_INFO};
-use Result;
+use crate::trustdb;
+use crate::util::{self, APP_INFO};
+use crate::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
@@ -212,7 +212,7 @@ impl Local {
     */
 
     fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(::proof::rel_store_path(&proof.content))
+        PathBuf::from("proofs").join(crate::proof::rel_store_path(&proof.content))
     }
 
     fn get_proofs_dir_path(&self) -> PathBuf {

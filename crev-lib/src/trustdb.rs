@@ -10,7 +10,7 @@ use std::{
     path::Path,
 };
 use walkdir::WalkDir;
-use Result;
+use crate::Result;
 
 struct TrustInfo {
     #[allow(unused)]

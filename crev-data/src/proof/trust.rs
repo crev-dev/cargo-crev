@@ -3,12 +3,12 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use id;
-use level::Level;
-use proof::{self, Proof};
+use crate::id;
+use crate::level::Level;
+use crate::proof::{self, Proof};
 use serde_yaml;
 use std::fmt;
-use Result;
+use crate::Result;
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";

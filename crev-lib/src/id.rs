@@ -15,7 +15,7 @@ use std::{
 };
 
 use crev_data::id::{OwnId, PubId};
-use Result;
+use crate::Result;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PassConfig {

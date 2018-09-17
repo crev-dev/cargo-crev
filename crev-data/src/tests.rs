@@ -1,8 +1,8 @@
-use id::OwnId;
-use level::Level;
-use proof::{self, Proof, Serialized};
+use crate::id::OwnId;
+use crate::level::Level;
+use crate::proof::{self, Proof, Serialized};
 use std::path::PathBuf;
-use Result;
+use crate::Result;
 
 #[test]
 fn signed_parse() -> Result<()> {

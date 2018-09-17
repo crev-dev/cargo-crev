@@ -1,12 +1,12 @@
 use chrono::{self, prelude::*};
 use crev_common;
-use id;
-use level::Level;
-use proof::{self, Proof};
+use crate::id;
+use crate::level::Level;
+use crate::proof::{self, Proof};
 use serde_yaml;
 use std::default::Default;
 use std::{self, fmt, path::PathBuf};
-use Result;
+use crate::Result;
 
 use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
 

@@ -7,7 +7,7 @@ use crev_common::{
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
 use std::fmt;
-use Result;
+use crate::Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IdType {

@@ -15,7 +15,7 @@ pub use self::id::*;
 pub use self::review::*;
 pub use self::trust::*;
 
-use Result;
+use crate::Result;
 
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
@@ -88,7 +88,7 @@ impl Content {
         })
     }
 
-    pub fn sign(&self, id: &::id::OwnId) -> Result<Proof> {
+    pub fn sign(&self, id: &crate::id::OwnId) -> Result<Proof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
