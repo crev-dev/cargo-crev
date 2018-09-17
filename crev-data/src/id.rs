@@ -1,5 +1,6 @@
 use base64;
 use blake2;
+use crate::Result;
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
@@ -7,7 +8,6 @@ use crev_common::{
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
 use std::fmt;
-use crate::Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IdType {

@@ -1,5 +1,6 @@
 use app_dirs;
 use base64;
+use crate::Result;
 use crev_common;
 use crev_data::proof;
 use std::{
@@ -9,7 +10,6 @@ use std::{
     process,
 };
 use tempdir;
-use crate::Result;
 
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",

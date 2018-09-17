@@ -1,4 +1,5 @@
 use chrono::{self, offset::Utc, DateTime};
+use crate::Result;
 use crev_data::{
     self,
     level::Level,
@@ -10,7 +11,6 @@ use std::{
     path::Path,
 };
 use walkdir::WalkDir;
-use crate::Result;
 
 struct TrustInfo {
     #[allow(unused)]

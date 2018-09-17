@@ -11,9 +11,7 @@ pub mod id;
 pub mod review;
 pub mod trust;
 
-pub use self::id::*;
-pub use self::review::*;
-pub use self::trust::*;
+pub use self::{id::*, review::*, trust::*};
 
 use crate::Result;
 

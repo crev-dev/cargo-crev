@@ -1,14 +1,16 @@
 use chrono::{self, prelude::*};
+use crate::{
+    id,
+    level::Level,
+    proof::{self, Proof},
+    Result,
+};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use crate::id;
-use crate::level::Level;
-use crate::proof::{self, Proof};
 use serde_yaml;
 use std::fmt;
-use crate::Result;
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";

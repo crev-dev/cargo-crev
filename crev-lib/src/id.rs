@@ -14,8 +14,8 @@ use std::{
     path::Path,
 };
 
-use crev_data::id::{OwnId, PubId};
 use crate::Result;
+use crev_data::id::{OwnId, PubId};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PassConfig {
@@ -24,7 +24,10 @@ pub struct PassConfig {
     iterations: u32,
     #[serde(rename = "memory-size")]
     memory_size: u32,
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
     salt: Vec<u8>,
 }
 
@@ -33,14 +36,23 @@ pub struct PassConfig {
 pub struct LockedId {
     version: u16,
     url: String,
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
     #[serde(rename = "sealed-secret-key")]
     sealed_secret_key: Vec<u8>,
 
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+    #[serde(
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64"
+    )]
     #[serde(rename = "seal-nonce")]
     seal_nonce: Vec<u8>,
     pass: PassConfig,

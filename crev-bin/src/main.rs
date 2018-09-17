@@ -1,12 +1,9 @@
 #![allow(deprecated)]
 //#[macro_use]
 
-
 #[macro_use]
 extern crate quicli;
 use crev_common;
-
-
 
 use rprompt;
 #[macro_use]

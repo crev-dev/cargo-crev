@@ -1,15 +1,12 @@
+use crate::{local::Local, trustdb, util, Result};
 use crev_data::{proof, review};
 use git2;
-use crate::local::Local;
 use serde_yaml;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use crate::trustdb;
-use crate::util;
-use crate::Result;
 
 pub mod staging;
 

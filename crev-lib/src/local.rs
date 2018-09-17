@@ -1,18 +1,20 @@
 use app_dirs::{app_root, AppDataType};
 use base64;
+use crate::{
+    id::{self, LockedId},
+    trustdb,
+    util::{self, APP_INFO},
+    Result,
+};
 use crev_common;
 use crev_data::{id::OwnId, level, proof, trust};
 use git2;
-use crate::id::{self, LockedId};
 use serde_yaml;
 use std::{
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use crate::trustdb;
-use crate::util::{self, APP_INFO};
-use crate::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {

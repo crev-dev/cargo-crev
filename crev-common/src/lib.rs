@@ -7,7 +7,6 @@ use chrono;
 
 use rprompt;
 
-
 use blake2::{digest::FixedOutput, Digest};
 use std::{
     fs,
