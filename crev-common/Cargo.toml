@@ -1,14 +1,13 @@
 [package]
-edition = '2018'
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+edition = "2018"
 name = "crev-common"
 version = "0.1.0"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
-
 [dependencies]
+base64 = "*"
+blake2 = "*"
+chrono = "*"
+hex = "*"
+rprompt = "*"
 serde = "*"
 serde_yaml = "*"
-base64 = "*"
-hex = "*"
-chrono = "*"
-blake2 = "*"
-rprompt = "*"

@@ -1,25 +1,24 @@
 [package]
-edition = '2018'
-name = "crev-lib"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "Scalable, social, Code REView system that we desperately need"
 documentation = "https://docs.rs/crev"
+edition = "2018"
 homepage = "https://github.com/dpc/crev"
 keywords = ["code", "review", "tool", "distributed"]
 license = "MPL-2.0"
+name = "crev-lib"
 readme = "README.md"
 repository = "https://github.com/dpc/crev"
 version = "0.0.1"
-
 [dependencies]
-crev-common = { path = "../crev-common" }
-crev-data = { path = "../crev-data" }
 app_dirs = "*"
+base64 = "*"
+blake2 = "*"
+chrono = "*"
 common_failures = "*"
 derive_builder = "*"
+digest = "*"
 failure = "*"
-chrono = "*"
-base64 = "*"
 git2 = "*"
 hex = "*"
 miscreant = "0.4.0-beta2"
@@ -34,3 +33,9 @@ walkdir = "*"
 [dependencies.argonautica]
 features = ["serde"]
 version = "0.1"
+
+[dependencies.crev-common]
+path = "../crev-common"
+
+[dependencies.crev-data]
+path = "../crev-data"
