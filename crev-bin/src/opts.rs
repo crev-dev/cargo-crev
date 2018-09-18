@@ -58,6 +58,12 @@ pub struct Verify {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Commit {
+    #[structopt(long = "all", short = "a")]
+    pub all: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     #[structopt(name = "id")]
     /// CrevID management
@@ -67,7 +73,7 @@ pub enum Command {
     Add(Add),
     /// Create a new Review Proof from reviewed list
     #[structopt(name = "commit")]
-    Commit,
+    Commit(Commit),
     #[structopt(name = "init")]
     /// Init `.crev` directory
     Init,

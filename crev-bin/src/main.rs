@@ -78,10 +78,14 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = Repo::auto_open()?;
         repo.add(add.paths)?;
     }
-    opts::Command::Commit => {
+    opts::Command::Commit(opts) => {
         let mut repo = Repo::auto_open()?;
         let passphrase = util::read_passphrase()?;
-        repo.commit(passphrase)?;
+        if opts.all {
+            repo.commit_all(passphrase)?;
+        } else {
+            repo.commit(passphrase)?;
+        }
     }
     opts::Command::Init => {
         let local = Local::auto_open()?;

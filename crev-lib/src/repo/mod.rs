@@ -1,6 +1,7 @@
 use crate::{local::Local, trustdb, util, Result};
 use crev_data::{proof, review};
 use git2;
+use hex;
 use serde_yaml;
 use std::{
     fs,
@@ -156,13 +157,20 @@ impl Repo {
         unimplemented!();
     }
 
-    fn try_read_git_revision(&self) -> Result<Option<RevisionInfo>> {
-        let dot_git_path = self.root_dir.join(".git");
-        if !dot_git_path.exists() {
-            return Ok(None);
-        }
+    fn calculate_recursive_digest(&self) -> Result<Vec<u8>> {
         let git_repo = git2::Repository::open(&self.root_dir)?;
 
+        let mut status_opts = git2::StatusOptions::new();
+        status_opts.include_unmodified(true);
+        status_opts.include_untracked(false);
+        for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
+            eprintln!("{}", entry.path().unwrap());
+        }
+
+        unimplemented!();
+    }
+
+    fn is_unclean(&self, git_repo: &git2::Repository) -> Result<bool> {
         if git_repo.state() != git2::RepositoryState::Clean {
             bail!("Git repository is not in a clean state");
         }
@@ -176,7 +184,18 @@ impl Repo {
                 unclean_found = true;
             }
         }
-        if unclean_found {
+
+        return Ok(unclean_found);
+    }
+
+    fn try_read_git_revision(&self) -> Result<Option<RevisionInfo>> {
+        let dot_git_path = self.root_dir.join(".git");
+        if !dot_git_path.exists() {
+            return Ok(None);
+        }
+        let git_repo = git2::Repository::open(&self.root_dir)?;
+
+        if self.is_unclean(&git_repo)? {
             bail!("Git repository is not in a clean state");
         }
         let head = git_repo.head()?;
@@ -198,16 +217,47 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn commit(&mut self, passphrase: String) -> Result<()> {
+    pub fn commit_all(&mut self, passphrase: String) -> Result<()> {
         if self.staging()?.is_empty() {
-            bail!("No reviews to commit. Use `add` first.");
+            bail!("Can't commit all with uncommited staged files.");
         }
         let local = Local::auto_open()?;
+        let project_config = self.load_project_config()?;
+        let revision = self.read_revision()?;
         let id = local.read_unlocked_id(&passphrase)?;
+        let digest = self.calculate_recursive_digest()?;
+
+        let from = proof::Id::from(&id.id);
+
+        let review = review::ReviewBuilder::default()
+            .from(from)
+            .revision(revision.revision)
+            .revision_type(revision.type_)
+            .project_id(project_config.project_id)
+            .digest(Some(hex::encode(digest)))
+            .build()
+            .map_err(|e| format_err!("{}", e))?;
+
+        let review =
+            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Review)?;
+
+        let proof = review.sign(&id)?;
+
+        self.save_signed_review(&local, &proof)?;
+        Ok(())
+    }
+
+    pub fn commit(&mut self, passphrase: String) -> Result<()> {
+        if self.staging()?.is_empty() {
+            bail!("No reviews to commit. Use `add` first or use `-a` for the whole project.");
+        }
+
+        let local = Local::auto_open()?;
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
+        let id = local.read_unlocked_id(&passphrase)?;
 
         let from = proof::Id::from(&id.id);
 
@@ -225,6 +275,12 @@ impl Repo {
 
         let proof = review.sign(&id)?;
 
+        self.save_signed_review(&local, &proof)?;
+        self.staging()?.wipe()?;
+        Ok(())
+    }
+
+    fn save_signed_review(&mut self, local: &Local, proof: &proof::Proof) -> Result<()> {
         let rel_store_path = self.get_proof_rel_store_path(&proof);
 
         println!("{}", proof.clone());
@@ -233,10 +289,9 @@ impl Repo {
             "Proof written to: {}",
             PathBuf::from(".crev").join(rel_store_path).display()
         );
-        let local = Local::auto_open()?;
         local.append_proof(&proof)?;
         eprintln!("Proof added to your store");
-        self.staging()?.wipe()?;
+
         Ok(())
     }
 
