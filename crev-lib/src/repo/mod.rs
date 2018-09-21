@@ -1,4 +1,4 @@
-use crate::{local::Local, trustdb, util, Result};
+use crate::{local::Local, recursive_digest, trustdb, util, Result};
 use crev_data::{proof, review};
 use git2;
 use hex;
@@ -160,17 +160,25 @@ impl Repo {
     fn calculate_recursive_digest(&self) -> Result<Vec<u8>> {
         let git_repo = git2::Repository::open(&self.root_dir)?;
 
+        let mut hasher = recursive_digest::RecursiveHasher::new_dir(self.root_dir.clone());
+
         let mut status_opts = git2::StatusOptions::new();
         status_opts.include_unmodified(true);
         status_opts.include_untracked(false);
         for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
             eprintln!("{}", entry.path().unwrap());
+            hasher.insert_path(&PathBuf::from(
+                entry
+                    .path()
+                    .ok_or_else(|| format_err!("Git entry without a path"))?,
+            ))
         }
 
-        unimplemented!();
+        Ok(hasher.get_digest()?)
     }
 
-    fn is_unclean(&self, git_repo: &git2::Repository) -> Result<bool> {
+    fn is_unclean(&self) -> Result<bool> {
+        let git_repo = git2::Repository::open(&self.root_dir)?;
         if git_repo.state() != git2::RepositoryState::Clean {
             bail!("Git repository is not in a clean state");
         }
@@ -195,9 +203,6 @@ impl Repo {
         }
         let git_repo = git2::Repository::open(&self.root_dir)?;
 
-        if self.is_unclean(&git_repo)? {
-            bail!("Git repository is not in a clean state");
-        }
         let head = git_repo.head()?;
         let rev = head
             .resolve()?
@@ -217,15 +222,20 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn commit_all(&mut self, passphrase: String) -> Result<()> {
+    pub fn commit_all(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() {
             bail!("Can't commit all with uncommited staged files.");
         }
+
+        if !allow_dirty && self.is_unclean()? {
+            bail!("Git repository is not in a clean state");
+        }
+
         let local = Local::auto_open()?;
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
-        let id = local.read_unlocked_id(&passphrase)?;
         let digest = self.calculate_recursive_digest()?;
+        let id = local.read_unlocked_id(&passphrase)?;
 
         let from = proof::Id::from(&id.id);
 
@@ -247,8 +257,8 @@ impl Repo {
         Ok(())
     }
 
-    pub fn commit(&mut self, passphrase: String) -> Result<()> {
-        if self.staging()?.is_empty() {
+    pub fn commit(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
+        if self.staging()?.is_empty() && !allow_dirty {
             bail!("No reviews to commit. Use `add` first or use `-a` for the whole project.");
         }
 

@@ -61,6 +61,8 @@ pub struct Verify {
 pub struct Commit {
     #[structopt(long = "all", short = "a")]
     pub all: bool,
+    #[structopt(long = "allow-dirty")]
+    pub allow_dirty: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]

@@ -79,6 +79,7 @@ pub struct Review {
         skip_serializing_if = "std::vec::Vec::is_empty",
         default = "std::vec::Vec::new"
     )]
+    #[builder(default = "Default::default()")]
     pub files: Vec<ReviewFile>,
 }
 
