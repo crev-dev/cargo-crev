@@ -16,13 +16,18 @@ struct RevisionInfo {
     pub revision: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProjectConfig {
     pub version: u64,
+    /*
     #[serde(rename = "project-id")]
     pub project_id: String,
+    #[serde(rename = "project-id")]
+    pub project_url: String,
+    */
+    pub project: crev_data::proof::Project,
     #[serde(rename = "project-trust-root")]
-    pub project_trust_root: String,
+    pub trust_root: String,
 }
 
 const CREV_DOT_NAME: &str = ".crev";
@@ -71,8 +76,8 @@ impl Repo {
                 w,
                 &ProjectConfig {
                     version: 0,
-                    project_id: util::random_id_str(),
-                    project_trust_root: id_str.clone(),
+                    project: proof::Project::generate(),
+                    trust_root: id_str.clone(),
                 },
             )?;
 
@@ -243,7 +248,7 @@ impl Repo {
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
-            .project_id(project_config.project_id)
+            .project(project_config.project)
             .digest(Some(hex::encode(digest)))
             .build()
             .map_err(|e| format_err!("{}", e))?;
@@ -275,7 +280,7 @@ impl Repo {
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
-            .project_id(project_config.project_id)
+            .project(project_config.project)
             .files(files)
             .build()
             .map_err(|e| format_err!("{}", e))?;

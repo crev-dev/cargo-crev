@@ -1,17 +1,6 @@
+use super::Url;
 use crate::id;
-
 use std::borrow::Borrow;
-
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
-pub struct IdUrl {
-    pub url: String,
-    #[serde(
-        rename = "url-type",
-        skip_serializing_if = "equals_default_url_type",
-        default = "default_url_type"
-    )]
-    pub url_type: String,
-}
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Id {
@@ -23,7 +12,7 @@ pub struct Id {
     )]
     pub id_type: String,
     #[serde(flatten)]
-    pub url: Option<IdUrl>,
+    pub url: Option<Url>,
 }
 
 impl<T: Borrow<id::PubId>> From<T> for Id {
@@ -32,9 +21,9 @@ impl<T: Borrow<id::PubId>> From<T> for Id {
         Id {
             id: id.pub_key_as_base64(),
             id_type: default_id_type(),
-            url: Some(IdUrl {
+            url: Some(Url {
                 url: id.url.clone(),
-                url_type: default_url_type(),
+                url_type: super::url::default_url_type(),
             }),
         }
     }
@@ -49,25 +38,17 @@ impl Id {
         }
     }
     pub fn set_git_url(&mut self, url: String) {
-        self.url = Some(IdUrl {
+        self.url = Some(Url {
             url,
-            url_type: default_url_type(),
+            url_type: super::url::default_url_type(),
         })
     }
 }
 
-fn equals_default_id_type(s: &str) -> bool {
+pub(crate) fn equals_default_id_type(s: &str) -> bool {
     s == default_id_type()
 }
 
-fn default_id_type() -> String {
+pub(crate) fn default_id_type() -> String {
     "crev".into()
-}
-
-fn equals_default_url_type(s: &str) -> bool {
-    s == default_url_type()
-}
-
-fn default_url_type() -> String {
-    "git".into()
 }

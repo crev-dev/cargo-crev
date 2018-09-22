@@ -8,10 +8,12 @@ use ed25519_dalek;
 use std::{default, fmt, fs, io, mem, path::Path};
 
 pub mod id;
+pub mod project;
 pub mod review;
 pub mod trust;
+pub mod url;
 
-pub use self::{id::*, review::*, trust::*};
+pub use self::{id::*, project::*, review::*, trust::*, url::*};
 
 use crate::Result;
 

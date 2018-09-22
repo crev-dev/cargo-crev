@@ -67,11 +67,11 @@ impl ReviewInfo {
 struct UrlInfo {
     #[allow(unused)]
     date: chrono::DateTime<Utc>,
-    url: proof::IdUrl,
+    url: proof::Url,
 }
 
 impl UrlInfo {
-    fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &proof::IdUrl) {
+    fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &proof::Url) {
         if date > &self.date {
             self.url = url.clone()
         }

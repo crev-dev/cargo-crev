@@ -80,11 +80,12 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
 
     from.set_git_url("https://github.com/someone/crev-trust".into());
 
+    let project_id = proof::Project::generate();
     let review = proof::review::ReviewBuilder::default()
         .from(from)
         .revision("foobar".into())
         .revision_type("git".into())
-        .project_id("dfasdfasdfadfmkjnsdklfj".into())
+        .project(project_id)
         .comment("comment".into())
         .thoroughness(Level::Low)
         .understanding(Level::Low)

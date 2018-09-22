@@ -41,7 +41,7 @@ pub struct Review {
     date: chrono::DateTime<FixedOffset>,
     pub from: proof::Id,
     #[serde(rename = "project-id")]
-    project_id: String,
+    pub project: proof::Project,
     revision: String,
     #[serde(
         rename = "revision-type",
@@ -97,7 +97,7 @@ impl Review {
     }
 
     pub fn project_id(&self) -> Option<&str> {
-        Some(&self.project_id)
+        Some(&self.project.id)
     }
 
     pub fn from_pubid(&self) -> String {

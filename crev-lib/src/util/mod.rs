@@ -1,5 +1,4 @@
 use app_dirs;
-use base64;
 use crate::Result;
 use crev_common;
 use crev_data::proof;
@@ -91,15 +90,6 @@ pub fn edit_proof_content_iteractively(
             Ok(content) => return Ok(content),
         }
     }
-}
-
-pub fn random_id_str() -> String {
-    use rand::{self, Rng};
-    let project_id: Vec<u8> = rand::thread_rng()
-        .sample_iter(&rand::distributions::Standard)
-        .take(32)
-        .collect();
-    base64::encode_config(&project_id, base64::URL_SAFE)
 }
 
 pub fn err_eprint_and_ignore<O, E: fmt::Display>(res: std::result::Result<O, E>) {
