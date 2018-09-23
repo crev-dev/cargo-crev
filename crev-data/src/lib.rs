@@ -13,13 +13,6 @@ extern crate derive_builder;
 
 use common_failures::prelude::*;
 
-pub mod review {
-    pub use super::proof::review::*;
-}
-pub mod trust {
-    pub use super::proof::trust::*;
-}
-
 pub mod id;
 pub mod level;
 pub mod proof;

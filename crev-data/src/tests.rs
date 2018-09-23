@@ -81,7 +81,7 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     from.set_git_url("https://github.com/someone/crev-trust".into());
 
     let project_id = proof::Project::generate();
-    let review = proof::review::ReviewBuilder::default()
+    let review = proof::ReviewBuilder::default()
         .from(from)
         .revision("foobar".into())
         .revision_type("git".into())
@@ -91,12 +91,12 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
         .understanding(Level::Low)
         .trust(Level::Low)
         .files(vec![
-            proof::review::ReviewFile {
+            proof::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
             },
-            proof::review::ReviewFile {
+            proof::ReviewFile {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),

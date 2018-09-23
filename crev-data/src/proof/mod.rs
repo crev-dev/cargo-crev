@@ -10,11 +10,11 @@ use crate::level::Level;
 
 pub mod id;
 pub mod project;
-pub mod review;
+pub mod code;
 pub mod trust;
 pub mod url;
 
-pub use self::{id::*, project::*, review::*, trust::*, url::*};
+pub use self::{id::*, project::*, code::*, trust::*, url::*};
 
 use crate::Result;
 

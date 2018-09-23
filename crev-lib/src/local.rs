@@ -7,7 +7,7 @@ use crate::{
     Result,
 };
 use crev_common;
-use crev_data::{id::OwnId, level, proof, trust};
+use crev_data::{id::OwnId, level, proof};
 use git2;
 use serde_yaml;
 use std::{
@@ -249,7 +249,7 @@ impl Local {
                 id
             }).collect();
 
-        let trust = trust::TrustBuilder::default()
+        let trust = proof::TrustBuilder::default()
             .from(from)
             .comment("".into())
             .trust(level::Level::Medium)

@@ -1,6 +1,6 @@
 use common_failures::prelude::*;
 use crev_common;
-use crev_data::review::ReviewFile;
+use crev_data::proof::ReviewFile;
 use serde_cbor;
 use std::{
     collections::HashMap,

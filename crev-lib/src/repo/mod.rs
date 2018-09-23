@@ -1,5 +1,5 @@
 use crate::{local::Local, recursive_digest, trustdb, util, Result};
-use crev_data::{proof, review};
+use crev_data::{proof};
 use git2;
 use hex;
 use serde_yaml;
@@ -152,7 +152,7 @@ impl Repo {
     pub fn verify(&mut self) -> Result<()> {
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
-        let digest = self.calculate_recursive_digest_git()?;
+        let _digest = self.calculate_recursive_digest_git()?;
         let _cur_id = user_config.current_id;
         let _graph = trustdb::TrustDB::new(); /* TODO: calculate trust graph */
         /*
@@ -245,7 +245,7 @@ impl Repo {
 
         let from = proof::Id::from(&id.id);
 
-        let review = review::ReviewBuilder::default()
+        let review = proof::ReviewBuilder::default()
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
@@ -277,7 +277,7 @@ impl Repo {
 
         let from = proof::Id::from(&id.id);
 
-        let review = review::ReviewBuilder::default()
+        let review = proof::ReviewBuilder::default()
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
