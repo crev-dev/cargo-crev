@@ -1,7 +1,6 @@
 use chrono::{self, prelude::*};
 use crate::{
     id,
-    level::Level,
     proof::{self, Proof},
     Result,
 };
@@ -16,7 +15,7 @@ const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ReviewFile {
+pub struct File {
     pub path: PathBuf,
     #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
     pub digest: Vec<u8>,
@@ -32,7 +31,7 @@ pub struct ReviewFile {
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
-pub struct Review {
+pub struct Code {
     #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
@@ -69,61 +68,58 @@ pub struct Review {
     )]
     #[builder(default = "proof::default_digest_type()")]
     digest_type: String,
+    #[serde(flatten)]
     #[builder(default = "Default::default()")]
-    pub thoroughness: Level,
-    #[builder(default = "Default::default()")]
-    pub understanding: Level,
-    #[builder(default = "Default::default()")]
-    pub trust: Level,
-    #[builder(default = "proof::default_distrust_level()")]
-    #[serde(
-        skip_serializing_if = "proof::equals_default_distrust_level",
-        default = "proof::default_distrust_level"
-    )]
-    pub distrust: Level,
+    score: super::Score,
     #[serde(
         skip_serializing_if = "std::vec::Vec::is_empty",
         default = "std::vec::Vec::new"
     )]
     #[builder(default = "Default::default()")]
-    pub files: Vec<ReviewFile>,
+    pub files: Vec<File>,
 }
 
-impl Review {
-    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
+impl Code {
 
-    pub fn date(&self) -> chrono::DateTime<FixedOffset> {
-        self.date
+     pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
+     pub(crate)const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
+     pub(crate)const END_BLOCK: &'static str = END_BLOCK;
+}
+impl proof::ContentCommon for Code {
+
+    fn date(&self) -> &chrono::DateTime<FixedOffset> {
+        &self.date
+    }
+    fn from(&self) -> &proof::Id {
+        &self.from
+    }
+}
+
+impl super::Common for Code {
+    fn project_id(&self) ->&str {
+        &self.project.id
     }
 
-    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.date().with_timezone(&Utc)
-    }
+    fn score(&self) ->&super::Score {
+    &self.score
+}
+}
 
-    pub fn project_id(&self) -> Option<&str> {
-        Some(&self.project.id)
-    }
+impl Code {
 
-    pub fn from_pubid(&self) -> String {
-        self.from.id.clone()
-    }
 
-    pub fn from_url(&self) -> Option<String> {
-        self.from.url.as_ref().map(|v| v.url.to_owned())
-    }
+
 
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
 
     pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
-        super::Content::from(self).sign(id)
+        proof::Content::from(self).sign(id)
     }
 }
 
-impl fmt::Display for Review {
+impl fmt::Display for Code {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
         let mut lines = yaml_document.lines();

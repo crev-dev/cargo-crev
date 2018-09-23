@@ -3,7 +3,7 @@ use crate::Result;
 use crev_data::{
     self,
     level::Level,
-    proof::{self, Content},
+    proof::{self, Content, review, ContentCommon},
 };
 use std::{
     collections::{hash_map, BTreeSet, HashMap, HashSet},
@@ -38,28 +38,23 @@ impl TrustInfo {
 struct ReviewInfo {
     #[allow(unused)]
     date: chrono::DateTime<Utc>,
-    trust: crev_data::level::Level,
-    understanding: crev_data::level::Level,
-    thoroughness: crev_data::level::Level,
+    score: proof::review::Score,
 }
 
-impl<'a> From<&'a proof::Review> for ReviewInfo {
-    fn from(review: &proof::Review) -> Self {
+impl<'a, T: review::Common> From<&'a T> for ReviewInfo {
+    fn from(review: &T) -> Self {
         ReviewInfo {
-            trust: review.trust,
-            understanding: review.understanding,
-            thoroughness: review.thoroughness,
+            score: review.score().to_owned(),
             date: review.date().with_timezone(&Utc),
         }
     }
 }
 
 impl ReviewInfo {
-    fn maybe_update_with(&mut self, review: &proof::Review) {
+    fn maybe_update_with
+        (&mut self, review: &dyn review::Common) {
         if review.date().with_timezone(&Utc) > self.date {
-            self.trust = review.trust;
-            self.understanding = review.understanding;
-            self.thoroughness = review.thoroughness;
+            self.score = review.score().to_owned()
         }
     }
 }
@@ -81,7 +76,7 @@ impl UrlInfo {
 pub struct TrustDB {
     #[allow(unused)]
     trust_id_to_id: HashMap<String, HashMap<String, TrustInfo>>, // who -(trusts)-> whom
-    trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what
+    trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what (file digest)
     url_by_id: HashMap<String, UrlInfo>,
     url_by_id_secondary: HashMap<String, UrlInfo>,
     trusted_ids: HashSet<String>,
@@ -98,7 +93,7 @@ impl TrustDB {
         }
     }
 
-    fn add_review(&mut self, review: &proof::Review) {
+    fn add_code_review(&mut self, review: &review::Code) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
         for file in &review.files {
@@ -108,12 +103,28 @@ impl TrustDB {
                 .or_insert_with(|| HashMap::new())
                 .entry(file.digest.to_owned())
             {
-                hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(&review),
+                hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
                 hash_map::Entry::Vacant(entry) => {
                     entry.insert(ReviewInfo::from(review));
                 }
             }
         }
+    }
+
+    fn add_project_review(&mut self, review: &review::Project) {
+        let from = &review.from;
+        self.record_url_from_from_field(&review.date_utc(), &from);
+            match self
+                .trust_id_to_review
+                .entry(from.id.clone())
+                .or_insert_with(|| HashMap::new())
+                .entry(review.digest.to_owned())
+            {
+                hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
+                hash_map::Entry::Vacant(entry) => {
+                    entry.insert(ReviewInfo::from(review));
+                }
+            }
     }
 
     fn add_trust_raw(&mut self, from: &str, to: &str, date: DateTime<Utc>, trust: Level) {
@@ -173,7 +184,8 @@ impl TrustDB {
     fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
         proof.verify()?;
         match proof.content {
-            Content::Review(ref review) => self.add_review(&review),
+            Content::Code(ref review) => self.add_code_review(&review),
+            Content::Project(ref review) => self.add_project_review(&review),
             Content::Trust(ref trust) => self.add_trust(&trust),
         }
 

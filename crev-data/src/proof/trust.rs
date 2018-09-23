@@ -52,24 +52,20 @@ impl Trust {
     pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
     pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
+}
 
-    pub fn date(&self) -> chrono::DateTime<FixedOffset> {
-        self.date
+
+impl proof::ContentCommon for Trust {
+    fn date(&self) -> &chrono::DateTime<FixedOffset> {
+        &self.date
     }
 
-    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.date().with_timezone(&Utc)
+    fn from(&self) -> &proof::Id {
+        &self.from
     }
+}
 
-    pub fn project_id(&self) -> Option<&str> {
-        None
-    }
-    pub fn from_pubid(&self) -> String {
-        self.from.id.clone()
-    }
-    pub fn from_url(&self) -> Option<String> {
-        self.from.url.as_ref().map(|v| v.url.clone())
-    }
+impl Trust {
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }

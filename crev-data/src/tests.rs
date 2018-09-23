@@ -1,6 +1,5 @@
 use crate::{
     id::OwnId,
-    level::Level,
     proof::{self, Proof, Serialized},
     Result,
 };
@@ -81,22 +80,19 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     from.set_git_url("https://github.com/someone/crev-trust".into());
 
     let project_id = proof::Project::generate();
-    let review = proof::ReviewBuilder::default()
+    let review = proof::review::CodeBuilder::default()
         .from(from)
         .revision("foobar".into())
         .revision_type("git".into())
         .project(project_id)
         .comment("comment".into())
-        .thoroughness(Level::Low)
-        .understanding(Level::Low)
-        .trust(Level::Low)
         .files(vec![
-            proof::ReviewFile {
+            proof::review::code::File {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
             },
-            proof::ReviewFile {
+            proof::review::code::File {
                 path: PathBuf::from("foo.x"),
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),

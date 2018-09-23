@@ -9,37 +9,63 @@ use std::{default, fmt, fs, io, mem, path::Path};
 use crate::level::Level;
 
 pub mod id;
+pub mod review;
 pub mod project;
-pub mod code;
 pub mod trust;
 pub mod url;
 
-pub use self::{id::*, project::*, code::*, trust::*, url::*};
+use self::review::Common;
+
+pub use self::{id::*, project::*, trust::*, url::*};
 
 use crate::Result;
 
+pub trait ContentCommon {
+    fn date(&self) -> &chrono::DateTime<FixedOffset>;
+    fn from(&self) -> &Id;
+
+
+
+    fn date_utc(&self) -> chrono::DateTime<Utc> {
+        self.date().with_timezone(&Utc)
+    }
+
+
+    fn from_pubid(&self) -> String {
+        self.from().id.clone()
+    }
+
+    fn from_url(&self) -> Option<String> {
+        self.from().url.as_ref().map(|v| v.url.to_owned())
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
-    Review,
+    Code,
+    Project,
     Trust,
 }
 
 impl ProofType {
     fn begin_block(&self) -> &'static str {
         match self {
-            ProofType::Review => Review::BEGIN_BLOCK,
+            ProofType::Code=> review::Code::BEGIN_BLOCK,
+            ProofType::Project => review::Project::BEGIN_BLOCK,
             ProofType::Trust => Trust::BEGIN_BLOCK,
         }
     }
     fn begin_signature(&self) -> &'static str {
         match self {
-            ProofType::Review => Review::BEGIN_SIGNATURE,
+            ProofType::Code => review::Code::BEGIN_SIGNATURE,
+            ProofType::Project => review::Project::BEGIN_SIGNATURE,
             ProofType::Trust => Trust::BEGIN_SIGNATURE,
         }
     }
     fn end_block(&self) -> &'static str {
         match self {
-            ProofType::Review => Review::END_BLOCK,
+            ProofType::Code => review::Code::END_BLOCK,
+            ProofType::Project => review::Project::END_BLOCK,
             ProofType::Trust => Trust::END_BLOCK,
         }
     }
@@ -56,7 +82,8 @@ pub(crate) struct Serialized {
 #[derive(Debug, Clone)]
 pub enum Content {
     Trust(Trust),
-    Review(Review),
+    Project(review::Project),
+    Code(review::Code),
 }
 
 impl fmt::Display for Content {
@@ -64,17 +91,23 @@ impl fmt::Display for Content {
         use self::Content::*;
         match self {
             Trust(trust) => trust.fmt(f),
-            Review(review) => review.fmt(f),
+            Code(code) => code.fmt(f),
+            Project(project) => project.fmt(f),
         }
     }
 }
 
-impl From<Review> for Content {
-    fn from(review: Review) -> Self {
-        Content::Review(review)
+impl From<review::Code> for Content {
+    fn from(review: review::Code) -> Self {
+        Content::Code(review)
     }
 }
 
+impl From<review::Project> for Content {
+    fn from(review: review::Project) -> Self {
+        Content::Project(review)
+    }
+}
 impl From<Trust> for Content {
     fn from(review: Trust) -> Self {
         Content::Trust(review)
@@ -84,7 +117,8 @@ impl From<Trust> for Content {
 impl Content {
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
-            ProofType::Review => Content::Review(Review::parse(&s)?),
+            ProofType::Code=> Content::Code(review::Code::parse(&s)?),
+            ProofType::Project=> Content::Project(review::Project::parse(&s)?),
             ProofType::Trust => Content::Trust(Trust::parse(&s)?),
         })
     }
@@ -104,15 +138,17 @@ impl Content {
         use self::Content::*;
         match self {
             Trust(_trust) => ProofType::Trust,
-            Review(_review) => ProofType::Review,
+            Code(_review) => ProofType::Code,
+            Project(_review) => ProofType::Project,
         }
     }
 
-    pub fn date(&self) -> chrono::DateTime<FixedOffset> {
+    pub fn date(&self) -> &chrono::DateTime<FixedOffset> {
         use self::Content::*;
         match self {
             Trust(trust) => trust.date(),
-            Review(review) => review.date(),
+            Code(review) => review.date(),
+            Project(review) => review.date(),
         }
     }
 
@@ -120,7 +156,8 @@ impl Content {
         use self::Content::*;
         match self {
             Trust(trust) => trust.from_pubid(),
-            Review(review) => review.from_pubid(),
+            Code(review) => review.from_pubid(),
+            Project(review) => review.from_pubid(),
         }
     }
 
@@ -128,15 +165,17 @@ impl Content {
         use self::Content::*;
         match self {
             Trust(trust) => trust.from_url(),
-            Review(review) => review.from_url(),
+            Code(review) => review.from_url(),
+            Project(review) => review.from_url(),
         }
     }
 
     pub fn project_id(&self) -> Option<&str> {
         use self::Content::*;
         match self {
-            Trust(trust) => trust.project_id(),
-            Review(review) => review.project_id(),
+            Trust(_) => None,
+            Code(review) => Some(review.project_id()),
+            Project(review) => Some(review.project_id()),
         }
     }
 }
@@ -189,7 +228,8 @@ impl Serialized {
             signature: self.signature.clone(),
             digest: crev_common::blake2sum(&self.body.as_bytes()),
             content: match self.type_ {
-                ProofType::Review => Content::Review(Review::parse(&self.body)?),
+                ProofType::Code => Content::Code(review::Code::parse(&self.body)?),
+                ProofType::Project => Content::Project(review::Project::parse(&self.body)?),
                 ProofType::Trust => Content::Trust(Trust::parse(&self.body)?),
             },
         })
@@ -233,12 +273,16 @@ impl Serialized {
             fn process_line(&mut self, line: &str) -> Result<()> {
                 match self.stage {
                     Stage::None => {
-                        if line.trim().is_empty() {
-                        } else if line.trim() == ProofType::Review.begin_block() {
-                            self.type_ = ProofType::Review;
+                        let line = line.trim();
+                        if line.is_empty() {
+                        } else if line == ProofType::Code.begin_block() {
+                            self.type_ = ProofType::Code;
                             self.stage = Stage::Body;
-                        } else if line.trim() == ProofType::Trust.begin_block() {
+                        } else if line == ProofType::Trust.begin_block() {
                             self.type_ = ProofType::Trust;
+                            self.stage = Stage::Body;
+                        } else if line== ProofType::Project.begin_block() {
+                            self.type_ = ProofType::Project;
                             self.stage = Stage::Body;
                         } else {
                             bail!("Parsing error when looking for start of code review proof");

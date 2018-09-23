@@ -1,7 +1,6 @@
 use crate::{local::Local, recursive_digest, trustdb, util, Result};
 use crev_data::{proof};
 use git2;
-use hex;
 use serde_yaml;
 use std::{
     fs,
@@ -245,17 +244,17 @@ impl Repo {
 
         let from = proof::Id::from(&id.id);
 
-        let review = proof::ReviewBuilder::default()
+        let review = proof::review::ProjectBuilder::default()
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
             .project(project_config.project)
-            .digest(Some(hex::encode(digest)))
+            .digest(digest)
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
         let review =
-            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Review)?;
+            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Project)?;
 
         let proof = review.sign(&id)?;
 
@@ -277,7 +276,7 @@ impl Repo {
 
         let from = proof::Id::from(&id.id);
 
-        let review = proof::ReviewBuilder::default()
+        let review = proof::review::CodeBuilder::default()
             .from(from)
             .revision(revision.revision)
             .revision_type(revision.type_)
@@ -287,7 +286,7 @@ impl Repo {
             .map_err(|e| format_err!("{}", e))?;
 
         let review =
-            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Review)?;
+            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Code)?;
 
         let proof = review.sign(&id)?;
 

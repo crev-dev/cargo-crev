@@ -1,6 +1,6 @@
 use common_failures::prelude::*;
 use crev_common;
-use crev_data::proof::ReviewFile;
+use crev_data::proof;
 use serde_cbor;
 use std::{
     collections::HashMap,
@@ -92,10 +92,10 @@ impl Staging {
         Ok(())
     }
 
-    pub fn to_review_files(&self) -> Vec<ReviewFile> {
+    pub fn to_review_files(&self) -> Vec<proof::review::code::File> {
         self.entries
             .iter()
-            .map(|(k, v)| ReviewFile {
+            .map(|(k, v)| proof::review::code::File {
                 path: k.to_owned(),
                 digest: v.blake_hash.clone(),
                 digest_type: "blake2b".into(),

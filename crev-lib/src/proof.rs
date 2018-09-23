@@ -5,7 +5,8 @@ use std::path::PathBuf;
 fn type_name(content: &Content) -> &str {
     match content {
         Content::Trust(_) => "trust",
-        Content::Review(_) => "review",
+        Content::Code(_) => "code-review",
+        Content::Project(_) => "project-review",
     }
 }
 
