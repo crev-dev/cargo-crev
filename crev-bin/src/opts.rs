@@ -62,6 +62,15 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum Project {
+
+    #[structopt(name = "init")]
+    /// Init `.crev` directory
+    Init,
+}
+
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct Verify {
     depth: u64,
     #[structopt(long = "high-cost")]
@@ -91,9 +100,11 @@ pub enum Command {
     /// Create a new Review Proof from reviewed list
     #[structopt(name = "commit")]
     Commit(Commit),
-    #[structopt(name = "init")]
-    /// Init `.crev` directory
-    Init,
+
+    #[structopt(name = "project")]
+    /// Project settings
+    Project(Project),
+
     #[structopt(name = "status")]
     /// Display pending review list
     Status,

@@ -92,7 +92,7 @@ impl Repo {
         let res = Self::new(root_path)?;
 
         if !res.project_config_path().exists() {
-            bail!("Project config not-initialized. Use `crev init` to generate it.");
+            bail!("Project config not-initialized. Use `crev project init` to generate it.");
         }
 
         Ok(res)

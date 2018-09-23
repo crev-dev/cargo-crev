@@ -87,10 +87,12 @@ main!(|opts: opts::Opts| match opts.command {
             repo.commit(passphrase, opts.allow_dirty)?;
         }
     }
-    opts::Command::Init => {
-        let local = Local::auto_open()?;
-        let cur_id = local.read_current_id()?;
-        Repo::init(PathBuf::from(".".to_string()), cur_id)?;
+    opts::Command::Project(project) => match project {
+        opts::Project::Init => {
+            let local = Local::auto_open()?;
+            let cur_id = local.read_current_id()?;
+            Repo::init(PathBuf::from(".".to_string()), cur_id)?;
+        }
     }
     opts::Command::Status => {
         let mut repo = Repo::auto_open()?;
