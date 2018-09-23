@@ -71,7 +71,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Trust::Update => {
             let local = Local::auto_open()?;
-            local.trust_update()?;
+            local.fetch_updates()?;
         }
     },
     opts::Command::Add(add) => {

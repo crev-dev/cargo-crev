@@ -11,6 +11,7 @@ use crev_data::{id::OwnId, level, proof, trust};
 use git2;
 use serde_yaml;
 use std::{
+    collections::HashSet,
     fs,
     io::Write,
     path::{Path, PathBuf},
@@ -267,7 +268,8 @@ impl Local {
         Ok(())
     }
 
-    pub fn trust_update(&self) -> Result<()> {
+    pub fn fetch_updates(&self) -> Result<()> {
+        let mut already_fetched = HashSet::new();
         let mut db = trustdb::TrustDB::new();
         let user_config = self.load_user_config()?;
         db.import_recursively(&self.get_proofs_dir_path())?;
@@ -279,23 +281,41 @@ impl Local {
             low_trust_distance: 5,
         };
 
-        let trust_set = db.calculate_trust_set(user_config.current_id, &params);
+        let mut something_was_fetched = true ;
+        while something_was_fetched {
+            something_was_fetched = false;
+            let trust_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
 
-        for id in &trust_set {
-            if let Some(url) = db.lookup_url(id) {
-                eprintln!("Fetching {}", url);
-                util::err_eprint_and_ignore(self.fetch_remote_git(id, url));
-            } else {
-                eprintln!("No URL for {}", id);
+            for id in &trust_set {
+                if already_fetched.contains(id) {
+                    continue;
+                } else {
+                    already_fetched.insert(id.to_owned());
+                }
+
+                if let Some(url) = db.lookup_url(id) {
+                    eprintln!("Fetching {}", url);
+                    let success = util::err_eprint_and_ignore(self.fetch_remote_git(id, url));
+                    if success {
+                        something_was_fetched = true;
+                        db.import_recursively(&self.get_remote_git_path(id, url))?;
+                    }
+                } else {
+                    eprintln!("No URL for {}", id);
+                }
             }
         }
         Ok(())
     }
 
-    pub fn fetch_remote_git(&self, id: &str, url: &str) -> Result<()> {
+    pub fn get_remote_git_path(&self, id: &str, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
         let digest = base64::encode_config(&digest, base64::URL_SAFE);
-        let dir = self.cache_remotes_path().join(id).join(digest);
+        self.cache_remotes_path().join(id).join(digest)
+    }
+
+    pub fn fetch_remote_git(&self, id: &str, url: &str) -> Result<()> {
+        let dir = self.get_remote_git_path(id, url);
 
         if dir.exists() {
             let repo = git2::Repository::open(dir)?;

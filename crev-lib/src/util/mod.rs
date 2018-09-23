@@ -92,9 +92,9 @@ pub fn edit_proof_content_iteractively(
     }
 }
 
-pub fn err_eprint_and_ignore<O, E: fmt::Display>(res: std::result::Result<O, E>) {
+pub fn err_eprint_and_ignore<O, E: fmt::Display>(res: std::result::Result<O, E>) -> bool {
     match res {
-        Err(e) => eprintln!("{}", e),
-        Ok(_) => {}
+        Err(e) => { eprintln!("{}", e); false },
+        Ok(_) => { true }
     }
 }

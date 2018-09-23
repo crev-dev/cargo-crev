@@ -69,10 +69,6 @@ main!(|opts: opts::Opts| match opts.command {
             let passphrase = util::read_passphrase()?;
             local.trust_ids(trust.pub_ids, passphrase)?;
         }
-        opts::Trust::Update => {
-            let local = Local::auto_open()?;
-            local.trust_update()?;
-        }
     },
     opts::Command::Add(add) => {
         let mut repo = Repo::auto_open()?;
@@ -111,6 +107,10 @@ main!(|opts: opts::Opts| match opts.command {
             let local = Local::auto_open()?;
             let status = local.run_git(git.args)?;
             std::process::exit(status.code().unwrap_or(-159));
+        }
+        opts::Db::Fetch => {
+            let local = Local::auto_open()?;
+            local.fetch_updates()?;
         }
     }
 });

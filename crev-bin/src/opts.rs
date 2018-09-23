@@ -42,9 +42,7 @@ pub enum Trust {
     #[structopt(name = "add")]
     /// Create a new Trust Proof
     Add(TrustAdd),
-    #[structopt(name = "update")]
-    /// Update trustdb by fetching updates from trusted sources
-    Update,
+
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -52,6 +50,9 @@ pub enum Db {
     #[structopt(name = "git")]
     /// Run git commands in your local db
     Git(Git),
+    #[structopt(name = "fetch")]
+    /// Update trustdb by fetching updates from trusted sources
+    Fetch,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -100,11 +101,9 @@ pub enum Command {
     /// Create a new Review Proof from reviewed list
     #[structopt(name = "commit")]
     Commit(Commit),
-
     #[structopt(name = "project")]
     /// Project settings
     Project(Project),
-
     #[structopt(name = "status")]
     /// Display pending review list
     Status,
@@ -116,7 +115,6 @@ pub enum Command {
     #[structopt(name = "trust")]
     /// Trust Store management
     Trust(Trust),
-
     /// Trust Store
     #[structopt(name = "db")]
     Db(Db),
