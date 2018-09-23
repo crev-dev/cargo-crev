@@ -75,6 +75,12 @@ pub struct Review {
     pub understanding: Level,
     #[builder(default = "Default::default()")]
     pub trust: Level,
+    #[builder(default = "proof::default_distrust_level()")]
+    #[serde(
+        skip_serializing_if = "proof::equals_default_distrust_level",
+        default = "proof::default_distrust_level"
+    )]
+    pub distrust: Level,
     #[serde(
         skip_serializing_if = "std::vec::Vec::is_empty",
         default = "std::vec::Vec::new"

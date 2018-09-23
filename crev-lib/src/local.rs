@@ -289,7 +289,7 @@ impl Local {
                 eprintln!("No URL for {}", id);
             }
         }
-        unimplemented!();
+        Ok(())
     }
 
     pub fn fetch_remote_git(&self, id: &str, url: &str) -> Result<()> {

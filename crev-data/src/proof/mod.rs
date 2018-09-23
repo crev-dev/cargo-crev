@@ -6,6 +6,7 @@ use chrono::{self, prelude::*};
 use crev_common;
 use ed25519_dalek;
 use std::{default, fmt, fs, io, mem, path::Path};
+use crate::level::Level;
 
 pub mod id;
 pub mod project;
@@ -338,4 +339,12 @@ fn equals_default_revision_type(s: &str) -> bool {
 
 fn default_revision_type() -> String {
     "git".into()
+}
+
+fn equals_default_distrust_level(l: &Level) -> bool {
+    *l == default_distrust_level()
+}
+
+fn default_distrust_level() -> Level {
+    Level::None
 }

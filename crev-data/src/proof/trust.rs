@@ -26,6 +26,12 @@ pub struct Trust {
     pub date: chrono::DateTime<FixedOffset>,
     pub from: proof::Id,
     pub trusted: Vec<proof::Id>,
+    #[builder(default = "proof::default_distrust_level()")]
+    #[serde(
+        skip_serializing_if = "proof::equals_default_distrust_level",
+        default = "proof::default_distrust_level"
+    )]
+    pub distrust: Level,
     #[serde(
         skip_serializing_if = "String::is_empty",
         default = "Default::default"
