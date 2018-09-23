@@ -63,11 +63,22 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Project {
+pub struct ProjectReview {
+    #[structopt(long = "allow-dirty")]
+    pub allow_dirty: bool,
+}
 
+#[derive(Debug, StructOpt, Clone)]
+pub enum Project {
     #[structopt(name = "init")]
     /// Init `.crev` directory
     Init,
+    #[structopt(name = "review")]
+    /// Create a Review Proof for the whole directory
+    Review(ProjectReview),
+    #[structopt(name = "verify")]
+    /// Create a Review Proof for the whole directory
+    Verify,
 }
 
 

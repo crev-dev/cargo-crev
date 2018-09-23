@@ -78,7 +78,6 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = Repo::auto_open()?;
         let passphrase = util::read_passphrase()?;
         if opts.all {
-            repo.commit_all(passphrase, opts.allow_dirty)?;
         } else {
             repo.commit(passphrase, opts.allow_dirty)?;
         }
@@ -88,6 +87,15 @@ main!(|opts: opts::Opts| match opts.command {
             let local = Local::auto_open()?;
             let cur_id = local.read_current_id()?;
             Repo::init(PathBuf::from(".".to_string()), cur_id)?;
+        }
+        opts::Project::Review(project_review) => {
+            let mut repo = Repo::auto_open()?;
+            let passphrase = util::read_passphrase()?;
+            repo.review(passphrase, project_review.allow_dirty)?;
+        }
+        opts::Project::Verify => {
+            let mut repo = Repo::auto_open()?;
+            repo.verify()?;
         }
     }
     opts::Command::Status => {

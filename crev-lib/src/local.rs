@@ -274,13 +274,8 @@ impl Local {
         let user_config = self.load_user_config()?;
         db.import_recursively(&self.get_proofs_dir_path())?;
         db.import_recursively(&self.cache_remotes_path())?;
-        let params = trustdb::TrustDistanceParams {
-            max_distance: 10,
-            high_trust_distance: 0,
-            medium_trust_distance: 1,
-            low_trust_distance: 5,
-        };
-
+        let params = super::default_trust_params();
+        
         let mut something_was_fetched = true ;
         while something_was_fetched {
             something_was_fetched = false;

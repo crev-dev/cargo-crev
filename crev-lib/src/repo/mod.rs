@@ -152,6 +152,7 @@ impl Repo {
     pub fn verify(&mut self) -> Result<()> {
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
+        let digest = self.calculate_recursive_digest_git()?;
         let _cur_id = user_config.current_id;
         let _graph = trustdb::TrustDB::new(); /* TODO: calculate trust graph */
         /*
@@ -162,7 +163,7 @@ impl Repo {
         unimplemented!();
     }
 
-    fn calculate_recursive_digest(&self) -> Result<Vec<u8>> {
+    fn calculate_recursive_digest_git(&self) -> Result<Vec<u8>> {
         let git_repo = git2::Repository::open(&self.root_dir)?;
 
         let mut hasher = recursive_digest::RecursiveHasher::new_dir(self.root_dir.clone());
@@ -227,7 +228,7 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn commit_all(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
+    pub fn review(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() {
             bail!("Can't commit all with uncommited staged files.");
         }
@@ -239,7 +240,7 @@ impl Repo {
         let local = Local::auto_open()?;
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
-        let digest = self.calculate_recursive_digest()?;
+        let digest = self.calculate_recursive_digest_git()?;
         let id = local.read_unlocked_id(&passphrase)?;
 
         let from = proof::Id::from(&id.id);
