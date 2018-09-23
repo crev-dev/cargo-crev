@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::ffi::OsString;
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct Id {
@@ -47,6 +48,20 @@ pub enum Trust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum Db {
+    #[structopt(name = "git")]
+    /// Run git commands in your local db
+    Git(Git),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Git {
+    /// Arguments to git command
+    #[structopt(parse(from_os_str))]
+    pub args: Vec<OsString>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct Verify {
     depth: u64,
     #[structopt(long = "high-cost")]
@@ -90,6 +105,10 @@ pub enum Command {
     #[structopt(name = "trust")]
     /// Trust Store management
     Trust(Trust),
+
+    /// Trust Store
+    #[structopt(name = "db")]
+    Db(Db),
 }
 
 #[derive(Debug, StructOpt, Clone)]

@@ -104,4 +104,11 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = Repo::auto_open()?;
         repo.verify()?;
     }
+    opts::Command::Db(cmd) => match cmd {
+        opts::Db::Git(git) => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(git.args)?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
+    }
 });

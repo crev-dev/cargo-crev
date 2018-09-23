@@ -15,6 +15,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
+use std::ffi::OsString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
@@ -329,5 +330,24 @@ impl Local {
         file.flush()?;
 
         Ok(())
+    }
+
+    pub fn run_git(&self, args: Vec<OsString>) ->
+        Result<std::process::ExitStatus> {
+
+        let orig_dir = std::env::current_dir()?;
+        std::env::set_current_dir(self.get_proofs_dir_path())?;
+
+        use std::process::Command;
+
+        let status = Command::new("git")
+            .args(args)
+            .status()
+            .expect("failed to execute git");
+
+
+        std::env::set_current_dir(orig_dir)?;
+
+        Ok(status)
     }
 }
