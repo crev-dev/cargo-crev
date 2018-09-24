@@ -82,7 +82,7 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = Repo::auto_open()?;
         let passphrase = util::read_passphrase()?;
         if opts.all {
-            repo.review(passphrase, opts.allow_dirty)?;
+            repo.trust_project(passphrase, opts.allow_dirty)?;
         } else {
             repo.commit(passphrase, opts.allow_dirty)?;
         }

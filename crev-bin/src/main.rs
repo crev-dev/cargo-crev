@@ -51,7 +51,7 @@ fn gen_id() -> Result<()> {
     local.save_locked_id(&locked)?;
     local.save_current_id(&id)?;
 
-    eprintln!("Your CrevID was created and will be printed blow in encrypted form.");
+    eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
     eprintln!("Make sure to back it up on another device, to prevent loosing it.");
 
     println!("{}", locked);
@@ -88,16 +88,26 @@ main!(|opts: opts::Opts| match opts.command {
             let cur_id = local.read_current_id()?;
             Repo::init(PathBuf::from(".".to_string()), cur_id)?;
         }
-        opts::Project::Review(project_review) => {
+        opts::Project::Trust(project_trust) => {
             let mut repo = Repo::auto_open()?;
             let passphrase = util::read_passphrase()?;
-            repo.review(passphrase, project_review.allow_dirty)?;
+            repo.trust_project(passphrase, project_trust.allow_dirty)?;
         }
         opts::Project::Verify => {
             let mut repo = Repo::auto_open()?;
-            repo.verify()?;
+            match repo.verify()? {
+                crev_lib::Verification::Trusted => {
+                    println!("Trusted");
+                }
+                crev_lib::Verification::NotTrusted => {
+                    println!("Not Trusted");
+                }
+                crev_lib::Verification::Distrusted => {
+                    println!("Distrusted");
+                }
+            }
         }
-    }
+    },
     opts::Command::Status => {
         let mut repo = Repo::auto_open()?;
         repo.status()?;
@@ -120,5 +130,5 @@ main!(|opts: opts::Opts| match opts.command {
             let local = Local::auto_open()?;
             local.fetch_updates()?;
         }
-    }
+    },
 });

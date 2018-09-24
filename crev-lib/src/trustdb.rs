@@ -1,9 +1,9 @@
 use chrono::{self, offset::Utc, DateTime};
-use crate::Result;
+use crate::{Result, Verification};
 use crev_data::{
     self,
     level::Level,
-    proof::{self, Content, review, ContentCommon},
+    proof::{self, review, Content, ContentCommon},
 };
 use std::{
     collections::{hash_map, BTreeSet, HashMap, HashSet},
@@ -51,8 +51,7 @@ impl<'a, T: review::Common> From<&'a T> for ReviewInfo {
 }
 
 impl ReviewInfo {
-    fn maybe_update_with
-        (&mut self, review: &dyn review::Common) {
+    fn maybe_update_with(&mut self, review: &dyn review::Common) {
         if review.date().with_timezone(&Utc) > self.date {
             self.score = review.score().to_owned()
         }
@@ -72,13 +71,6 @@ impl UrlInfo {
         }
     }
 }
-
-pub enum VerificationResult {
-    Trusted,
-    NotTrusted,
-    Distrusted
-}
-
 
 pub struct TrustDB {
     #[allow(unused)]
@@ -123,17 +115,17 @@ impl TrustDB {
     fn add_project_review(&mut self, review: &review::Project) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
-            match self
-                .digest_to_reviews
-                .entry(review.digest.to_owned())
-                .or_insert_with(|| HashMap::new())
-                .entry(from.id.clone())
-            {
-                hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
-                hash_map::Entry::Vacant(entry) => {
-                    entry.insert(ReviewInfo::from(review));
-                }
+        match self
+            .digest_to_reviews
+            .entry(review.digest.to_owned())
+            .or_insert_with(|| HashMap::new())
+            .entry(from.id.clone())
+        {
+            hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
+            hash_map::Entry::Vacant(entry) => {
+                entry.insert(ReviewInfo::from(review));
             }
+        }
     }
 
     fn add_trust_raw(&mut self, from: &str, to: &str, date: DateTime<Utc>, trust: Level) {
@@ -167,18 +159,14 @@ impl TrustDB {
         self.digest_to_reviews.get(digest)
     }
 
-    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<String>) -> VerificationResult {
-
+    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<String>) -> Verification {
         if let Some(reviews) = self.get_reviews_of(digest) {
-
             // Faster somehow maybe?
-            let reviews_by : HashSet<String> = reviews.keys().map(|s|
-                                                                  s.to_owned()).collect();
+            let reviews_by: HashSet<String> = reviews.keys().map(|s| s.to_owned()).collect();
             let matching_reviewers = trust_set.intersection(&reviews_by);
             let mut trust_count = 0;
             let mut distrust_count = 0;
             for matching_reviewer in matching_reviewers {
-
                 if reviews[matching_reviewer].score.trust > Level::None {
                     trust_count += 1;
                 }
@@ -188,16 +176,15 @@ impl TrustDB {
             }
 
             if distrust_count > 0 {
-                VerificationResult::Distrusted
+                Verification::Distrusted
             } else if trust_count > 0 {
-                VerificationResult::Trusted
+                Verification::Trusted
             } else {
-                VerificationResult::NotTrusted
+                Verification::NotTrusted
             }
         } else {
-                VerificationResult::NotTrusted
+            Verification::NotTrusted
         }
-
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &proof::Id) {

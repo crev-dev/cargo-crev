@@ -39,7 +39,7 @@ pub struct Code {
     )]
     date: chrono::DateTime<FixedOffset>,
     pub from: proof::Id,
-    #[serde(rename = "project-id")]
+    #[serde(rename = "project")]
     pub project: proof::Project,
     revision: String,
     #[serde(

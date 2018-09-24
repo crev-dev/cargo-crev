@@ -17,12 +17,18 @@ pub mod trustdb;
 mod util;
 
 fn default_trust_params() -> trustdb::TrustDistanceParams {
-    trustdb::TrustDistanceParams  {
+    trustdb::TrustDistanceParams {
         max_distance: 10,
         high_trust_distance: 0,
         medium_trust_distance: 1,
         low_trust_distance: 5,
     }
+}
+
+pub enum Verification {
+    Trusted,
+    NotTrusted,
+    Distrusted,
 }
 
 #[cfg(test)]

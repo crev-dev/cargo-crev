@@ -192,21 +192,6 @@ version = "1.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "cargo-crev"
-version = "0.1.0"
-dependencies = [
- "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.1.0",
- "crev-data 0.0.1",
- "crev-lib 0.0.1",
- "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "quicli 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rpassword 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rprompt 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "structopt 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"

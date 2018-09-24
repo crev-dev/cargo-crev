@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-use std::ffi::OsString;
+use std::{ffi::OsString, path::PathBuf};
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct Id {
@@ -42,7 +41,6 @@ pub enum Trust {
     #[structopt(name = "add")]
     /// Create a new Trust Proof
     Add(TrustAdd),
-
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -63,7 +61,7 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ProjectReview {
+pub struct ProjectTrust {
     #[structopt(long = "allow-dirty")]
     pub allow_dirty: bool,
 }
@@ -73,14 +71,13 @@ pub enum Project {
     #[structopt(name = "init")]
     /// Init `.crev` directory
     Init,
-    #[structopt(name = "review")]
-    /// Create a Review Proof for the whole directory
-    Review(ProjectReview),
+    #[structopt(name = "trust")]
+    /// Create a Project Review Proof for the whole directory
+    Trust(ProjectTrust),
     #[structopt(name = "verify")]
-    /// Create a Review Proof for the whole directory
+    /// Verify if the project is trusted in the current state
     Verify,
 }
-
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct Verify {

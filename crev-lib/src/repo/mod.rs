@@ -1,5 +1,5 @@
 use crate::{local::Local, recursive_digest, trustdb, util, Result};
-use crev_data::{proof};
+use crev_data::proof;
 use git2;
 use serde_yaml;
 use std::{
@@ -18,21 +18,15 @@ struct RevisionInfo {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProjectConfig {
     pub version: u64,
-    /*
-    #[serde(rename = "project-id")]
-    pub project_id: String,
-    #[serde(rename = "project-id")]
-    pub project_url: String,
-    */
     pub project: crev_data::proof::Project,
-    #[serde(rename = "project-trust-root")]
+    #[serde(rename = "trust-root")]
     pub trust_root: String,
 }
 
 const CREV_DOT_NAME: &str = ".crev";
 
 #[derive(Fail, Debug)]
-#[fail(display = "Project config not-initialized. Use `crev init` to generate it.")]
+#[fail(display = "Project config not-initialized. Use `crev project init` to generate it.")]
 struct ProjectDirNotFound;
 
 fn find_project_root_dir() -> Result<PathBuf> {
@@ -148,18 +142,16 @@ impl Repo {
         PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
     }
 
-    pub fn verify(&mut self) -> Result<()> {
+    pub fn verify(&mut self) -> Result<crate::Verification> {
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
-        let _digest = self.calculate_recursive_digest_git()?;
-        let _cur_id = user_config.current_id;
-        let _graph = trustdb::TrustDB::new(); /* TODO: calculate trust graph */
-        /*
-        let user_config = Local::read_unlocked_id
-        let trustdb = Local::calculate_trustdb_for(&id);
-        */
-
-        unimplemented!();
+        let digest = self.calculate_recursive_digest_git()?;
+        let mut db = trustdb::TrustDB::new();
+        db.import_recursively(&local.get_proofs_dir_path())?;
+        db.import_recursively(&local.cache_remotes_path())?;
+        let params = super::default_trust_params();
+        let trusted_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
+        Ok(db.verify_digest(&digest, &trusted_set))
     }
 
     fn calculate_recursive_digest_git(&self) -> Result<Vec<u8>> {
@@ -171,7 +163,6 @@ impl Repo {
         status_opts.include_unmodified(true);
         status_opts.include_untracked(false);
         for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-            eprintln!("{}", entry.path().unwrap());
             hasher.insert_path(&PathBuf::from(
                 entry
                     .path()
@@ -193,7 +184,6 @@ impl Repo {
         let mut unclean_found = false;
         for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
             if entry.status() != git2::Status::CURRENT {
-                eprintln!("{}", entry.path().unwrap());
                 unclean_found = true;
             }
         }
@@ -227,9 +217,9 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn review(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
-        if self.staging()?.is_empty() {
-            bail!("Can't commit all with uncommited staged files.");
+    pub fn trust_project(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
+        if !self.staging()?.is_empty() {
+            bail!("Can't review with uncommitted staged files.");
         }
 
         if !allow_dirty && self.is_unclean()? {
@@ -285,8 +275,7 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review =
-            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Code)?;
+        let review = util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Code)?;
 
         let proof = review.sign(&id)?;
 

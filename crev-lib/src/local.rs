@@ -12,11 +12,11 @@ use git2;
 use serde_yaml;
 use std::{
     collections::HashSet,
+    ffi::OsString,
     fs,
     io::Write,
     path::{Path, PathBuf},
 };
-use std::ffi::OsString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
@@ -93,7 +93,7 @@ impl Local {
         self.user_dir_path().join("config.yaml")
     }
 
-    fn cache_remotes_path(&self) -> PathBuf {
+    pub fn cache_remotes_path(&self) -> PathBuf {
         self.cache_path.join("remotes")
     }
 
@@ -219,7 +219,7 @@ impl Local {
         PathBuf::from("proofs").join(crate::proof::rel_store_path(&proof.content))
     }
 
-    fn get_proofs_dir_path(&self) -> PathBuf {
+    pub fn get_proofs_dir_path(&self) -> PathBuf {
         self.root_path.join("proofs")
     }
 
@@ -275,8 +275,8 @@ impl Local {
         db.import_recursively(&self.get_proofs_dir_path())?;
         db.import_recursively(&self.cache_remotes_path())?;
         let params = super::default_trust_params();
-        
-        let mut something_was_fetched = true ;
+
+        let mut something_was_fetched = true;
         while something_was_fetched {
             something_was_fetched = false;
             let trust_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
@@ -347,9 +347,7 @@ impl Local {
         Ok(())
     }
 
-    pub fn run_git(&self, args: Vec<OsString>) ->
-        Result<std::process::ExitStatus> {
-
+    pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
         std::env::set_current_dir(self.get_proofs_dir_path())?;
 
@@ -359,7 +357,6 @@ impl Local {
             .args(args)
             .status()
             .expect("failed to execute git");
-
 
         std::env::set_current_dir(orig_dir)?;
 
