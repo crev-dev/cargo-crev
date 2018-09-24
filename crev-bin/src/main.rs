@@ -93,9 +93,9 @@ main!(|opts: opts::Opts| match opts.command {
             let passphrase = util::read_passphrase()?;
             repo.trust_project(passphrase, project_trust.allow_dirty)?;
         }
-        opts::Project::Verify => {
+        opts::Project::Verify(verify) => {
             let mut repo = Repo::auto_open()?;
-            match repo.verify()? {
+            match repo.verify(verify.allow_dirty)? {
                 crev_lib::Verification::Trusted => {
                     println!("Trusted");
                 }
@@ -116,9 +116,9 @@ main!(|opts: opts::Opts| match opts.command {
         let mut repo = Repo::auto_open()?;
         repo.remove(remove.paths)?;
     }
-    opts::Command::Verify(_verify_opts) => {
+    opts::Command::Verify(verify_opts) => {
         let mut repo = Repo::auto_open()?;
-        repo.verify()?;
+        repo.verify(verify_opts.allow_dirty)?;
     }
     opts::Command::Db(cmd) => match cmd {
         opts::Db::Git(git) => {

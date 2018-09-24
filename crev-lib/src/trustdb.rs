@@ -1,10 +1,11 @@
 use chrono::{self, offset::Utc, DateTime};
-use crate::{Result, Verification};
+use crate::{util, Result, Verification};
 use crev_data::{
     self,
     level::Level,
     proof::{self, review, Content, ContentCommon},
 };
+use failure::ResultExt;
 use std::{
     collections::{hash_map, BTreeSet, HashMap, HashSet},
     ffi::OsStr,
@@ -228,12 +229,12 @@ impl TrustDB {
     fn import_file(&mut self, path: &Path) -> Result<()> {
         let proofs = proof::Proof::parse_from(path)?;
         for proof in proofs.into_iter() {
-            // TODO: report&ignore errors
-            self.add_proof(&proof)?;
+            util::err_eprint_and_ignore(self.add_proof(&proof).compat());
         }
 
         Ok(())
     }
+
     fn maybe_import_file(&mut self, path: &Path) -> Option<Result<()>> {
         let osext_match: &OsStr = "crev".as_ref();
         match path.extension() {
@@ -256,10 +257,11 @@ impl TrustDB {
                 continue;
             }
 
-            match self.maybe_import_file(&path) {
-                Some(Err(e)) => eprintln!("Error importing {}: {}", path.display(), e),
-                _ => {}
-            }
+            let res = self.maybe_import_file(&path).unwrap_or(Ok(()));
+            util::err_eprint_and_ignore(
+                res.with_context(|e| format!("Failed to import file: {}; {}", path.display(), e))
+                    .compat(),
+            );
         }
 
         Ok(())

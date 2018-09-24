@@ -3,7 +3,7 @@ use crate::Result;
 use crev_common;
 use crev_data::proof;
 use std::{
-    self, env, ffi, fmt, fs,
+    self, env, ffi, fs,
     io::{self, Read, Write},
     path::Path,
     process,
@@ -92,9 +92,12 @@ pub fn edit_proof_content_iteractively(
     }
 }
 
-pub fn err_eprint_and_ignore<O, E: fmt::Display>(res: std::result::Result<O, E>) -> bool {
+pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> bool {
     match res {
-        Err(e) => { eprintln!("{}", e); false },
-        Ok(_) => { true }
+        Err(e) => {
+            eprintln!("{}", e);
+            false
+        }
+        Ok(_) => true,
     }
 }

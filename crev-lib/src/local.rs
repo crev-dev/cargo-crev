@@ -8,6 +8,7 @@ use crate::{
 };
 use crev_common;
 use crev_data::{id::OwnId, level, proof};
+use failure::ResultExt;
 use git2;
 use serde_yaml;
 use std::{
@@ -290,7 +291,8 @@ impl Local {
 
                 if let Some(url) = db.lookup_url(id) {
                     eprintln!("Fetching {}", url);
-                    let success = util::err_eprint_and_ignore(self.fetch_remote_git(id, url));
+                    let success =
+                        util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
                     if success {
                         something_was_fetched = true;
                         db.import_recursively(&self.get_remote_git_path(id, url))?;

@@ -142,7 +142,11 @@ impl Repo {
         PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
     }
 
-    pub fn verify(&mut self) -> Result<crate::Verification> {
+    pub fn verify(&mut self, allow_dirty: bool) -> Result<crate::Verification> {
+        if !allow_dirty && self.is_unclean()? {
+            bail!("Git repository is not in a clean state");
+        }
+
         let local = Local::auto_open()?;
         let user_config = local.load_user_config()?;
         let digest = self.calculate_recursive_digest_git()?;

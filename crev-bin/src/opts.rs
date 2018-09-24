@@ -67,6 +67,11 @@ pub struct ProjectTrust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct ProjectVerify {
+    #[structopt(long = "allow-dirty")]
+    pub allow_dirty: bool,
+}
+#[derive(Debug, StructOpt, Clone)]
 pub enum Project {
     #[structopt(name = "init")]
     /// Init `.crev` directory
@@ -76,7 +81,7 @@ pub enum Project {
     Trust(ProjectTrust),
     #[structopt(name = "verify")]
     /// Verify if the project is trusted in the current state
-    Verify,
+    Verify(ProjectVerify),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -88,6 +93,8 @@ pub struct Verify {
     medium_cost: u64,
     #[structopt(long = "low-cost")]
     low_cost: u64,
+    #[structopt(long = "allow-dirty")]
+    pub allow_dirty: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
