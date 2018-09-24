@@ -21,3 +21,4 @@ pkgs.stdenv.mkDerivation {
       LD_LIBRARY_PATH=${pkgs.llvmPackages.libclang}/lib/:$LD_LIBRARY_PATH
   '';
 }
+

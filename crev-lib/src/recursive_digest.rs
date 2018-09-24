@@ -88,14 +88,15 @@ impl RecursiveHasher {
             hasher.input(k.as_bytes());
             hasher.input("\0".as_bytes());
 
-            let attr = fs::symlink_metadata(full_path)?;
+            let full_path = full_path.join(k);
+            let attr = fs::symlink_metadata(&full_path)?;
 
             if attr.is_file() {
-                self.get_input_for_file(&full_path.join(k), &v, &mut hasher)?;
+                self.get_input_for_file(&full_path, &v, &mut hasher)?;
             } else if attr.is_dir() {
-                self.get_input_for_dir(&full_path.join(k), &v, &mut hasher)?;
+                self.get_input_for_dir(&full_path, &v, &mut hasher)?;
             } else if attr.file_type().is_symlink() {
-                self.get_input_for_symlink(&full_path.join(k), &v, &mut hasher)?;
+                self.get_input_for_symlink(&full_path, &v, &mut hasher)?;
             }
         }
         parent_hasher.input(hasher.fixed_result().as_slice());
