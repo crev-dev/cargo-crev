@@ -1,7 +1,8 @@
 use crate::Result;
 use std::fmt;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd,
+         Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum Level {
     None,

@@ -73,10 +73,18 @@ impl UrlInfo {
     }
 }
 
+pub enum VerificationResult {
+    Trusted,
+    NotTrusted,
+    Distrusted
+}
+
+
 pub struct TrustDB {
     #[allow(unused)]
     trust_id_to_id: HashMap<String, HashMap<String, TrustInfo>>, // who -(trusts)-> whom
-    trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what (file digest)
+    //trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what (file digest)
+    digest_to_reviews: HashMap<Vec<u8>, HashMap<String, ReviewInfo>>, // what (digest) -(reviewed)-> by whom
     url_by_id: HashMap<String, UrlInfo>,
     url_by_id_secondary: HashMap<String, UrlInfo>,
     trusted_ids: HashSet<String>,
@@ -86,9 +94,10 @@ impl TrustDB {
     pub fn new() -> Self {
         TrustDB {
             trust_id_to_id: Default::default(),
-            trust_id_to_review: Default::default(),
+            //trust_id_to_review: Default::default(),
             url_by_id: Default::default(),
             url_by_id_secondary: Default::default(),
+            digest_to_reviews: Default::default(),
             trusted_ids: Default::default(),
         }
     }
@@ -98,10 +107,10 @@ impl TrustDB {
         self.record_url_from_from_field(&review.date_utc(), &from);
         for file in &review.files {
             match self
-                .trust_id_to_review
-                .entry(from.id.clone())
-                .or_insert_with(|| HashMap::new())
+                .digest_to_reviews
                 .entry(file.digest.to_owned())
+                .or_insert_with(|| HashMap::new())
+                .entry(from.id.clone())
             {
                 hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
                 hash_map::Entry::Vacant(entry) => {
@@ -115,10 +124,10 @@ impl TrustDB {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
             match self
-                .trust_id_to_review
-                .entry(from.id.clone())
-                .or_insert_with(|| HashMap::new())
+                .digest_to_reviews
                 .entry(review.digest.to_owned())
+                .or_insert_with(|| HashMap::new())
+                .entry(from.id.clone())
             {
                 hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
                 hash_map::Entry::Vacant(entry) => {
@@ -152,6 +161,43 @@ impl TrustDB {
                 self.record_url_from_to_field(&trust.date_utc(), &to)
             }
         }
+    }
+
+    fn get_reviews_of(&self, digest: &[u8]) -> Option<&HashMap<String, ReviewInfo>> {
+        self.digest_to_reviews.get(digest)
+    }
+
+    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<String>) -> VerificationResult {
+
+        if let Some(reviews) = self.get_reviews_of(digest) {
+
+            // Faster somehow maybe?
+            let reviews_by : HashSet<String> = reviews.keys().map(|s|
+                                                                  s.to_owned()).collect();
+            let matching_reviewers = trust_set.intersection(&reviews_by);
+            let mut trust_count = 0;
+            let mut distrust_count = 0;
+            for matching_reviewer in matching_reviewers {
+
+                if reviews[matching_reviewer].score.trust > Level::None {
+                    trust_count += 1;
+                }
+                if reviews[matching_reviewer].score.distrust > Level::None {
+                    distrust_count += 1;
+                }
+            }
+
+            if distrust_count > 0 {
+                VerificationResult::Distrusted
+            } else if trust_count > 0 {
+                VerificationResult::Trusted
+            } else {
+                VerificationResult::NotTrusted
+            }
+        } else {
+                VerificationResult::NotTrusted
+        }
+
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &proof::Id) {
