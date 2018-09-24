@@ -293,10 +293,11 @@ impl TrustDB {
         let mut pending = BTreeSet::new();
         pending.insert(Visit {
             distance: 0,
-            id: for_id,
+            id: for_id.clone(),
         });
 
         let mut visited = HashMap::<&str, _>::new();
+        visited.insert(&for_id, 0);
         while let Some(current) = pending.iter().next().cloned() {
             pending.remove(&current);
 
