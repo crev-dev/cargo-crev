@@ -71,6 +71,13 @@ pub struct ProjectVerify {
     #[structopt(long = "allow-dirty")]
     pub allow_dirty: bool,
 }
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct ProjectDigest {
+    #[structopt(long = "allow-dirty")]
+    pub allow_dirty: bool,
+}
+
 #[derive(Debug, StructOpt, Clone)]
 pub enum Project {
     #[structopt(name = "init")]
@@ -82,6 +89,9 @@ pub enum Project {
     #[structopt(name = "verify")]
     /// Verify if the project is trusted in the current state
     Verify(ProjectVerify),
+    #[structopt(name = "digest")]
+    /// Display project digest
+    Digest(ProjectDigest),
 }
 
 #[derive(Debug, StructOpt, Clone)]

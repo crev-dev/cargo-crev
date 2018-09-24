@@ -12,6 +12,7 @@ extern crate structopt;
 use common_failures::prelude::*;
 use crev_data::id::OwnId;
 use crev_lib::{id::LockedId, local::Local, repo::Repo};
+use hex;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -95,7 +96,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Project::Verify(verify) => {
             let mut repo = Repo::auto_open()?;
-            match repo.verify(verify.allow_dirty)? {
+            match repo.project_verify(verify.allow_dirty)? {
                 crev_lib::Verification::Trusted => {
                     println!("Trusted");
                 }
@@ -106,6 +107,10 @@ main!(|opts: opts::Opts| match opts.command {
                     println!("Distrusted");
                 }
             }
+        }
+        opts::Project::Digest(digest) => {
+            let mut repo = Repo::auto_open()?;
+            println!("{}", hex::encode(repo.project_digest(digest.allow_dirty)?));
         }
     },
     opts::Command::Status => {
@@ -118,7 +123,7 @@ main!(|opts: opts::Opts| match opts.command {
     }
     opts::Command::Verify(verify_opts) => {
         let mut repo = Repo::auto_open()?;
-        repo.verify(verify_opts.allow_dirty)?;
+        repo.project_verify(verify_opts.allow_dirty)?;
     }
     opts::Command::Db(cmd) => match cmd {
         opts::Db::Git(git) => {

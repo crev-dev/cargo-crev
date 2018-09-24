@@ -142,7 +142,7 @@ impl Repo {
         PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
     }
 
-    pub fn verify(&mut self, allow_dirty: bool) -> Result<crate::Verification> {
+    pub fn project_verify(&mut self, allow_dirty: bool) -> Result<crate::Verification> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
@@ -156,6 +156,14 @@ impl Repo {
         let params = super::default_trust_params();
         let trusted_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
         Ok(db.verify_digest(&digest, &trusted_set))
+    }
+
+    pub fn project_digest(&mut self, allow_dirty: bool) -> Result<Vec<u8>> {
+        if !allow_dirty && self.is_unclean()? {
+            bail!("Git repository is not in a clean state");
+        }
+
+        self.calculate_recursive_digest_git()
     }
 
     fn calculate_recursive_digest_git(&self) -> Result<Vec<u8>> {

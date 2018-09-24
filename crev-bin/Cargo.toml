@@ -18,3 +18,4 @@ common_failures = "*"
 crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }
 crev-common = { path = "../crev-common" }
+hex = "*"
