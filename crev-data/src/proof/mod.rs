@@ -3,14 +3,14 @@
 use base64;
 use blake2;
 use chrono::{self, prelude::*};
+use crate::level::Level;
 use crev_common;
 use ed25519_dalek;
 use std::{default, fmt, fs, io, mem, path::Path};
-use crate::level::Level;
 
 pub mod id;
-pub mod review;
 pub mod project;
+pub mod review;
 pub mod trust;
 pub mod url;
 
@@ -24,12 +24,9 @@ pub trait ContentCommon {
     fn date(&self) -> &chrono::DateTime<FixedOffset>;
     fn from(&self) -> &Id;
 
-
-
     fn date_utc(&self) -> chrono::DateTime<Utc> {
         self.date().with_timezone(&Utc)
     }
-
 
     fn from_pubid(&self) -> String {
         self.from().id.clone()
@@ -50,7 +47,7 @@ pub enum ProofType {
 impl ProofType {
     fn begin_block(&self) -> &'static str {
         match self {
-            ProofType::Code=> review::Code::BEGIN_BLOCK,
+            ProofType::Code => review::Code::BEGIN_BLOCK,
             ProofType::Project => review::Project::BEGIN_BLOCK,
             ProofType::Trust => Trust::BEGIN_BLOCK,
         }
@@ -117,8 +114,8 @@ impl From<Trust> for Content {
 impl Content {
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
-            ProofType::Code=> Content::Code(review::Code::parse(&s)?),
-            ProofType::Project=> Content::Project(review::Project::parse(&s)?),
+            ProofType::Code => Content::Code(review::Code::parse(&s)?),
+            ProofType::Project => Content::Project(review::Project::parse(&s)?),
             ProofType::Trust => Content::Trust(Trust::parse(&s)?),
         })
     }
@@ -281,7 +278,7 @@ impl Serialized {
                         } else if line == ProofType::Trust.begin_block() {
                             self.type_ = ProofType::Trust;
                             self.stage = Stage::Body;
-                        } else if line== ProofType::Project.begin_block() {
+                        } else if line == ProofType::Project.begin_block() {
                             self.type_ = ProofType::Project;
                             self.stage = Stage::Body;
                         } else {

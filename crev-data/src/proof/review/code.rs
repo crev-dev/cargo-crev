@@ -80,13 +80,11 @@ pub struct Code {
 }
 
 impl Code {
-
-     pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-     pub(crate)const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-     pub(crate)const END_BLOCK: &'static str = END_BLOCK;
+    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
+    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
+    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 impl proof::ContentCommon for Code {
-
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
@@ -96,20 +94,16 @@ impl proof::ContentCommon for Code {
 }
 
 impl super::Common for Code {
-    fn project_id(&self) ->&str {
+    fn project_id(&self) -> &str {
         &self.project.id
     }
 
-    fn score(&self) ->&super::Score {
-    &self.score
-}
+    fn score(&self) -> &super::Score {
+        &self.score
+    }
 }
 
 impl Code {
-
-
-
-
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }

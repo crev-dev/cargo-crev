@@ -1,17 +1,14 @@
-use crate::level::Level;
-use crate::proof;
+use crate::{level::Level, proof};
 use std::default::Default;
 
 pub mod code;
 pub mod project;
 
+pub use self::{code::*, project::*};
 
-pub use self::code::*;
-pub use self::project::*;
-
-pub trait Common : super::ContentCommon {
-    fn project_id(&self) ->&str ;
-    fn score(&self) ->&Score ;
+pub trait Common: super::ContentCommon {
+    fn project_id(&self) -> &str;
+    fn score(&self) -> &Score;
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Builder)]

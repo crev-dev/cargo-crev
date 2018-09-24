@@ -4,11 +4,12 @@ use crate::{
     proof::{self, Proof},
     Result,
 };
-use crev_common;
+use crev_common::{
+    self,
+    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
+};
 use serde_yaml;
-use std::{default::Default, fmt };
-use crev_common::serde::{ as_rfc3339_fixed,  from_rfc3339_fixed};
-use crev_common::serde::{as_hex,  from_hex};
+use std::{default::Default, fmt};
 
 const BEGIN_BLOCK: &str = "-----BEGIN PROJECT REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN PROJECT REVIEW SIGNATURE-----";
@@ -72,13 +73,12 @@ impl proof::ContentCommon for Project {
     }
 }
 
-
 impl super::Common for Project {
-    fn project_id(&self) ->&str {
+    fn project_id(&self) -> &str {
         &self.project.id
     }
 
-    fn score(&self) ->&super::Score {
+    fn score(&self) -> &super::Score {
         &self.score
     }
 }

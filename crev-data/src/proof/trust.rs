@@ -54,7 +54,6 @@ impl Trust {
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 
-
 impl proof::ContentCommon for Trust {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
