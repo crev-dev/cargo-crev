@@ -12,8 +12,6 @@ path = "src/main.rs"
 [dependencies]
 failure = "*"
 quicli = "*"
-rpassword = "*"
-rprompt = "*"
 structopt = "*"
 common_failures = "*"
 crev-lib = { path = "../crev-lib" }

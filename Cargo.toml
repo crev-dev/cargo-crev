@@ -3,6 +3,6 @@ members = [
 	"crev-common",
 	"crev-data",
 	"crev-lib",
-	"crev-bin"
-	#"cargo-crev"
+	"crev-bin",
+	"cargo-crev"
 ]
