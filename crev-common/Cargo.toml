@@ -3,6 +3,7 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 edition = "2018"
 name = "crev-common"
 version = "0.1.0"
+
 [dependencies]
 base64 = "*"
 blake2 = "*"
