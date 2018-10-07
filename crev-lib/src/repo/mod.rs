@@ -1,4 +1,4 @@
-use crate::{local::Local, recursive_digest, trustdb, util, Result};
+use crate::{local::Local, util, Result};
 use crev_data::proof;
 use git2;
 use serde_yaml;
@@ -148,13 +148,9 @@ impl Repo {
         }
 
         let local = Local::auto_open()?;
-        let user_config = local.load_user_config()?;
-        let digest = self.calculate_recursive_digest_git()?;
-        let mut db = trustdb::TrustDB::new();
-        db.import_recursively(&local.get_proofs_dir_path())?;
-        db.import_recursively(&local.cache_remotes_path())?;
-        let params = super::default_trust_params();
-        let trusted_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
+        let params = Default::default();
+        let (db, trusted_set) = local.load_db(&params)?;
+        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir)?;
         Ok(db.verify_digest(&digest, &trusted_set))
     }
 
@@ -163,26 +159,9 @@ impl Repo {
             bail!("Git repository is not in a clean state");
         }
 
-        self.calculate_recursive_digest_git()
-    }
-
-    fn calculate_recursive_digest_git(&self) -> Result<Vec<u8>> {
-        let git_repo = git2::Repository::open(&self.root_dir)?;
-
-        let mut hasher = recursive_digest::RecursiveHasher::new_dir(self.root_dir.clone());
-
-        let mut status_opts = git2::StatusOptions::new();
-        status_opts.include_unmodified(true);
-        status_opts.include_untracked(false);
-        for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-            hasher.insert_path(&PathBuf::from(
-                entry
-                    .path()
-                    .ok_or_else(|| format_err!("Git entry without a path"))?,
-            ))
-        }
-
-        Ok(hasher.get_digest()?)
+        Ok(crate::calculate_recursive_digest_for_git_dir(
+            &self.root_dir,
+        )?)
     }
 
     fn is_unclean(&self) -> Result<bool> {
@@ -241,7 +220,7 @@ impl Repo {
         let local = Local::auto_open()?;
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
-        let digest = self.calculate_recursive_digest_git()?;
+        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir)?;
         let id = local.read_unlocked_id(&passphrase)?;
 
         let from = proof::Id::from(&id.id);

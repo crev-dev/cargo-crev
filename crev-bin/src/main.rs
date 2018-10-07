@@ -96,17 +96,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Project::Verify(verify) => {
             let mut repo = Repo::auto_open()?;
-            match repo.project_verify(verify.allow_dirty)? {
-                crev_lib::Verification::Trusted => {
-                    println!("Trusted");
-                }
-                crev_lib::Verification::NotTrusted => {
-                    println!("Not Trusted");
-                }
-                crev_lib::Verification::Distrusted => {
-                    println!("Distrusted");
-                }
-            }
+            println!("{}", repo.project_verify(verify.allow_dirty)?);
         }
         opts::Project::Digest(digest) => {
             let mut repo = Repo::auto_open()?;

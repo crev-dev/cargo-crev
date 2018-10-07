@@ -275,7 +275,8 @@ impl TrustDB {
             )
         } else {
             None
-        }.into_iter()
+        }
+        .into_iter()
         .flatten()
     }
 
@@ -363,5 +364,16 @@ impl TrustDistanceParams {
             Level::Medium => self.medium_trust_distance,
             Level::High => self.high_trust_distance,
         })
+    }
+}
+
+impl Default for TrustDistanceParams {
+    fn default() -> Self {
+        Self {
+            max_distance: 10,
+            high_trust_distance: 0,
+            medium_trust_distance: 1,
+            low_trust_distance: 5,
+        }
     }
 }

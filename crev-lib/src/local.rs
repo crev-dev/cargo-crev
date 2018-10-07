@@ -136,31 +136,31 @@ impl Local {
     fn trust_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("trust")
     }
-
+    
     fn trust_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
         let id_str = pub_id.id_as_base64();
         self.trust_proof_dir_path().join(id_str)
     }
-
+    
     fn review_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("review")
     }
-
+    
     fn review_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
         let id_str = pub_id.id_as_base64();
         self.review_proof_dir_path().join(id_str)
     }
-
+    
     pub fn load_all_trust_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<TrustProof>> {
         let path = self.trust_proof_dir_path_for_id(pub_id);
         if !path.exists() {
             return Ok(vec![]);
         }
         let content = util::read_file_to_string(&path)?;
-
+    
         TrustProof::parse(&content)
     }
-
+    
     pub fn store_all_trust_proof_from(
         &self,
         pub_id: &id::PubId,
@@ -173,18 +173,18 @@ impl Local {
             Ok(())
         })
     }
-
-
+    
+    
     pub fn load_all_review_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<ReviewProof>> {
         let path = &self.review_proof_dir_path_for_id(pub_id);
         if !path.exists() {
             return Ok(vec![]);
         }
         let content = util::read_file_to_string(&path)?;
-
+    
         ReviewProof::parse(&content)
     }
-
+    
     pub fn store_all_review_proof_from(
         &self,
         pub_id: &id::PubId,
@@ -197,23 +197,23 @@ impl Local {
             Ok(())
         })
     }
-
+    
     pub fn add_trust_proof_from(&self, pub_id: &id::PubId, proof: TrustProof) -> Result<()> {
         let mut proofs = self.load_all_trust_proof_from(pub_id)?;
         proofs.push(proof);
         self.store_all_trust_proof_from(pub_id, &proofs)?;
-
+    
         Ok(())
     }
-
+    
     pub fn add_review_proof_from(&self, pub_id: &id::PubId, proof: ReviewProof) -> Result<()> {
         let mut proofs = self.load_all_review_proof_from(pub_id)?;
         proofs.push(proof);
         self.store_all_review_proof_from(pub_id, &proofs)?;
-
+    
         Ok(())
     }
-
+    
     */
 
     fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
@@ -248,7 +248,8 @@ impl Local {
                     id.set_git_url(url.to_owned())
                 }
                 id
-            }).collect();
+            })
+            .collect();
 
         let trust = proof::TrustBuilder::default()
             .from(from)
@@ -275,7 +276,7 @@ impl Local {
         let user_config = self.load_user_config()?;
         db.import_recursively(&self.get_proofs_dir_path())?;
         db.import_recursively(&self.cache_remotes_path())?;
-        let params = super::default_trust_params();
+        let params = Default::default();
 
         let mut something_was_fetched = true;
         while something_was_fetched {
@@ -363,5 +364,18 @@ impl Local {
         std::env::set_current_dir(orig_dir)?;
 
         Ok(status)
+    }
+
+    pub fn load_db(
+        &self,
+        params: &trustdb::TrustDistanceParams,
+    ) -> Result<(trustdb::TrustDB, HashSet<String>)> {
+        let user_config = self.load_user_config()?;
+        let mut db = trustdb::TrustDB::new();
+        db.import_recursively(&self.get_proofs_dir_path())?;
+        db.import_recursively(&self.cache_remotes_path())?;
+        let trusted_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
+
+        Ok((db, trusted_set))
     }
 }

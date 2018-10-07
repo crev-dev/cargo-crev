@@ -7,11 +7,11 @@ extern crate quicli;
 #[macro_use]
 extern crate structopt;
 
+use cargo::{core::SourceId, util::important_paths::find_root_manifest_for_wd};
 use common_failures::prelude::*;
-use std::path::PathBuf;
+use crev_lib;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
-
-use cargo::util::important_paths::find_root_manifest_for_wd;
 
 mod opts;
 
@@ -22,10 +22,9 @@ struct Repo {
 
 impl Repo {
     fn auto_open_cwd() -> Result<Self> {
+        cargo::core::enable_nightly_features();
         let cwd = std::env::current_dir()?;
-        println!("0");
         let manifest_path = find_root_manifest_for_wd(&cwd)?;
-        println!("01");
         let mut config = cargo::util::config::Config::default()?;
         config.configure(0, None, &None, false, false, &None, &[])?;
         Ok(Repo {
@@ -34,13 +33,10 @@ impl Repo {
         })
     }
 
-    fn download_all_deps(&self) -> Result<Vec<String>> {
-        println!("1");
+    fn for_every_dependency_dir(&self, f: impl Fn(&Path) -> Result<()>) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
-        println!("2");
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
-        println!("2");
-        let (package_set, resolve) = cargo::ops::resolve_ws_precisely(
+        let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
             None,
             &[],
@@ -48,32 +44,49 @@ impl Repo {
             false, /* no_default_features */
             &specs,
         )?;
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let mut source = map.load(&source_id)?;
+        source.update()?;
+
         for pkg_id in package_set.package_ids() {
             let pkg = package_set.get(pkg_id)?;
-            println!("{:?}", pkg);
+
+            if !pkg.root().exists() {
+                source.download(pkg_id)?;
+            }
+
+            f(&pkg.root())?;
         }
-        unimplemented!();
+
+        Ok(())
     }
 
-    fn possibly_download_updates(&self, _dep_name: &str) -> Result<()> {
+    /*fn possibly_download_updates(&self, _dep_name: &str) -> Result<()> {
         unimplemented!();
     }
-
+    
     fn verify_dependency(&self, _dep_name: &str) -> Result<()> {
         unimplemented!();
     }
+    */
 }
 
 main!(|opts: opts::Opts| match opts.command {
     opts::Command::Verify(_verify_opts) => {
+        let local = crev_lib::Local::auto_open()?;
         let repo = Repo::auto_open_cwd()?;
+        let params = Default::default();
+        let (db, trust_set) = local.load_db(&params)?;
 
-        let list_of_deps = repo.download_all_deps()?;
-        for dep_name in &list_of_deps {
-            repo.possibly_download_updates(&dep_name)?;
-        }
-        for dep_name in &list_of_deps {
-            repo.verify_dependency(&dep_name)?;
-        }
+        repo.for_every_dependency_dir(|path| {
+            print!("{} ", path.display());
+            println!(
+                "{}",
+                crev_lib::dir_verify(path, &db, &trust_set)?.to_string()
+            );
+
+            Ok(())
+        })?;
     }
 });

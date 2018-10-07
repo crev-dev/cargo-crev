@@ -15,6 +15,7 @@ quicli = "*"
 structopt = "*"
 common_failures = "*"
 cargo = "*"
+cargo-clone = { git = "https://github.com/dpc/cargo-clone" }
 crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }
 crev-common = { path = "../crev-common" }
