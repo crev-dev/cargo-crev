@@ -12,14 +12,6 @@ use std::{
 
 pub type Descendants = BTreeMap<OsString, Entry>;
 
-/*
-pub enum Entry {
-    Dir(Descendants),
-    Link { target: PathBuf },
-    File { digest: Vec<u8> },
-}
-*/
-
 #[derive(Default)]
 pub struct Entry(Descendants);
 
@@ -93,23 +85,15 @@ impl RecursiveHasher {
         parent_hasher: &mut blake2::Blake2b,
     ) -> Result<()> {
         parent_hasher.input("D\0".as_bytes());
-        let mut hasher = blake2::Blake2b::new();
         for (k, v) in &entry.0 {
-            hasher.input(k.as_bytes());
-            hasher.input("\0".as_bytes());
+            parent_hasher.input(k.as_bytes());
+            parent_hasher.input("\0".as_bytes());
 
+            let mut hasher = blake2::Blake2b::new();
             let full_path = full_path.join(k);
-            let attr = fs::symlink_metadata(&full_path)?;
-
-            if attr.is_file() {
-                self.get_input_for_file(&full_path, &v, &mut hasher)?;
-            } else if attr.is_dir() {
-                self.get_input_for_dir(&full_path, &v, &mut hasher)?;
-            } else if attr.file_type().is_symlink() {
-                self.get_input_for_symlink(&full_path, &v, &mut hasher)?;
-            }
+            self.get_input_for(&full_path, &v, &mut hasher)?;
+            parent_hasher.input(hasher.fixed_result().as_slice());
         }
-        parent_hasher.input(hasher.fixed_result().as_slice());
 
         Ok(())
     }
