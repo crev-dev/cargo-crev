@@ -10,7 +10,10 @@ extern crate structopt;
 use cargo::{core::SourceId, util::important_paths::find_root_manifest_for_wd};
 use common_failures::prelude::*;
 use crev_lib;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 use structopt::StructOpt;
 
 mod opts;
@@ -79,11 +82,13 @@ main!(|opts: opts::Opts| match opts.command {
         let params = Default::default();
         let (db, trust_set) = local.load_db(&params)?;
 
+        let mut ignore_list = HashSet::new();
+        ignore_list.insert(PathBuf::from(".cargo-ok"));
         repo.for_every_dependency_dir(|path| {
             print!("{} ", path.display());
             println!(
                 "{}",
-                crev_lib::dir_verify(path, &db, &trust_set)?.to_string()
+                crev_lib::dir_verify(path, ignore_list.clone(), &db, &trust_set)?.to_string()
             );
 
             Ok(())

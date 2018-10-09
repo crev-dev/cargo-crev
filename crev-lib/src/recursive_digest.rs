@@ -3,7 +3,7 @@ use crate::Result;
 use crev_common;
 use digest::{Digest, FixedOutput};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     ffi::OsString,
     fs,
     os::unix::ffi::OsStrExt,
@@ -26,6 +26,7 @@ pub struct Entry(Descendants);
 pub struct RecursiveHasher {
     root_path: PathBuf,
     root: Entry,
+    ignore_list: HashSet<PathBuf>,
 }
 
 impl RecursiveHasher {
@@ -33,11 +34,20 @@ impl RecursiveHasher {
         Self {
             root_path: path,
             root: Entry(Default::default()),
+            ignore_list: Default::default(),
         }
+    }
+
+    pub fn set_ignore_list(&mut self, list: HashSet<PathBuf>) {
+        self.ignore_list = list;
     }
 
     pub fn insert_path(&mut self, path: &Path) {
         let mut cur_entry = &mut self.root;
+        if self.ignore_list.contains(path) {
+            return;
+        }
+
         for comp in path.components() {
             match comp {
                 Component::Normal(osstr) => {

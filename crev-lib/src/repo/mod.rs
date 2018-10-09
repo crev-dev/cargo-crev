@@ -3,6 +3,7 @@ use crev_data::proof;
 use git2;
 use serde_yaml;
 use std::{
+    collections::HashSet,
     fs,
     io::Write,
     path::{Path, PathBuf},
@@ -150,7 +151,8 @@ impl Repo {
         let local = Local::auto_open()?;
         let params = Default::default();
         let (db, trusted_set) = local.load_db(&params)?;
-        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir)?;
+        let ignore_list = HashSet::new();
+        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
         Ok(db.verify_digest(&digest, &trusted_set))
     }
 
@@ -159,8 +161,10 @@ impl Repo {
             bail!("Git repository is not in a clean state");
         }
 
+        let ignore_list = HashSet::new();
         Ok(crate::calculate_recursive_digest_for_git_dir(
             &self.root_dir,
+            ignore_list,
         )?)
     }
 
@@ -220,7 +224,9 @@ impl Repo {
         let local = Local::auto_open()?;
         let project_config = self.load_project_config()?;
         let revision = self.read_revision()?;
-        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir)?;
+
+        let ignore_list = HashSet::new();
+        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
         let id = local.read_unlocked_id(&passphrase)?;
 
         let from = proof::Id::from(&id.id);

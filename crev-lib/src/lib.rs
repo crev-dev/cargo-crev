@@ -40,8 +40,13 @@ impl fmt::Display for Verification {
     }
 }
 
-pub fn calculate_recursive_digest_for_dir(root_path: &Path) -> Result<Vec<u8>> {
+pub fn calculate_recursive_digest_for_dir(
+    root_path: &Path,
+    ignore_list: HashSet<PathBuf>,
+) -> Result<Vec<u8>> {
     let mut hasher = recursive_digest::RecursiveHasher::new_dir(root_path.into());
+
+    hasher.set_ignore_list(ignore_list);
 
     for entry in walkdir::WalkDir::new(root_path) {
         let entry = entry.unwrap();
@@ -55,10 +60,15 @@ pub fn calculate_recursive_digest_for_dir(root_path: &Path) -> Result<Vec<u8>> {
     Ok(hasher.get_digest()?)
 }
 
-pub fn calculate_recursive_digest_for_git_dir(root_path: &Path) -> Result<Vec<u8>> {
+pub fn calculate_recursive_digest_for_git_dir(
+    root_path: &Path,
+    ignore_list: HashSet<PathBuf>,
+) -> Result<Vec<u8>> {
     let git_repo = git2::Repository::open(root_path)?;
 
     let mut hasher = recursive_digest::RecursiveHasher::new_dir(root_path.to_owned());
+
+    hasher.set_ignore_list(ignore_list);
 
     let mut status_opts = git2::StatusOptions::new();
     status_opts.include_unmodified(true);
@@ -75,13 +85,14 @@ pub fn calculate_recursive_digest_for_git_dir(root_path: &Path) -> Result<Vec<u8
 }
 pub fn dir_verify(
     path: &Path,
+    ignore_list: HashSet<PathBuf>,
     db: &trustdb::TrustDB,
     trusted_set: &HashSet<String>,
 ) -> Result<crate::Verification> {
     let digest = if path.join(".git").exists() {
-        calculate_recursive_digest_for_git_dir(path)?
+        calculate_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        calculate_recursive_digest_for_dir(path)?
+        calculate_recursive_digest_for_dir(path, ignore_list)?
     };
     Ok(db.verify_digest(&digest, trusted_set))
 }
