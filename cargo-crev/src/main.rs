@@ -64,15 +64,6 @@ impl Repo {
 
         Ok(())
     }
-
-    /*fn possibly_download_updates(&self, _dep_name: &str) -> Result<()> {
-        unimplemented!();
-    }
-    
-    fn verify_dependency(&self, _dep_name: &str) -> Result<()> {
-        unimplemented!();
-    }
-    */
 }
 
 main!(|opts: opts::Opts| match opts.command {
@@ -94,4 +85,5 @@ main!(|opts: opts::Opts| match opts.command {
             Ok(())
         })?;
     }
+    opts::Command::Trust(_) | opts::Command::Distrust(_) => unimplemented!(),
 });

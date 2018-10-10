@@ -9,12 +9,21 @@ pub struct Verify {
     #[structopt(long = "low-cost", default_value = "5")]
     low_cost: u64,
 }
+#[derive(Debug, StructOpt, Clone)]
+pub struct Trust {
+    name: String,
+    version: Option<String>,
+}
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Verify review coverage of the project
     #[structopt(name = "verify")]
     Verify(Verify),
+    #[structopt(name = "trust")]
+    Trust(Trust),
+    #[structopt(name = "distrust")]
+    Distrust(Trust),
 }
 
 #[derive(Debug, StructOpt, Clone)]
