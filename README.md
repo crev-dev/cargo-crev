@@ -29,9 +29,7 @@ you keep up with ever-changing ecosystem?
 `crev` records review metadata: who, when, how did the review and 
 stores this information in a verifiable way along with the code.
 
-`crev` starts at a file granularity, builds on top of it upwards, allowing
-spontaneous coordination and trust building on a personal, project, and global
-scale.
+`crev` allows building web of trust and reusing reviews of trusted parites.
 
 `crev` is a tool that we desperately need.
 
@@ -51,51 +49,47 @@ or [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Overview
 
-Using `crev` you can generate Code Review Proofs, e.g.:
+Using `crev` you can generate cryptographically signed artifacts specifying trust (or mistrust)
+into reviewed code or other reviewers.
+
+Eg. `Project Review Proofs` that review a whole project (aka. package, crate, etc.):
 
 ```
------BEGIN CODE REVIEW-----
-date: "2018-08-27T22:40:06.639220203-07:00"
-from: "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
-"from-name": Dawid Ciężarkiewicz
-project_urls:
-  - "https://github.com/dpc/crev"
-revision: 2267845bd1e397e9e41c3e87fea21441fc629ce8
-"revision-type": git
-comment: "I'm the author"
-thoroughness: medium
-understanding: high
-trust: high
-files:
-  - path: README.md
-    digest: 2a092866507c63b00022d233f36a7f3bd9f2b68fdcbdcab77ba3886319a08bdb2a33479dd05bd897d59c17cade18d10794c6e37acd933fd393d129a16ca51092
-  - path: src/proof.rs
-    digest: 56457bf6df215eb64fff035c28244951c509d77c6e46edfa66105a7a72382051d222bb6a6d66bad415fc325fdd80c50d27c2b076914315cbcb369d3c4f6857fb
-  - path: src/main.rs
-    digest: 012b46b4d10bdca817ae2638814d7d23c8909b1651fb85742f454fc868fbb82cb7937fb38591da1c01006fa60edc9da20ae4dcdb301c006060a0283cef6be247
-  - path: src/index.rs
-    digest: 786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce
------BEGIN CODE REVIEW SIGNATURE-----
-mZxQ60ol+MRGLQC863ITf+FjkEAWmD0N4CtJANl5ZRa4c7kFyWCRXljI63UWm23oyNA2ZngZ2S4ndanJIiOMBw==
------END CODE REVIEW-----
+-----BEGIN PROJECT REVIEW-----
+date: "2018-09-23T22:46:21.051417282-07:00"
+from:
+  id: An9CIxHs1bLYW_VnrYOoy7jdBY105YCvr4AMeNxO_uE=
+  url: "https://github.com/dpc/trust"
+project:
+  id: WgX255RZwk9qIBJtMz1vdmtIgX7ctnBe5hhw_oD93ds=
+revision: e64be138f4b8ee0957e0065adc53389ddc856d1e
+thoroughness: low
+understanding: medium
+trust: none
+distrust: medium
+digest: 48b775f16d7a345ffd0859c02ec66d4de7d7846bd700baf639529651ae4708b3c6d416b536a1e9ea068a81092371f3c133d3dba4a5a0e0d7c180ed4d254f85e2
+-----BEGIN PROJECT REVIEW SIGNATURE-----
+_KusMrDw8mU-nWDKIOu4DP75pazhAU3edK1YQmWYkGan7AV_qPjHmUhPmuqUpR4ugklxFLXsnDU3iwgEAzKZCQ==
+-----END PROJECT REVIEW-----
 ```
 
-and include it in your source code, submit a PR to the original project, a even
-some 3rd party code-review gathering repository.
-
-Code review contains, an ID, information about reviewed parts and is cryptographically signed.
+When useful, it is possible to review particular files (`Code Review Proof`).
 
 While your own reviews are very valuable, `crev` allows reviewing identities of other
 people to establish trust.
 
+Proofs like that are stored in personal repositories and published (eg. in
+a dedicated git repository) for other people to use.
+
+They can be also included in a relevant source code itself through submiting
+a PR to the original project, a even some 3rd party code-review gathering repository.
+
 ```
 -----BEGIN CODE REVIEW TRUST-----
 date: "2018-08-27T22:44:49.855361810-07:00"
-from: "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
-from-name: Dawid Ciężarkiewicz
-from-id-type: crev
-from_urls:
-  - http://github.com/dpc/crev-trust
+from:
+  id: An9CIxHs1bLYW_VnrYOoy7jdBY105YCvr4AMeNxO_uE=
+  url: "https://github.com/dpc/trust"
 trusted-ids:
   - "IkmxqWrukzjbxK9CM6UgAwMDF9AQdotoRHOIoR+zeNI="
 trust: high
