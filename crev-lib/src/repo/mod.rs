@@ -229,10 +229,8 @@ impl Repo {
         let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
         let id = local.read_unlocked_id(&passphrase)?;
 
-        let from = proof::Id::from(&id.id);
-
         let review = proof::review::ProjectBuilder::default()
-            .from(from)
+            .from(id.id.to_owned())
             .revision(revision.revision)
             .revision_type(revision.type_)
             .project(project_config.project)
@@ -243,7 +241,7 @@ impl Repo {
         let review =
             util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Project)?;
 
-        let proof = review.sign(&id)?;
+        let proof = review.sign_by(&id)?;
 
         self.save_signed_review(&local, &proof)?;
         Ok(())
@@ -261,10 +259,8 @@ impl Repo {
         let files = self.staging()?.to_review_files();
         let id = local.read_unlocked_id(&passphrase)?;
 
-        let from = proof::Id::from(&id.id);
-
         let review = proof::review::CodeBuilder::default()
-            .from(from)
+            .from(id.id.to_owned())
             .revision(revision.revision)
             .revision_type(revision.type_)
             .project(project_config.project)
@@ -274,7 +270,7 @@ impl Repo {
 
         let review = util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Code)?;
 
-        let proof = review.sign(&id)?;
+        let proof = review.sign_by(&id)?;
 
         self.save_signed_review(&local, &proof)?;
         self.staging()?.wipe()?;

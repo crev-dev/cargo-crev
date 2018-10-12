@@ -7,28 +7,29 @@ use common_failures::prelude::*;
 extern crate failure;
 
 pub mod id;
-
 pub mod local;
 pub mod proof;
 pub mod recursive_digest;
 pub mod repo;
 pub mod staging;
 pub mod trustdb;
+
 mod util;
 
+pub use self::local::Local;
 use std::{
     collections::HashSet,
     fmt,
     path::{Path, PathBuf},
 };
 
-pub use self::local::Local;
-
 pub enum Verification {
     Trusted,
     NotTrusted,
     Distrusted,
 }
+
+use crev_data::Id;
 
 impl fmt::Display for Verification {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -87,7 +88,7 @@ pub fn dir_verify(
     path: &Path,
     ignore_list: HashSet<PathBuf>,
     db: &trustdb::TrustDB,
-    trusted_set: &HashSet<String>,
+    trusted_set: &HashSet<Id>,
 ) -> Result<crate::Verification> {
     let digest = if path.join(".git").exists() {
         calculate_recursive_digest_for_git_dir(path, ignore_list)?

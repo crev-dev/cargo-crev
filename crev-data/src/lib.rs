@@ -16,7 +16,13 @@ use common_failures::prelude::*;
 pub mod id;
 pub mod level;
 pub mod proof;
+pub mod url;
 pub mod util;
+
+pub use crate::{
+    id::{Id, PubId},
+    url::Url,
+};
 
 #[cfg(test)]
 mod tests;

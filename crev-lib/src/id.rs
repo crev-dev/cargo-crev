@@ -92,7 +92,7 @@ impl LockedId {
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce: seal_nonce,
-            url: own_id.id.url.clone(),
+            url: own_id.id.url.clone().unwrap().url,
             pass: PassConfig {
                 salt: pwhash.raw_salt_bytes().to_vec(),
                 iterations: hasher_config.iterations(),
@@ -104,7 +104,7 @@ impl LockedId {
     }
 
     pub fn to_pubid(&self) -> PubId {
-        PubId::new(self.url.to_owned(), self.public_key.to_owned())
+        PubId::new(self.public_key.to_owned(), self.url.to_owned())
     }
 
     pub fn pub_key_as_base64(&self) -> String {

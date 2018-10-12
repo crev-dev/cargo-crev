@@ -1,39 +1,35 @@
 //! Some common stuff for both Review and Trust Proofs
 
 use base64;
-use blake2;
 use chrono::{self, prelude::*};
 use crate::level::Level;
 use crev_common;
-use ed25519_dalek;
 use std::{default, fmt, fs, io, mem, path::Path};
 
-pub mod id;
 pub mod project;
 pub mod review;
 pub mod trust;
-pub mod url;
 
 use self::review::Common;
 
-pub use self::{id::*, project::*, trust::*, url::*};
+pub use self::{project::*, trust::*};
 
 use crate::Result;
 
 pub trait ContentCommon {
     fn date(&self) -> &chrono::DateTime<FixedOffset>;
-    fn from(&self) -> &Id;
+    fn author(&self) -> &crate::PubId;
 
     fn date_utc(&self) -> chrono::DateTime<Utc> {
         self.date().with_timezone(&Utc)
     }
 
-    fn from_pubid(&self) -> String {
-        self.from().id.clone()
+    fn author_id(&self) -> crate::Id {
+        self.author().id.clone()
     }
 
-    fn from_url(&self) -> Option<String> {
-        self.from().url.as_ref().map(|v| v.url.to_owned())
+    fn author_url(&self) -> Option<String> {
+        self.author().url.as_ref().map(|v| v.url.to_owned())
     }
 }
 
@@ -120,7 +116,7 @@ impl Content {
         })
     }
 
-    pub fn sign(&self, id: &crate::id::OwnId) -> Result<Proof> {
+    pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
@@ -149,21 +145,21 @@ impl Content {
         }
     }
 
-    pub fn from_pubid(&self) -> String {
+    pub fn author_id(&self) -> crate::Id {
         use self::Content::*;
         match self {
-            Trust(trust) => trust.from_pubid(),
-            Code(review) => review.from_pubid(),
-            Project(review) => review.from_pubid(),
+            Trust(trust) => trust.author_id(),
+            Code(review) => review.author_id(),
+            Project(review) => review.author_id(),
         }
     }
 
-    pub fn from_url(&self) -> Option<String> {
+    pub fn author_url(&self) -> Option<String> {
         use self::Content::*;
         match self {
-            Trust(trust) => trust.from_url(),
-            Code(review) => review.from_url(),
-            Project(review) => review.from_url(),
+            Trust(trust) => trust.author_url(),
+            Code(review) => review.author_url(),
+            Project(review) => review.author_url(),
         }
     }
 
@@ -348,19 +344,20 @@ impl Proof {
         Ok(v)
     }
 
+    /*
     pub fn signature(&self) -> Result<Vec<u8>> {
         let sig = self.signature.trim();
         Ok(base64::decode_config(sig, base64::URL_SAFE)?)
     }
+    */
+
+    pub fn signature(&self) -> &str {
+        self.signature.trim()
+    }
 
     pub fn verify(&self) -> Result<()> {
-        let pubkey_str = self.content.from_pubid();
-        let pubkey_bytes = base64::decode_config(&pubkey_str, base64::URL_SAFE)?;
-        let pubkey = ed25519_dalek::PublicKey::from_bytes(&pubkey_bytes)?;
-
-        let signature = ed25519_dalek::Signature::from_bytes(&self.signature()?)?;
-
-        pubkey.verify::<blake2::Blake2b>(self.body.as_bytes(), &signature)?;
+        let pubkey = self.content.author_id();
+        pubkey.verify_signature(self.body.as_bytes(), self.signature())?;
 
         Ok(())
     }

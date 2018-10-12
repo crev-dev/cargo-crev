@@ -4,6 +4,7 @@ use crev_data::{
     self,
     level::Level,
     proof::{self, review, Content, ContentCommon},
+    Id,
 };
 use failure::ResultExt;
 use std::{
@@ -62,11 +63,11 @@ impl ReviewInfo {
 struct UrlInfo {
     #[allow(unused)]
     date: chrono::DateTime<Utc>,
-    url: proof::Url,
+    url: crev_data::Url,
 }
 
 impl UrlInfo {
-    fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &proof::Url) {
+    fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &crev_data::Url) {
         if date > &self.date {
             self.url = url.clone()
         }
@@ -75,12 +76,12 @@ impl UrlInfo {
 
 pub struct TrustDB {
     #[allow(unused)]
-    trust_id_to_id: HashMap<String, HashMap<String, TrustInfo>>, // who -(trusts)-> whom
+    trust_id_to_id: HashMap<Id, HashMap<Id, TrustInfo>>, // who -(trusts)-> whom
     //trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what (file digest)
-    digest_to_reviews: HashMap<Vec<u8>, HashMap<String, ReviewInfo>>, // what (digest) -(reviewed)-> by whom
-    url_by_id: HashMap<String, UrlInfo>,
-    url_by_id_secondary: HashMap<String, UrlInfo>,
-    trusted_ids: HashSet<String>,
+    digest_to_reviews: HashMap<Vec<u8>, HashMap<Id, ReviewInfo>>, // what (digest) -(reviewed)-> by whom
+    url_by_id: HashMap<Id, UrlInfo>,
+    url_by_id_secondary: HashMap<Id, UrlInfo>,
+    trusted_ids: HashSet<Id>,
 }
 
 impl TrustDB {
@@ -129,7 +130,7 @@ impl TrustDB {
         }
     }
 
-    fn add_trust_raw(&mut self, from: &str, to: &str, date: DateTime<Utc>, trust: Level) {
+    fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: Level) {
         match self
             .trust_id_to_id
             .entry(from.to_owned())
@@ -156,14 +157,14 @@ impl TrustDB {
         }
     }
 
-    fn get_reviews_of(&self, digest: &[u8]) -> Option<&HashMap<String, ReviewInfo>> {
+    fn get_reviews_of(&self, digest: &[u8]) -> Option<&HashMap<Id, ReviewInfo>> {
         self.digest_to_reviews.get(digest)
     }
 
-    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<String>) -> Verification {
+    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<Id>) -> Verification {
         if let Some(reviews) = self.get_reviews_of(digest) {
             // Faster somehow maybe?
-            let reviews_by: HashSet<String> = reviews.keys().map(|s| s.to_owned()).collect();
+            let reviews_by: HashSet<Id> = reviews.keys().map(|s| s.to_owned()).collect();
             let matching_reviewers = trust_set.intersection(&reviews_by);
             let mut trust_count = 0;
             let mut distrust_count = 0;
@@ -188,7 +189,7 @@ impl TrustDB {
         }
     }
 
-    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &proof::Id) {
+    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
         if let Some(url) = to.url.as_ref() {
             self.url_by_id_secondary
                 .entry(to.id.clone())
@@ -199,7 +200,7 @@ impl TrustDB {
         }
     }
 
-    fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &proof::Id) {
+    fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId) {
         if let Some(url) = from.url.as_ref() {
             match self.url_by_id.entry(from.id.clone()) {
                 hash_map::Entry::Occupied(mut entry) => {
@@ -267,12 +268,9 @@ impl TrustDB {
         Ok(())
     }
 
-    fn get_id_trusted_by(&self, id: &str) -> impl Iterator<Item = (Level, &str)> {
+    fn get_ids_trusted_by(&self, id: &Id) -> impl Iterator<Item = (Level, &Id)> {
         if let Some(map) = self.trust_id_to_id.get(id) {
-            Some(
-                map.iter()
-                    .map(|(id, trust_info)| (trust_info.trust, id.as_str())),
-            )
+            Some(map.iter().map(|(id, trust_info)| (trust_info.trust, id)))
         } else {
             None
         }
@@ -281,15 +279,11 @@ impl TrustDB {
     }
 
     // Oh god, please someone verify this :D
-    pub fn calculate_trust_set(
-        &self,
-        for_id: String,
-        params: &TrustDistanceParams,
-    ) -> HashSet<String> {
+    pub fn calculate_trust_set(&self, for_id: Id, params: &TrustDistanceParams) -> HashSet<Id> {
         #[derive(PartialOrd, Ord, Eq, PartialEq, Clone)]
         struct Visit {
             distance: u64,
-            id: String,
+            id: Id,
         }
         let mut pending = BTreeSet::new();
         pending.insert(Visit {
@@ -297,18 +291,18 @@ impl TrustDB {
             id: for_id.clone(),
         });
 
-        let mut visited = HashMap::<&str, _>::new();
+        let mut visited = HashMap::<&Id, _>::new();
         visited.insert(&for_id, 0);
         while let Some(current) = pending.iter().next().cloned() {
             pending.remove(&current);
 
-            if let Some(visited_distance) = visited.get(current.id.as_str()) {
+            if let Some(visited_distance) = visited.get(&current.id) {
                 if *visited_distance < current.distance {
                     continue;
                 }
             }
 
-            for (level, candidate_id) in self.get_id_trusted_by(&current.id) {
+            for (level, candidate_id) in self.get_ids_trusted_by(&&current.id) {
                 let candidate_distance_from_current =
                     if let Some(v) = params.distance_by_level(level) {
                         v
@@ -338,13 +332,13 @@ impl TrustDB {
             }
         }
 
-        visited.keys().map(|s| s.to_string()).collect()
+        visited.keys().map(|id| (*id).clone()).collect()
     }
 
-    pub fn lookup_url(&self, id_str: &str) -> Option<&str> {
+    pub fn lookup_url(&self, id: &Id) -> Option<&str> {
         self.url_by_id
-            .get(id_str)
-            .or_else(|| self.url_by_id_secondary.get(id_str))
+            .get(id)
+            .or_else(|| self.url_by_id_secondary.get(id))
             .map(|url_info| url_info.url.url.as_str())
     }
 }

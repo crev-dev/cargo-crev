@@ -7,7 +7,7 @@ use crate::{
     Result,
 };
 use crev_common;
-use crev_data::{id::OwnId, level, proof};
+use crev_data::{id::OwnId, level, proof, Id, PubId};
 use failure::ResultExt;
 use git2;
 use serde_yaml;
@@ -23,7 +23,15 @@ use std::{
 pub struct UserConfig {
     pub version: u64,
     #[serde(rename = "current-id")]
-    pub current_id: String,
+    pub current_id: Option<Id>,
+}
+
+impl UserConfig {
+    pub fn get_current_userid(&self) -> Result<&Id> {
+        self.current_id
+            .as_ref()
+            .ok_or_else(|| format_err!("Current Id not set"))
+    }
 }
 
 /// Local config stored in `~/.config/crev`
@@ -68,13 +76,13 @@ impl Local {
         Ok(repo)
     }
 
-    pub fn read_current_id(&self) -> Result<String> {
-        Ok(self.load_user_config()?.current_id)
+    pub fn read_current_id(&self) -> Result<crev_data::Id> {
+        Ok(self.load_user_config()?.get_current_userid()?.to_owned())
     }
 
     pub fn save_current_id(&self, id: &OwnId) -> Result<()> {
         let mut config = self.load_user_config()?;
-        config.current_id = id.pub_key_as_base64();
+        config.current_id = Some(id.id.id.clone());
         self.store_user_config(&config)?;
 
         Ok(())
@@ -84,10 +92,13 @@ impl Local {
         self.root_path.clone()
     }
 
-    fn id_path(&self, id_str: &str) -> PathBuf {
-        self.user_dir_path()
-            .join("ids")
-            .join(format!("{}.yaml", id_str))
+    fn id_path(&self, id: &Id) -> PathBuf {
+        match id {
+            Id::Crev { id } => self.user_dir_path().join("ids").join(format!(
+                "{}.yaml",
+                base64::encode_config(id, base64::URL_SAFE)
+            )),
+        }
     }
 
     fn user_config_path(&self) -> PathBuf {
@@ -116,7 +127,10 @@ impl Local {
 
     pub fn read_locked_id(&self) -> Result<LockedId> {
         let config = self.load_user_config()?;
-        let path = self.id_path(&config.current_id);
+        let current_id = &config
+            .current_id
+            .ok_or_else(|| format_err!("Current id not set"))?;
+        let path = self.id_path(current_id);
         LockedId::read_from_yaml_file(&path)
     }
 
@@ -127,7 +141,7 @@ impl Local {
     }
 
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
-        let path = self.id_path(&id.pub_key_as_base64());
+        let path = self.id_path(&id.to_pubid().id);
         fs::create_dir_all(&path.parent().expect("Not /"))?;
         id.save_to(&path)
     }
@@ -235,24 +249,25 @@ impl Local {
             bail!("No ids to trust. Use `add` first.");
         }
         let trustdb = self.trust_auto_read()?;
-        let id = self.read_unlocked_id(&passphrase)?;
+        let own_id = self.read_unlocked_id(&passphrase)?;
 
-        let from = proof::Id::from(&id.id);
+        let from = own_id.as_pubid();
 
-        let pub_ids = pub_ids
+        let pub_ids: Result<Vec<_>> = pub_ids
             .into_iter()
             .map(|s| {
-                let mut id = proof::Id::new_from_string(s);
+                let mut id = PubId::new_crevid_from_base64(&s)?;
 
                 if let Some(url) = trustdb.lookup_url(&id.id) {
                     id.set_git_url(url.to_owned())
                 }
-                id
+                Ok(id)
             })
             .collect();
+        let pub_ids = pub_ids?;
 
         let trust = proof::TrustBuilder::default()
-            .from(from)
+            .from(from.to_owned())
             .comment("".into())
             .trust(level::Level::Medium)
             .trusted(pub_ids)
@@ -261,7 +276,7 @@ impl Local {
 
         let trust = util::edit_proof_content_iteractively(&trust.into(), proof::ProofType::Trust)?;
 
-        let proof = trust.sign(&id)?;
+        let proof = trust.sign_by(&own_id)?;
         let rel_store_path = self.get_proof_rel_store_path(&proof);
 
         self.append_proof_at(&proof, &rel_store_path)?;
@@ -281,7 +296,8 @@ impl Local {
         let mut something_was_fetched = true;
         while something_was_fetched {
             something_was_fetched = false;
-            let trust_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
+            let trust_set =
+                db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
 
             for id in &trust_set {
                 if already_fetched.contains(id) {
@@ -306,13 +322,13 @@ impl Local {
         Ok(())
     }
 
-    pub fn get_remote_git_path(&self, id: &str, url: &str) -> PathBuf {
+    pub fn get_remote_git_path(&self, id: &Id, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
         let digest = base64::encode_config(&digest, base64::URL_SAFE);
-        self.cache_remotes_path().join(id).join(digest)
+        self.cache_remotes_path().join(id.to_string()).join(digest)
     }
 
-    pub fn fetch_remote_git(&self, id: &str, url: &str) -> Result<()> {
+    pub fn fetch_remote_git(&self, id: &Id, url: &str) -> Result<()> {
         let dir = self.get_remote_git_path(id, url);
 
         if dir.exists() {
@@ -369,12 +385,13 @@ impl Local {
     pub fn load_db(
         &self,
         params: &trustdb::TrustDistanceParams,
-    ) -> Result<(trustdb::TrustDB, HashSet<String>)> {
+    ) -> Result<(trustdb::TrustDB, HashSet<Id>)> {
         let user_config = self.load_user_config()?;
         let mut db = trustdb::TrustDB::new();
         db.import_recursively(&self.get_proofs_dir_path())?;
         db.import_recursively(&self.cache_remotes_path())?;
-        let trusted_set = db.calculate_trust_set(user_config.current_id.clone(), &params);
+        let trusted_set =
+            db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
 
         Ok((db, trusted_set))
     }

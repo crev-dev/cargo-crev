@@ -1,9 +1,5 @@
 use chrono::{self, prelude::*};
-use crate::{
-    id,
-    proof::{self, Proof},
-    Result,
-};
+use crate::{id, proof, Result};
 use crev_common::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
@@ -26,7 +22,7 @@ pub struct Project {
         deserialize_with = "from_rfc3339_fixed"
     )]
     date: chrono::DateTime<FixedOffset>,
-    pub from: proof::Id,
+    pub from: crate::PubId,
     #[serde(rename = "project")]
     pub project: proof::Project,
     revision: String,
@@ -68,7 +64,7 @@ impl proof::ContentCommon for Project {
         &self.date
     }
 
-    fn from(&self) -> &proof::Id {
+    fn author(&self) -> &crate::PubId {
         &self.from
     }
 }
@@ -88,8 +84,8 @@ impl Project {
         Ok(serde_yaml::from_str(&s)?)
     }
 
-    pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
-        proof::Content::from(self).sign(id)
+    pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
+        proof::Content::from(self).sign_by(id)
     }
 }
 

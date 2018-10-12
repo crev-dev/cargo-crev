@@ -1,9 +1,5 @@
 use chrono::{self, prelude::*};
-use crate::{
-    id,
-    proof::{self, Proof},
-    Result,
-};
+use crate::{id, proof, Result};
 use crev_common;
 use serde_yaml;
 use std::{self, default::Default, fmt, path::PathBuf};
@@ -38,7 +34,7 @@ pub struct Code {
         deserialize_with = "from_rfc3339_fixed"
     )]
     date: chrono::DateTime<FixedOffset>,
-    pub from: proof::Id,
+    pub from: crate::PubId,
     #[serde(rename = "project")]
     pub project: proof::Project,
     revision: String,
@@ -84,11 +80,12 @@ impl Code {
     pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
+
 impl proof::ContentCommon for Code {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
-    fn from(&self) -> &proof::Id {
+    fn author(&self) -> &crate::PubId {
         &self.from
     }
 }
@@ -108,8 +105,8 @@ impl Code {
         Ok(serde_yaml::from_str(&s)?)
     }
 
-    pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
-        proof::Content::from(self).sign(id)
+    pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
+        proof::Content::from(self).sign_by(id)
     }
 }
 

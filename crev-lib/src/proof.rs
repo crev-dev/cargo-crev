@@ -14,7 +14,7 @@ fn type_name(content: &Content) -> &str {
 pub(crate) fn rel_project_path(content: &Content) -> PathBuf {
     let type_name = type_name(content);
 
-    PathBuf::from(content.from_pubid())
+    PathBuf::from(content.author_id().to_string())
         .join(type_name)
         .join(
             content
@@ -22,13 +22,14 @@ pub(crate) fn rel_project_path(content: &Content) -> PathBuf {
                 .with_timezone(&Utc)
                 .format("%Y-%m")
                 .to_string(),
-        ).with_extension(format!("{}.crev", type_name))
+        )
+        .with_extension(format!("{}.crev", type_name))
 }
 
 /// The path to use under user store
 pub(crate) fn rel_store_path(content: &Content) -> PathBuf {
     let type_name = type_name(content);
-    let mut path = PathBuf::from(content.from_pubid()).join(type_name);
+    let mut path = PathBuf::from(content.author_id().to_string()).join(type_name);
 
     if let Some(project_id) = content.project_id() {
         path = path.join(project_id)
@@ -40,5 +41,6 @@ pub(crate) fn rel_store_path(content: &Content) -> PathBuf {
             .with_timezone(&Utc)
             .format("%Y-%m")
             .to_string(),
-    ).with_extension(format!("{}.crev", type_name))
+    )
+    .with_extension(format!("{}.crev", type_name))
 }

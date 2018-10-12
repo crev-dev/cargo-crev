@@ -9,6 +9,14 @@ pub struct Url {
     pub url_type: String,
 }
 
+impl Url {
+    pub fn new(url: String) -> Self {
+        Self {
+            url,
+            url_type: default_url_type(),
+        }
+    }
+}
 pub(crate) fn equals_default_url_type(s: &str) -> bool {
     s == default_url_type()
 }

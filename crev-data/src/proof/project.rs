@@ -6,12 +6,12 @@ pub struct Project {
     pub id: String,
     #[serde(
         rename = "id-type",
-        skip_serializing_if = "super::id::equals_default_id_type",
-        default = "super::id::default_id_type"
+        skip_serializing_if = "crate::id::equals_default_id_type",
+        default = "crate::id::default_id_type"
     )]
     pub id_type: String,
     #[serde(flatten)]
-    pub url: Option<super::Url>,
+    pub url: Option<crate::Url>,
 }
 
 impl Project {

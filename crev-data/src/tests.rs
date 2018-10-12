@@ -75,13 +75,11 @@ sig2
 fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     let id = OwnId::generate("https://mypage.com/trust.git".into());
 
-    let mut from = proof::Id::from(&id.id);
-
-    from.set_git_url("https://github.com/someone/crev-trust".into());
+    //let mut from = crate::PubId::new(&id.id, "https://github.com/someone/crev-trust".into());
 
     let project_id = proof::Project::generate();
     let review = proof::review::CodeBuilder::default()
-        .from(from)
+        .from(id.id.to_owned())
         .revision("foobar".into())
         .revision_type("git".into())
         .project(project_id)
@@ -97,10 +95,11 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
                 digest: vec![1, 2, 3, 4],
                 digest_type: "sha256".into(),
             },
-        ]).build()
+        ])
+        .build()
         .map_err(|e| format_err!("{}", e))?;
 
-    let proof = review.sign(&id)?;
+    let proof = review.sign_by(&id)?;
 
     Ok((id, proof))
 }

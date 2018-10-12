@@ -1,10 +1,5 @@
 use chrono::{self, prelude::*};
-use crate::{
-    id,
-    level::Level,
-    proof::{self, Proof},
-    Result,
-};
+use crate::{id, level::Level, proof, Result};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
@@ -24,8 +19,8 @@ pub struct Trust {
         deserialize_with = "from_rfc3339_fixed"
     )]
     pub date: chrono::DateTime<FixedOffset>,
-    pub from: proof::Id,
-    pub trusted: Vec<proof::Id>,
+    pub from: crate::PubId,
+    pub trusted: Vec<crate::PubId>,
     #[builder(default = "proof::default_distrust_level()")]
     #[serde(
         skip_serializing_if = "proof::equals_default_distrust_level",
@@ -59,7 +54,7 @@ impl proof::ContentCommon for Trust {
         &self.date
     }
 
-    fn from(&self) -> &proof::Id {
+    fn author(&self) -> &crate::PubId {
         &self.from
     }
 }
@@ -69,7 +64,7 @@ impl Trust {
         Ok(serde_yaml::from_str(&s)?)
     }
 
-    pub fn sign(self, id: &id::OwnId) -> Result<Proof> {
-        super::Content::from(self).sign(id)
+    pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
+        super::Content::from(self).sign_by(id)
     }
 }
