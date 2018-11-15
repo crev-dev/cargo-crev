@@ -104,7 +104,7 @@ impl Repo {
         self.dot_crev_path().join("config.yaml")
     }
 
-    fn load_project_config(&self) -> Result<ProjectConfig> {
+    pub fn load_project_config(&self) -> Result<ProjectConfig> {
         let path = self.project_config_path();
 
         let config_str = util::read_file_to_string(&path)?;

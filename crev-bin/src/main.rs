@@ -45,7 +45,7 @@ fn gen_id() -> Result<()> {
     let id = OwnId::generate(url);
     eprintln!("Your CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
-    let passphrase = util::read_new_passphrase()?;
+    let passphrase = crev_common::read_new_passphrase()?;
     let locked = LockedId::from_own_id(&id, &passphrase)?;
 
     let local = Local::auto_create()?;
@@ -67,7 +67,7 @@ main!(|opts: opts::Opts| match opts.command {
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {
             let local = Local::auto_open()?;
-            let passphrase = util::read_passphrase()?;
+            let passphrase = crev_common::read_passphrase()?;
             local.trust_ids(trust.pub_ids, passphrase)?;
         }
     },
@@ -77,7 +77,7 @@ main!(|opts: opts::Opts| match opts.command {
     }
     opts::Command::Commit(opts) => {
         let mut repo = Repo::auto_open()?;
-        let passphrase = util::read_passphrase()?;
+        let passphrase = crev_common::read_passphrase()?;
         if opts.all {
         } else {
             repo.commit(passphrase, opts.allow_dirty)?;
@@ -91,7 +91,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Project::Trust(project_trust) => {
             let mut repo = Repo::auto_open()?;
-            let passphrase = util::read_passphrase()?;
+            let passphrase = crev_common::read_passphrase()?;
             repo.trust_project(passphrase, project_trust.allow_dirty)?;
         }
         opts::Project::Verify(verify) => {

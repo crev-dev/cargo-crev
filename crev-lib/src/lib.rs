@@ -14,7 +14,7 @@ pub mod repo;
 pub mod staging;
 pub mod trustdb;
 
-mod util;
+pub mod util;
 
 pub use self::local::Local;
 use std::{

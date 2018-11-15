@@ -11,8 +11,8 @@ pub struct Verify {
 }
 #[derive(Debug, StructOpt, Clone)]
 pub struct Trust {
-    name: String,
-    version: Option<String>,
+    pub name: String,
+    pub version: Option<String>,
 }
 
 #[derive(Debug, StructOpt, Clone)]

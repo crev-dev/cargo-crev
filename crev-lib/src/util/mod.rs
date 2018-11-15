@@ -50,6 +50,7 @@ pub fn store_to_file_with(path: &Path, f: impl Fn(&mut dyn io::Write) -> Result<
     let mut file = fs::File::create(&tmp_path)?;
     f(&mut file)?;
     file.flush()?;
+    file.sync_data()?;
     drop(file);
     fs::rename(tmp_path, path)?;
     Ok(())

@@ -7,9 +7,14 @@ extern crate quicli;
 #[macro_use]
 extern crate structopt;
 
-use cargo::{core::SourceId, util::important_paths::find_root_manifest_for_wd};
+use failure::format_err;
+
+use cargo::{
+    core::{package_id::PackageId, SourceId},
+    util::important_paths::find_root_manifest_for_wd,
+};
 use common_failures::prelude::*;
-use crev_lib;
+use crev_lib::{self, local::Local};
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
@@ -36,15 +41,15 @@ impl Repo {
         })
     }
 
-    fn for_every_dependency_dir(&self, f: impl Fn(&Path) -> Result<()>) -> Result<()> {
+    fn for_every_dependency_dir(&self, f: impl Fn(&PackageId, &Path) -> Result<()>) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
             None,
             &[],
-            true,  /* all_features */
-            false, /* no_default_features */
+            true,  // all_features
+            false, // no_default_features
             &specs,
         )?;
         let source_id = SourceId::crates_io(&self.config)?;
@@ -59,11 +64,55 @@ impl Repo {
                 source.download(pkg_id)?;
             }
 
-            f(&pkg.root())?;
+            f(&pkg_id, &pkg.root())?;
         }
 
         Ok(())
     }
+}
+
+fn find_dependency_dir(_name: &str, _version: Option<String>) -> Result<PathBuf> {
+    let repo = Repo::auto_open_cwd()?;
+
+    repo.for_every_dependency_dir(|_pkg_id, _path| {
+        unimplemented!();
+    })?;
+
+    unimplemented!();
+}
+
+enum TrustOrDistrust {
+    Trust,
+    Distrust,
+}
+
+fn set_trust(args: &opts::Trust, _trust: TrustOrDistrust) -> Result<()> {
+    let root_dir = find_dependency_dir(&args.name, args.version.clone())?;
+    let local = Local::auto_open()?;
+    let crev_repo = crev_lib::repo::Repo::new(root_dir.clone())?;
+    let project_config = crev_repo.load_project_config()?;
+
+    let ignore_list = HashSet::new();
+    let digest = crev_lib::calculate_recursive_digest_for_dir(&root_dir, ignore_list)?;
+    let passphrase = crev_common::read_passphrase()?;
+    let id = local.read_unlocked_id(&passphrase)?;
+
+    let review = crev_data::proof::review::ProjectBuilder::default()
+        .from(id.id.to_owned())
+        .project(project_config.project)
+        .digest(digest)
+        .build()
+        .map_err(|e| format_err!("{}", e))?;
+
+    let review = crev_lib::util::edit_proof_content_iteractively(
+        &review.into(),
+        crev_data::proof::ProofType::Project,
+    )?;
+
+    let proof = review.sign_by(&id)?;
+
+    local.append_proof(&proof)?;
+    unimplemented!();
 }
 
 main!(|opts: opts::Opts| match opts.command {
@@ -75,7 +124,7 @@ main!(|opts: opts::Opts| match opts.command {
 
         let mut ignore_list = HashSet::new();
         ignore_list.insert(PathBuf::from(".cargo-ok"));
-        repo.for_every_dependency_dir(|path| {
+        repo.for_every_dependency_dir(|_, path| {
             print!("{} ", path.display());
             println!(
                 "{}",
@@ -85,5 +134,10 @@ main!(|opts: opts::Opts| match opts.command {
             Ok(())
         })?;
     }
-    opts::Command::Trust(_) | opts::Command::Distrust(_) => unimplemented!(),
+    opts::Command::Trust(args) => {
+        set_trust(&args, TrustOrDistrust::Trust)?;
+    }
+    opts::Command::Distrust(args) => {
+        set_trust(&args, TrustOrDistrust::Distrust)?;
+    }
 });
