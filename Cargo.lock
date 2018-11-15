@@ -255,7 +255,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-crev"
+name = "cargo-trust"
 version = "0.1.0"
 dependencies = [
  "cargo 0.30.0 (registry+https://github.com/rust-lang/crates.io-index)",
