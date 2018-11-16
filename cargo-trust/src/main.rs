@@ -41,7 +41,10 @@ impl Repo {
         })
     }
 
-    fn for_every_dependency_dir(&self, f: impl Fn(&PackageId, &Path) -> Result<()>) -> Result<()> {
+    fn for_every_dependency_dir(
+        &self,
+        mut f: impl FnMut(&PackageId, &Path) -> Result<()>,
+    ) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
@@ -69,16 +72,21 @@ impl Repo {
 
         Ok(())
     }
-}
 
-fn find_dependency_dir(_name: &str, _version: Option<String>) -> Result<PathBuf> {
-    let repo = Repo::auto_open_cwd()?;
+    fn find_dependency_dir(&self, name: &str, version: Option<String>) -> Result<PathBuf> {
+        let mut dir = None;
 
-    repo.for_every_dependency_dir(|_pkg_id, _path| {
-        unimplemented!();
-    })?;
+        self.for_every_dependency_dir(|pkg_id, path| {
+            if name == pkg_id.name().as_str()
+                && (version.is_none() || version == Some(pkg_id.version().to_string()))
+            {
+                dir = Some(path.to_owned());
+            }
+            Ok(())
+        })?;
 
-    unimplemented!();
+        return dir.ok_or(format_err!("Not found"));
+    }
 }
 
 enum TrustOrDistrust {
@@ -86,14 +94,25 @@ enum TrustOrDistrust {
     Distrust,
 }
 
-fn set_trust(args: &opts::Trust, _trust: TrustOrDistrust) -> Result<()> {
-    let root_dir = find_dependency_dir(&args.name, args.version.clone())?;
+impl TrustOrDistrust {
+    fn to_default_score(&self) -> crev_data::Score {
+        use self::TrustOrDistrust::*;
+        match self {
+            Trust => crev_data::Score::new_default_trust(),
+            Distrust => crev_data::Score::new_default_trust(),
+        }
+    }
+}
+
+fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+    let pkg_dir = repo.find_dependency_dir(&args.name, args.version.clone())?;
     let local = Local::auto_open()?;
-    let crev_repo = crev_lib::repo::Repo::new(root_dir.clone())?;
+    let crev_repo = crev_lib::repo::Repo::new(pkg_dir.clone())?;
     let project_config = crev_repo.load_project_config()?;
 
     let ignore_list = HashSet::new();
-    let digest = crev_lib::calculate_recursive_digest_for_dir(&root_dir, ignore_list)?;
+    let digest = crev_lib::calculate_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_unlocked_id(&passphrase)?;
 
@@ -101,6 +120,7 @@ fn set_trust(args: &opts::Trust, _trust: TrustOrDistrust) -> Result<()> {
         .from(id.id.to_owned())
         .project(project_config.project)
         .digest(digest)
+        .score(trust.to_default_score())
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
@@ -112,7 +132,7 @@ fn set_trust(args: &opts::Trust, _trust: TrustOrDistrust) -> Result<()> {
     let proof = review.sign_by(&id)?;
 
     local.append_proof(&proof)?;
-    unimplemented!();
+    Ok(())
 }
 
 main!(|opts: opts::Opts| match opts.command {

@@ -37,3 +37,16 @@ impl Default for Score {
         }
     }
 }
+impl Score {
+    pub fn new_default_trust() -> Self {
+        Default::default()
+    }
+    pub fn new_default_distrust() -> Self {
+        Score {
+            thoroughness: Level::Low,
+            understanding: Level::Medium,
+            trust: Level::None,
+            distrust: Level::Medium,
+        }
+    }
+}

@@ -21,6 +21,8 @@ pub mod util;
 
 pub use crate::{
     id::{Id, PubId},
+    level::Level,
+    proof::review::Score,
     url::Url,
 };
 
