@@ -20,17 +20,25 @@ pub enum Command {
     /// Verify review coverage of the project
     #[structopt(name = "verify")]
     Verify(Verify),
+    /// Trust a given package
     #[structopt(name = "trust")]
     Trust(Trust),
+    /// Distrust a given package
     #[structopt(name = "distrust")]
     Distrust(Trust),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum MainCommand {
+    #[structopt(name = "trust")]
+    Trust(Command),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(name = "crev", about = "Distributed code review system")]
 pub struct Opts {
     #[structopt(subcommand)]
-    pub command: Command,
+    pub command: MainCommand,
     //    #[structopt(flatten)]
     //    verbosity: Verbosity,
 }

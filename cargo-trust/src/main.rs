@@ -9,6 +9,7 @@ extern crate structopt;
 
 use failure::format_err;
 
+use self::prelude::*;
 use cargo::{
     core::{package_id::PackageId, SourceId},
     util::important_paths::find_root_manifest_for_wd,
@@ -22,6 +23,7 @@ use std::{
 use structopt::StructOpt;
 
 mod opts;
+mod prelude;
 
 struct Repo {
     manifest_path: PathBuf,
@@ -73,29 +75,30 @@ impl Repo {
         Ok(())
     }
 
-    fn find_dependency_dir(&self, name: &str, version: Option<String>) -> Result<PathBuf> {
+    fn find_dependency_dir(&self, name: &str, version: Option<&str>) -> Result<PathBuf> {
         let mut dir = None;
 
         self.for_every_dependency_dir(|pkg_id, path| {
             if name == pkg_id.name().as_str()
-                && (version.is_none() || version == Some(pkg_id.version().to_string()))
+                && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
                 dir = Some(path.to_owned());
             }
             Ok(())
         })?;
 
-        return dir.ok_or(format_err!("Not found"));
+        Ok(dir.ok_or_else(|| format_err!("Not found"))?)
     }
 }
 
+#[derive(Copy, Clone)]
 enum TrustOrDistrust {
     Trust,
     Distrust,
 }
 
 impl TrustOrDistrust {
-    fn to_default_score(&self) -> crev_data::Score {
+    fn to_default_score(self) -> crev_data::Score {
         use self::TrustOrDistrust::*;
         match self {
             Trust => crev_data::Score::new_default_trust(),
@@ -106,7 +109,7 @@ impl TrustOrDistrust {
 
 fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let pkg_dir = repo.find_dependency_dir(&args.name, args.version.clone())?;
+    let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
     let crev_repo = crev_lib::repo::Repo::new(pkg_dir.clone())?;
     let project_config = crev_repo.load_project_config()?;
@@ -135,29 +138,32 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
     Ok(())
 }
 
-main!(|opts: opts::Opts| match opts.command {
-    opts::Command::Verify(_verify_opts) => {
-        let local = crev_lib::Local::auto_open()?;
-        let repo = Repo::auto_open_cwd()?;
-        let params = Default::default();
-        let (db, trust_set) = local.load_db(&params)?;
+main!(|opts: opts::Opts| {
+    let opts::MainCommand::Trust(command) = opts.command;
+    match command {
+        opts::Command::Verify(_verify_opts) => {
+            let local = crev_lib::Local::auto_open()?;
+            let repo = Repo::auto_open_cwd()?;
+            let params = Default::default();
+            let (db, trust_set) = local.load_db(&params)?;
 
-        let mut ignore_list = HashSet::new();
-        ignore_list.insert(PathBuf::from(".cargo-ok"));
-        repo.for_every_dependency_dir(|_, path| {
-            print!("{} ", path.display());
-            println!(
-                "{}",
-                crev_lib::dir_verify(path, ignore_list.clone(), &db, &trust_set)?.to_string()
-            );
+            let mut ignore_list = HashSet::new();
+            ignore_list.insert(PathBuf::from(".cargo-ok"));
+            repo.for_every_dependency_dir(|_, path| {
+                print!("{} ", path.display());
+                println!(
+                    "{}",
+                    crev_lib::dir_verify(path, ignore_list.clone(), &db, &trust_set)?.to_string()
+                );
 
-            Ok(())
-        })?;
-    }
-    opts::Command::Trust(args) => {
-        set_trust(&args, TrustOrDistrust::Trust)?;
-    }
-    opts::Command::Distrust(args) => {
-        set_trust(&args, TrustOrDistrust::Distrust)?;
+                Ok(())
+            })?;
+        }
+        opts::Command::Trust(args) => {
+            set_trust(&args, TrustOrDistrust::Trust)?;
+        }
+        opts::Command::Distrust(args) => {
+            set_trust(&args, TrustOrDistrust::Distrust)?;
+        }
     }
 });

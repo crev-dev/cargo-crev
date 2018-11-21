@@ -6,7 +6,7 @@ license = "MPL-2.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 
 [[bin]]
-name = "cargo-crev"
+name = "cargo-trust"
 path = "src/main.rs"
 
 [dependencies]
