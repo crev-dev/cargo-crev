@@ -110,7 +110,8 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
     let crev_repo = crev_lib::repo::Repo::open(&pkg_dir)?;
     let project_config = crev_repo.try_load_project_config()?;
 
-    let ignore_list = HashSet::new();
+    let mut ignore_list = HashSet::new();
+    ignore_list.insert(PathBuf::from(".cargo-ok"));
     let digest = crev_lib::calculate_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_unlocked_id(&passphrase)?;
