@@ -8,11 +8,12 @@ use std::{default, fmt, fs, io, mem, path::Path};
 
 pub mod project;
 pub mod review;
+pub mod revision;
 pub mod trust;
 
 use self::review::Common;
 
-pub use self::{project::*, trust::*};
+pub use self::{project::*, revision::*, trust::*};
 
 use crate::Result;
 
@@ -167,8 +168,8 @@ impl Content {
         use self::Content::*;
         match self {
             Trust(_) => None,
-            Code(review) => Some(review.project_id()),
-            Project(review) => Some(review.project_id()),
+            Code(review) => review.project_id(),
+            Project(review) => review.project_id(),
         }
     }
 }
@@ -381,6 +382,14 @@ fn default_revision_type() -> String {
 
 fn equals_default_distrust_level(l: &Level) -> bool {
     *l == default_distrust_level()
+}
+
+fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
+    *t == Default::default()
+}
+
+fn equals_none<T>(t: &Option<T>) -> bool {
+    t.is_none()
 }
 
 fn default_distrust_level() -> Level {

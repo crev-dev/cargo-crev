@@ -24,20 +24,13 @@ pub struct Project {
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
-    pub project: proof::Project,
-    revision: String,
-    #[serde(
-        rename = "revision-type",
-        skip_serializing_if = "proof::equals_default_revision_type",
-        default = "proof::default_revision_type"
-    )]
-    #[builder(default = "\"git\".into()")]
-    revision_type: String,
-
-    #[serde(
-        skip_serializing_if = "String::is_empty",
-        default = "Default::default"
-    )]
+    #[builder(default = "Default::default()")]
+    #[serde(skip_serializing_if = "proof::equals_none")]
+    pub project: Option<proof::Project>,
+    #[serde(flatten)]
+    #[builder(default = "Default::default()")]
+    pub revision: Option<proof::Revision>,
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
     #[serde(flatten)]
@@ -70,8 +63,8 @@ impl proof::ContentCommon for Project {
 }
 
 impl super::Common for Project {
-    fn project_id(&self) -> &str {
-        &self.project.id
+    fn project_id(&self) -> Option<&str> {
+        self.project.as_ref().map(|p| p.id.as_str())
     }
 
     fn score(&self) -> &super::Score {

@@ -87,7 +87,7 @@ main!(|opts: opts::Opts| match opts.command {
         opts::Project::Init => {
             let local = Local::auto_open()?;
             let cur_id = local.read_current_id()?;
-            Repo::init(PathBuf::from(".".to_string()), cur_id.to_string())?;
+            Repo::init(&PathBuf::from(".".to_string()), cur_id.to_string())?;
         }
         opts::Project::Trust(project_trust) => {
             let mut repo = Repo::auto_open()?;

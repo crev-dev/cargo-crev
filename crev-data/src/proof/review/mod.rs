@@ -7,7 +7,7 @@ pub mod project;
 pub use self::{code::*, project::*};
 
 pub trait Common: super::ContentCommon {
-    fn project_id(&self) -> &str;
+    fn project_id(&self) -> Option<&str>;
     fn score(&self) -> &Score;
 }
 

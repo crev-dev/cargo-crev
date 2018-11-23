@@ -46,17 +46,11 @@ pub struct Code {
     #[builder(default = "\"git\".into()")]
     revision_type: String,
 
-    #[serde(
-        skip_serializing_if = "String::is_empty",
-        default = "Default::default"
-    )]
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
     #[builder(default = "None")]
-    #[serde(
-        skip_serializing_if = "Option::is_none",
-        default = "Default::default"
-    )]
+    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
     digest: Option<String>,
     #[serde(
         skip_serializing_if = "proof::equals_default_digest_type",
@@ -91,8 +85,8 @@ impl proof::ContentCommon for Code {
 }
 
 impl super::Common for Code {
-    fn project_id(&self) -> &str {
-        &self.project.id
+    fn project_id(&self) -> Option<&str> {
+        Some(&self.project.id)
     }
 
     fn score(&self) -> &super::Score {

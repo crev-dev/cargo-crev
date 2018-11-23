@@ -11,11 +11,6 @@ use std::{
 
 pub mod staging;
 
-struct RevisionInfo {
-    pub type_: String,
-    pub revision: String,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProjectConfig {
     pub version: u64,
@@ -44,19 +39,19 @@ fn find_project_root_dir() -> Result<PathBuf> {
     }
 }
 
-/// `crev` repository
+/// `crev` repository dir inside a project dir
 ///
 /// This represents the `.crev` directory and all
 /// the internals of it.
 pub struct Repo {
-    // root dir, where `.crev` subdiretory resides
+    /// root dir, where `.crev` subdiretory resides
     root_dir: PathBuf,
-    // lazily loaded `Staging`
+    /// lazily loaded `Staging`
     staging: Option<staging::Staging>,
 }
 
 impl Repo {
-    pub fn init(path: PathBuf, id_str: String) -> Result<Self> {
+    pub fn init(path: &Path, id_str: String) -> Result<Self> {
         let repo = Self::new(path)?;
 
         fs::create_dir_all(repo.dot_crev_path())?;
@@ -81,18 +76,23 @@ impl Repo {
         Ok(repo)
     }
 
-    pub fn auto_open() -> Result<Self> {
-        let root_path = find_project_root_dir()?;
-        let res = Self::new(root_path)?;
-
-        if !res.project_config_path().exists() {
-            bail!("Project config not-initialized. Use `crev project init` to generate it.");
+    pub fn open(path: &Path) -> Result<Self> {
+        if !path.exists() {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "directory not found",
+            ))?;
         }
 
-        Ok(res)
+        Self::new(path)
     }
 
-    pub fn new(root_dir: PathBuf) -> Result<Self> {
+    pub fn auto_open() -> Result<Self> {
+        let root_path = find_project_root_dir()?;
+        Self::open(&root_path)
+    }
+
+    fn new(root_dir: &Path) -> Result<Self> {
         let root_dir = root_dir.canonicalize()?;
         Ok(Self {
             root_dir,
@@ -105,11 +105,21 @@ impl Repo {
     }
 
     pub fn load_project_config(&self) -> Result<ProjectConfig> {
+        let config = self.try_load_project_config()?;
+        config.ok_or_else(|| {
+            format_err!("Project config not-initialized. Use `crev project init` to generate it.")
+        })
+    }
+
+    pub fn try_load_project_config(&self) -> Result<Option<ProjectConfig>> {
         let path = self.project_config_path();
 
+        if !path.exists() {
+            return Ok(None);
+        }
         let config_str = util::read_file_to_string(&path)?;
 
-        Ok(serde_yaml::from_str(&config_str)?)
+        Ok(Some(serde_yaml::from_str(&config_str)?))
     }
 
     pub fn dot_crev_path(&self) -> PathBuf {
@@ -186,7 +196,7 @@ impl Repo {
         return Ok(unclean_found);
     }
 
-    fn try_read_git_revision(&self) -> Result<Option<RevisionInfo>> {
+    fn try_read_git_revision(&self) -> Result<Option<crev_data::proof::Revision>> {
         let dot_git_path = self.root_dir.join(".git");
         if !dot_git_path.exists() {
             return Ok(None);
@@ -199,13 +209,13 @@ impl Repo {
             .target()
             .ok_or_else(|| format_err!("HEAD target does not resolve to oid"))?
             .to_string();
-        Ok(Some(RevisionInfo {
-            type_: "git".into(),
+        Ok(Some(crev_data::proof::Revision {
+            revision_type: "git".into(),
             revision: rev,
         }))
     }
 
-    fn read_revision(&self) -> Result<RevisionInfo> {
+    fn read_revision(&self) -> Result<crev_data::proof::Revision> {
         if let Some(info) = self.try_read_git_revision()? {
             return Ok(info);
         }
@@ -222,7 +232,7 @@ impl Repo {
         }
 
         let local = Local::auto_open()?;
-        let project_config = self.load_project_config()?;
+        let project_config = self.try_load_project_config()?;
         let revision = self.read_revision()?;
 
         let ignore_list = HashSet::new();
@@ -231,9 +241,8 @@ impl Repo {
 
         let review = proof::review::ProjectBuilder::default()
             .from(id.id.to_owned())
-            .revision(revision.revision)
-            .revision_type(revision.type_)
-            .project(project_config.project)
+            .revision(Some(revision))
+            .project(project_config.map(|c| c.project))
             .digest(digest)
             .build()
             .map_err(|e| format_err!("{}", e))?;
@@ -262,7 +271,7 @@ impl Repo {
         let review = proof::review::CodeBuilder::default()
             .from(id.id.to_owned())
             .revision(revision.revision)
-            .revision_type(revision.type_)
+            .revision_type(revision.revision_type)
             .project(project_config.project)
             .files(files)
             .build()

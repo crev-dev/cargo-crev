@@ -1,8 +1,4 @@
 #![allow(deprecated)]
-//#[macro_use]
-
-#[macro_use]
-extern crate quicli;
 
 #[macro_use]
 extern crate structopt;
@@ -111,8 +107,8 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
-    let crev_repo = crev_lib::repo::Repo::new(pkg_dir.clone())?;
-    let project_config = crev_repo.load_project_config()?;
+    let crev_repo = crev_lib::repo::Repo::open(&pkg_dir)?;
+    let project_config = crev_repo.try_load_project_config()?;
 
     let ignore_list = HashSet::new();
     let digest = crev_lib::calculate_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
@@ -121,7 +117,7 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
 
     let review = crev_data::proof::review::ProjectBuilder::default()
         .from(id.id.to_owned())
-        .project(project_config.project)
+        .project(project_config.map(|c| c.project))
         .digest(digest)
         .score(trust.to_default_score())
         .build()
@@ -138,7 +134,8 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
     Ok(())
 }
 
-main!(|opts: opts::Opts| {
+fn main() -> Result<()> {
+    let opts = opts::Opts::from_args();
     let opts::MainCommand::Trust(command) = opts.command;
     match command {
         opts::Command::Verify(_verify_opts) => {
@@ -166,4 +163,5 @@ main!(|opts: opts::Opts| {
             set_trust(&args, TrustOrDistrust::Distrust)?;
         }
     }
-});
+    Ok(())
+}

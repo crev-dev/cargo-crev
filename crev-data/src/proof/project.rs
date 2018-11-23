@@ -1,7 +1,7 @@
 use base64;
 use rand::{self, Rng};
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
 pub struct Project {
     pub id: String,
     #[serde(
