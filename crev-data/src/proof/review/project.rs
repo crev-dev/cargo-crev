@@ -25,7 +25,7 @@ pub struct Project {
     pub from: crate::PubId,
     #[serde(rename = "project")]
     #[builder(default = "Default::default()")]
-    #[serde(skip_serializing_if = "proof::equals_none")]
+    #[serde(skip_serializing_if = "proof::equals_default")]
     pub project: Option<proof::Project>,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]

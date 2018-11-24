@@ -164,5 +164,6 @@ fn main() -> Result<()> {
             set_trust(&args, TrustOrDistrust::Distrust)?;
         }
     }
+
     Ok(())
 }
