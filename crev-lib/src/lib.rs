@@ -23,6 +23,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub trait ProofStore {
+    fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
+    fn iter(&self) -> Box<dyn Iterator<Item = Result<crev_data::proof::Proof>>>;
+}
+
 pub enum Verification {
     Trusted,
     NotTrusted,

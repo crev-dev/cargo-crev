@@ -1,8 +1,8 @@
 //! Some common stuff for both Review and Trust Proofs
 
+use crate::level::Level;
 use base64;
 use chrono::{self, prelude::*};
-use crate::level::Level;
 use crev_common;
 use std::{default, fmt, fs, io, mem, path::Path};
 
@@ -386,10 +386,6 @@ fn equals_default_distrust_level(l: &Level) -> bool {
 
 fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
-}
-
-fn equals_none<T>(t: &Option<T>) -> bool {
-    t.is_none()
 }
 
 fn default_distrust_level() -> Level {

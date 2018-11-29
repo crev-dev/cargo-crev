@@ -1,5 +1,5 @@
-use chrono::{self, offset::Utc, DateTime};
 use crate::{util, Result, Verification};
+use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
     level::Level,

@@ -1,3 +1,4 @@
+use crate::ProofStore;
 use crate::{local::Local, util, Result};
 use crev_data::proof;
 use git2;
@@ -295,7 +296,7 @@ impl Repo {
             "Proof written to: {}",
             PathBuf::from(".crev").join(rel_store_path).display()
         );
-        local.append_proof(&proof)?;
+        local.insert(&proof)?;
         eprintln!("Proof added to your store");
 
         Ok(())

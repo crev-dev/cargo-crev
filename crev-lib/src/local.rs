@@ -1,23 +1,18 @@
-use app_dirs::{app_root, AppDataType};
-use base64;
+use crate::ProofStore;
 use crate::{
     id::{self, LockedId},
     trustdb,
     util::{self, APP_INFO},
     Result,
 };
+use app_dirs::{app_root, AppDataType};
+use base64;
 use crev_common;
 use crev_data::{id::OwnId, level, proof, Id, PubId};
 use failure::ResultExt;
 use git2;
 use serde_yaml;
-use std::{
-    collections::HashSet,
-    ffi::OsString,
-    fs,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, ffi::OsString, fs, io::Write, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct UserConfig {
@@ -150,31 +145,31 @@ impl Local {
     fn trust_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("trust")
     }
-    
+
     fn trust_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
         let id_str = pub_id.id_as_base64();
         self.trust_proof_dir_path().join(id_str)
     }
-    
+
     fn review_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("review")
     }
-    
+
     fn review_proof_dir_path_for_id(&self, pub_id: &id::PubId) -> PathBuf {
         let id_str = pub_id.id_as_base64();
         self.review_proof_dir_path().join(id_str)
     }
-    
+
     pub fn load_all_trust_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<TrustProof>> {
         let path = self.trust_proof_dir_path_for_id(pub_id);
         if !path.exists() {
             return Ok(vec![]);
         }
         let content = util::read_file_to_string(&path)?;
-    
+
         TrustProof::parse(&content)
     }
-    
+
     pub fn store_all_trust_proof_from(
         &self,
         pub_id: &id::PubId,
@@ -187,18 +182,18 @@ impl Local {
             Ok(())
         })
     }
-    
-    
+
+
     pub fn load_all_review_proof_from(&self, pub_id: &id::PubId) -> Result<Vec<ReviewProof>> {
         let path = &self.review_proof_dir_path_for_id(pub_id);
         if !path.exists() {
             return Ok(vec![]);
         }
         let content = util::read_file_to_string(&path)?;
-    
+
         ReviewProof::parse(&content)
     }
-    
+
     pub fn store_all_review_proof_from(
         &self,
         pub_id: &id::PubId,
@@ -211,23 +206,23 @@ impl Local {
             Ok(())
         })
     }
-    
+
     pub fn add_trust_proof_from(&self, pub_id: &id::PubId, proof: TrustProof) -> Result<()> {
         let mut proofs = self.load_all_trust_proof_from(pub_id)?;
         proofs.push(proof);
         self.store_all_trust_proof_from(pub_id, &proofs)?;
-    
+
         Ok(())
     }
-    
+
     pub fn add_review_proof_from(&self, pub_id: &id::PubId, proof: ReviewProof) -> Result<()> {
         let mut proofs = self.load_all_review_proof_from(pub_id)?;
         proofs.push(proof);
         self.store_all_review_proof_from(pub_id, &proofs)?;
-    
+
         Ok(())
     }
-    
+
     */
 
     fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
@@ -277,9 +272,8 @@ impl Local {
         let trust = util::edit_proof_content_iteractively(&trust.into(), proof::ProofType::Trust)?;
 
         let proof = trust.sign_by(&own_id)?;
-        let rel_store_path = self.get_proof_rel_store_path(&proof);
 
-        self.append_proof_at(&proof, &rel_store_path)?;
+        self.insert(&proof)?;
         println!("{}", proof);
         eprintln!("Proof added to your store");
         Ok(())
@@ -345,27 +339,6 @@ impl Local {
         Ok(())
     }
 
-    pub fn append_proof(&self, proof: &proof::Proof) -> Result<()> {
-        let rel_store_path = self.get_proof_rel_store_path(proof);
-        self.append_proof_at(&proof, &rel_store_path)
-    }
-
-    fn append_proof_at(&self, proof: &proof::Proof, rel_store_path: &Path) -> Result<()> {
-        let path = self.user_dir_path().join(rel_store_path);
-
-        fs::create_dir_all(path.parent().expect("Not a root dir"))?;
-        let mut file = fs::OpenOptions::new()
-            .append(true)
-            .create(true)
-            .write(true)
-            .open(path)?;
-
-        file.write_all(proof.to_string().as_bytes())?;
-        file.flush()?;
-
-        Ok(())
-    }
-
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
         std::env::set_current_dir(self.get_proofs_dir_path())?;
@@ -394,5 +367,50 @@ impl Local {
             db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
 
         Ok((db, trusted_set))
+    }
+}
+
+impl ProofStore for Local {
+    fn insert(&self, proof: &proof::Proof) -> Result<()> {
+        let rel_store_path = self.get_proof_rel_store_path(proof);
+        let path = self.user_dir_path().join(rel_store_path);
+
+        fs::create_dir_all(path.parent().expect("Not a root dir"))?;
+        let mut file = fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .write(true)
+            .open(path)?;
+
+        file.write_all(proof.to_string().as_bytes())?;
+        file.flush()?;
+
+        Ok(())
+    }
+
+    fn iter(&self) -> Box<Iterator<Item = Result<proof::Proof>>> {
+        use resiter::*;
+        use std::ffi::OsStr;
+        let file_iter = walkdir::WalkDir::new(self.get_proofs_dir_path())
+            .into_iter()
+            .map_err(|e| format_err!("Error iterating local ProofStore: {:?}", e))
+            .filter_map_ok(|entry| {
+                let path = entry.path();
+                if !path.is_file() {
+                    return None;
+                }
+
+                let osext_match: &OsStr = "crev".as_ref();
+                match path.extension() {
+                    Some(osext) if osext == osext_match => Some(path.to_owned()),
+                    _ => None,
+                }
+            });
+
+        let iter = file_iter
+            .and_then_ok(|path| proof::Proof::parse_from(&path).into())
+            .flatten_ok();
+
+        Box::new(iter)
     }
 }
