@@ -1,4 +1,4 @@
-use crate::Verification;
+use crate::VerificationStatus;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -155,7 +155,7 @@ impl TrustDB {
         self.digest_to_reviews.get(digest)
     }
 
-    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<Id>) -> Verification {
+    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<Id>) -> VerificationStatus {
         if let Some(reviews) = self.get_reviews_of(digest) {
             // Faster somehow maybe?
             let reviews_by: HashSet<Id> = reviews.keys().map(|s| s.to_owned()).collect();
@@ -172,14 +172,14 @@ impl TrustDB {
             }
 
             if distrust_count > 0 {
-                Verification::Distrusted
+                VerificationStatus::Distrusted
             } else if trust_count > 0 {
-                Verification::Trusted
+                VerificationStatus::Trusted
             } else {
-                Verification::NotTrusted
+                VerificationStatus::NotTrusted
             }
         } else {
-            Verification::NotTrusted
+            VerificationStatus::NotTrusted
         }
     }
 

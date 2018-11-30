@@ -23,12 +23,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Trait representing a place that can keep proofs
+///
+/// Typically serialized and persisted.
 pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
     fn proofs_iter(&self) -> Box<dyn Iterator<Item = crev_data::proof::Proof>>;
 }
 
-pub enum Verification {
+/// Result of verification
+///
+/// Not named `Result` to avoid confusion with `Result` type.
+pub enum VerificationStatus {
     Trusted,
     NotTrusted,
     Distrusted,
@@ -36,12 +42,12 @@ pub enum Verification {
 
 use crev_data::Id;
 
-impl fmt::Display for Verification {
+impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Verification::Trusted => f.write_str("trusted"),
-            Verification::NotTrusted => f.write_str("not trusted"),
-            Verification::Distrusted => f.write_str("distrusted"),
+            VerificationStatus::Trusted => f.write_str("trusted"),
+            VerificationStatus::NotTrusted => f.write_str("not trusted"),
+            VerificationStatus::Distrusted => f.write_str("distrusted"),
         }
     }
 }
@@ -94,7 +100,7 @@ pub fn dir_verify(
     ignore_list: HashSet<PathBuf>,
     db: &trustdb::TrustDB,
     trusted_set: &HashSet<Id>,
-) -> Result<crate::Verification> {
+) -> Result<crate::VerificationStatus> {
     let digest = if path.join(".git").exists() {
         calculate_recursive_digest_for_git_dir(path, ignore_list)?
     } else {

@@ -154,7 +154,7 @@ impl Repo {
         PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
     }
 
-    pub fn project_verify(&mut self, allow_dirty: bool) -> Result<crate::Verification> {
+    pub fn project_verify(&mut self, allow_dirty: bool) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
