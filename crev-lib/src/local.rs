@@ -304,7 +304,9 @@ impl Local {
                         util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
                     if success {
                         something_was_fetched = true;
-                        db.import_from_iter(proofs_iter_for_path(self.get_remote_git_path(id, url)));
+                        db.import_from_iter(proofs_iter_for_path(
+                            self.get_remote_git_path(id, url),
+                        ));
                     }
                 } else {
                     eprintln!("No URL for {}", id);
@@ -409,10 +411,16 @@ fn proofs_iter_for_path(path: PathBuf) -> Box<Iterator<Item = proof::Proof>> {
             }
         });
 
-    let iter = file_iter
-        .and_then_ok(|path| proof::Proof::parse_from(&path).into())
-        .flatten_ok();
+    let proofs_iter = file_iter
+        .and_then_ok(|path| Ok(proof::Proof::parse_from(&path)?))
+        .flatten_ok()
+        .and_then_ok(|proof| {
+            proof.verify()?;
+            Ok(proof)
+        })
+        .on_err(|e| {
+            eprintln!("{}", e);
+        });
 
-    // TODO: Print and ignore errors?
-    Box::new(iter.oks())
+    Box::new(proofs_iter.oks())
 }
