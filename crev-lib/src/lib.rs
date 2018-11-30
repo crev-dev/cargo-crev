@@ -25,7 +25,7 @@ use std::{
 
 pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
-    fn iter(&self) -> Box<dyn Iterator<Item = Result<crev_data::proof::Proof>>>;
+    fn proofs_iter(&self) -> Box<dyn Iterator<Item = crev_data::proof::Proof>>;
 }
 
 pub enum Verification {

@@ -16,6 +16,7 @@ use std::{
     collections::HashSet,
     path::{Path, PathBuf},
 };
+use crev_lib::ProofStore;
 use structopt::StructOpt;
 
 mod opts;
@@ -131,7 +132,7 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
 
     let proof = review.sign_by(&id)?;
 
-    local.append_proof(&proof)?;
+    local.insert(&proof)?;
     Ok(())
 }
 

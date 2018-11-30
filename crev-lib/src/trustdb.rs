@@ -1,4 +1,4 @@
-use crate::{util, Result, Verification};
+use crate::Verification;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -6,13 +6,7 @@ use crev_data::{
     proof::{self, review, Content, ContentCommon},
     Id,
 };
-use failure::ResultExt;
-use std::{
-    collections::{hash_map, BTreeSet, HashMap, HashSet},
-    ffi::OsStr,
-    path::Path,
-};
-use walkdir::WalkDir;
+use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
 struct TrustInfo {
     #[allow(unused)]
@@ -216,56 +210,65 @@ impl TrustDB {
         }
     }
 
-    fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
-        proof.verify()?;
+    fn add_proof(&mut self, proof: &proof::Proof) {
+        proof
+            .verify()
+            .expect("All proofs were supposed to be valid here");
         match proof.content {
             Content::Code(ref review) => self.add_code_review(&review),
             Content::Project(ref review) => self.add_project_review(&review),
             Content::Trust(ref trust) => self.add_trust(&trust),
         }
-
-        Ok(())
     }
 
-    fn import_file(&mut self, path: &Path) -> Result<()> {
-        let proofs = proof::Proof::parse_from(path)?;
-        for proof in proofs.into_iter() {
-            util::err_eprint_and_ignore(self.add_proof(&proof).compat());
-        }
-
-        Ok(())
-    }
-
-    fn maybe_import_file(&mut self, path: &Path) -> Option<Result<()>> {
-        let osext_match: &OsStr = "crev".as_ref();
-        match path.extension() {
-            Some(osext) if osext == osext_match => Some(self.import_file(path)),
-            _ => None,
-        }
-    }
-
-    pub fn import_recursively(&mut self, path: &Path) -> Result<()> {
-        for entry in WalkDir::new(path).into_iter().filter_map(|e| match e {
-            Err(e) => {
-                eprintln!("Error iterating {}: {}", path.display(), e);
-                None
-            }
-            Ok(o) => Some(o),
-        }) {
-            let path = entry.path();
-
-            if !path.is_file() {
-                continue;
+    /*
+        fn import_file(&mut self, path: &Path) -> Result<()> {
+            let proofs = proof::Proof::parse_from(path)?;
+            for proof in proofs.into_iter() {
+                util::err_eprint_and_ignore(self.add_proof(&proof).compat());
             }
 
-            let res = self.maybe_import_file(&path).unwrap_or(Ok(()));
-            util::err_eprint_and_ignore(
-                res.with_context(|e| format!("Failed to import file: {}; {}", path.display(), e))
-                    .compat(),
-            );
+            Ok(())
         }
 
-        Ok(())
+        fn maybe_import_file(&mut self, path: &Path) -> Option<Result<()>> {
+            let osext_match: &OsStr = "crev".as_ref();
+            match path.extension() {
+                Some(osext) if osext == osext_match => Some(self.import_file(path)),
+                _ => None,
+            }
+        }
+
+        pub fn import_recursively(&mut self, path: &Path) -> Result<()> {
+            for entry in WalkDir::new(path).into_iter().filter_map(|e| match e {
+                Err(e) => {
+                    eprintln!("Error iterating {}: {}", path.display(), e);
+                    None
+                }
+                Ok(o) => Some(o),
+            }) {
+                let path = entry.path();
+
+                if !path.is_file() {
+                    continue;
+                }
+
+                let res = self.maybe_import_file(&path).unwrap_or(Ok(()));
+                util::err_eprint_and_ignore(
+                    res.with_context(|e| format!("Failed to import file: {}; {}", path.display(), e))
+                        .compat(),
+                );
+            }
+
+            Ok(())
+        }
+
+    */
+
+    pub fn import_from_iter(&mut self, i: impl Iterator<Item = proof::Proof>) {
+        for proof in i {
+            self.add_proof(&proof);
+        }
     }
 
     fn get_ids_trusted_by(&self, id: &Id) -> impl Iterator<Item = (Level, &Id)> {

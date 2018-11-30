@@ -11,6 +11,7 @@ use crev_common;
 use crev_data::{id::OwnId, level, proof, Id, PubId};
 use failure::ResultExt;
 use git2;
+use resiter::*;
 use serde_yaml;
 use std::{collections::HashSet, ffi::OsString, fs, io::Write, path::PathBuf};
 
@@ -233,17 +234,14 @@ impl Local {
         self.root_path.join("proofs")
     }
 
-    fn trust_auto_read(&self) -> Result<trustdb::TrustDB> {
-        let mut graph = trustdb::TrustDB::new();
-        graph.import_recursively(&self.get_proofs_dir_path())?;
-        Ok(graph)
-    }
-
     pub fn trust_ids(&self, pub_ids: Vec<String>, passphrase: String) -> Result<()> {
         if pub_ids.is_empty() {
             bail!("No ids to trust. Use `add` first.");
         }
-        let trustdb = self.trust_auto_read()?;
+
+        let mut trustdb = trustdb::TrustDB::new();
+        trustdb.import_from_iter(self.proofs_iter());
+
         let own_id = self.read_unlocked_id(&passphrase)?;
 
         let from = own_id.as_pubid();
@@ -282,10 +280,10 @@ impl Local {
     pub fn fetch_updates(&self) -> Result<()> {
         let mut already_fetched = HashSet::new();
         let mut db = trustdb::TrustDB::new();
-        let user_config = self.load_user_config()?;
-        db.import_recursively(&self.get_proofs_dir_path())?;
-        db.import_recursively(&self.cache_remotes_path())?;
+        db.import_from_iter(self.proofs_iter());
+        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let params = Default::default();
+        let user_config = self.load_user_config()?;
 
         let mut something_was_fetched = true;
         while something_was_fetched {
@@ -306,7 +304,7 @@ impl Local {
                         util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
                     if success {
                         something_was_fetched = true;
-                        db.import_recursively(&self.get_remote_git_path(id, url))?;
+                        db.import_from_iter(proofs_iter_for_path(self.get_remote_git_path(id, url)));
                     }
                 } else {
                     eprintln!("No URL for {}", id);
@@ -361,8 +359,8 @@ impl Local {
     ) -> Result<(trustdb::TrustDB, HashSet<Id>)> {
         let user_config = self.load_user_config()?;
         let mut db = trustdb::TrustDB::new();
-        db.import_recursively(&self.get_proofs_dir_path())?;
-        db.import_recursively(&self.cache_remotes_path())?;
+        db.import_from_iter(self.proofs_iter());
+        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let trusted_set =
             db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
 
@@ -388,29 +386,33 @@ impl ProofStore for Local {
         Ok(())
     }
 
-    fn iter(&self) -> Box<Iterator<Item = Result<proof::Proof>>> {
-        use resiter::*;
-        use std::ffi::OsStr;
-        let file_iter = walkdir::WalkDir::new(self.get_proofs_dir_path())
-            .into_iter()
-            .map_err(|e| format_err!("Error iterating local ProofStore: {:?}", e))
-            .filter_map_ok(|entry| {
-                let path = entry.path();
-                if !path.is_file() {
-                    return None;
-                }
-
-                let osext_match: &OsStr = "crev".as_ref();
-                match path.extension() {
-                    Some(osext) if osext == osext_match => Some(path.to_owned()),
-                    _ => None,
-                }
-            });
-
-        let iter = file_iter
-            .and_then_ok(|path| proof::Proof::parse_from(&path).into())
-            .flatten_ok();
-
-        Box::new(iter)
+    fn proofs_iter(&self) -> Box<Iterator<Item = proof::Proof>> {
+        proofs_iter_for_path(self.get_proofs_dir_path())
     }
+}
+
+fn proofs_iter_for_path(path: PathBuf) -> Box<Iterator<Item = proof::Proof>> {
+    use std::ffi::OsStr;
+    let file_iter = walkdir::WalkDir::new(path)
+        .into_iter()
+        .map_err(|e| format_err!("Error iterating local ProofStore: {:?}", e))
+        .filter_map_ok(|entry| {
+            let path = entry.path();
+            if !path.is_file() {
+                return None;
+            }
+
+            let osext_match: &OsStr = "crev".as_ref();
+            match path.extension() {
+                Some(osext) if osext == osext_match => Some(path.to_owned()),
+                _ => None,
+            }
+        });
+
+    let iter = file_iter
+        .and_then_ok(|path| proof::Proof::parse_from(&path).into())
+        .flatten_ok();
+
+    // TODO: Print and ignore errors?
+    Box::new(iter.oks())
 }
