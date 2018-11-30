@@ -30,6 +30,7 @@ serde_yaml = "0.8"
 tempdir = "*"
 walkdir = "*"
 resiter = { git = "https://github.com/dpc/resiter" }
+rprompt = "*"
 
 [dependencies.argonautica]
 features = ["serde"]

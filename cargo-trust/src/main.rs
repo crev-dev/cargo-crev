@@ -11,12 +11,12 @@ use cargo::{
     util::important_paths::find_root_manifest_for_wd,
 };
 use common_failures::prelude::*;
+use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
 };
-use crev_lib::ProofStore;
 use structopt::StructOpt;
 
 mod opts;
@@ -140,6 +140,10 @@ fn main() -> Result<()> {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Trust(command) = opts.command;
     match command {
+        opts::Command::Id(id) => match id.id_command {
+            opts::IdCommand::Show => crev_lib::show_id()?,
+            opts::IdCommand::Gen => crev_lib::generate_id()?,
+        },
         opts::Command::Verify(_verify_opts) => {
             let local = crev_lib::Local::auto_open()?;
             let repo = Repo::auto_open_cwd()?;

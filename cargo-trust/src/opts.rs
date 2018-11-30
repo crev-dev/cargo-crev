@@ -1,4 +1,20 @@
 #[derive(Debug, StructOpt, Clone)]
+pub struct Id {
+    #[structopt(subcommand)]
+    pub id_command: IdCommand,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum IdCommand {
+    #[structopt(name = "gen")]
+    /// Generate a CrevID
+    Gen,
+    #[structopt(name = "show")]
+    /// Show CrevID information
+    Show,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct Verify {
     #[structopt(long = "depth", default_value = "10")]
     depth: u64,
@@ -9,6 +25,7 @@ pub struct Verify {
     #[structopt(long = "low-cost", default_value = "5")]
     low_cost: u64,
 }
+
 #[derive(Debug, StructOpt, Clone)]
 pub struct Trust {
     pub name: String,
@@ -26,8 +43,12 @@ pub enum Command {
     /// Distrust a given package
     #[structopt(name = "distrust")]
     Distrust(Trust),
+    #[structopt(name = "id")]
+    Id(Id),
 }
 
+/// Cargo will pass the name of the `cargo-<tool>`
+/// as first argument, so we just have to match it here.
 #[derive(Debug, StructOpt, Clone)]
 pub enum MainCommand {
     #[structopt(name = "trust")]
