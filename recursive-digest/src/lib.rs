@@ -112,7 +112,7 @@ where
         entry: &Entry,
         parent_hasher: &mut Digest,
     ) -> Result<()> {
-        parent_hasher.input("D".as_bytes());
+        parent_hasher.input(b"D");
         for (k, v) in &entry.0 {
             let mut hasher = Digest::new();
             hasher.input(k.as_bytes());
@@ -140,7 +140,7 @@ where
             ));
         }
 
-        parent_hasher.input("F".as_bytes());
+        parent_hasher.input(b"F");
         read_file_to_digest_input(full_path, parent_hasher)?;
         Ok(())
     }
@@ -152,7 +152,7 @@ where
         parent_hasher: &mut Digest,
     ) -> Result<()> {
         assert!(entry.0.is_empty());
-        parent_hasher.input("L".as_bytes());
+        parent_hasher.input(b"L");
         parent_hasher.input(full_path.read_link()?.as_os_str().as_bytes());
         Ok(())
     }
