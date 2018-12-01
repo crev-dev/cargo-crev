@@ -9,3 +9,7 @@ walkdir = "*"
 blake2 = "*"
 digest = "*"
 generic-array = "*"
+
+[dev-dependencies]
+tempdir = "*"
+hex = "0.3"
