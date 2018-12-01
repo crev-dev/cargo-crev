@@ -504,7 +504,6 @@ name = "crev-recursive-digest"
 version = "0.1.0"
 dependencies = [
  "blake2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "walkdir 2.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -680,11 +679,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "default"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "derive_builder"
@@ -2006,7 +2000,6 @@ dependencies = [
 "checksum darling_core 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "5d844ad185d7f9bfd072914584649741768151c4131f6ae59f282889f7a1e450"
 "checksum darling_macro 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "280207f9bd6f6fd58acd08ed722fb9a75412ad9b1fd9b6a8fbfc55410aca2c2c"
 "checksum dbl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "920e117b69060a961c4164ccf83af573292cb167ccdd918950bcf0f5afc32c1c"
-"checksum default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f33853de3c94db27f825215641be74ddce259f5aec7aefae9c760ee1bb3dbaa7"
 "checksum derive_builder 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "583a8f76cd41ae6303aca0db4539b90b4fcb289f75467d0c3905781dc670621b"
 "checksum derive_builder_core 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6fb4e6b5fb126caa298af7f9b9719ad6301eb7dd1613fd7543a4e935cef46c07"
 "checksum digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)" = "03b072242a8cbaf9c145665af9d250c59af3b958f83ed6824e13533cf76d5b90"
