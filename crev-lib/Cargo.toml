@@ -41,3 +41,6 @@ path = "../crev-common"
 
 [dependencies.crev-data]
 path = "../crev-data"
+
+[dependencies.crev-recursive-digest]
+path = "../recursive-digest"

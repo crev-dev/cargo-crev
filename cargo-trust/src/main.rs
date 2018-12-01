@@ -113,7 +113,7 @@ fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
 
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
-    let digest = crev_lib::calculate_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
+    let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_unlocked_id(&passphrase)?;
 

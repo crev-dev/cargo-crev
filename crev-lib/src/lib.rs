@@ -9,7 +9,6 @@ extern crate failure;
 pub mod id;
 pub mod local;
 pub mod proof;
-pub mod recursive_digest;
 pub mod repo;
 pub mod staging;
 pub mod trustdb;
@@ -52,59 +51,23 @@ impl fmt::Display for VerificationStatus {
     }
 }
 
-pub fn calculate_recursive_digest_for_dir(
-    root_path: &Path,
-    ignore_list: HashSet<PathBuf>,
-) -> Result<Vec<u8>> {
-    let mut hasher = recursive_digest::RecursiveHasher::new_dir(root_path.into());
-
-    hasher.set_ignore_list(ignore_list);
-
-    for entry in walkdir::WalkDir::new(root_path) {
-        let entry = entry.unwrap();
-        let path = entry
-            .path()
-            .strip_prefix(&root_path)
-            .unwrap_or_else(|_| entry.path());
-        hasher.insert_path(path)
-    }
-
-    Ok(hasher.get_digest()?)
-}
-
-pub fn calculate_recursive_digest_for_git_dir(
-    root_path: &Path,
-    ignore_list: HashSet<PathBuf>,
-) -> Result<Vec<u8>> {
-    let git_repo = git2::Repository::open(root_path)?;
-
-    let mut hasher = recursive_digest::RecursiveHasher::new_dir(root_path.to_owned());
-
-    hasher.set_ignore_list(ignore_list);
-
-    let mut status_opts = git2::StatusOptions::new();
-    status_opts.include_unmodified(true);
-    status_opts.include_untracked(false);
-    for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-        hasher.insert_path(&PathBuf::from(
-            entry
-                .path()
-                .ok_or_else(|| format_err!("Git entry without a path"))?,
-        ))
-    }
-
-    Ok(hasher.get_digest()?)
-}
-pub fn dir_verify(
+pub fn dir_verify<H1, H2>(
     path: &Path,
-    ignore_list: HashSet<PathBuf>,
+    ignore_list: HashSet<PathBuf, H1>,
     db: &trustdb::TrustDB,
-    trusted_set: &HashSet<Id>,
-) -> Result<crate::VerificationStatus> {
+    trusted_set: &HashSet<Id, H2>,
+) -> Result<crate::VerificationStatus>
+where
+    H1: std::hash::BuildHasher + std::default::Default,
+    H2: std::hash::BuildHasher + std::default::Default,
+{
     let digest = if path.join(".git").exists() {
-        calculate_recursive_digest_for_git_dir(path, ignore_list)?
+        get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        calculate_recursive_digest_for_dir(path, ignore_list)?
+        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H1>(
+            path,
+            ignore_list,
+        )?
     };
     Ok(db.verify_digest(&digest, trusted_set))
 }
@@ -115,6 +78,65 @@ pub fn show_id() -> Result<()> {
     let id = id.to_pubid();
     print!("{}", id.id);
     Ok(())
+}
+
+pub fn get_recursive_digest_for_git_dir<H>(
+    root_path: &Path,
+    ignore_list: HashSet<PathBuf, H>,
+) -> Result<Vec<u8>>
+where
+    H: std::hash::BuildHasher + std::default::Default,
+{
+    let git_repo = git2::Repository::open(root_path)?;
+
+    let mut status_opts = git2::StatusOptions::new();
+    let mut paths = HashSet::default();
+
+    status_opts.include_unmodified(true);
+    status_opts.include_untracked(false);
+    for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
+        let entry_path = PathBuf::from(
+            entry
+                .path()
+                .ok_or_else(|| format_err!("Git entry without a path"))?,
+        );
+        if ignore_list.contains(&entry_path) {
+            continue;
+        };
+
+        paths.insert(entry_path);
+    }
+
+    Ok(crev_recursive_digest::get_recursive_digest_for_paths::<
+        blake2::Blake2b,
+        H,
+    >(root_path, paths)?)
+}
+
+pub fn get_recursive_digest_for_paths<H>(
+    root_path: &Path,
+    paths: HashSet<PathBuf, H>,
+) -> Result<Vec<u8>>
+where
+    H: std::hash::BuildHasher,
+{
+    Ok(crev_recursive_digest::get_recursive_digest_for_paths::<
+        blake2::Blake2b,
+        H,
+    >(root_path, paths)?)
+}
+
+pub fn get_recursive_digest_for_dir<H>(
+    root_path: &Path,
+    rel_path_ignore_list: HashSet<PathBuf, H>,
+) -> Result<Vec<u8>>
+where
+    H: std::hash::BuildHasher,
+{
+    Ok(crev_recursive_digest::get_recursive_digest_for_dir::<
+        blake2::Blake2b,
+        H,
+    >(root_path, rel_path_ignore_list)?)
 }
 
 pub fn generate_id() -> Result<()> {

@@ -9,9 +9,7 @@ use rprompt;
 #[macro_use]
 extern crate structopt;
 
-use common_failures::prelude::*;
-use crev_data::id::OwnId;
-use crev_lib::{id::LockedId, local::Local, repo::Repo};
+use crev_lib::{ local::Local, repo::Repo};
 use hex;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -19,50 +17,10 @@ use structopt::StructOpt;
 mod opts;
 mod util;
 
-fn show_id() -> Result<()> {
-    let local = Local::auto_open()?;
-    let id = local.read_locked_id()?;
-    let id = id.to_pubid();
-    print!("{}", id.id);
-    Ok(())
-}
-
-fn gen_id() -> Result<()> {
-    eprintln!("Crev relies on personal, publicly accessible repositories to circulate proofs.");
-    eprintln!("Enter public git address you're planing to use for your CrevID.");
-    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
-    eprintln!("Changing it later will require manual config file editing.");
-    let mut url;
-    loop {
-        url = rprompt::prompt_reply_stdout("Git URL: ")?;
-        eprintln!("");
-        eprintln!("You've entered: {}", url);
-        if crev_common::yes_or_no_was_y("Is this correct? (y/n) ")? {
-            break;
-        }
-    }
-
-    let id = OwnId::generate(url);
-    eprintln!("Your CrevID will be protected by a passphrase.");
-    eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
-    let passphrase = crev_common::read_new_passphrase()?;
-    let locked = LockedId::from_own_id(&id, &passphrase)?;
-
-    let local = Local::auto_create()?;
-    local.save_locked_id(&locked)?;
-    local.save_current_id(&id)?;
-
-    eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
-    eprintln!("Make sure to back it up on another device, to prevent loosing it.");
-
-    println!("{}", locked);
-    Ok(())
-}
-
 main!(|opts: opts::Opts| match opts.command {
     opts::Command::Id(id) => match id.id_command {
-        opts::IdCommand::Show => show_id()?,
-        opts::IdCommand::Gen => gen_id()?,
+        opts::IdCommand::Show => crev_lib::show_id()?,
+        opts::IdCommand::Gen => crev_lib::generate_id()?,
     },
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {

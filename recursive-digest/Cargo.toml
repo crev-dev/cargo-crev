@@ -1,0 +1,11 @@
+[package]
+name = "crev-recursive-digest"
+version = "0.1.0"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+edition = "2018"
+
+[dependencies]
+walkdir = "*"
+blake2 = "*"
+digest = "*"
+generic-array = "*"

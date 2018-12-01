@@ -163,7 +163,7 @@ impl Repo {
         let params = Default::default();
         let (db, trusted_set) = local.load_db(&params)?;
         let ignore_list = HashSet::new();
-        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
+        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
         Ok(db.verify_digest(&digest, &trusted_set))
     }
 
@@ -173,7 +173,7 @@ impl Repo {
         }
 
         let ignore_list = HashSet::new();
-        Ok(crate::calculate_recursive_digest_for_git_dir(
+        Ok(crate::get_recursive_digest_for_git_dir(
             &self.root_dir,
             ignore_list,
         )?)
@@ -237,7 +237,7 @@ impl Repo {
         let revision = self.read_revision()?;
 
         let ignore_list = HashSet::new();
-        let digest = crate::calculate_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
+        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
         let id = local.read_unlocked_id(&passphrase)?;
 
         let review = proof::review::ProjectBuilder::default()

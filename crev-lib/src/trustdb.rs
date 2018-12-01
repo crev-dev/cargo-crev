@@ -155,10 +155,13 @@ impl TrustDB {
         self.digest_to_reviews.get(digest)
     }
 
-    pub fn verify_digest(&self, digest: &[u8], trust_set: &HashSet<Id>) -> VerificationStatus {
+    pub fn verify_digest<H>(&self, digest: &[u8], trust_set: &HashSet<Id, H>) -> VerificationStatus
+    where
+        H: std::hash::BuildHasher + std::default::Default,
+    {
         if let Some(reviews) = self.get_reviews_of(digest) {
             // Faster somehow maybe?
-            let reviews_by: HashSet<Id> = reviews.keys().map(|s| s.to_owned()).collect();
+            let reviews_by: HashSet<Id, H> = reviews.keys().map(|s| s.to_owned()).collect();
             let matching_reviewers = trust_set.intersection(&reviews_by);
             let mut trust_count = 0;
             let mut distrust_count = 0;

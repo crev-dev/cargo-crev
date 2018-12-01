@@ -4,5 +4,6 @@ members = [
 	"crev-data",
 	"crev-lib",
 	"crev-bin",
-	"cargo-trust"
+	"cargo-trust",
+	"recursive-digest"
 ]
