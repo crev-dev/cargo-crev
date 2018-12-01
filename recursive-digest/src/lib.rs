@@ -1,4 +1,5 @@
 use blake2;
+use default::default;
 use std::io::BufRead;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -8,26 +9,6 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-fn read_file_to_digest_input(path: &Path, input: &mut impl digest::Digest) -> std::io::Result<()> {
-    let file = fs::File::open(path)?;
-
-    let mut reader = std::io::BufReader::new(file);
-
-    loop {
-        let length = {
-            let buffer = reader.fill_buf()?;
-            input.process(buffer);
-            buffer.len()
-        };
-        if length == 0 {
-            break;
-        }
-        reader.consume(length);
-    }
-
-    Ok(())
-}
-
 /// Sorted list of all descendants of a directory
 type Descendants = BTreeMap<OsString, Entry>;
 
@@ -36,16 +17,83 @@ pub type Result<T> = std::io::Result<T>;
 #[derive(Default)]
 struct Entry(Descendants);
 
-struct RecursiveDigest<Digest = blake2::Blake2b> {
+struct RecursiveDigest<Digest = blake2::Blake2b, IO = FsIoOps> {
     root_path: PathBuf,
     root: Entry,
     digest: std::marker::PhantomData<Digest>,
+    io: IO,
 }
 
-impl<Digest, OutputSize> RecursiveDigest<Digest>
+enum FileType {
+    File,
+    Symlink,
+    Directory,
+}
+
+trait IoOps: Default {
+    fn get_file_type(&self, path: &Path) -> Result<FileType>;
+    fn read_file_into_hasher(&self, path: &Path, hasher: &mut impl digest::Digest) -> Result<()>;
+    fn read_symlink_into_hasher(&self, path: &Path, hasher: &mut impl digest::Digest)
+        -> Result<()>;
+}
+
+#[derive(Default)]
+struct FsIoOps;
+
+impl IoOps for FsIoOps {
+    fn get_file_type(&self, path: &Path) -> Result<FileType> {
+        use self::FileType::*;
+        let attr = fs::symlink_metadata(path)?;
+
+        Ok(if attr.is_file() {
+            File
+        } else if attr.file_type().is_symlink() {
+            Symlink
+        } else if attr.is_dir() {
+            Directory
+        } else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("unsupported file type: {}", path.display()),
+            ));
+        })
+    }
+
+    fn read_file_into_hasher(&self, path: &Path, hasher: &mut impl digest::Digest) -> Result<()> {
+        let file = fs::File::open(path)?;
+
+        let mut reader = std::io::BufReader::new(file);
+
+        loop {
+            let length = {
+                let buffer = reader.fill_buf()?;
+                hasher.process(buffer);
+                buffer.len()
+            };
+            if length == 0 {
+                break;
+            }
+            reader.consume(length);
+        }
+
+        Ok(())
+    }
+
+    fn read_symlink_into_hasher(
+        &self,
+        path: &Path,
+        hasher: &mut impl digest::Digest,
+    ) -> Result<()> {
+        hasher.process(path.read_link()?.as_os_str().as_bytes());
+        Ok(())
+    }
+}
+
+impl<Digest, IO, OutputSize> RecursiveDigest<Digest, IO>
 where
     Digest: digest::Digest<OutputSize = OutputSize>,
     OutputSize: generic_array::ArrayLength<u8>,
+    IO: IoOps,
 {
     fn new<I>(root_path: PathBuf, rel_paths: I) -> Self
     where
@@ -55,6 +103,7 @@ where
             root_path,
             root: Entry(Default::default()),
             digest: std::marker::PhantomData,
+            io: default(),
         };
 
         for path in rel_paths.into_iter() {
@@ -92,15 +141,11 @@ where
     }
 
     fn read_content_of(&self, full_path: &Path, entry: &Entry, hasher: &mut Digest) -> Result<()> {
-        let attr = fs::symlink_metadata(full_path)?;
-        if attr.is_file() {
-            self.read_content_of_file(full_path, entry, hasher)?;
-        } else if attr.is_dir() {
-            self.read_content_of_dir(full_path, entry, hasher)?;
-        } else if attr.file_type().is_symlink() {
-            self.read_content_of_symlink(full_path, entry, hasher)?;
-        } else {
-            eprintln!("Skipping {} - not supported file type", full_path.display());
+        use self::FileType::*;
+        match self.io.get_file_type(full_path)? {
+            File => self.read_content_of_file(full_path, entry, hasher)?,
+            Symlink => self.read_content_of_symlink(full_path, entry, hasher)?,
+            Directory => self.read_content_of_dir(full_path, entry, hasher)?,
         }
 
         Ok(())
@@ -141,7 +186,7 @@ where
         }
 
         parent_hasher.input("F".as_bytes());
-        read_file_to_digest_input(full_path, parent_hasher)?;
+        self.io.read_file_into_hasher(full_path, parent_hasher)?;
         Ok(())
     }
 
@@ -151,21 +196,27 @@ where
         entry: &Entry,
         parent_hasher: &mut Digest,
     ) -> Result<()> {
-        assert!(entry.0.is_empty());
+        if !entry.0.is_empty() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "an entry that was supposed to be a symlink, contains sub-entries",
+            ));
+        }
         parent_hasher.input("L".as_bytes());
-        parent_hasher.input(full_path.read_link()?.as_os_str().as_bytes());
+        self.io
+            .read_symlink_into_hasher(&full_path, parent_hasher)?;
         Ok(())
     }
 }
 
 pub fn get_recursive_digest_for_paths<Digest: digest::Digest, H>(
     root_path: &Path,
-    paths: HashSet<PathBuf, H>,
+    rel_paths: HashSet<PathBuf, H>,
 ) -> Result<Vec<u8>>
 where
     H: std::hash::BuildHasher,
 {
-    RecursiveDigest::<Digest>::new(root_path.into(), paths).get_digest()
+    RecursiveDigest::<Digest>::new(root_path.into(), rel_paths).get_digest()
 }
 
 pub fn get_recursive_digest_for_dir<Digest: digest::Digest, H: std::hash::BuildHasher>(
