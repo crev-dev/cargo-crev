@@ -104,7 +104,7 @@ impl TrustOrDistrust {
     }
 }
 
-fn set_trust(args: &opts::Trust, trust: TrustOrDistrust) -> Result<()> {
+fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
@@ -162,11 +162,11 @@ fn main() -> Result<()> {
                 Ok(())
             })?;
         }
-        opts::Command::Trust(args) => {
-            set_trust(&args, TrustOrDistrust::Trust)?;
+        opts::Command::Review(args) => {
+            review_crate(&args, TrustOrDistrust::Trust)?;
         }
-        opts::Command::Distrust(args) => {
-            set_trust(&args, TrustOrDistrust::Distrust)?;
+        opts::Command::Flag(args) => {
+            review_crate(&args, TrustOrDistrust::Distrust)?;
         }
     }
 

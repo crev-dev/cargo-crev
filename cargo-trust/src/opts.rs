@@ -27,7 +27,7 @@ pub struct Verify {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Trust {
+pub struct Crate {
     pub name: String,
     pub version: Option<String>,
 }
@@ -37,12 +37,12 @@ pub enum Command {
     /// Verify review coverage of the project
     #[structopt(name = "verify")]
     Verify(Verify),
-    /// Trust a given package
-    #[structopt(name = "trust")]
-    Trust(Trust),
-    /// Distrust a given package
-    #[structopt(name = "distrust")]
-    Distrust(Trust),
+    /// Positively review a crate
+    #[structopt(name = "review")]
+    Review(Crate),
+    /// Flag a crate as buggy/low-quality/dangerous
+    #[structopt(name = "flag")]
+    Flag(Crate),
     #[structopt(name = "id")]
     Id(Id),
 }
