@@ -1,5 +1,5 @@
-use chrono::{self, prelude::*};
 use crate::{id, level::Level, proof, Result};
+use chrono::{self, prelude::*};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
@@ -7,12 +7,14 @@ use crev_common::{
 use serde_yaml;
 use std::fmt;
 
-const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW TRUST-----";
-const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW TRUST SIGNATURE-----";
-const END_BLOCK: &str = "-----END CODE REVIEW TRUST-----";
+const BEGIN_BLOCK: &str = "-----BEGIN CREV TRUST -----";
+const BEGIN_SIGNATURE: &str = "-----BEGIN CREV TRUST SIGNATURE-----";
+const END_BLOCK: &str = "-----END CREV TRUST-----";
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
+    #[builder(default = "crate::current_version()")]
+    version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
@@ -21,20 +23,17 @@ pub struct Trust {
     pub date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     pub trusted: Vec<crate::PubId>,
+    #[builder(default = "Default::default()")]
+    pub trust: Level,
     #[builder(default = "proof::default_distrust_level()")]
     #[serde(
         skip_serializing_if = "proof::equals_default_distrust_level",
         default = "proof::default_distrust_level"
     )]
     pub distrust: Level,
-    #[serde(
-        skip_serializing_if = "String::is_empty",
-        default = "Default::default"
-    )]
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
-    #[builder(default = "Default::default()")]
-    pub trust: Level,
 }
 
 impl fmt::Display for Trust {

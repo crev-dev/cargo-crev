@@ -1,7 +1,8 @@
-use app_dirs;
 use crate::Result;
+use app_dirs;
 use crev_common;
 use crev_data::proof;
+use std::fmt::Write as FmtWrite;
 use std::{
     self, env, ffi, fs,
     io::{self, Read, Write},
@@ -74,11 +75,25 @@ fn edit_text_iteractively(text: String) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
+pub fn get_documentation_for(content: &proof::Content) -> &'static str {
+    use crev_data::proof::Content;
+    match content {
+        Content::Trust(_) => include_str!("../../rc/doc/editing-trust.md"),
+        Content::Code(_) => include_str!("../../rc/doc/editing-code-review.md"),
+        Content::Project(_) => include_str!("../../rc/doc/editing-project-review.md"),
+    }
+}
+
 pub fn edit_proof_content_iteractively(
     content: &proof::Content,
     type_: proof::ProofType,
 ) -> Result<proof::Content> {
     let mut text = content.to_string();
+
+    text.write_str("\n\n")?;
+    for line in get_documentation_for(content).lines() {
+        text.write_fmt(format_args!("# {}\n", line))?;
+    }
     loop {
         text = edit_text_iteractively(text)?;
         match proof::Content::parse(&text, type_) {

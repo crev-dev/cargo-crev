@@ -1,5 +1,5 @@
-use chrono::{self, prelude::*};
 use crate::{id, proof, Result};
+use chrono::{self, prelude::*};
 use crev_common;
 use serde_yaml;
 use std::{self, default::Default, fmt, path::PathBuf};
@@ -28,6 +28,8 @@ pub struct File {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
 pub struct Code {
+    #[builder(default = "crate::current_version()")]
+    version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
@@ -46,9 +48,6 @@ pub struct Code {
     #[builder(default = "\"git\".into()")]
     revision_type: String,
 
-    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
-    #[builder(default = "Default::default()")]
-    comment: String,
     #[builder(default = "None")]
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
     digest: Option<String>,
@@ -61,6 +60,9 @@ pub struct Code {
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
     score: super::Score,
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
+    #[builder(default = "Default::default()")]
+    comment: String,
     #[serde(
         skip_serializing_if = "std::vec::Vec::is_empty",
         default = "std::vec::Vec::new"

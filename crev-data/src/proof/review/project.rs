@@ -1,5 +1,5 @@
-use chrono::{self, prelude::*};
 use crate::{id, proof, Result};
+use chrono::{self, prelude::*};
 use crev_common::{
     self,
     serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
@@ -7,15 +7,17 @@ use crev_common::{
 use serde_yaml;
 use std::{default::Default, fmt};
 
-const BEGIN_BLOCK: &str = "-----BEGIN PROJECT REVIEW-----";
-const BEGIN_SIGNATURE: &str = "-----BEGIN PROJECT REVIEW SIGNATURE-----";
-const END_BLOCK: &str = "-----END PROJECT REVIEW-----";
+const BEGIN_BLOCK: &str = "-----BEGIN CREV PROJECT REVIEW-----";
+const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PROJECT REVIEW SIGNATURE-----";
+const END_BLOCK: &str = "-----END CREV PROJECT REVIEW-----";
 
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 /// Unsigned proof of code review
 pub struct Project {
+    #[builder(default = "crate::current_version()")]
+    version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
         serialize_with = "as_rfc3339_fixed",
@@ -30,9 +32,6 @@ pub struct Project {
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
     pub revision: Option<proof::Revision>,
-    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
-    #[builder(default = "Default::default()")]
-    comment: String,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
     score: super::Score,
@@ -44,6 +43,9 @@ pub struct Project {
     )]
     #[builder(default = "proof::default_digest_type()")]
     pub digest_type: String,
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
+    #[builder(default = "Default::default()")]
+    comment: String,
 }
 
 impl Project {
