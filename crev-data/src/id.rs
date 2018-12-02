@@ -1,6 +1,6 @@
-use crate::{Result, Url};
 use base64;
 use blake2;
+use crate::{Result, Url};
 use crev_common::serde::{as_base64, from_base64};
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
@@ -22,11 +22,14 @@ impl fmt::Display for IdType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(tag = "id-type")]
+#[serde(tag = "id_type")]
 pub enum Id {
     #[serde(rename = "crev")]
     Crev {
-        #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+        #[serde(
+            serialize_with = "as_base64",
+            deserialize_with = "from_base64"
+        )]
         id: Vec<u8>,
     },
 }
@@ -87,13 +90,12 @@ pub struct PubId {
 }
 
 impl PubId {
-    pub fn new(v: Vec<u8>, url: Option<String>) -> Self {
+    pub fn new(v: Vec<u8>, url: String) -> Self {
         PubId {
             id: Id::Crev { id: v },
-            url: url.map(|u| Url::new(u)),
+            url: Some(Url::new(url)),
         }
     }
-
     pub fn new_from_pubkey(v: Vec<u8>) -> Self {
         PubId {
             id: Id::Crev { id: v },
@@ -171,7 +173,7 @@ pub struct OwnId {
 }
 
 impl OwnId {
-    pub fn new(url: Option<String>, sec_key: Vec<u8>) -> Result<Self> {
+    pub fn new(url: String, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
         let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
 
@@ -199,7 +201,13 @@ impl OwnId {
         &self.id
     }
 
-    pub fn generate(url: Option<String>) -> Self {
+    /*
+    pub fn pub_key_as_base64(&self) -> String {
+        self.id.pub_key_as_base64()
+    }
+    */
+
+    pub fn generate(url: String) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let keypair = ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng);
         Self {

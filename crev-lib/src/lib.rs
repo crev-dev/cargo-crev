@@ -161,9 +161,9 @@ where
     >(root_path, rel_path_ignore_list)?)
 }
 
-pub fn prompt_url() -> Result<()> {
-    eprintln!("Crev relies on users publishing their proofs for others to download.");
-    eprintln!("Enter a public git repository URL to git repository you're planing to publish your Crev database.");
+pub fn generate_id() -> Result<()> {
+    eprintln!("Crev relies on personal, publicly accessible repositories to circulate proofs.");
+    eprintln!("Enter public git address you're planing to use for your CrevID.");
     eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
     eprintln!("Changing it later will require manual config file editing.");
     let mut url;
@@ -176,11 +176,7 @@ pub fn prompt_url() -> Result<()> {
         }
     }
 
-    Ok(())
-}
-
-pub fn generate_id() -> Result<()> {
-    let id = crev_data::id::OwnId::generate(None);
+    let id = crev_data::id::OwnId::generate(url);
     eprintln!("Your CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = crev_common::read_new_passphrase()?;
@@ -190,13 +186,11 @@ pub fn generate_id() -> Result<()> {
     local.save_locked_id(&locked)?;
     local.save_current_id(&id)?;
 
-    eprintln!("");
     eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
     eprintln!("Make sure to back it up on another device, to prevent loosing it.");
 
     println!("{}", locked);
     Ok(())
 }
-
 #[cfg(test)]
 mod tests;
