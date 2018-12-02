@@ -32,7 +32,7 @@ pub struct PassConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LockedId {
     version: i64,
-    url: String,
+    url: Option<String>,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,
@@ -80,7 +80,7 @@ impl LockedId {
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce: seal_nonce,
-            url: own_id.id.url.clone().unwrap().url,
+            url: own_id.id.url.as_ref().map(|u| u.url.to_owned()),
             pass: PassConfig {
                 salt: pwhash.raw_salt_bytes().to_vec(),
                 iterations: hasher_config.iterations(),
