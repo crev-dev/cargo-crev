@@ -24,35 +24,23 @@ pub struct PassConfig {
     iterations: u32,
     #[serde(rename = "memory-size")]
     memory_size: u32,
-    #[serde(
-        serialize_with = "as_base64",
-        deserialize_with = "from_base64"
-    )]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     salt: Vec<u8>,
 }
 
 /// Serialized, stored on disk
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LockedId {
-    version: u16,
+    version: i64,
     url: String,
-    #[serde(
-        serialize_with = "as_base64",
-        deserialize_with = "from_base64"
-    )]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,
-    #[serde(
-        serialize_with = "as_base64",
-        deserialize_with = "from_base64"
-    )]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "sealed-secret-key")]
     sealed_secret_key: Vec<u8>,
 
-    #[serde(
-        serialize_with = "as_base64",
-        deserialize_with = "from_base64"
-    )]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "seal-nonce")]
     seal_nonce: Vec<u8>,
     pass: PassConfig,
@@ -88,7 +76,7 @@ impl LockedId {
 
         assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
         Ok(LockedId {
-            version: 0,
+            version: crev_data::current_version(),
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce: seal_nonce,

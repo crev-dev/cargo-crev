@@ -9,17 +9,27 @@ use app_dirs::{app_root, AppDataType};
 use base64;
 use crev_common;
 use crev_data::{id::OwnId, level, proof, Id, PubId};
+use default::default;
 use failure::ResultExt;
 use git2;
 use resiter::*;
 use serde_yaml;
 use std::{collections::HashSet, ffi::OsString, fs, io::Write, path::PathBuf};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserConfig {
-    pub version: u64,
+    pub version: i64,
     #[serde(rename = "current-id")]
     pub current_id: Option<Id>,
+}
+
+impl Default for UserConfig {
+    fn default() -> Self {
+        Self {
+            version: crev_data::current_version(),
+            current_id: None,
+        }
+    }
 }
 
 impl UserConfig {
@@ -67,7 +77,7 @@ impl Local {
         if config_path.exists() {
             bail!("User config already exists");
         }
-        let config: UserConfig = Default::default();
+        let config: UserConfig = default();
         repo.store_user_config(&config)?;
         Ok(repo)
     }
