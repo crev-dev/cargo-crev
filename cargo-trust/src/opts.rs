@@ -49,6 +49,7 @@ pub enum Command {
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
     Flag(Crate),
+    /// ID-related operations
     #[structopt(name = "id")]
     Id(Id),
     /// Trust another user
