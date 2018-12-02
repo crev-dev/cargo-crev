@@ -234,9 +234,14 @@ impl Local {
         self.root_path.join("proofs")
     }
 
-    pub fn trust_ids(&self, pub_ids: Vec<String>, passphrase: String) -> Result<()> {
+    pub fn build_trust_proof(
+        &self,
+        pub_ids: Vec<String>,
+        passphrase: String,
+        trust_or_distrust: crate::TrustOrDistrust,
+    ) -> Result<()> {
         if pub_ids.is_empty() {
-            bail!("No ids to trust. Use `add` first.");
+            bail!("No ids given.");
         }
 
         let mut trustdb = trustdb::TrustDB::new();
@@ -262,7 +267,16 @@ impl Local {
         let trust = proof::TrustBuilder::default()
             .from(from.to_owned())
             .comment("".into())
-            .trust(level::Level::Medium)
+            .trust(if trust_or_distrust.is_trust() {
+                level::Level::Medium
+            } else {
+                level::Level::None
+            })
+            .distrust(if trust_or_distrust.is_trust() {
+                level::Level::None
+            } else {
+                level::Level::Medium
+            })
             .trusted(pub_ids)
             .build()
             .map_err(|e| format_err!("{}", e))?;

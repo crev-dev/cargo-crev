@@ -9,7 +9,8 @@ use rprompt;
 #[macro_use]
 extern crate structopt;
 
-use crev_lib::{ local::Local, repo::Repo};
+use crev_lib::TrustOrDistrust::*;
+use crev_lib::{local::Local, repo::Repo};
 use hex;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -26,7 +27,7 @@ main!(|opts: opts::Opts| match opts.command {
         opts::Trust::Add(trust) => {
             let local = Local::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            local.trust_ids(trust.pub_ids, passphrase)?;
+            local.build_trust_proof(trust.pub_ids, passphrase, Trust)?;
         }
     },
     opts::Command::Add(add) => {

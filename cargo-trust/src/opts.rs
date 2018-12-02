@@ -33,6 +33,12 @@ pub struct Crate {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Trust {
+    /// Public IDs to create Trust Proof for
+    pub pub_ids: Vec<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Verify review coverage of the project
     #[structopt(name = "verify")]
@@ -45,6 +51,12 @@ pub enum Command {
     Flag(Crate),
     #[structopt(name = "id")]
     Id(Id),
+    /// Trust another user
+    #[structopt(name = "trust")]
+    Trust(Trust),
+    /// Distrust another user
+    #[structopt(name = "distrust")]
+    Distrust(Trust),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

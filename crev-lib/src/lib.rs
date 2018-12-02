@@ -16,6 +16,7 @@ pub mod trustdb;
 pub mod util;
 
 pub use self::local::Local;
+use crev_data::Id;
 use std::{
     collections::HashSet,
     fmt,
@@ -39,7 +40,28 @@ pub enum VerificationStatus {
     Distrusted,
 }
 
-use crev_data::Id;
+#[derive(Copy, Clone)]
+pub enum TrustOrDistrust {
+    Trust,
+    Distrust,
+}
+
+impl TrustOrDistrust {
+    pub fn is_trust(self) -> bool {
+        if let TrustOrDistrust::Trust = self {
+            return true;
+        }
+        false
+    }
+
+    pub fn to_default_score(self) -> crev_data::Score {
+        use self::TrustOrDistrust::*;
+        match self {
+            Trust => crev_data::Score::new_default_trust(),
+            Distrust => crev_data::Score::new_default_trust(),
+        }
+    }
+}
 
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

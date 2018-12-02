@@ -22,6 +22,8 @@ use structopt::StructOpt;
 mod opts;
 mod prelude;
 
+use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
+
 struct Repo {
     manifest_path: PathBuf,
     config: cargo::util::config::Config,
@@ -88,22 +90,6 @@ impl Repo {
     }
 }
 
-#[derive(Copy, Clone)]
-enum TrustOrDistrust {
-    Trust,
-    Distrust,
-}
-
-impl TrustOrDistrust {
-    fn to_default_score(self) -> crev_data::Score {
-        use self::TrustOrDistrust::*;
-        match self {
-            Trust => crev_data::Score::new_default_trust(),
-            Distrust => crev_data::Score::new_default_trust(),
-        }
-    }
-}
-
 fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
@@ -167,6 +153,17 @@ fn main() -> Result<()> {
         }
         opts::Command::Flag(args) => {
             review_crate(&args, TrustOrDistrust::Distrust)?;
+        }
+
+        opts::Command::Trust(args) => {
+            let local = Local::auto_open()?;
+            let passphrase = crev_common::read_passphrase()?;
+            local.build_trust_proof(args.pub_ids, passphrase, Trust)?;
+        }
+        opts::Command::Distrust(args) => {
+            let local = Local::auto_open()?;
+            let passphrase = crev_common::read_passphrase()?;
+            local.build_trust_proof(args.pub_ids, passphrase, Distrust)?;
         }
     }
 
