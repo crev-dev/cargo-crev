@@ -23,7 +23,7 @@ your other work, etc.
 * `from` - information about the entity creating the proof
   * `id` - ID of the entity
   * `url` - URL where entity publishes their Web of Trust
-* `trusted` - list of entites that are now trusted by the signer; same form as `from`
+* `ids` - list of ids that are now trusted by the signer; same form as `from`
 * `trust` - trust level; possible values:
   * `high` - "for most practically purposes, I trust this ID as much or more
              than myself" eg. "my dayjob ID", "known and reputatable expert",

@@ -277,7 +277,7 @@ impl Local {
             } else {
                 level::Level::Medium
             })
-            .trusted(pub_ids)
+            .ids(pub_ids)
             .build()
             .map_err(|e| format_err!("{}", e))?;
 

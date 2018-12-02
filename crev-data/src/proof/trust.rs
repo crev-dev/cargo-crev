@@ -22,7 +22,7 @@ pub struct Trust {
     )]
     pub date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
-    pub trusted: Vec<crate::PubId>,
+    pub ids: Vec<crate::PubId>,
     #[builder(default = "Default::default()")]
     pub trust: Level,
     #[builder(default = "proof::default_distrust_level()")]

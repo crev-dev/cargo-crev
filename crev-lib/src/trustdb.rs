@@ -141,11 +141,11 @@ impl TrustDB {
     fn add_trust(&mut self, trust: &proof::Trust) {
         let from = &trust.from;
         self.record_url_from_from_field(&trust.date_utc(), &from);
-        for to in &trust.trusted {
+        for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
         if self.trusted_ids.contains(&from.id) {
-            for to in &trust.trusted {
+            for to in &trust.ids {
                 self.record_url_from_to_field(&trust.date_utc(), &to)
             }
         }
