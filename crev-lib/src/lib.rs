@@ -179,7 +179,7 @@ pub fn generate_id() -> Result<()> {
     }
 
     eprintln!("");
-    let id = crev_data::id::OwnId::generate(url);
+    let id = crev_data::id::OwnId::generate(url.clone());
     eprintln!("CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = crev_common::read_new_passphrase()?;
@@ -195,6 +195,12 @@ pub fn generate_id() -> Result<()> {
 
     eprintln!("");
     println!("{}", locked);
+
+    let res = local.git_init_proof_dir(&url);
+    if let Err(e) = res {
+        eprintln!("");
+        eprintln!("Ignoring git initialization err: {}", e);
+    }
     Ok(())
 }
 

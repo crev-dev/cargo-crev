@@ -40,6 +40,35 @@ impl UserConfig {
     }
 }
 
+fn https_to_git_url(http_url: &str) -> Option<String> {
+    let split: Vec<_> = http_url.split('/').collect();
+
+    if split.len() != 5 {
+        return None;
+    }
+    if split[0] != "https:" && split[0] != "http:" {
+        return None;
+    }
+    let host = split[2];
+    let user = split[3];
+    let repo = split[4];
+    let suffix = if repo.ends_with(".git") { "" } else { ".git" };
+
+    Some(format!("git@{}:{}/{}{}", host, user, repo, suffix))
+}
+
+#[test]
+fn https_to_git_url_test() {
+    assert_eq!(
+        https_to_git_url("https://github.com/dpc/trust"),
+        Some("git@github.com:dpc/trust.git".into())
+    );
+    assert_eq!(
+        https_to_git_url("https://gitlab.com/hackeraudit/web.git"),
+        Some("git@gitlab.com:hackeraudit/web.git".into())
+    );
+}
+
 /// Local config stored in `~/.config/crev`
 pub struct Local {
     root_path: PathBuf,
@@ -79,7 +108,6 @@ impl Local {
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
-        fs::create_dir_all(repo.get_proofs_dir_path())?;
         Ok(repo)
     }
 
@@ -153,6 +181,17 @@ impl Local {
         id.save_to(&path)
     }
 
+    pub fn git_init_proof_dir(&self, git_url: &str) -> Result<()> {
+        let git_url = https_to_git_url(git_url).unwrap_or(git_url.to_owned());
+        let proof_dir = self.get_proofs_dir_path();
+        fs::create_dir_all(&proof_dir)?;
+
+        let repo = git2::Repository::init(&proof_dir)?;
+
+        let _remote = repo.remote("origin", &git_url)?;
+
+        Ok(())
+    }
     /*
     fn trust_proof_dir_path(&self) -> PathBuf {
         self.user_dir_path().join("trust")

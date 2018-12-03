@@ -127,7 +127,7 @@ impl LockedId {
             ref pass,
         } = self;
         {
-            if *version != 0 {
+            if *version != crev_data::current_version() {
                 bail!("Unsupported version");
             }
             use miscreant::aead::Algorithm;
