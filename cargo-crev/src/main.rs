@@ -124,7 +124,7 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
 
 fn main() -> Result<()> {
     let opts = opts::Opts::from_args();
-    let opts::MainCommand::Trust(command) = opts.command;
+    let opts::MainCommand::Crev(command) = opts.command;
     match command {
         opts::Command::Id(id) => match id.id_command {
             opts::IdCommand::Show => crev_lib::show_id()?,

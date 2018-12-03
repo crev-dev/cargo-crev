@@ -1,12 +1,12 @@
 [package]
 edition = '2018'
-name = "cargo-trust"
+name = "cargo-crev"
 version = "0.1.0"
 license = "MPL-2.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 
 [[bin]]
-name = "cargo-trust"
+name = "cargo-crev"
 path = "src/main.rs"
 
 [dependencies]

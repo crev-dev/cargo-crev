@@ -86,8 +86,8 @@ pub enum Command {
 /// as first argument, so we just have to match it here.
 #[derive(Debug, StructOpt, Clone)]
 pub enum MainCommand {
-    #[structopt(name = "trust")]
-    Trust(Command),
+    #[structopt(name = "crev")]
+    Crev(Command),
 }
 
 #[derive(Debug, StructOpt, Clone)]
