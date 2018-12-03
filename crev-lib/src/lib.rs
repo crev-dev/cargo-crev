@@ -162,22 +162,25 @@ where
 }
 
 pub fn generate_id() -> Result<()> {
-    eprintln!("Crev relies on personal, publicly accessible repositories to circulate proofs.");
-    eprintln!("Enter public git address you're planing to use for your CrevID.");
-    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
-    eprintln!("Changing it later will require manual config file editing.");
+    eprintln!("Enter an URL of a public git repository for your new CrevID.");
+    eprintln!("E.g.: https://github.com/<myusername>/crev-db");
+    eprintln!("or just your github username to generate one.");
     let mut url;
     loop {
-        url = rprompt::prompt_reply_stdout("Git URL: ")?;
+        url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
         eprintln!("");
-        eprintln!("You've entered: {}", url);
-        if crev_common::yes_or_no_was_y("Is this correct? (y/n) ")? {
+        if !url.contains("/") {
+            url = format!("https://github.com/{}/crev-db", url)
+        }
+        eprintln!("You're URL: {}", url);
+        if crev_common::yes_or_no_was_y("Is it correct? (y/n) ")? {
             break;
         }
     }
 
+    eprintln!("");
     let id = crev_data::id::OwnId::generate(url);
-    eprintln!("Your CrevID will be protected by a passphrase.");
+    eprintln!("CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = crev_common::read_new_passphrase()?;
     let locked = id::LockedId::from_own_id(&id, &passphrase)?;
@@ -186,11 +189,14 @@ pub fn generate_id() -> Result<()> {
     local.save_locked_id(&locked)?;
     local.save_current_id(&id)?;
 
+    eprintln!("");
     eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
     eprintln!("Make sure to back it up on another device, to prevent loosing it.");
 
+    eprintln!("");
     println!("{}", locked);
     Ok(())
 }
+
 #[cfg(test)]
 mod tests;

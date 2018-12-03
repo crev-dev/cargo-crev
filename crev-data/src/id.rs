@@ -1,6 +1,6 @@
+use crate::{Result, Url};
 use base64;
 use blake2;
-use crate::{Result, Url};
 use crev_common::serde::{as_base64, from_base64};
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
@@ -22,14 +22,11 @@ impl fmt::Display for IdType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(tag = "id_type")]
+#[serde(tag = "id-type")]
 pub enum Id {
     #[serde(rename = "crev")]
     Crev {
-        #[serde(
-            serialize_with = "as_base64",
-            deserialize_with = "from_base64"
-        )]
+        #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
         id: Vec<u8>,
     },
 }
