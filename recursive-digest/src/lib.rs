@@ -16,7 +16,7 @@ fn read_file_to_digest_input(path: &Path, input: &mut impl digest::Digest) -> st
     loop {
         let length = {
             let buffer = reader.fill_buf()?;
-            input.process(buffer);
+            input.input(buffer);
             buffer.len()
         };
         if length == 0 {
@@ -44,7 +44,7 @@ struct RecursiveDigest<Digest = blake2::Blake2b> {
 
 impl<Digest, OutputSize> RecursiveDigest<Digest>
 where
-    Digest: digest::Digest<OutputSize = OutputSize>,
+    Digest: digest::Digest<OutputSize = OutputSize> + digest::FixedOutput,
     OutputSize: generic_array::ArrayLength<u8>,
 {
     fn new<I>(root_path: PathBuf, rel_paths: I) -> Self
@@ -158,7 +158,7 @@ where
     }
 }
 
-pub fn get_recursive_digest_for_paths<Digest: digest::Digest, H>(
+pub fn get_recursive_digest_for_paths<Digest: digest::Digest + digest::FixedOutput, H>(
     root_path: &Path,
     paths: HashSet<PathBuf, H>,
 ) -> Result<Vec<u8>>
@@ -168,7 +168,10 @@ where
     RecursiveDigest::<Digest>::new(root_path.into(), paths).get_digest()
 }
 
-pub fn get_recursive_digest_for_dir<Digest: digest::Digest, H: std::hash::BuildHasher>(
+pub fn get_recursive_digest_for_dir<
+    Digest: digest::Digest + digest::FixedOutput,
+    H: std::hash::BuildHasher,
+>(
     root_path: &Path,
     rel_path_ignore_list: HashSet<PathBuf, H>,
 ) -> Result<Vec<u8>> {

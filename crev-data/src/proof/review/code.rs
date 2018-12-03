@@ -4,7 +4,7 @@ use crev_common;
 use serde_yaml;
 use std::{self, default::Default, fmt, path::PathBuf};
 
-use crev_common::serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed};
+use crev_common::serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
@@ -13,7 +13,7 @@ const END_BLOCK: &str = "-----END CODE REVIEW-----";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct File {
     pub path: PathBuf,
-    #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     pub digest: Vec<u8>,
     #[serde(rename = "digest-type")]
     #[serde(

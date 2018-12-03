@@ -2,7 +2,7 @@ use crate::{id, proof, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
-    serde::{as_hex, as_rfc3339_fixed, from_hex, from_rfc3339_fixed},
+    serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed},
 };
 use serde_yaml;
 use std::{default::Default, fmt};
@@ -35,7 +35,7 @@ pub struct Project {
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
     score: super::Score,
-    #[serde(serialize_with = "as_hex", deserialize_with = "from_hex")]
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     pub digest: Vec<u8>,
     #[serde(
         skip_serializing_if = "proof::equals_default_digest_type",

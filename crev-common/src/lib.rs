@@ -34,7 +34,7 @@ pub fn blake2sum_file(path: &Path) -> io::Result<Vec<u8>> {
 
 pub fn read_file_to_digest_input(
     path: &Path,
-    input: &mut dyn blake2::digest::Input,
+    input: &mut impl blake2::digest::Input,
 ) -> io::Result<()> {
     let file = fs::File::open(path)?;
 
@@ -43,7 +43,7 @@ pub fn read_file_to_digest_input(
     loop {
         let length = {
             let buffer = reader.fill_buf()?;
-            input.process(buffer);
+            input.input(buffer);
             buffer.len()
         };
         if length == 0 {
