@@ -163,6 +163,7 @@ impl fmt::Display for PubId {
 }
 */
 
+/// A `PubId` with the corresponding secret key
 #[derive(Debug)]
 pub struct OwnId {
     pub id: PubId,

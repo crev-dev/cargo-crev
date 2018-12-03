@@ -68,6 +68,9 @@ impl UrlInfo {
     }
 }
 
+/// In memory database tracking known trust relationships
+///
+/// After population, used for calculating the effcttive trust set.
 pub struct TrustDB {
     #[allow(unused)]
     trust_id_to_id: HashMap<Id, HashMap<Id, TrustInfo>>, // who -(trusts)-> whom

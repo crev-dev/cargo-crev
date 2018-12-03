@@ -1,3 +1,5 @@
+use std::ffi::OsString;
+
 #[derive(Debug, StructOpt, Clone)]
 pub struct Id {
     #[structopt(subcommand)]
@@ -39,6 +41,23 @@ pub struct Trust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum Db {
+    #[structopt(name = "git")]
+    /// Run git commands in your own proof repository
+    Git(Git),
+    #[structopt(name = "fetch")]
+    /// Update proof database by fetching updates from trusted sources
+    Fetch,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Git {
+    /// Arguments to git command
+    #[structopt(parse(from_os_str))]
+    pub args: Vec<OsString>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Verify review coverage of the project
     #[structopt(name = "verify")]
@@ -58,6 +77,9 @@ pub enum Command {
     /// Distrust another user
     #[structopt(name = "distrust")]
     Distrust(Trust),
+    /// Trust Database operations
+    #[structopt(name = "db")]
+    Db(Db),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

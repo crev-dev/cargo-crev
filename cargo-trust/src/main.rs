@@ -154,7 +154,6 @@ fn main() -> Result<()> {
         opts::Command::Flag(args) => {
             review_crate(&args, TrustOrDistrust::Distrust)?;
         }
-
         opts::Command::Trust(args) => {
             let local = Local::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
@@ -165,6 +164,17 @@ fn main() -> Result<()> {
             let passphrase = crev_common::read_passphrase()?;
             local.build_trust_proof(args.pub_ids, passphrase, Distrust)?;
         }
+        opts::Command::Db(cmd) => match cmd {
+            opts::Db::Git(git) => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(git.args)?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
+            opts::Db::Fetch => {
+                let local = Local::auto_open()?;
+                local.fetch_updates()?;
+            }
+        },
     }
 
     Ok(())

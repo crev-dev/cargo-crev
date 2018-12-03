@@ -79,6 +79,7 @@ impl Local {
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
+        fs::create_dir_all(repo.get_proofs_dir_path())?;
         Ok(repo)
     }
 
@@ -308,6 +309,7 @@ impl Local {
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let params = Default::default();
         let user_config = self.load_user_config()?;
+        let user_id = user_config.get_current_userid()?;
 
         let mut something_was_fetched = true;
         while something_was_fetched {
@@ -321,8 +323,9 @@ impl Local {
                 } else {
                     already_fetched.insert(id.to_owned());
                 }
-
-                if let Some(url) = db.lookup_url(id) {
+                if user_id == id {
+                    continue;
+                } else if let Some(url) = db.lookup_url(id) {
                     eprintln!("Fetching {}", url);
                     let success =
                         util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
