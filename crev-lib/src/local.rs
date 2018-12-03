@@ -449,6 +449,7 @@ impl ProofStore for Local {
             .open(path)?;
 
         file.write_all(proof.to_string().as_bytes())?;
+        file.write_all(b"\n")?;
         file.flush()?;
 
         Ok(())
