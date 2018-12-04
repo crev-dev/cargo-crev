@@ -60,7 +60,7 @@ impl TrustOrDistrust {
         use self::TrustOrDistrust::*;
         match self {
             Trust => crev_data::Score::new_default_trust(),
-            Distrust => crev_data::Score::new_default_trust(),
+            Distrust => crev_data::Score::new_default_distrust(),
         }
     }
 }
