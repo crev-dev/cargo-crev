@@ -16,6 +16,7 @@ pub mod trustdb;
 pub mod util;
 
 pub use self::local::Local;
+use crev_data::Digest;
 use crev_data::Id;
 use std::convert::AsRef;
 use std::{
@@ -37,7 +38,7 @@ pub trait ProofStore {
 /// Not named `Result` to avoid confusion with `Result` type.
 pub enum VerificationStatus {
     Trusted,
-    NotTrusted,
+    Untrusted,
     Distrusted,
 }
 
@@ -67,16 +68,16 @@ impl TrustOrDistrust {
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VerificationStatus::Trusted => f.write_str("trusted"),
-            VerificationStatus::NotTrusted => f.write_str("not trusted"),
-            VerificationStatus::Distrusted => f.write_str("distrusted"),
+            VerificationStatus::Trusted => f.pad("trusted"),
+            VerificationStatus::Untrusted => f.pad("untrusted"),
+            VerificationStatus::Distrusted => f.pad("distrusted"),
         }
     }
 }
 
-pub fn dir_verify<H1, H2>(
+pub fn dir_or_git_repo_verify<H1, H2>(
     path: &Path,
-    ignore_list: HashSet<PathBuf, H1>,
+    ignore_list: &HashSet<PathBuf, H1>,
     db: &trustdb::TrustDB,
     trusted_set: &HashSet<Id, H2>,
 ) -> Result<crate::VerificationStatus>
@@ -87,12 +88,41 @@ where
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
+        Digest(crev_recursive_digest::get_recursive_digest_for_dir::<
+            blake2::Blake2b,
+            H1,
+        >(path, ignore_list)?)
+    };
+    Ok(db.verify_digest(&digest, trusted_set))
+}
+
+pub fn dir_verify<H1, H2>(
+    path: &Path,
+    ignore_list: &HashSet<PathBuf, H1>,
+    db: &trustdb::TrustDB,
+    trusted_set: &HashSet<Id, H2>,
+) -> Result<crate::VerificationStatus>
+where
+    H1: std::hash::BuildHasher + std::default::Default,
+    H2: std::hash::BuildHasher + std::default::Default,
+{
+    let digest = Digest(crev_recursive_digest::get_recursive_digest_for_dir::<
+        blake2::Blake2b,
+        H1,
+    >(path, ignore_list)?);
+    Ok(db.verify_digest(&digest, trusted_set))
+}
+
+pub fn get_dir_digest<H1>(path: &Path, ignore_list: &HashSet<PathBuf, H1>) -> Result<Digest>
+where
+    H1: std::hash::BuildHasher + std::default::Default,
+{
+    Ok(Digest(
         crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H1>(
             path,
             ignore_list,
-        )?
-    };
-    Ok(db.verify_digest(&digest, trusted_set))
+        )?,
+    ))
 }
 
 pub fn show_id() -> Result<()> {
@@ -105,8 +135,8 @@ pub fn show_id() -> Result<()> {
 
 pub fn get_recursive_digest_for_git_dir<H>(
     root_path: &Path,
-    ignore_list: HashSet<PathBuf, H>,
-) -> Result<Vec<u8>>
+    ignore_list: &HashSet<PathBuf, H>,
+) -> Result<Digest>
 where
     H: std::hash::BuildHasher + std::default::Default,
 {
@@ -130,10 +160,11 @@ where
         paths.insert(entry_path);
     }
 
-    Ok(crev_recursive_digest::get_recursive_digest_for_paths::<
-        blake2::Blake2b,
-        H,
-    >(root_path, paths)?)
+    Ok(Digest(
+        crev_recursive_digest::get_recursive_digest_for_paths::<blake2::Blake2b, H>(
+            root_path, paths,
+        )?,
+    ))
 }
 
 pub fn get_recursive_digest_for_paths<H>(
@@ -151,15 +182,17 @@ where
 
 pub fn get_recursive_digest_for_dir<H>(
     root_path: &Path,
-    rel_path_ignore_list: HashSet<PathBuf, H>,
-) -> Result<Vec<u8>>
+    rel_path_ignore_list: &HashSet<PathBuf, H>,
+) -> Result<Digest>
 where
     H: std::hash::BuildHasher,
 {
-    Ok(crev_recursive_digest::get_recursive_digest_for_dir::<
-        blake2::Blake2b,
-        H,
-    >(root_path, rel_path_ignore_list)?)
+    Ok(Digest(
+        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H>(
+            root_path,
+            rel_path_ignore_list,
+        )?,
+    ))
 }
 
 pub fn generate_id() -> Result<()> {

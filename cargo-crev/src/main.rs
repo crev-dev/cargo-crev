@@ -90,6 +90,12 @@ impl Repo {
     }
 }
 
+fn cargo_ignore_list() -> HashSet<PathBuf> {
+    let mut ignore_list = HashSet::new();
+    ignore_list.insert(PathBuf::from(".cargo-ok"));
+    ignore_list
+}
+
 fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
@@ -97,16 +103,14 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let crev_repo = crev_lib::repo::Repo::open(&pkg_dir)?;
     let project_config = crev_repo.try_load_project_config()?;
 
-    let mut ignore_list = HashSet::new();
-    ignore_list.insert(PathBuf::from(".cargo-ok"));
-    let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
+    let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_ignore_list())?;
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_current_unlocked_id(&passphrase)?;
 
     let review = crev_data::proof::review::ProjectBuilder::default()
         .from(id.id.to_owned())
         .project(project_config.map(|c| c.project))
-        .digest(digest)
+        .digest(digest.0)
         .score(trust.to_default_score())
         .build()
         .map_err(|e| format_err!("{}", e))?;
@@ -138,14 +142,12 @@ fn main() -> Result<()> {
             let params = Default::default();
             let (db, trust_set) = local.load_db(&params)?;
 
-            let mut ignore_list = HashSet::new();
-            ignore_list.insert(PathBuf::from(".cargo-ok"));
+            let ignore_list = cargo_ignore_list();
             repo.for_every_dependency_dir(|_, path| {
-                print!("{} ", path.display());
-                println!(
-                    "{}",
-                    crev_lib::dir_verify(path, ignore_list.clone(), &db, &trust_set)?.to_string()
-                );
+                let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
+                let digest_short: String = format!("{}", digest).chars().take(8).collect();
+                let result = db.verify_digest(&digest, &trust_set);
+                println!("{:9} {} {:40}", result, digest_short, path.display(),);
 
                 Ok(())
             })?;

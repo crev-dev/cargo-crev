@@ -173,7 +173,7 @@ pub fn get_recursive_digest_for_dir<
     H: std::hash::BuildHasher,
 >(
     root_path: &Path,
-    rel_path_ignore_list: HashSet<PathBuf, H>,
+    rel_path_ignore_list: &HashSet<PathBuf, H>,
 ) -> Result<Vec<u8>> {
     let mut hasher = RecursiveDigest::<Digest>::new(root_path.into(), None);
 

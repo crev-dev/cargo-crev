@@ -59,7 +59,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Project::Digest(digest) => {
             let mut repo = Repo::auto_open()?;
-            println!("{}", hex::encode(repo.project_digest(digest.allow_dirty)?));
+            println!("{}", repo.project_digest(digest.allow_dirty)?);
         }
     },
     opts::Command::Status => {

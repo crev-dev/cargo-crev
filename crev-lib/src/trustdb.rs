@@ -4,7 +4,7 @@ use crev_data::{
     self,
     level::Level,
     proof::{self, review, Content, ContentCommon},
-    Id,
+    Digest, Id,
 };
 use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
@@ -154,11 +154,15 @@ impl TrustDB {
         }
     }
 
-    fn get_reviews_of(&self, digest: &[u8]) -> Option<&HashMap<Id, ReviewInfo>> {
-        self.digest_to_reviews.get(digest)
+    fn get_reviews_of(&self, digest: &Digest) -> Option<&HashMap<Id, ReviewInfo>> {
+        self.digest_to_reviews.get(&digest.0)
     }
 
-    pub fn verify_digest<H>(&self, digest: &[u8], trust_set: &HashSet<Id, H>) -> VerificationStatus
+    pub fn verify_digest<H>(
+        &self,
+        digest: &Digest,
+        trust_set: &HashSet<Id, H>,
+    ) -> VerificationStatus
     where
         H: std::hash::BuildHasher + std::default::Default,
     {
@@ -182,10 +186,10 @@ impl TrustDB {
             } else if trust_count > 0 {
                 VerificationStatus::Trusted
             } else {
-                VerificationStatus::NotTrusted
+                VerificationStatus::Untrusted
             }
         } else {
-            VerificationStatus::NotTrusted
+            VerificationStatus::Untrusted
         }
     }
 
@@ -289,7 +293,7 @@ impl TrustDB {
 
     // Oh god, please someone verify this :D
     pub fn calculate_trust_set(&self, for_id: Id, params: &TrustDistanceParams) -> HashSet<Id> {
-        #[derive(PartialOrd, Ord, Eq, PartialEq, Clone)]
+        #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
         struct Visit {
             distance: u64,
             id: Id,

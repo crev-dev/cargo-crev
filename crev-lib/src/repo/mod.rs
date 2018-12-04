@@ -1,6 +1,7 @@
 use crate::ProofStore;
 use crate::{local::Local, util, Result};
 use crev_data::proof;
+use crev_data::Digest;
 use git2;
 use serde_yaml;
 use std::{
@@ -163,11 +164,11 @@ impl Repo {
         let params = Default::default();
         let (db, trusted_set) = local.load_db(&params)?;
         let ignore_list = HashSet::new();
-        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
+        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         Ok(db.verify_digest(&digest, &trusted_set))
     }
 
-    pub fn project_digest(&mut self, allow_dirty: bool) -> Result<Vec<u8>> {
+    pub fn project_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
@@ -175,7 +176,7 @@ impl Repo {
         let ignore_list = HashSet::new();
         Ok(crate::get_recursive_digest_for_git_dir(
             &self.root_dir,
-            ignore_list,
+            &ignore_list,
         )?)
     }
 
@@ -237,14 +238,14 @@ impl Repo {
         let revision = self.read_revision()?;
 
         let ignore_list = HashSet::new();
-        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
+        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         let id = local.read_current_unlocked_id(&passphrase)?;
 
         let review = proof::review::ProjectBuilder::default()
             .from(id.id.to_owned())
             .revision(Some(revision))
             .project(project_config.map(|c| c.project))
-            .digest(digest)
+            .digest(digest.0)
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
