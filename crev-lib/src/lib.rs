@@ -17,6 +17,7 @@ pub mod util;
 
 pub use self::local::Local;
 use crev_data::Id;
+use std::convert::AsRef;
 use std::{
     collections::HashSet,
     fmt,
@@ -96,9 +97,9 @@ where
 
 pub fn show_id() -> Result<()> {
     let local = Local::auto_open()?;
-    let id = local.read_locked_id()?;
+    let id = local.read_current_locked_id()?;
     let id = id.to_pubid();
-    print!("{}", id.id);
+    println!("{}", id.id);
     Ok(())
 }
 
@@ -185,9 +186,9 @@ pub fn generate_id() -> Result<()> {
     let passphrase = crev_common::read_new_passphrase()?;
     let locked = id::LockedId::from_own_id(&id, &passphrase)?;
 
-    let local = Local::auto_create()?;
+    let local = Local::auto_create_or_open()?;
     local.save_locked_id(&locked)?;
-    local.save_current_id(&id)?;
+    local.save_current_id(id.as_ref())?;
 
     eprintln!("");
     eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
@@ -200,6 +201,22 @@ pub fn generate_id() -> Result<()> {
     if let Err(e) = res {
         eprintln!("");
         eprintln!("Ignoring git initialization err: {}", e);
+    }
+    Ok(())
+}
+
+pub fn switch_id(id_str: &str) -> Result<()> {
+    let id: Id = Id::crevid_from_str(id_str)?;
+    let local = Local::auto_open()?;
+    local.save_current_id(&id)?;
+
+    Ok(())
+}
+
+pub fn list_ids() -> Result<()> {
+    let local = Local::auto_open()?;
+    for id in local.list_ids()? {
+        println!("{}", id);
     }
     Ok(())
 }

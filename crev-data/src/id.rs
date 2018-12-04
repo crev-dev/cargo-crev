@@ -21,6 +21,10 @@ impl fmt::Display for IdType {
     }
 }
 
+/// An Id supported by `crev` system
+///
+/// Right now it's only native CrevID, but in future at least GPG
+/// should be supported.
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "id-type")]
 pub enum Id {
@@ -32,7 +36,7 @@ pub enum Id {
 }
 
 impl Id {
-    pub fn new_crevid_from_string(&self, s: &str) -> Result<Self> {
+    pub fn crevid_from_str(s: &str) -> Result<Self> {
         let bytes = base64::decode_config(s, base64::URL_SAFE)?;
 
         Ok(Id::Crev { id: bytes })
@@ -168,6 +172,18 @@ impl fmt::Display for PubId {
 pub struct OwnId {
     pub id: PubId,
     pub keypair: ed25519_dalek::Keypair,
+}
+
+impl AsRef<Id> for OwnId {
+    fn as_ref(&self) -> &Id {
+        &self.id.id
+    }
+}
+
+impl AsRef<PubId> for OwnId {
+    fn as_ref(&self) -> &PubId {
+        &self.id
+    }
 }
 
 impl OwnId {

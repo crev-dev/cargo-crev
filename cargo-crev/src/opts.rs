@@ -14,6 +14,17 @@ pub enum IdCommand {
     #[structopt(name = "show")]
     /// Show CrevID information
     Show,
+    #[structopt(name = "switch")]
+    /// Switch to a different CrevID
+    Switch(IdSwitch),
+    #[structopt(name = "list")]
+    /// List available CrevIDs
+    List,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct IdSwitch {
+    pub id: String,
 }
 
 #[derive(Debug, StructOpt, Clone)]

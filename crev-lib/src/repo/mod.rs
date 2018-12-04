@@ -238,7 +238,7 @@ impl Repo {
 
         let ignore_list = HashSet::new();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, ignore_list)?;
-        let id = local.read_unlocked_id(&passphrase)?;
+        let id = local.read_current_unlocked_id(&passphrase)?;
 
         let review = proof::review::ProjectBuilder::default()
             .from(id.id.to_owned())
@@ -267,7 +267,7 @@ impl Repo {
         let revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
-        let id = local.read_unlocked_id(&passphrase)?;
+        let id = local.read_current_unlocked_id(&passphrase)?;
 
         let review = proof::review::CodeBuilder::default()
             .from(id.id.to_owned())

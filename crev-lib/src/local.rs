@@ -111,13 +111,28 @@ impl Local {
         Ok(repo)
     }
 
+    pub fn auto_create_or_open() -> Result<Self> {
+        let repo = Self::new()?;
+        let config_path = repo.user_config_path();
+        if config_path.exists() {
+            Self::auto_open()
+        } else {
+            Self::auto_create()
+        }
+    }
+
     pub fn read_current_id(&self) -> Result<crev_data::Id> {
         Ok(self.load_user_config()?.get_current_userid()?.to_owned())
     }
 
-    pub fn save_current_id(&self, id: &OwnId) -> Result<()> {
+    pub fn save_current_id(&self, id: &Id) -> Result<()> {
+        let path = self.id_path(id);
+        if !path.exists() {
+            bail!("Id file not found.");
+        }
+
         let mut config = self.load_user_config()?;
-        config.current_id = Some(id.id.id.clone());
+        config.current_id = Some(id.clone());
         self.store_user_config(&config)?;
 
         Ok(())
@@ -127,13 +142,28 @@ impl Local {
         self.root_path.clone()
     }
 
+    pub fn user_ids_path(&self) -> PathBuf {
+        self.user_dir_path().join("ids")
+    }
+
     fn id_path(&self, id: &Id) -> PathBuf {
         match id {
-            Id::Crev { id } => self.user_dir_path().join("ids").join(format!(
+            Id::Crev { id } => self.user_ids_path().join(format!(
                 "{}.yaml",
                 base64::encode_config(id, base64::URL_SAFE)
             )),
         }
+    }
+
+    pub fn list_ids(&self) -> Result<Vec<Id>> {
+        let ids_path = self.user_ids_path();
+        let mut ids = vec![];
+        for dir_entry in std::fs::read_dir(&ids_path)? {
+            let locked_id = LockedId::read_from_yaml_file(&dir_entry?.path())?;
+            ids.push(locked_id.to_pubid().id)
+        }
+
+        Ok(ids)
     }
 
     fn user_config_path(&self) -> PathBuf {
@@ -160,18 +190,30 @@ impl Local {
         util::store_str_to_file(&path, &config_str)
     }
 
-    pub fn read_locked_id(&self) -> Result<LockedId> {
+    pub fn get_current_userid(&self) -> Result<Id> {
         let config = self.load_user_config()?;
-        let current_id = &config
+        Ok(config
             .current_id
-            .ok_or_else(|| format_err!("Current id not set"))?;
-        let path = self.id_path(current_id);
+            .ok_or_else(|| format_err!("Current id not set"))?)
+    }
+
+    pub fn read_locked_id(&self, id: &Id) -> Result<LockedId> {
+        let path = self.id_path(&id);
         LockedId::read_from_yaml_file(&path)
     }
 
-    pub fn read_unlocked_id(&self, passphrase: &str) -> Result<OwnId> {
-        let locked = self.read_locked_id()?;
+    pub fn read_current_locked_id(&self) -> Result<LockedId> {
+        let current_id = self.get_current_userid()?;
+        self.read_locked_id(&current_id)
+    }
 
+    pub fn read_current_unlocked_id(&self, passphrase: &str) -> Result<OwnId> {
+        let current_id = self.get_current_userid()?;
+        self.read_unlocked_id(&current_id, passphrase)
+    }
+
+    pub fn read_unlocked_id(&self, id: &Id, passphrase: &str) -> Result<OwnId> {
+        let locked = self.read_locked_id(id)?;
         locked.to_unlocked(passphrase)
     }
 
@@ -297,7 +339,7 @@ impl Local {
         let mut trustdb = trustdb::TrustDB::new();
         trustdb.import_from_iter(self.proofs_iter());
 
-        let own_id = self.read_unlocked_id(&passphrase)?;
+        let own_id = self.read_current_unlocked_id(&passphrase)?;
 
         let from = own_id.as_pubid();
 

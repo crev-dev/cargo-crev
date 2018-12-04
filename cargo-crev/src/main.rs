@@ -101,7 +101,7 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, ignore_list)?;
     let passphrase = crev_common::read_passphrase()?;
-    let id = local.read_unlocked_id(&passphrase)?;
+    let id = local.read_current_unlocked_id(&passphrase)?;
 
     let review = crev_data::proof::review::ProjectBuilder::default()
         .from(id.id.to_owned())
@@ -129,6 +129,8 @@ fn main() -> Result<()> {
         opts::Command::Id(id) => match id.id_command {
             opts::IdCommand::Show => crev_lib::show_id()?,
             opts::IdCommand::Gen => crev_lib::generate_id()?,
+            opts::IdCommand::Switch(args) => crev_lib::switch_id(&args.id)?,
+            opts::IdCommand::List => crev_lib::list_ids()?,
         },
         opts::Command::Verify(_verify_opts) => {
             let local = crev_lib::Local::auto_open()?;
