@@ -182,7 +182,7 @@ impl TrustDB {
             }
 
             if distrust_count > 0 {
-                VerificationStatus::Distrusted
+                VerificationStatus::Flagged
             } else if trust_count > 0 {
                 VerificationStatus::Trusted
             } else {

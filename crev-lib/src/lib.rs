@@ -39,7 +39,7 @@ pub trait ProofStore {
 pub enum VerificationStatus {
     Trusted,
     Untrusted,
-    Distrusted,
+    Flagged,
 }
 
 #[derive(Copy, Clone)]
@@ -70,7 +70,7 @@ impl fmt::Display for VerificationStatus {
         match self {
             VerificationStatus::Trusted => f.pad("trusted"),
             VerificationStatus::Untrusted => f.pad("untrusted"),
-            VerificationStatus::Distrusted => f.pad("distrusted"),
+            VerificationStatus::Flagged => f.pad("flagged"),
         }
     }
 }
