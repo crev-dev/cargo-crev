@@ -196,9 +196,9 @@ where
 }
 
 pub fn generate_id() -> Result<()> {
-    eprintln!("Enter an URL of a public git repository for your new CrevID.");
+    eprintln!("Enter a public URL of a git repository for publishing your CrevID proofs.");
     eprintln!("E.g.: https://github.com/<myusername>/crev-db");
-    eprintln!("or just your github username to generate one.");
+    eprintln!("or just your github username to generate it.");
     let mut url;
     loop {
         url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
@@ -206,10 +206,19 @@ pub fn generate_id() -> Result<()> {
         if !url.contains("/") {
             url = format!("https://github.com/{}/crev-db", url)
         }
-        eprintln!("You're URL: {}", url);
+        eprintln!("Your URL: {}", url);
+        eprintln!("It's recomended that it exist, and is initialized upfront.");
+        eprintln!("Open URL and check.");
         if crev_common::yes_or_no_was_y("Is it correct? (y/n) ")? {
             break;
         }
+    }
+
+    let local = Local::auto_create_or_open()?;
+    let res = local.git_init_proof_dir(&url);
+    if let Err(e) = res {
+        eprintln!("");
+        eprintln!("Ignoring git initialization err: {}", e);
     }
 
     eprintln!("");
@@ -219,7 +228,6 @@ pub fn generate_id() -> Result<()> {
     let passphrase = crev_common::read_new_passphrase()?;
     let locked = id::LockedId::from_own_id(&id, &passphrase)?;
 
-    let local = Local::auto_create_or_open()?;
     local.save_locked_id(&locked)?;
     local.save_current_id(id.as_ref())?;
 
@@ -230,11 +238,6 @@ pub fn generate_id() -> Result<()> {
     eprintln!("");
     println!("{}", locked);
 
-    let res = local.git_init_proof_dir(&url);
-    if let Err(e) = res {
-        eprintln!("");
-        eprintln!("Ignoring git initialization err: {}", e);
-    }
     Ok(())
 }
 

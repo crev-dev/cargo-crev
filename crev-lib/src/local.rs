@@ -223,14 +223,34 @@ impl Local {
         id.save_to(&path)
     }
 
-    pub fn git_init_proof_dir(&self, git_url: &str) -> Result<()> {
-        let git_url = https_to_git_url(git_url).unwrap_or(git_url.to_owned());
+    pub fn git_init_proof_dir(&self, git_https_url: &str) -> Result<()> {
+        let git_url = https_to_git_url(git_https_url);
+
+        eprintln!("");
         let proof_dir = self.get_proofs_dir_path();
-        fs::create_dir_all(&proof_dir)?;
+        match git2::Repository::clone(git_https_url, &proof_dir) {
+            Ok(repo) => {
+                eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
+                if let Some(git_url) = git_url {
+                    repo.remote_set_url("origin", &git_url)?;
+                }
+            }
+            Err(e) => {
+                eprintln!("Couldn't clone {}: {}", git_https_url, e);
+                fs::create_dir_all(&proof_dir)?;
 
-        let repo = git2::Repository::init(&proof_dir)?;
-
-        let _remote = repo.remote("origin", &git_url)?;
+                let repo = git2::Repository::init(&proof_dir)?;
+                eprintln!(
+                    "Empty git repository initialized in {}",
+                    proof_dir.display()
+                );
+                if let Some(git_url) = git_url {
+                    repo.remote_set_url("origin", &git_url)?;
+                } else {
+                    repo.remote_set_url("origin", &git_https_url)?;
+                }
+            }
+        }
 
         Ok(())
     }
