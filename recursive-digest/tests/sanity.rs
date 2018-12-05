@@ -1,5 +1,5 @@
 use digest::Digest;
-use std::collections::HashSet;
+    use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::io::Write;
@@ -29,10 +29,10 @@ fn sanity() -> io::Result<()> {
 
     let dir_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
         &dir_path,
-        empty.clone(),
+        &empty.clone(),
     )?;
     let file_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
-        &file_path, empty,
+        &file_path, &empty,
     )?;
 
     let mut hasher = blake2::Blake2b::new();

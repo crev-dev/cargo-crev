@@ -9,13 +9,13 @@ name = "crev"
 path = "src/main.rs"
 
 [dependencies]
-failure = "*"
-quicli = "*"
-rpassword = "*"
-rprompt = "*"
-structopt = "*"
-common_failures = "*"
+failure = "0.1"
+quicli = "0.3"
+rpassword = "2"
+rprompt = "1"
+structopt = "0.2"
+common_failures = "0.1"
 crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }
 crev-common = { path = "../crev-common" }
-hex = "*"
+hex = "0.3"
