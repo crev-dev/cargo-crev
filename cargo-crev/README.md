@@ -9,6 +9,18 @@ cargo packages, and share
 `cargo-crev` is work in progress. Please report any problems, and we're
 always happy to hear your feedback.
 
+### Dependencies
+
+```
+sudo apt-get update
+sudo apt-get upgrade
+
+# openssl deps
+sudo apt-get install openssl libssl-dev
+
+# argonautica deps
+sudo apt-get install clang llvm-dev libclang-dev
+```
 
 ```
 cargo install --path . # to install
