@@ -6,7 +6,7 @@ use crate::{
 use std::path::PathBuf;
 
 #[test]
-fn signed_parse() -> Result<()> {
+pub fn signed_parse() -> Result<()> {
     let s = r#"
 -----BEGIN CODE REVIEW-----
 foo
@@ -23,7 +23,7 @@ sig
 }
 
 #[test]
-fn signed_parse_multiple() -> Result<()> {
+pub fn signed_parse_multiple() -> Result<()> {
     let s = r#"
 -----BEGIN CODE REVIEW-----
 foo1
@@ -47,7 +47,7 @@ sig2
 }
 
 #[test]
-fn signed_parse_multiple_newlines() -> Result<()> {
+pub fn signed_parse_multiple_newlines() -> Result<()> {
     let s = r#"
 
 -----BEGIN CODE REVIEW-----
@@ -72,7 +72,7 @@ sig2
     Ok(())
 }
 
-fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
+pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     let id = OwnId::generate("https://mypage.com/trust.git".into());
 
     //let mut from = crate::PubId::new(&id.id, "https://github.com/someone/crev-trust".into());
@@ -105,7 +105,7 @@ fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
 }
 
 #[test]
-fn sign_proof_review() -> Result<()> {
+pub fn sign_proof_review() -> Result<()> {
     let (_id, proof) = generate_id_and_proof()?;
 
     proof.verify()?;
@@ -115,7 +115,7 @@ fn sign_proof_review() -> Result<()> {
 }
 
 #[test]
-fn verify_works() -> Result<()> {
+pub fn verify_works() -> Result<()> {
     let (_id, mut proof) = generate_id_and_proof()?;
 
     proof.body += "\n";

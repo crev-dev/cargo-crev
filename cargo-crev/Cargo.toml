@@ -10,11 +10,11 @@ name = "cargo-crev"
 path = "src/main.rs"
 
 [dependencies]
-failure = "*"
-quicli = "*"
-structopt = "*"
-common_failures = "*"
-cargo = "*"
+failure = "0.1"
+quicli = "0.3"
+structopt = "0.2"
+common_failures = "0.1"
+cargo = "0.31"
 cargo-clone = { git = "https://github.com/dpc/cargo-clone" }
 crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }

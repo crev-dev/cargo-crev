@@ -35,5 +35,3 @@ pub fn current_version() -> i64 {
 
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod tests;

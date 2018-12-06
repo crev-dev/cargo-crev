@@ -5,10 +5,10 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 edition = "2018"
 
 [dependencies]
-walkdir = "*"
-blake2 = "*"
-digest = "*"
-generic-array = "*"
+walkdir = "2"
+blake2 = "0.8"
+digest = "0.8"
+generic-array = "0.12"
 
 [dev-dependencies]
 tempdir = "*"
