@@ -11,6 +11,7 @@ const BEGIN_BLOCK: &str = "-----BEGIN CREV TRUST -----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV TRUST SIGNATURE-----";
 const END_BLOCK: &str = "-----END CREV TRUST-----";
 
+/// Body of a Trust Proof
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
     #[builder(default = "crate::current_version()")]
@@ -36,7 +37,66 @@ pub struct Trust {
     comment: String,
 }
 
+/// Like `Trust` but serializes for interactive editing
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TrustDraft {
+    #[serde(skip_serializing, default = "crate::current_version")]
+    version: i64,
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    pub date: chrono::DateTime<FixedOffset>,
+    pub from: crate::PubId,
+    pub ids: Vec<crate::PubId>,
+    #[serde(
+        skip_serializing_if = "proof::equals_none_level",
+        default = "proof::none_level"
+    )]
+    pub trust: Level,
+    #[serde(
+        skip_serializing_if = "proof::equals_none_level",
+        default = "proof::none_level"
+    )]
+    pub distrust: Level,
+    #[serde(default = "Default::default")]
+    comment: String,
+}
+
+impl From<Trust> for TrustDraft {
+    fn from(trust: Trust) -> Self {
+        TrustDraft {
+            version: trust.version,
+            date: trust.date,
+            from: trust.from,
+            ids: trust.ids,
+            trust: trust.trust,
+            distrust: trust.distrust,
+            comment: trust.comment,
+        }
+    }
+}
+
+impl From<TrustDraft> for Trust {
+    fn from(trust: TrustDraft) -> Self {
+        Trust {
+            version: trust.version,
+            date: trust.date,
+            from: trust.from,
+            ids: trust.ids,
+            trust: trust.trust,
+            distrust: trust.distrust,
+            comment: trust.comment,
+        }
+    }
+}
 impl fmt::Display for Trust {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        crev_common::serde::write_as_headerless_yaml(self, f)
+    }
+}
+
+impl fmt::Display for TrustDraft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
     }
@@ -65,5 +125,11 @@ impl Trust {
 
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
         super::Content::from(self).sign_by(id)
+    }
+}
+
+impl TrustDraft {
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
     }
 }

@@ -88,7 +88,7 @@ pub fn edit_proof_content_iteractively(
     content: &proof::Content,
     type_: proof::ProofType,
 ) -> Result<proof::Content> {
-    let mut text = content.to_string();
+    let mut text = content.to_draft_string();
 
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
@@ -96,7 +96,7 @@ pub fn edit_proof_content_iteractively(
     }
     loop {
         text = edit_text_iteractively(text)?;
-        match proof::Content::parse(&text, type_) {
+        match proof::Content::parse_draft(&text, type_) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
                 if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {

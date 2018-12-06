@@ -11,6 +11,7 @@ const BEGIN_BLOCK: &str = "-----BEGIN CREV PROJECT REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PROJECT REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CREV PROJECT REVIEW-----";
 
+/// Body of a Project Review Proof
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
@@ -46,6 +47,67 @@ pub struct Project {
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
+}
+
+/// Like `Project` but serializes for interactive editing
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProjectDraft {
+    #[serde(skip_serializing, default = "crate::current_version")]
+    version: i64,
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    date: chrono::DateTime<FixedOffset>,
+    pub from: crate::PubId,
+    #[serde(rename = "project")]
+    #[serde(skip_serializing_if = "proof::equals_default")]
+    pub project: Option<proof::Project>,
+    #[serde(flatten)]
+    pub revision: Option<proof::Revision>,
+    #[serde(flatten)]
+    score: super::Score,
+    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+    pub digest: Vec<u8>,
+    #[serde(
+        skip_serializing_if = "proof::equals_default_digest_type",
+        default = "proof::default_digest_type"
+    )]
+    pub digest_type: String,
+    #[serde(default = "Default::default")]
+    comment: String,
+}
+
+impl From<Project> for ProjectDraft {
+    fn from(project: Project) -> Self {
+        ProjectDraft {
+            version: project.version,
+            date: project.date,
+            from: project.from,
+            project: project.project,
+            revision: project.revision,
+            score: project.score,
+            digest: project.digest,
+            digest_type: project.digest_type,
+            comment: project.comment,
+        }
+    }
+}
+
+impl From<ProjectDraft> for Project {
+    fn from(project: ProjectDraft) -> Self {
+        Project {
+            version: project.version,
+            date: project.date,
+            from: project.from,
+            project: project.project,
+            revision: project.revision,
+            score: project.score,
+            digest: project.digest,
+            digest_type: project.digest_type,
+            comment: project.comment,
+        }
+    }
 }
 
 impl Project {
@@ -84,17 +146,20 @@ impl Project {
     }
 }
 
+impl ProjectDraft {
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
+}
+
 impl fmt::Display for Project {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let yaml_document = serde_yaml::to_string(self).map_err(|_| fmt::Error)?;
-        let mut lines = yaml_document.lines();
-        let dropped_header = lines.next();
-        assert_eq!(dropped_header, Some("---"));
+        crev_common::serde::write_as_headerless_yaml(self, f)
+    }
+}
 
-        for line in lines {
-            f.write_str(&line)?;
-            f.write_str("\n")?;
-        }
-        Ok(())
+impl fmt::Display for ProjectDraft {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }

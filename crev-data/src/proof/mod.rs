@@ -65,14 +65,20 @@ impl ProofType {
     }
 }
 
+/// Serialized Proof
+///
 /// A signed proof containing some signed `Content`
 #[derive(Debug, Clone)]
 pub(crate) struct Serialized {
+    /// Serialized content
     pub body: String,
+    /// Signature over the body
     pub signature: String,
+    /// Type of the `body` (`Content`)
     pub type_: ProofType,
 }
 
+/// Content is an enumerator of possible proof contents
 #[derive(Debug, Clone)]
 pub enum Content {
     Trust(Trust),
@@ -102,6 +108,7 @@ impl From<review::Project> for Content {
         Content::Project(review)
     }
 }
+
 impl From<Trust> for Content {
     fn from(review: Trust) -> Self {
         Content::Trust(review)
@@ -117,6 +124,13 @@ impl Content {
         })
     }
 
+    pub fn parse_draft(s: &str, type_: ProofType) -> Result<Content> {
+        Ok(match type_ {
+            ProofType::Code => Content::Code(review::CodeDraft::parse(&s)?.into()),
+            ProofType::Project => Content::Project(review::ProjectDraft::parse(&s)?.into()),
+            ProofType::Trust => Content::Trust(TrustDraft::parse(&s)?.into()),
+        })
+    }
     pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
@@ -170,6 +184,15 @@ impl Content {
             Trust(_) => None,
             Code(review) => review.project_id(),
             Project(review) => review.project_id(),
+        }
+    }
+
+    pub fn to_draft_string(&self) -> String {
+        use self::Content::*;
+        match self.clone() {
+            Trust(trust) => format!("{}", TrustDraft::from(trust)),
+            Code(review) => format!("{}", review::CodeDraft::from(review)),
+            Project(review) => format!("{}", review::ProjectDraft::from(review)),
         }
     }
 }
@@ -384,10 +407,18 @@ fn equals_default_distrust_level(l: &Level) -> bool {
     *l == default_distrust_level()
 }
 
+fn equals_none_level(l: &Level) -> bool {
+    *l == Level::None
+}
+
 fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
 }
 
 fn default_distrust_level() -> Level {
+    Level::None
+}
+
+fn none_level() -> Level {
     Level::None
 }
