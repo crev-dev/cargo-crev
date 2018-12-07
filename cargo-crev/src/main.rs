@@ -110,7 +110,7 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let review = crev_data::proof::review::ProjectBuilder::default()
         .from(id.id.to_owned())
         .project(project_config.map(|c| c.project))
-        .digest(digest.0)
+        .digest(digest.into_vec())
         .score(trust.to_default_score())
         .build()
         .map_err(|e| format_err!("{}", e))?;

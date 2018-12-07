@@ -88,11 +88,12 @@ where
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        Digest(crev_recursive_digest::get_recursive_digest_for_dir::<
+        Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
             blake2::Blake2b,
             H1,
         >(path, ignore_list)?)
     };
+
     Ok(db.verify_digest(&digest, trusted_set))
 }
 
@@ -106,7 +107,7 @@ where
     H1: std::hash::BuildHasher + std::default::Default,
     H2: std::hash::BuildHasher + std::default::Default,
 {
-    let digest = Digest(crev_recursive_digest::get_recursive_digest_for_dir::<
+    let digest = Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
         blake2::Blake2b,
         H1,
     >(path, ignore_list)?);
@@ -117,7 +118,7 @@ pub fn get_dir_digest<H1>(path: &Path, ignore_list: &HashSet<PathBuf, H1>) -> Re
 where
     H1: std::hash::BuildHasher + std::default::Default,
 {
-    Ok(Digest(
+    Ok(Digest::from_vec(
         crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H1>(
             path,
             ignore_list,
@@ -160,7 +161,7 @@ where
         paths.insert(entry_path);
     }
 
-    Ok(Digest(
+    Ok(Digest::from_vec(
         crev_recursive_digest::get_recursive_digest_for_paths::<blake2::Blake2b, H>(
             root_path, paths,
         )?,
@@ -187,7 +188,7 @@ pub fn get_recursive_digest_for_dir<H>(
 where
     H: std::hash::BuildHasher,
 {
-    Ok(Digest(
+    Ok(Digest::from_vec(
         crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H>(
             root_path,
             rel_path_ignore_list,

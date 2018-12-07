@@ -155,7 +155,7 @@ impl TrustDB {
     }
 
     fn get_reviews_of(&self, digest: &Digest) -> Option<&HashMap<Id, ReviewInfo>> {
-        self.digest_to_reviews.get(&digest.0)
+        self.digest_to_reviews.get(digest.as_slice())
     }
 
     pub fn verify_digest<H>(

@@ -245,7 +245,7 @@ impl Repo {
             .from(id.id.to_owned())
             .revision(Some(revision))
             .project(project_config.map(|c| c.project))
-            .digest(digest.0)
+            .digest(digest.into_vec())
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
