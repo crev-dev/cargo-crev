@@ -427,7 +427,6 @@ impl Local {
                 if user_id == id {
                     continue;
                 } else if let Some(url) = db.lookup_url(id) {
-                    eprintln!("Fetching {}", url);
                     let success =
                         util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
                     if success {
@@ -446,14 +445,15 @@ impl Local {
 
     pub fn get_remote_git_path(&self, id: &Id, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
-        let digest = base64::encode_config(&digest, base64::URL_SAFE);
-        self.cache_remotes_path().join(id.to_string()).join(digest)
+        let digest = crev_data::Digest::from_vec(digest);
+        self.cache_remotes_path().join(id.to_string()).join(format!("{}", digest))
     }
 
     pub fn fetch_remote_git(&self, id: &Id, url: &str) -> Result<()> {
         let dir = self.get_remote_git_path(id, url);
 
         if dir.exists() {
+            eprintln!("Fetching {} to {}", url, dir.display());
             let repo = git2::Repository::open(dir)?;
             repo.find_remote("origin")?.fetch(&["master"], None, None)?;
             repo.set_head("FETCH_HEAD")?;
@@ -461,6 +461,7 @@ impl Local {
             opts.force();
             repo.checkout_head(Some(&mut opts))?;
         } else {
+            eprintln!("Cloning {} to {}", url, dir.display());
             git2::Repository::clone(url, dir)?;
         }
 
@@ -548,7 +549,7 @@ fn proofs_iter_for_path(path: PathBuf) -> Box<Iterator<Item = proof::Proof>> {
             Ok(proof)
         })
         .on_err(|e| {
-            eprintln!("{}", e);
+            eprintln!("Failed processing a proof: {}", e);
         });
 
     Box::new(proofs_iter.oks())
