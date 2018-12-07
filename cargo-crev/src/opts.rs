@@ -30,13 +30,15 @@ pub struct IdSwitch {
 #[derive(Debug, StructOpt, Clone)]
 pub struct Verify {
     #[structopt(long = "depth", default_value = "10")]
-    depth: u64,
+    pub depth: u64,
     #[structopt(long = "high-cost", default_value = "0")]
-    high_cost: u64,
+    pub high_cost: u64,
     #[structopt(long = "medium-cost", default_value = "1")]
-    medium_cost: u64,
+    pub medium_cost: u64,
     #[structopt(long = "low-cost", default_value = "5")]
-    low_cost: u64,
+    pub low_cost: u64,
+    #[structopt(long = "verbose", short = "v")]
+    pub verbose: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]

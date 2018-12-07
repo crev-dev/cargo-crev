@@ -136,7 +136,7 @@ fn main() -> Result<()> {
             opts::IdCommand::Switch(args) => crev_lib::switch_id(&args.id)?,
             opts::IdCommand::List => crev_lib::list_ids()?,
         },
-        opts::Command::Verify(_verify_opts) => {
+        opts::Command::Verify(verify_opts) => {
             let local = crev_lib::Local::auto_open()?;
             let repo = Repo::auto_open_cwd()?;
             let params = Default::default();
@@ -146,7 +146,11 @@ fn main() -> Result<()> {
             repo.for_every_dependency_dir(|_, path| {
                 let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                 let result = db.verify_digest(&digest, &trust_set);
-                println!("{:9} {} {:40}", result, digest, path.display(),);
+                if verify_opts.verbose {
+                    println!("{:9} {} {:40}", result, digest, path.display(),);
+                } else {
+                    println!("{:9} {:40}", result, path.display(),);
+                }
 
                 Ok(())
             })?;
