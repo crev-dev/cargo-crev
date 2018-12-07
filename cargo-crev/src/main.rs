@@ -145,9 +145,8 @@ fn main() -> Result<()> {
             let ignore_list = cargo_ignore_list();
             repo.for_every_dependency_dir(|_, path| {
                 let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
-                let digest_short: String = format!("{}", digest).chars().take(8).collect();
                 let result = db.verify_digest(&digest, &trust_set);
-                println!("{:9} {} {:40}", result, digest_short, path.display(),);
+                println!("{:9} {} {:40}", result, digest, path.display(),);
 
                 Ok(())
             })?;
