@@ -136,17 +136,16 @@ fn main() -> Result<()> {
             opts::IdCommand::Switch(args) => crev_lib::switch_id(&args.id)?,
             opts::IdCommand::List => crev_lib::list_ids()?,
         },
-        opts::Command::Verify(verify_opts) => {
+        opts::Command::Verify(args) => {
             let local = crev_lib::Local::auto_open()?;
-            let repo = Repo::auto_open_cwd()?;
-            let params = Default::default();
-            let (db, trust_set) = local.load_db(&params)?;
+            let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
 
+            let repo = Repo::auto_open_cwd()?;
             let ignore_list = cargo_ignore_list();
             repo.for_every_dependency_dir(|_, path| {
                 let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                 let result = db.verify_digest(&digest, &trust_set);
-                if verify_opts.verbose {
+                if args.verbose {
                     println!("{:9} {} {:40}", result, digest, path.display(),);
                 } else {
                     println!("{:9} {:40}", result, path.display(),);
@@ -182,6 +181,13 @@ fn main() -> Result<()> {
                 local.fetch_updates()?;
             }
         },
+        opts::Command::ListTrustedIds(args) => {
+            let local = crev_lib::Local::auto_open()?;
+            let (_db, trust_set) = local.load_db(&args.trust_params.into())?;
+            for id in &trust_set {
+                println!("{}", id);
+            }
+        }
     }
 
     Ok(())

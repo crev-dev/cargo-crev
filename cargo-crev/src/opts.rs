@@ -28,7 +28,7 @@ pub struct IdSwitch {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Verify {
+pub struct TrustParams {
     #[structopt(long = "depth", default_value = "10")]
     pub depth: u64,
     #[structopt(long = "high-cost", default_value = "0")]
@@ -37,8 +37,25 @@ pub struct Verify {
     pub medium_cost: u64,
     #[structopt(long = "low-cost", default_value = "5")]
     pub low_cost: u64,
+}
+
+impl From<TrustParams> for crev_lib::trustdb::TrustDistanceParams {
+    fn from(params: TrustParams) -> Self {
+        crev_lib::trustdb::TrustDistanceParams {
+            max_distance: params.depth,
+            high_trust_distance: params.high_cost,
+            medium_trust_distance: params.medium_cost,
+            low_trust_distance: params.low_cost,
+        }
+    }
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Verify {
     #[structopt(long = "verbose", short = "v")]
     pub verbose: bool,
+    #[structopt(flatten)]
+    pub trust_params: TrustParams,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -93,6 +110,15 @@ pub enum Command {
     /// Trust Database operations
     #[structopt(name = "db")]
     Db(Db),
+    /// List trusted ids
+    #[structopt(name = "list-trusted-ids")]
+    ListTrustedIds(ListTrustedIds),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct ListTrustedIds {
+    #[structopt(flatten)]
+    pub trust_params: TrustParams,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`
