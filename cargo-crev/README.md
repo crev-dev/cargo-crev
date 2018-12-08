@@ -1,7 +1,7 @@
 # `cargo-crev` - Code REView for Rust!
 
 
-`cargo crev` is a tool helping Rustaceans review crates they use.
+`cargo-crev` is a tool helping Rustaceans review crates they use.
 
 ## How it works
 
@@ -15,7 +15,7 @@
 
 Crev is is a language and ecosystem agnostic, social Code REView system.
 
-`cargo crev` is an implementation of Crev for `cargo` and Rust.
+`cargo-crev` is an implementation of Crev for `cargo` and Rust.
 
 ## Getting started
 
@@ -24,7 +24,7 @@ Crev is is a language and ecosystem agnostic, social Code REView system.
 
 ### Dependencies
 
-`cargo crev` has a couple of non-Rust dependencies:
+`cargo-crev` has a couple of non-Rust dependencies:
 
 ```
 # openssl
