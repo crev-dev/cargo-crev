@@ -116,7 +116,7 @@ impl TrustDB {
         self.record_url_from_from_field(&review.date_utc(), &from);
         match self
             .digest_to_reviews
-            .entry(review.digest.to_owned())
+            .entry(review.project.digest.to_owned())
             .or_insert_with(|| HashMap::new())
             .entry(from.id.clone())
         {

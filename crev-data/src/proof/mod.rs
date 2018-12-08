@@ -6,14 +6,12 @@ use chrono::{self, prelude::*};
 use crev_common;
 use std::{default, fmt, fs, io, mem, path::Path};
 
-pub mod project;
+pub mod project_info;
 pub mod review;
 pub mod revision;
 pub mod trust;
 
-use self::review::Common;
-
-pub use self::{project::*, revision::*, trust::*};
+pub use self::{project_info::*, revision::*, trust::*};
 
 use crate::Result;
 
@@ -175,15 +173,6 @@ impl Content {
             Trust(trust) => trust.author_url(),
             Code(review) => review.author_url(),
             Project(review) => review.author_url(),
-        }
-    }
-
-    pub fn project_id(&self) -> Option<&str> {
-        use self::Content::*;
-        match self {
-            Trust(_) => None,
-            Code(review) => review.project_id(),
-            Project(review) => review.project_id(),
         }
     }
 
@@ -391,7 +380,7 @@ fn equals_default_digest_type(s: &str) -> bool {
     s == default_digest_type()
 }
 
-fn default_digest_type() -> String {
+pub fn default_digest_type() -> String {
     "blake2b".into()
 }
 
@@ -399,7 +388,7 @@ fn equals_default_revision_type(s: &str) -> bool {
     s == default_revision_type()
 }
 
-fn default_revision_type() -> String {
+pub fn default_revision_type() -> String {
     "git".into()
 }
 
@@ -407,12 +396,12 @@ fn equals_default_distrust_level(l: &Level) -> bool {
     *l == default_distrust_level()
 }
 
-fn equals_none_level(l: &Level) -> bool {
-    *l == Level::None
-}
-
 fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
+}
+
+fn equals_none_level(l: &Level) -> bool {
+    *l == Level::None
 }
 
 fn default_distrust_level() -> Level {

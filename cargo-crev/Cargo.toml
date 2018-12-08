@@ -20,3 +20,4 @@ crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }
 crev-common = { path = "../crev-common" }
 crev-recursive-digest = { path = "../recursive-digest" }
+semver = "*"

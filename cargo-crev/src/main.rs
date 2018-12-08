@@ -13,6 +13,7 @@ use cargo::{
 use common_failures::prelude::*;
 use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
+use semver;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
@@ -22,6 +23,7 @@ use structopt::StructOpt;
 mod opts;
 mod prelude;
 
+use crev_data::proof;
 use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
 
 struct Repo {
@@ -74,19 +76,23 @@ impl Repo {
         Ok(())
     }
 
-    fn find_dependency_dir(&self, name: &str, version: Option<&str>) -> Result<PathBuf> {
-        let mut dir = None;
+    fn find_dependency_dir(
+        &self,
+        name: &str,
+        version: Option<&str>,
+    ) -> Result<(PathBuf, semver::Version)> {
+        let mut ret = None;
 
         self.for_every_dependency_dir(|pkg_id, path| {
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
-                dir = Some(path.to_owned());
+                ret = Some((path.to_owned(), pkg_id.version().to_owned()));
             }
             Ok(())
         })?;
 
-        Ok(dir.ok_or_else(|| format_err!("Not found"))?)
+        Ok(ret.ok_or_else(|| format_err!("Not found"))?)
     }
 }
 
@@ -98,20 +104,26 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
 
 fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let pkg_dir = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
+    let (pkg_dir, crate_version) = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
-    let crev_repo = crev_lib::repo::Repo::open(&pkg_dir)?;
-    let project_config = crev_repo.try_load_project_config()?;
 
     let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_ignore_list())?;
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_current_unlocked_id(&passphrase)?;
 
-    let review = crev_data::proof::review::ProjectBuilder::default()
+    let review = proof::review::ProjectBuilder::default()
         .from(id.id.to_owned())
-        .project(project_config.map(|c| c.project))
-        .digest(digest.into_vec())
-        .score(trust.to_default_score())
+        .project(proof::ProjectInfo {
+            id: None,
+            source: "https://crates.io".to_owned(),
+            name: args.name.clone(),
+            version: crate_version.to_string(),
+            digest: digest.into_vec(),
+            digest_type: proof::default_digest_type(),
+            revision: "".into(),
+            revision_type: proof::default_revision_type(),
+        })
+        .review(trust.to_default_score())
         .build()
         .map_err(|e| format_err!("{}", e))?;
 

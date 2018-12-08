@@ -82,7 +82,7 @@ impl<T: Borrow<id::PubId>> From<T> for IdAndUrl {
 }
 */
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PubId {
     #[serde(flatten)]
     pub id: Id,
@@ -125,13 +125,6 @@ impl PubId {
     */
 }
 
-pub(crate) fn equals_default_id_type(s: &str) -> bool {
-    s == default_id_type()
-}
-
-pub(crate) fn default_id_type() -> String {
-    "crev".into()
-}
 /*
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Public CrevId of someone

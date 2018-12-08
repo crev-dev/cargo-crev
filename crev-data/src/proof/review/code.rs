@@ -39,28 +39,10 @@ pub struct Code {
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
-    pub project: proof::Project,
-    revision: String,
-    #[serde(
-        rename = "revision-type",
-        skip_serializing_if = "proof::equals_default_revision_type",
-        default = "proof::default_revision_type"
-    )]
-    #[builder(default = "\"git\".into()")]
-    revision_type: String,
-
-    #[builder(default = "None")]
-    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
-    digest: Option<String>,
-    #[serde(
-        skip_serializing_if = "proof::equals_default_digest_type",
-        default = "proof::default_digest_type"
-    )]
-    #[builder(default = "proof::default_digest_type()")]
-    digest_type: String,
+    pub project: proof::ProjectInfo,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
-    score: super::Score,
+    review: super::Score,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
@@ -84,23 +66,8 @@ pub struct CodeDraft {
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
-    pub project: proof::Project,
-    revision: String,
-    #[serde(
-        rename = "revision-type",
-        skip_serializing_if = "proof::equals_default_revision_type",
-        default = "proof::default_revision_type"
-    )]
-    revision_type: String,
-    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
-    digest: Option<String>,
-    #[serde(
-        skip_serializing_if = "proof::equals_default_digest_type",
-        default = "proof::default_digest_type"
-    )]
-    digest_type: String,
-    #[serde(flatten)]
-    score: super::Score,
+    pub project: proof::ProjectInfo,
+    review: super::Score,
     #[serde(default = "Default::default")]
     comment: String,
     #[serde(
@@ -117,11 +84,7 @@ impl From<Code> for CodeDraft {
             date: code.date,
             from: code.from,
             project: code.project,
-            revision: code.revision,
-            revision_type: code.revision_type,
-            score: code.score,
-            digest: code.digest,
-            digest_type: code.digest_type,
+            review: code.review,
             comment: code.comment,
             files: code.files,
         }
@@ -135,11 +98,7 @@ impl From<CodeDraft> for Code {
             date: code.date,
             from: code.from,
             project: code.project,
-            revision: code.revision,
-            revision_type: code.revision_type,
-            score: code.score,
-            digest: code.digest,
-            digest_type: code.digest_type,
+            review: code.review,
             comment: code.comment,
             files: code.files,
         }
@@ -162,12 +121,8 @@ impl proof::ContentCommon for Code {
 }
 
 impl super::Common for Code {
-    fn project_id(&self) -> Option<&str> {
-        Some(&self.project.id)
-    }
-
     fn score(&self) -> &super::Score {
-        &self.score
+        &self.review
     }
 }
 

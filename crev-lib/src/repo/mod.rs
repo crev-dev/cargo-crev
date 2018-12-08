@@ -16,7 +16,6 @@ pub mod staging;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProjectConfig {
     pub version: u64,
-    pub project: crev_data::proof::Project,
     #[serde(rename = "trust-root")]
     pub trust_root: String,
 }
@@ -67,7 +66,6 @@ impl Repo {
                 w,
                 &ProjectConfig {
                     version: 0,
-                    project: proof::Project::generate(),
                     trust_root: id_str.clone(),
                 },
             )?;
@@ -234,18 +232,14 @@ impl Repo {
         }
 
         let local = Local::auto_open()?;
-        let project_config = self.try_load_project_config()?;
-        let revision = self.read_revision()?;
+        let _revision = self.read_revision()?;
 
         let ignore_list = HashSet::new();
-        let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
+        let _digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         let id = local.read_current_unlocked_id(&passphrase)?;
 
         let review = proof::review::ProjectBuilder::default()
             .from(id.id.to_owned())
-            .revision(Some(revision))
-            .project(project_config.map(|c| c.project))
-            .digest(digest.into_vec())
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
@@ -264,17 +258,13 @@ impl Repo {
         }
 
         let local = Local::auto_open()?;
-        let project_config = self.load_project_config()?;
-        let revision = self.read_revision()?;
+        let _revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
         let id = local.read_current_unlocked_id(&passphrase)?;
 
         let review = proof::review::CodeBuilder::default()
             .from(id.id.to_owned())
-            .revision(revision.revision)
-            .revision_type(revision.revision_type)
-            .project(project_config.project)
             .files(files)
             .build()
             .map_err(|e| format_err!("{}", e))?;

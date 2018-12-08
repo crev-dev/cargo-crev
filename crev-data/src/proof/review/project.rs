@@ -2,7 +2,7 @@ use crate::{id, proof, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
-    serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed},
+    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
 use serde_yaml;
 use std::{default::Default, fmt};
@@ -27,23 +27,9 @@ pub struct Project {
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
+    pub project: proof::ProjectInfo,
     #[builder(default = "Default::default()")]
-    #[serde(skip_serializing_if = "proof::equals_default")]
-    pub project: Option<proof::Project>,
-    #[serde(flatten)]
-    #[builder(default = "Default::default()")]
-    pub revision: Option<proof::Revision>,
-    #[serde(flatten)]
-    #[builder(default = "Default::default()")]
-    score: super::Score,
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
-    pub digest: Vec<u8>,
-    #[serde(
-        skip_serializing_if = "proof::equals_default_digest_type",
-        default = "proof::default_digest_type"
-    )]
-    #[builder(default = "proof::default_digest_type()")]
-    pub digest_type: String,
+    review: super::Score,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
@@ -61,19 +47,8 @@ pub struct ProjectDraft {
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
-    #[serde(skip_serializing_if = "proof::equals_default")]
-    pub project: Option<proof::Project>,
-    #[serde(flatten)]
-    pub revision: Option<proof::Revision>,
-    #[serde(flatten)]
-    score: super::Score,
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
-    pub digest: Vec<u8>,
-    #[serde(
-        skip_serializing_if = "proof::equals_default_digest_type",
-        default = "proof::default_digest_type"
-    )]
-    pub digest_type: String,
+    pub project: proof::ProjectInfo,
+    review: super::Score,
     #[serde(default = "Default::default")]
     comment: String,
 }
@@ -85,10 +60,7 @@ impl From<Project> for ProjectDraft {
             date: project.date,
             from: project.from,
             project: project.project,
-            revision: project.revision,
-            score: project.score,
-            digest: project.digest,
-            digest_type: project.digest_type,
+            review: project.review,
             comment: project.comment,
         }
     }
@@ -101,10 +73,7 @@ impl From<ProjectDraft> for Project {
             date: project.date,
             from: project.from,
             project: project.project,
-            revision: project.revision,
-            score: project.score,
-            digest: project.digest,
-            digest_type: project.digest_type,
+            review: project.review,
             comment: project.comment,
         }
     }
@@ -127,12 +96,8 @@ impl proof::ContentCommon for Project {
 }
 
 impl super::Common for Project {
-    fn project_id(&self) -> Option<&str> {
-        self.project.as_ref().map(|p| p.id.as_str())
-    }
-
     fn score(&self) -> &super::Score {
-        &self.score
+        &self.review
     }
 }
 

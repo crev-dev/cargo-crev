@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Url {
     pub url: String,
     #[serde(

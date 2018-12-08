@@ -29,11 +29,7 @@ pub(crate) fn rel_project_path(content: &Content) -> PathBuf {
 /// The path to use under user store
 pub(crate) fn rel_store_path(content: &Content) -> PathBuf {
     let type_name = type_name(content);
-    let mut path = PathBuf::from(content.author_id().to_string()).join(type_name);
-
-    if let Some(project_id) = content.project_id() {
-        path = path.join(project_id)
-    }
+    let path = PathBuf::from(content.author_id().to_string()).join(type_name);
 
     path.join(
         content
