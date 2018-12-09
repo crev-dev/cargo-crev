@@ -77,12 +77,19 @@ pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
 
     //let mut from = crate::PubId::new(&id.id, "https://github.com/someone/crev-trust".into());
 
-    let project_id = proof::Project::generate();
+    let project_info = proof::ProjectInfo {
+        id: None,
+        source: "SOURCE_ID".to_owned(),
+        name: "name".into(),
+        version: "version".into(),
+        digest: vec![0, 1, 2, 3],
+        digest_type: proof::default_digest_type(),
+        revision: "".into(),
+        revision_type: proof::default_revision_type(),
+    };
     let review = proof::review::CodeBuilder::default()
         .from(id.id.to_owned())
-        .revision("foobar".into())
-        .revision_type("git".into())
-        .project(project_id)
+        .project(project_info)
         .comment("comment".into())
         .files(vec![
             proof::review::code::File {
