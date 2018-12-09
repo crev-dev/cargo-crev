@@ -19,8 +19,9 @@ Crev is is a language and ecosystem agnostic, social Code REView system.
 
 ## Getting started
 
-`cargo-crev` is a work in progress. Join [crev gitter channel](https://gitter.im/dpc/crev)
-, get help, report problems and feedback. Thank you!
+`cargo-crev` is a work in progress, but it should be usable at all times.
+Join [crev gitter channel](https://gitter.im/dpc/crev), get help,
+report problems and feedback. Thank you!
 
 ### Dependencies
 
