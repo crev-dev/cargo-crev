@@ -1,6 +1,27 @@
 use std::ffi::OsString;
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct CrateSelector {
+    pub name: Option<String>,
+    pub version: Option<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct CrateSelectorNameRequired {
+    pub name: String,
+    pub version: Option<String>,
+}
+
+impl From<CrateSelectorNameRequired> for CrateSelector {
+    fn from(c: CrateSelectorNameRequired) -> Self {
+        Self {
+            name: Some(c.name),
+            version: c.version,
+        }
+    }
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct Id {
     #[structopt(subcommand)]
     pub id_command: IdCommand,
@@ -59,12 +80,6 @@ pub struct Verify {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Crate {
-    pub name: String,
-    pub version: Option<String>,
-}
-
-#[derive(Debug, StructOpt, Clone)]
 pub struct Trust {
     /// Public IDs to create Trust Proof for
     pub pub_ids: Vec<String>,
@@ -94,10 +109,10 @@ pub enum Command {
     Verify(Verify),
     /// Positively review a crate
     #[structopt(name = "review")]
-    Review(Crate),
+    Review(CrateSelectorNameRequired),
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
-    Flag(Crate),
+    Flag(CrateSelectorNameRequired),
     /// ID-related operations
     #[structopt(name = "id")]
     Id(Id),
@@ -113,12 +128,21 @@ pub enum Command {
     /// List trusted ids
     #[structopt(name = "list-trusted-ids")]
     ListTrustedIds(ListTrustedIds),
+    /// List reviews for a given package
+    #[structopt(name = "list-reviews")]
+    ListReviews(ListReviews),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct ListTrustedIds {
     #[structopt(flatten)]
     pub trust_params: TrustParams,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct ListReviews {
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

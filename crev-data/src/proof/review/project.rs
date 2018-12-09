@@ -24,7 +24,7 @@ pub struct Project {
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"
     )]
-    date: chrono::DateTime<FixedOffset>,
+    pub date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     #[serde(rename = "project")]
     pub project: proof::ProjectInfo,

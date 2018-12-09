@@ -13,6 +13,7 @@ use cargo::{
 use common_failures::prelude::*;
 use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
+use default::default;
 use semver;
 use std::{
     collections::HashSet,
@@ -102,7 +103,7 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
     ignore_list
 }
 
-fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
+fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let (pkg_dir, crate_version) = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
@@ -115,7 +116,7 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
         .from(id.id.to_owned())
         .project(proof::ProjectInfo {
             id: None,
-            source: "https://crates.io".to_owned(),
+            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
             name: args.name.clone(),
             version: crate_version.to_string(),
             digest: digest.into_vec(),
@@ -135,6 +136,29 @@ fn review_crate(args: &opts::Crate, trust: TrustOrDistrust) -> Result<()> {
     let proof = review.sign_by(&id)?;
 
     local.insert(&proof)?;
+    Ok(())
+}
+const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
+
+fn find_reviews(
+    crate_: &opts::CrateSelector,
+    trust_params: &crev_lib::trustdb::TrustDistanceParams,
+) -> Result<impl Iterator<Item = proof::review::Project>> {
+    let local = crev_lib::Local::auto_open()?;
+    let (db, _trust_set) = local.load_db(&trust_params)?;
+    Ok(db.get_project_reviews_for_project(
+        PROJECT_SOURCE_CRATES_IO,
+        crate_.name.as_ref().map(|s| s.as_str()),
+        crate_.version.as_ref().map(|s| s.as_str()),
+    ))
+}
+
+fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
+    // TODO: take trust params?
+    for review in find_reviews(crate_, &default())? {
+        println!("{}", review);
+    }
+
     Ok(())
 }
 
@@ -199,6 +223,9 @@ fn main() -> Result<()> {
             for id in &trust_set {
                 println!("{}", id);
             }
+        }
+        opts::Command::ListReviews(args) => {
+            list_reviews(&args.crate_)?;
         }
     }
 

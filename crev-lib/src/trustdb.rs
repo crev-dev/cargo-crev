@@ -6,6 +6,8 @@ use crev_data::{
     proof::{self, review, Content, ContentCommon},
     Digest, Id,
 };
+use default::default;
+use std::collections::BTreeMap;
 use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
 struct TrustInfo {
@@ -79,6 +81,11 @@ pub struct TrustDB {
     url_by_id: HashMap<Id, UrlInfo>,
     url_by_id_secondary: HashMap<Id, UrlInfo>,
     trusted_ids: HashSet<Id>,
+
+    project_review_by_signature: HashMap<String, review::Project>,
+    project_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
+    project_reviews_by_name: BTreeMap<(String, String), BTreeSet<String>>,
+    project_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
 }
 
 impl TrustDB {
@@ -90,6 +97,10 @@ impl TrustDB {
             url_by_id_secondary: Default::default(),
             digest_to_reviews: Default::default(),
             trusted_ids: Default::default(),
+            project_review_by_signature: default(),
+            project_reviews_by_source: default(),
+            project_reviews_by_name: default(),
+            project_reviews_by_version: default(),
         }
     }
 
@@ -111,7 +122,7 @@ impl TrustDB {
         }
     }
 
-    fn add_project_review(&mut self, review: &review::Project) {
+    fn add_project_review(&mut self, review: &review::Project, signature: &str) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
         match self
@@ -125,6 +136,88 @@ impl TrustDB {
                 entry.insert(ReviewInfo::from(review));
             }
         }
+
+        self.project_review_by_signature
+            .entry(signature.to_owned())
+            .or_insert_with(|| review.to_owned());
+
+        self.project_reviews_by_source
+            .entry(review.project.source.to_owned())
+            .or_default()
+            .insert(signature.to_owned());
+        self.project_reviews_by_name
+            .entry((
+                review.project.source.to_owned(),
+                review.project.name.to_owned(),
+            ))
+            .or_default()
+            .insert(signature.to_owned());
+        self.project_reviews_by_version
+            .entry((
+                review.project.source.to_owned(),
+                review.project.name.to_owned(),
+                review.project.version.to_owned(),
+            ))
+            .or_default()
+            .insert(signature.to_owned());
+    }
+
+    pub fn get_project_reviews_for_project(
+        &self,
+        source: &str,
+        name: Option<&str>,
+        version: Option<&str>,
+    ) -> impl Iterator<Item = proof::review::Project> {
+        let mut proofs: Vec<_> = match (name, version) {
+            (Some(name), Some(version)) => self
+                .project_reviews_by_version
+                .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
+                .map(|set| {
+                    set.iter()
+                        .map(|signature| {
+                            self.project_review_by_signature
+                                .get(signature)
+                                .unwrap()
+                                .clone()
+                        })
+                        .collect()
+                })
+                .unwrap_or(vec![]),
+
+            (Some(name), None) => self
+                .project_reviews_by_name
+                .get(&(source.to_owned(), name.to_owned()))
+                .map(|set| {
+                    set.iter()
+                        .map(|signature| {
+                            self.project_review_by_signature
+                                .get(signature)
+                                .unwrap()
+                                .clone()
+                        })
+                        .collect()
+                })
+                .unwrap_or(vec![]),
+            (None, None) => self
+                .project_reviews_by_source
+                .get(source)
+                .map(|set| {
+                    set.iter()
+                        .map(|signature| {
+                            self.project_review_by_signature
+                                .get(signature)
+                                .unwrap()
+                                .clone()
+                        })
+                        .collect()
+                })
+                .unwrap_or(vec![]),
+            (None, Some(_)) => panic!("Wrong usage"),
+        };
+
+        proofs.sort_by(|a, b| a.date().cmp(&b.date()));
+
+        proofs.into_iter()
     }
 
     fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: Level) {
@@ -226,7 +319,7 @@ impl TrustDB {
             .expect("All proofs were supposed to be valid here");
         match proof.content {
             Content::Code(ref review) => self.add_code_review(&review),
-            Content::Project(ref review) => self.add_project_review(&review),
+            Content::Project(ref review) => self.add_project_review(&review, &proof.signature),
             Content::Trust(ref trust) => self.add_trust(&trust),
         }
     }
