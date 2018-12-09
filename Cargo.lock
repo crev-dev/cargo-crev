@@ -339,7 +339,7 @@ dependencies = [
  "cargo 0.31.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo-clone 0.1.2 (git+https://github.com/dpc/cargo-clone)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.1.0",
+ "crev-common 0.0.1",
  "crev-data 0.0.1",
  "crev-lib 0.0.1",
  "crev-recursive-digest 0.1.0",
@@ -529,7 +529,7 @@ name = "crev-bin"
 version = "0.1.0"
 dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.1.0",
+ "crev-common 0.0.1",
  "crev-data 0.0.1",
  "crev-lib 0.0.1",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -542,7 +542,7 @@ dependencies = [
 
 [[package]]
 name = "crev-common"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "base64 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -563,7 +563,7 @@ dependencies = [
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.1.0",
+ "crev-common 0.0.1",
  "derive_builder 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 1.0.0-pre.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -585,7 +585,7 @@ dependencies = [
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.1.0",
+ "crev-common 0.0.1",
  "crev-data 0.0.1",
  "crev-recursive-digest 0.1.0",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",

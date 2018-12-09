@@ -36,13 +36,13 @@ impl TrustInfo {
 struct ReviewInfo {
     #[allow(unused)]
     date: chrono::DateTime<Utc>,
-    score: proof::review::Score,
+    review: proof::review::Review,
 }
 
 impl<'a, T: review::Common> From<&'a T> for ReviewInfo {
     fn from(review: &T) -> Self {
         ReviewInfo {
-            score: review.score().to_owned(),
+            review: review.review().to_owned(),
             date: review.date().with_timezone(&Utc),
         }
     }
@@ -51,7 +51,7 @@ impl<'a, T: review::Common> From<&'a T> for ReviewInfo {
 impl ReviewInfo {
     fn maybe_update_with(&mut self, review: &dyn review::Common) {
         if review.date().with_timezone(&Utc) > self.date {
-            self.score = review.score().to_owned()
+            self.review = review.review().to_owned()
         }
     }
 }
@@ -266,10 +266,10 @@ impl TrustDB {
             let mut trust_count = 0;
             let mut distrust_count = 0;
             for matching_reviewer in matching_reviewers {
-                if reviews[matching_reviewer].score.trust > Level::None {
+                if reviews[matching_reviewer].review.trust > Level::None {
                     trust_count += 1;
                 }
-                if reviews[matching_reviewer].score.distrust > Level::None {
+                if reviews[matching_reviewer].review.distrust > Level::None {
                     distrust_count += 1;
                 }
             }

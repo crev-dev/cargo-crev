@@ -24,7 +24,7 @@ pub use crate::{
     digest::Digest,
     id::{Id, PubId},
     level::Level,
-    proof::review::Score,
+    proof::review::Review,
     url::Url,
 };
 

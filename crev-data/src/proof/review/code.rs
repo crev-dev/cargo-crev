@@ -41,7 +41,7 @@ pub struct Code {
     pub project: proof::ProjectInfo,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
-    review: super::Score,
+    review: super::Review,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
@@ -66,7 +66,7 @@ pub struct CodeDraft {
     pub from: crate::PubId,
     #[serde(rename = "project")]
     pub project: proof::ProjectInfo,
-    review: super::Score,
+    review: super::Review,
     #[serde(default = "Default::default")]
     comment: String,
     #[serde(
@@ -120,7 +120,7 @@ impl proof::ContentCommon for Code {
 }
 
 impl super::Common for Code {
-    fn score(&self) -> &super::Score {
+    fn review(&self) -> &super::Review {
         &self.review
     }
 }

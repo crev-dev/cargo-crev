@@ -7,12 +7,12 @@ pub mod project;
 pub use self::{code::*, project::*};
 
 pub trait Common: super::ContentCommon {
-    fn score(&self) -> &Score;
+    fn review(&self) -> &Review;
 }
 
 /// Information about review result (score)
 #[derive(Clone, Debug, Serialize, Deserialize, Builder)]
-pub struct Score {
+pub struct Review {
     #[builder(default = "Default::default()")]
     pub thoroughness: Level,
     #[builder(default = "Default::default()")]
@@ -27,9 +27,9 @@ pub struct Score {
     pub distrust: Level,
 }
 
-impl Default for Score {
+impl Default for Review {
     fn default() -> Self {
-        Score {
+        Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
             trust: Level::Medium,
@@ -38,12 +38,12 @@ impl Default for Score {
     }
 }
 
-impl Score {
+impl Review {
     pub fn new_default_trust() -> Self {
         Default::default()
     }
     pub fn new_default_distrust() -> Self {
-        Score {
+        Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
             trust: Level::None,
