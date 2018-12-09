@@ -1,4 +1,4 @@
-use crate::{level::Level, proof};
+use crate::level::Level;
 use std::default::Default;
 
 pub mod code;
@@ -10,21 +10,31 @@ pub trait Common: super::ContentCommon {
     fn review(&self) -> &Review;
 }
 
-/// Information about review result (score)
-#[derive(Clone, Debug, Serialize, Deserialize, Builder)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Recommendation {
+    Negative,
+    Neutral,
+    Positivie,
+}
+
+impl Default for Recommendation {
+    fn default() -> Self {
+        Recommendation::Neutral
+    }
+}
+
+/// Information about review result
+#[derive(Clone, Debug, Serialize, Deserialize, Builder, PartialEq, Eq)]
 pub struct Review {
     #[builder(default = "Default::default()")]
     pub thoroughness: Level,
     #[builder(default = "Default::default()")]
     pub understanding: Level,
     #[builder(default = "Default::default()")]
-    pub trust: Level,
-    #[builder(default = "proof::default_distrust_level()")]
-    #[serde(
-        skip_serializing_if = "proof::equals_default_distrust_level",
-        default = "proof::default_distrust_level"
-    )]
-    pub distrust: Level,
+    pub quality: Level,
+    #[builder(default = "Default::default()")]
+    pub recommendation: Recommendation,
 }
 
 impl Default for Review {
@@ -32,8 +42,8 @@ impl Default for Review {
         Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
-            trust: Level::Medium,
-            distrust: Level::None,
+            quality: Level::Medium,
+            recommendation: Recommendation::Neutral,
         }
     }
 }
@@ -46,8 +56,8 @@ impl Review {
         Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
-            trust: Level::None,
-            distrust: Level::Medium,
+            quality: Level::None,
+            recommendation: Recommendation::Negative,
         }
     }
 }
