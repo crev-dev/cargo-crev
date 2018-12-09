@@ -446,7 +446,9 @@ impl Local {
     pub fn get_remote_git_path(&self, id: &Id, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
-        self.cache_remotes_path().join(id.to_string()).join(format!("{}", digest))
+        self.cache_remotes_path()
+            .join(id.to_string())
+            .join(format!("{}", digest))
     }
 
     pub fn fetch_remote_git(&self, id: &Id, url: &str) -> Result<()> {

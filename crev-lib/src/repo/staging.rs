@@ -99,7 +99,8 @@ impl Staging {
                 path: k.to_owned(),
                 digest: v.blake_hash.clone(),
                 digest_type: "blake2b".into(),
-            }).collect()
+            })
+            .collect()
     }
 
     pub fn enforce_current(&self) -> Result<()> {

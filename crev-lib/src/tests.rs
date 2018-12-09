@@ -9,11 +9,9 @@ fn lock_and_unlock() -> Result<()> {
     let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);
 
-    assert!(
-        id::LockedId::from_own_id(&id, "password")?
-            .to_unlocked("wrongpassword")
-            .is_err()
-    );
+    assert!(id::LockedId::from_own_id(&id, "password")?
+        .to_unlocked("wrongpassword")
+        .is_err());
 
     let id_stored = serde_yaml::to_string(&id::LockedId::from_own_id(&id, "pass")?)?;
     let id_restored: OwnId =
