@@ -13,9 +13,7 @@ const END_BLOCK: &str = "-----END CREV PROJECT REVIEW-----";
 
 /// Body of a Project Review Proof
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
-// TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
-/// Unsigned proof of code review
 pub struct Project {
     #[builder(default = "crate::current_version()")]
     version: i64,

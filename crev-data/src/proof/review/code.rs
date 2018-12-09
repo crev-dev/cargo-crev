@@ -27,7 +27,6 @@ pub struct File {
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
-/// Unsigned proof of code review
 pub struct Code {
     #[builder(default = "crate::current_version()")]
     version: i64,

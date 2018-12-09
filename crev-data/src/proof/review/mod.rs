@@ -10,6 +10,7 @@ pub trait Common: super::ContentCommon {
     fn score(&self) -> &Score;
 }
 
+/// Information about review result (score)
 #[derive(Clone, Debug, Serialize, Deserialize, Builder)]
 pub struct Score {
     #[builder(default = "Default::default()")]
@@ -36,6 +37,7 @@ impl Default for Score {
         }
     }
 }
+
 impl Score {
     pub fn new_default_trust() -> Self {
         Default::default()
