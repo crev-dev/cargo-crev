@@ -1,0 +1,14 @@
+[package]
+name = "rblake2sum"
+version = "0.1.0"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+edition = "2018"
+
+[dependencies]
+base64 = "0.9.0"
+blake2 = "*"
+hex = "*"
+crev-recursive-digest = { path = "../recursive-digest" }
+structopt = "0.2"
+common_failures = "0.1"
+failure = "0.1"

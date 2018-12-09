@@ -1622,6 +1622,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rblake2sum"
+version = "0.1.0"
+dependencies = [
+ "base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crev-recursive-digest 0.1.0",
+ "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "structopt 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.1.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
