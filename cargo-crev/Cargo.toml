@@ -20,5 +20,5 @@ crev-lib = { path = "../crev-lib" }
 crev-data = { path = "../crev-data" }
 crev-common = { path = "../crev-common" }
 crev-recursive-digest = { path = "../recursive-digest" }
-semver = "*"
-default = "*"
+semver = "0.9"
+default = "0.1"
