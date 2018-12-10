@@ -23,10 +23,7 @@ impl<T> Timestamped<T> {
         }
     }
 
-    fn insert_into_or_update_to_more_recent<'a, K>(
-        self,
-        entry: hash_map::Entry<'a, K, Timestamped<T>>,
-    ) {
+    fn insert_into_or_update_to_more_recent<K>(self, entry: hash_map::Entry<K, Timestamped<T>>) {
         match entry {
             hash_map::Entry::Occupied(mut entry) => entry
                 .get_mut()

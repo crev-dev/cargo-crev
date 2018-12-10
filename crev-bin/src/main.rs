@@ -39,7 +39,7 @@ main!(|opts: opts::Opts| match opts.command {
         let passphrase = crev_common::read_passphrase()?;
         if opts.all {
         } else {
-            repo.commit(passphrase, opts.allow_dirty)?;
+            repo.commit(&passphrase, opts.allow_dirty)?;
         }
     }
     opts::Command::Project(project) => match project {
@@ -51,7 +51,7 @@ main!(|opts: opts::Opts| match opts.command {
         opts::Project::Trust(project_trust) => {
             let mut repo = Repo::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            repo.trust_project(passphrase, project_trust.allow_dirty)?;
+            repo.trust_project(&passphrase, project_trust.allow_dirty)?;
         }
         opts::Project::Verify(verify) => {
             let mut repo = Repo::auto_open()?;

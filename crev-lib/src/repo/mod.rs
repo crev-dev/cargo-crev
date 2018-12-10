@@ -92,6 +92,7 @@ impl Repo {
         Self::open(&root_path)
     }
 
+    #[allow(clippy::new_ret_no_self)]
     fn new(root_dir: &Path) -> Result<Self> {
         let root_dir = root_dir.canonicalize()?;
         Ok(Self {
@@ -133,7 +134,7 @@ impl Repo {
         Ok(self.staging.as_mut().unwrap())
     }
 
-    fn append_proof_at(&mut self, proof: proof::Proof, rel_store_path: &Path) -> Result<()> {
+    fn append_proof_at(&mut self, proof: &proof::Proof, rel_store_path: &Path) -> Result<()> {
         let path = self.dot_crev_path().join(rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;
@@ -193,7 +194,7 @@ impl Repo {
             }
         }
 
-        return Ok(unclean_found);
+        Ok(unclean_found)
     }
 
     fn try_read_git_revision(&self) -> Result<Option<crev_data::proof::Revision>> {
@@ -222,7 +223,7 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn trust_project(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
+    pub fn trust_project(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
         if !self.staging()?.is_empty() {
             bail!("Can't review with uncommitted staged files.");
         }
@@ -252,7 +253,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn commit(&mut self, passphrase: String, allow_dirty: bool) -> Result<()> {
+    pub fn commit(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() && !allow_dirty {
             bail!("No reviews to commit. Use `add` first or use `-a` for the whole project.");
         }
@@ -281,13 +282,13 @@ impl Repo {
     fn save_signed_review(&mut self, local: &Local, proof: &proof::Proof) -> Result<()> {
         let rel_store_path = self.get_proof_rel_store_path(&proof);
 
-        println!("{}", proof.clone());
-        self.append_proof_at(proof.clone(), &rel_store_path)?;
+        println!("{}", proof);
+        self.append_proof_at(proof, &rel_store_path)?;
         eprintln!(
             "Proof written to: {}",
             PathBuf::from(".crev").join(rel_store_path).display()
         );
-        local.insert(&proof)?;
+        local.insert(proof)?;
         eprintln!("Proof added to your store");
 
         Ok(())

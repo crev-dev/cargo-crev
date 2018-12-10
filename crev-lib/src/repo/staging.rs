@@ -24,7 +24,8 @@ const STAGING_FILE_NAME: &str = "staging";
 
 impl Staging {
     pub fn wipe(&mut self) -> Result<()> {
-        Ok(fs::remove_file(&self.file_path)?)
+        fs::remove_file(&self.file_path)?;
+        Ok(())
     }
 
     pub fn is_empty(&self) -> bool {

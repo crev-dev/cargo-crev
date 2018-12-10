@@ -204,7 +204,7 @@ pub fn generate_id() -> Result<()> {
     loop {
         url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
         eprintln!("");
-        if !url.contains("/") {
+        if !url.contains('/') {
             url = format!("https://github.com/{}/crev-db", url)
         }
         eprintln!("Your URL: {}", url);

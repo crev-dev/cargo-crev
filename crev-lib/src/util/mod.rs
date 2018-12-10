@@ -57,7 +57,7 @@ pub fn store_to_file_with(path: &Path, f: impl Fn(&mut dyn io::Write) -> Result<
     Ok(())
 }
 
-fn edit_text_iteractively(text: String) -> Result<String> {
+fn edit_text_iteractively(text: &str) -> Result<String> {
     let editor = get_editor_to_use();
     let dir = tempdir::TempDir::new("crev")?;
     let file_path = dir.path().join("crev.review");
@@ -95,7 +95,7 @@ pub fn edit_proof_content_iteractively(
         text.write_fmt(format_args!("# {}\n", line))?;
     }
     loop {
-        text = edit_text_iteractively(text)?;
+        text = edit_text_iteractively(&text)?;
         match proof::Content::parse_draft(&text, type_) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);

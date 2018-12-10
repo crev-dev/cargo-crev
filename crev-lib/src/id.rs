@@ -79,7 +79,7 @@ impl LockedId {
             version: crev_data::current_version(),
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
-            seal_nonce: seal_nonce,
+            seal_nonce,
             url: own_id.id.url.clone().unwrap().url,
             pass: PassConfig {
                 salt: pwhash.raw_salt_bytes().to_vec(),
