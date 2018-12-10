@@ -7,14 +7,14 @@ use crev_common::{
 use serde_yaml;
 use std::{default::Default, fmt};
 
-const BEGIN_BLOCK: &str = "-----BEGIN CREV PROJECT REVIEW-----";
-const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PROJECT REVIEW SIGNATURE-----";
-const END_BLOCK: &str = "-----END CREV PROJECT REVIEW-----";
+const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
+const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
+const END_BLOCK: &str = "-----END CREV PACKAGE REVIEW-----";
 
-/// Body of a Project Review Proof
+/// Body of a Package Review Proof
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
-pub struct Project {
+pub struct Package {
     #[builder(default = "crate::current_version()")]
     version: i64,
     #[builder(default = "crev_common::now()")]
@@ -24,8 +24,8 @@ pub struct Project {
     )]
     pub date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
-    #[serde(rename = "project")]
-    pub project: proof::ProjectInfo,
+    #[serde(rename = "package")]
+    pub package: proof::PackageInfo,
     #[builder(default = "Default::default()")]
     review: super::Review,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
@@ -33,9 +33,9 @@ pub struct Project {
     comment: String,
 }
 
-/// Like `Project` but serializes for interactive editing
+/// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ProjectDraft {
+pub struct PackageDraft {
     #[serde(skip_serializing, default = "crate::current_version")]
     version: i64,
     #[serde(
@@ -44,46 +44,46 @@ pub struct ProjectDraft {
     )]
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
-    #[serde(rename = "project")]
-    pub project: proof::ProjectInfo,
+    #[serde(rename = "package")]
+    pub package: proof::PackageInfo,
     review: super::Review,
     #[serde(default = "Default::default")]
     comment: String,
 }
 
-impl From<Project> for ProjectDraft {
-    fn from(project: Project) -> Self {
-        ProjectDraft {
-            version: project.version,
-            date: project.date,
-            from: project.from,
-            project: project.project,
-            review: project.review,
-            comment: project.comment,
+impl From<Package> for PackageDraft {
+    fn from(package: Package) -> Self {
+        PackageDraft {
+            version: package.version,
+            date: package.date,
+            from: package.from,
+            package: package.package,
+            review: package.review,
+            comment: package.comment,
         }
     }
 }
 
-impl From<ProjectDraft> for Project {
-    fn from(project: ProjectDraft) -> Self {
-        Project {
-            version: project.version,
-            date: project.date,
-            from: project.from,
-            project: project.project,
-            review: project.review,
-            comment: project.comment,
+impl From<PackageDraft> for Package {
+    fn from(package: PackageDraft) -> Self {
+        Package {
+            version: package.version,
+            date: package.date,
+            from: package.from,
+            package: package.package,
+            review: package.review,
+            comment: package.comment,
         }
     }
 }
 
-impl Project {
+impl Package {
     pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
     pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 
-impl proof::ContentCommon for Project {
+impl proof::ContentCommon for Package {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
@@ -93,13 +93,13 @@ impl proof::ContentCommon for Project {
     }
 }
 
-impl super::Common for Project {
+impl super::Common for Package {
     fn review(&self) -> &super::Review {
         &self.review
     }
 }
 
-impl Project {
+impl Package {
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
@@ -109,19 +109,19 @@ impl Project {
     }
 }
 
-impl ProjectDraft {
+impl PackageDraft {
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
 }
 
-impl fmt::Display for Project {
+impl fmt::Display for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }
 
-impl fmt::Display for ProjectDraft {
+impl fmt::Display for PackageDraft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
     }

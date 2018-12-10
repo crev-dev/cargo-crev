@@ -66,10 +66,10 @@ pub struct TrustDB {
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
-    project_review_by_signature: HashMap<String, review::Project>,
-    project_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
-    project_reviews_by_name: BTreeMap<(String, String), BTreeSet<String>>,
-    project_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
+    package_review_by_signature: HashMap<String, review::Package>,
+    package_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
+    package_reviews_by_name: BTreeMap<(String, String), BTreeSet<String>>,
+    package_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
 }
 
 impl Default for TrustDB {
@@ -79,10 +79,10 @@ impl Default for TrustDB {
             url_by_id: Default::default(),
             url_by_id_secondary: Default::default(),
             digest_to_reviews: Default::default(),
-            project_review_by_signature: default(),
-            project_reviews_by_source: default(),
-            project_reviews_by_name: default(),
-            project_reviews_by_version: default(),
+            package_review_by_signature: default(),
+            package_reviews_by_source: default(),
+            package_reviews_by_name: default(),
+            package_reviews_by_version: default(),
         }
     }
 }
@@ -105,74 +105,74 @@ impl TrustDB {
         }
     }
 
-    fn add_project_review(&mut self, review: &review::Project, signature: &str) {
+    fn add_package_review(&mut self, review: &review::Package, signature: &str) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
 
         TimestampedReview::from(review).insert_into_or_update_to_more_recent(
             self.digest_to_reviews
-                .entry(review.project.digest.to_owned())
+                .entry(review.package.digest.to_owned())
                 .or_insert_with(HashMap::new)
                 .entry(from.id.clone()),
         );
 
-        self.project_review_by_signature
+        self.package_review_by_signature
             .entry(signature.to_owned())
             .or_insert_with(|| review.to_owned());
 
-        self.project_reviews_by_source
-            .entry(review.project.source.to_owned())
+        self.package_reviews_by_source
+            .entry(review.package.source.to_owned())
             .or_default()
             .insert(signature.to_owned());
-        self.project_reviews_by_name
+        self.package_reviews_by_name
             .entry((
-                review.project.source.to_owned(),
-                review.project.name.to_owned(),
+                review.package.source.to_owned(),
+                review.package.name.to_owned(),
             ))
             .or_default()
             .insert(signature.to_owned());
-        self.project_reviews_by_version
+        self.package_reviews_by_version
             .entry((
-                review.project.source.to_owned(),
-                review.project.name.to_owned(),
-                review.project.version.to_owned(),
+                review.package.source.to_owned(),
+                review.package.name.to_owned(),
+                review.package.version.to_owned(),
             ))
             .or_default()
             .insert(signature.to_owned());
     }
 
-    pub fn get_project_reviews_for_project(
+    pub fn get_package_reviews_for_package(
         &self,
         source: &str,
         name: Option<&str>,
         version: Option<&str>,
-    ) -> impl Iterator<Item = proof::review::Project> {
+    ) -> impl Iterator<Item = proof::review::Package> {
         let mut proofs: Vec<_> = match (name, version) {
             (Some(name), Some(version)) => self
-                .project_reviews_by_version
+                .package_reviews_by_version
                 .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
                 .map(|set| {
                     set.iter()
-                        .map(|signature| self.project_review_by_signature[signature].clone())
+                        .map(|signature| self.package_review_by_signature[signature].clone())
                         .collect()
                 })
                 .unwrap_or_else(|| vec![]),
 
             (Some(name), None) => self
-                .project_reviews_by_name
+                .package_reviews_by_name
                 .get(&(source.to_owned(), name.to_owned()))
                 .map(|set| {
                     set.iter()
-                        .map(|signature| self.project_review_by_signature[signature].clone())
+                        .map(|signature| self.package_review_by_signature[signature].clone())
                         .collect()
                 })
                 .unwrap_or_else(|| vec![]),
             (None, None) => self
-                .project_reviews_by_source
+                .package_reviews_by_source
                 .get(source)
                 .map(|set| {
                     set.iter()
-                        .map(|signature| self.project_review_by_signature[signature].clone())
+                        .map(|signature| self.package_review_by_signature[signature].clone())
                         .collect()
                 })
                 .unwrap_or_else(|| vec![]),
@@ -269,7 +269,7 @@ impl TrustDB {
             .expect("All proofs were supposed to be valid here");
         match proof.content {
             Content::Code(ref review) => self.add_code_review(&review),
-            Content::Project(ref review) => self.add_project_review(&review, &proof.signature),
+            Content::Package(ref review) => self.add_package_review(&review, &proof.signature),
             Content::Trust(ref trust) => self.add_trust(&trust),
         }
     }

@@ -14,7 +14,7 @@ use std::{
 pub mod staging;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ProjectConfig {
+pub struct PackageConfig {
     pub version: u64,
     #[serde(rename = "trust-root")]
     pub trust_root: String,
@@ -23,10 +23,10 @@ pub struct ProjectConfig {
 const CREV_DOT_NAME: &str = ".crev";
 
 #[derive(Fail, Debug)]
-#[fail(display = "Project config not-initialized. Use `crev project init` to generate it.")]
-struct ProjectDirNotFound;
+#[fail(display = "Package config not-initialized. Use `crev package init` to generate it.")]
+struct PackageDirNotFound;
 
-fn find_project_root_dir() -> Result<PathBuf> {
+fn find_package_root_dir() -> Result<PathBuf> {
     let mut path = PathBuf::from(".").canonicalize()?;
     loop {
         if path.join(CREV_DOT_NAME).is_dir() {
@@ -35,12 +35,12 @@ fn find_project_root_dir() -> Result<PathBuf> {
         path = if let Some(parent) = path.parent() {
             parent.to_owned()
         } else {
-            return Err(ProjectDirNotFound.into());
+            return Err(PackageDirNotFound.into());
         }
     }
 }
 
-/// `crev` repository dir inside a project dir
+/// `crev` repository dir inside a package dir
 ///
 /// This represents the `.crev` directory and all
 /// the internals of it.
@@ -57,14 +57,14 @@ impl Repo {
 
         fs::create_dir_all(repo.dot_crev_path())?;
 
-        let config_path = repo.project_config_path();
+        let config_path = repo.package_config_path();
         if config_path.exists() {
             bail!("`{}` already exists", config_path.display());
         }
         util::store_to_file_with(&config_path, move |w| {
             serde_yaml::to_writer(
                 w,
-                &ProjectConfig {
+                &PackageConfig {
                     version: 0,
                     trust_root: id_str.clone(),
                 },
@@ -88,7 +88,7 @@ impl Repo {
     }
 
     pub fn auto_open() -> Result<Self> {
-        let root_path = find_project_root_dir()?;
+        let root_path = find_package_root_dir()?;
         Self::open(&root_path)
     }
 
@@ -101,19 +101,19 @@ impl Repo {
         })
     }
 
-    fn project_config_path(&self) -> PathBuf {
+    fn package_config_path(&self) -> PathBuf {
         self.dot_crev_path().join("config.yaml")
     }
 
-    pub fn load_project_config(&self) -> Result<ProjectConfig> {
-        let config = self.try_load_project_config()?;
+    pub fn load_package_config(&self) -> Result<PackageConfig> {
+        let config = self.try_load_package_config()?;
         config.ok_or_else(|| {
-            format_err!("Project config not-initialized. Use `crev project init` to generate it.")
+            format_err!("Package config not-initialized. Use `crev package init` to generate it.")
         })
     }
 
-    pub fn try_load_project_config(&self) -> Result<Option<ProjectConfig>> {
-        let path = self.project_config_path();
+    pub fn try_load_package_config(&self) -> Result<Option<PackageConfig>> {
+        let path = self.package_config_path();
 
         if !path.exists() {
             return Ok(None);
@@ -151,10 +151,10 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(crate::proof::rel_project_path(&proof.content))
+        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content))
     }
 
-    pub fn project_verify(&mut self, allow_dirty: bool) -> Result<crate::VerificationStatus> {
+    pub fn package_verify(&mut self, allow_dirty: bool) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
@@ -167,7 +167,7 @@ impl Repo {
         Ok(db.verify_digest(&digest, &trusted_set))
     }
 
-    pub fn project_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
+    pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
@@ -223,7 +223,7 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn trust_project(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
+    pub fn trust_package(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
         if !self.staging()?.is_empty() {
             bail!("Can't review with uncommitted staged files.");
         }
@@ -239,13 +239,13 @@ impl Repo {
         let _digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         let id = local.read_current_unlocked_id(&passphrase)?;
 
-        let review = proof::review::ProjectBuilder::default()
+        let review = proof::review::PackageBuilder::default()
             .from(id.id.to_owned())
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
         let review =
-            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Project)?;
+            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Package)?;
 
         let proof = review.sign_by(&id)?;
 
@@ -255,7 +255,7 @@ impl Repo {
 
     pub fn commit(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() && !allow_dirty {
-            bail!("No reviews to commit. Use `add` first or use `-a` for the whole project.");
+            bail!("No reviews to commit. Use `add` first or use `-a` for the whole package.");
         }
 
         let local = Local::auto_open()?;

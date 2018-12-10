@@ -42,24 +42,24 @@ main!(|opts: opts::Opts| match opts.command {
             repo.commit(&passphrase, opts.allow_dirty)?;
         }
     }
-    opts::Command::Project(project) => match project {
-        opts::Project::Init => {
+    opts::Command::Package(package) => match package {
+        opts::Package::Init => {
             let local = Local::auto_open()?;
             let cur_id = local.read_current_id()?;
             Repo::init(&PathBuf::from(".".to_string()), cur_id.to_string())?;
         }
-        opts::Project::Trust(project_trust) => {
+        opts::Package::Trust(package_trust) => {
             let mut repo = Repo::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            repo.trust_project(&passphrase, project_trust.allow_dirty)?;
+            repo.trust_package(&passphrase, package_trust.allow_dirty)?;
         }
-        opts::Project::Verify(verify) => {
+        opts::Package::Verify(verify) => {
             let mut repo = Repo::auto_open()?;
-            println!("{}", repo.project_verify(verify.allow_dirty)?);
+            println!("{}", repo.package_verify(verify.allow_dirty)?);
         }
-        opts::Project::Digest(digest) => {
+        opts::Package::Digest(digest) => {
             let mut repo = Repo::auto_open()?;
-            println!("{}", repo.project_digest(digest.allow_dirty)?);
+            println!("{}", repo.package_digest(digest.allow_dirty)?);
         }
     },
     opts::Command::Status => {
@@ -72,7 +72,7 @@ main!(|opts: opts::Opts| match opts.command {
     }
     opts::Command::Verify(verify_opts) => {
         let mut repo = Repo::auto_open()?;
-        repo.project_verify(verify_opts.allow_dirty)?;
+        repo.package_verify(verify_opts.allow_dirty)?;
     }
     opts::Command::Db(cmd) => match cmd {
         opts::Db::Git(git) => {

@@ -4,7 +4,7 @@ use base64;
 use crev_common::serde::{as_base64, from_base64};
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
-pub struct ProjectInfo {
+pub struct PackageInfo {
     #[serde(flatten)]
     pub id: Option<crate::id::PubId>,
     pub source: String,

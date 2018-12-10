@@ -104,7 +104,7 @@ pub struct Git {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
-    /// Verify review coverage of the project
+    /// Verify dependencies of the current project
     #[structopt(name = "verify")]
     Verify(Verify),
     /// Positively review a crate

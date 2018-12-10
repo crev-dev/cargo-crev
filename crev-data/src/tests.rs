@@ -77,7 +77,7 @@ pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
 
     //let mut from = crate::PubId::new(&id.id, "https://github.com/someone/crev-trust".into());
 
-    let project_info = proof::ProjectInfo {
+    let package_info = proof::PackageInfo {
         id: None,
         source: "SOURCE_ID".to_owned(),
         name: "name".into(),
@@ -89,7 +89,7 @@ pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     };
     let review = proof::review::CodeBuilder::default()
         .from(id.id.to_owned())
-        .project(project_info)
+        .package(package_info)
         .comment("comment".into())
         .files(vec![
             proof::review::code::File {

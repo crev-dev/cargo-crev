@@ -1,7 +1,7 @@
-# Creating Project Review Proof
+# Creating Package Review Proof
 
-Project Review Proof records results of your review of a version/release
-of a software project.
+Package Review Proof records results of your review of a version/release
+of a software package.
 
 ## Responsibility
 
@@ -23,10 +23,10 @@ your other work, etc.
 * `from` - information about the entity creating the proof
   * `id` - ID of the entity
   * `url` - URL where entity publishes their Web of Trust
-* `project` - project information
+* `package` - package information
 * `review`
-  * `digest` - recursive hash of the whole project content at the time of the review
-  * `thoroughness` - time and effort spent reviewing this project
+  * `digest` - recursive hash of the whole package content at the time of the review
+  * `thoroughness` - time and effort spent reviewing this package
     * `high` - "I've spent hours or more carefully reviewing"; more than an hour,
                of a focused review; possibly a part of a formal security review;
                compared with previous releases, etc.
@@ -35,7 +35,7 @@ your other work, etc.
     * `none` - "I actually haven't looked inside, or it was too brief to count"
   * `understanding`
     * `high` - "I'm one of the authors and/or experts in the area"
-    * `medium` - "It's within my competency to judge this project, and there's nothing
+    * `medium` - "It's within my competency to judge this package, and there's nothing
                  in it that I can't understand"
     * `low` - "There are parts that are unclear to me, but I understand a decent chunk
                of it"

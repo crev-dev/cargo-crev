@@ -37,8 +37,8 @@ pub struct Code {
     )]
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
-    #[serde(rename = "project")]
-    pub project: proof::ProjectInfo,
+    #[serde(rename = "package")]
+    pub package: proof::PackageInfo,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
     review: super::Review,
@@ -64,8 +64,8 @@ pub struct CodeDraft {
     )]
     date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
-    #[serde(rename = "project")]
-    pub project: proof::ProjectInfo,
+    #[serde(rename = "package")]
+    pub package: proof::PackageInfo,
     review: super::Review,
     #[serde(default = "Default::default")]
     comment: String,
@@ -82,7 +82,7 @@ impl From<Code> for CodeDraft {
             version: code.version,
             date: code.date,
             from: code.from,
-            project: code.project,
+            package: code.package,
             review: code.review,
             comment: code.comment,
             files: code.files,
@@ -96,7 +96,7 @@ impl From<CodeDraft> for Code {
             version: code.version,
             date: code.date,
             from: code.from,
-            project: code.project,
+            package: code.package,
             review: code.review,
             comment: code.comment,
             files: code.files,

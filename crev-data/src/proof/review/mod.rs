@@ -2,9 +2,9 @@ use crate::level::Level;
 use std::default::Default;
 
 pub mod code;
-pub mod project;
+pub mod package;
 
-pub use self::{code::*, project::*};
+pub use self::{code::*, package::*};
 
 pub trait Common: super::ContentCommon {
     fn review(&self) -> &Review;

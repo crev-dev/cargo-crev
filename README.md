@@ -42,15 +42,15 @@ Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 Using `crev` you can generate cryptographically signed artifacts reviewing whole
 releases, parts of the code, or specifying trust (or mistrust) into reviews of other people.
 
-Eg. *Project Review Proofs* that review a whole project (aka. package, crate, etc.):
+Eg. *Package Review Proofs* that review a whole package (aka. library, crate, etc.):
 
 ```
------BEGIN CREV PROJECT REVIEW-----
+-----BEGIN CREV PACKAGE REVIEW-----
 date: "2018-12-08T20:33:22.144618385-08:00"
 from:
   id: SnfdW4LwLh7yHBRNvyKGa4je0bzfeEo4_H4Zs7mgDuc=
   url: "https://github.com/test/crev-proofs"
-project:
+package:
   source: "https://crates.io"
   name: toml
   version: 0.4.9
@@ -60,9 +60,9 @@ review:
   understanding: medium
   trust: medium
 comment: Just testing
------BEGIN CREV PROJECT REVIEW SIGNATURE-----
+-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----
 r4kLN4tmAhDac3f5GdEEuA0ghq23tpvspX_TEy1CVA3OH5szA2BFtG8Uzl_lQiUr_ZYoHMj8LKJsjzaVsus7Dw==
------END CREV PROJECT REVIEW-----
+-----END CREV PACKAGE REVIEW-----
 ```
 
 When useful, it is possible to review particular files (*Code Review Proof*).

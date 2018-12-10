@@ -6,12 +6,12 @@ fn type_name(content: &Content) -> (&str, Option<&str>) {
     match content {
         Content::Trust(_) => ("trust", None),
         Content::Code(_) => ("reviews", Some("code")),
-        Content::Project(_) => ("reviews", Some("projects")),
+        Content::Package(_) => ("reviews", Some("packages")),
     }
 }
 
-/// The path to use under project `.crev/`
-pub(crate) fn rel_project_path(content: &Content) -> PathBuf {
+/// The path to use under package `.crev/`
+pub(crate) fn rel_package_path(content: &Content) -> PathBuf {
     rel_store_path(content)
 }
 

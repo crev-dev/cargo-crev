@@ -5,12 +5,12 @@ use chrono::{self, prelude::*};
 use crev_common;
 use std::{default, fmt, fs, io, mem, path::Path};
 
-pub mod project_info;
+pub mod package_info;
 pub mod review;
 pub mod revision;
 pub mod trust;
 
-pub use self::{project_info::*, revision::*, trust::*};
+pub use self::{package_info::*, revision::*, trust::*};
 
 use crate::Result;
 
@@ -34,7 +34,7 @@ pub trait ContentCommon {
 #[derive(Copy, Clone, Debug)]
 pub enum ProofType {
     Code,
-    Project,
+    Package,
     Trust,
 }
 
@@ -42,21 +42,21 @@ impl ProofType {
     fn begin_block(&self) -> &'static str {
         match self {
             ProofType::Code => review::Code::BEGIN_BLOCK,
-            ProofType::Project => review::Project::BEGIN_BLOCK,
+            ProofType::Package => review::Package::BEGIN_BLOCK,
             ProofType::Trust => Trust::BEGIN_BLOCK,
         }
     }
     fn begin_signature(&self) -> &'static str {
         match self {
             ProofType::Code => review::Code::BEGIN_SIGNATURE,
-            ProofType::Project => review::Project::BEGIN_SIGNATURE,
+            ProofType::Package => review::Package::BEGIN_SIGNATURE,
             ProofType::Trust => Trust::BEGIN_SIGNATURE,
         }
     }
     fn end_block(&self) -> &'static str {
         match self {
             ProofType::Code => review::Code::END_BLOCK,
-            ProofType::Project => review::Project::END_BLOCK,
+            ProofType::Package => review::Package::END_BLOCK,
             ProofType::Trust => Trust::END_BLOCK,
         }
     }
@@ -79,7 +79,7 @@ pub(crate) struct Serialized {
 #[derive(Debug, Clone)]
 pub enum Content {
     Trust(Trust),
-    Project(review::Project),
+    Package(review::Package),
     Code(review::Code),
 }
 
@@ -89,7 +89,7 @@ impl fmt::Display for Content {
         match self {
             Trust(trust) => trust.fmt(f),
             Code(code) => code.fmt(f),
-            Project(project) => project.fmt(f),
+            Package(package) => package.fmt(f),
         }
     }
 }
@@ -100,9 +100,9 @@ impl From<review::Code> for Content {
     }
 }
 
-impl From<review::Project> for Content {
-    fn from(review: review::Project) -> Self {
-        Content::Project(review)
+impl From<review::Package> for Content {
+    fn from(review: review::Package) -> Self {
+        Content::Package(review)
     }
 }
 
@@ -116,7 +116,7 @@ impl Content {
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
             ProofType::Code => Content::Code(review::Code::parse(&s)?),
-            ProofType::Project => Content::Project(review::Project::parse(&s)?),
+            ProofType::Package => Content::Package(review::Package::parse(&s)?),
             ProofType::Trust => Content::Trust(Trust::parse(&s)?),
         })
     }
@@ -124,7 +124,7 @@ impl Content {
     pub fn parse_draft(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
             ProofType::Code => Content::Code(review::CodeDraft::parse(&s)?.into()),
-            ProofType::Project => Content::Project(review::ProjectDraft::parse(&s)?.into()),
+            ProofType::Package => Content::Package(review::PackageDraft::parse(&s)?.into()),
             ProofType::Trust => Content::Trust(TrustDraft::parse(&s)?.into()),
         })
     }
@@ -144,7 +144,7 @@ impl Content {
         match self {
             Trust(_trust) => ProofType::Trust,
             Code(_review) => ProofType::Code,
-            Project(_review) => ProofType::Project,
+            Package(_review) => ProofType::Package,
         }
     }
 
@@ -153,7 +153,7 @@ impl Content {
         match self {
             Trust(trust) => trust.date(),
             Code(review) => review.date(),
-            Project(review) => review.date(),
+            Package(review) => review.date(),
         }
     }
 
@@ -162,7 +162,7 @@ impl Content {
         match self {
             Trust(trust) => trust.author_id(),
             Code(review) => review.author_id(),
-            Project(review) => review.author_id(),
+            Package(review) => review.author_id(),
         }
     }
 
@@ -171,7 +171,7 @@ impl Content {
         match self {
             Trust(trust) => trust.author_url(),
             Code(review) => review.author_url(),
-            Project(review) => review.author_url(),
+            Package(review) => review.author_url(),
         }
     }
 
@@ -180,7 +180,7 @@ impl Content {
         match self.clone() {
             Trust(trust) => format!("{}", TrustDraft::from(trust)),
             Code(review) => format!("{}", review::CodeDraft::from(review)),
-            Project(review) => format!("{}", review::ProjectDraft::from(review)),
+            Package(review) => format!("{}", review::PackageDraft::from(review)),
         }
     }
 }
@@ -234,7 +234,7 @@ impl Serialized {
             digest: crev_common::blake2sum(&self.body.as_bytes()),
             content: match self.type_ {
                 ProofType::Code => Content::Code(review::Code::parse(&self.body)?),
-                ProofType::Project => Content::Project(review::Project::parse(&self.body)?),
+                ProofType::Package => Content::Package(review::Package::parse(&self.body)?),
                 ProofType::Trust => Content::Trust(Trust::parse(&self.body)?),
             },
         })
@@ -286,8 +286,8 @@ impl Serialized {
                         } else if line == ProofType::Trust.begin_block() {
                             self.type_ = ProofType::Trust;
                             self.stage = Stage::Body;
-                        } else if line == ProofType::Project.begin_block() {
-                            self.type_ = ProofType::Project;
+                        } else if line == ProofType::Package.begin_block() {
+                            self.type_ = ProofType::Package;
                             self.stage = Stage::Body;
                         } else {
                             bail!("Parsing error when looking for start of code review proof");

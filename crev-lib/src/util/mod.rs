@@ -80,7 +80,7 @@ pub fn get_documentation_for(content: &proof::Content) -> &'static str {
     match content {
         Content::Trust(_) => include_str!("../../rc/doc/editing-trust.md"),
         Content::Code(_) => include_str!("../../rc/doc/editing-code-review.md"),
-        Content::Project(_) => include_str!("../../rc/doc/editing-project-review.md"),
+        Content::Package(_) => include_str!("../../rc/doc/editing-package-review.md"),
     }
 }
 

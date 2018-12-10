@@ -110,9 +110,9 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_current_unlocked_id(&passphrase)?;
 
-    let review = proof::review::ProjectBuilder::default()
+    let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
-        .project(proof::ProjectInfo {
+        .package(proof::PackageInfo {
             id: None,
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
             name: args.name.clone(),
@@ -128,7 +128,7 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
 
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review.into(),
-        crev_data::proof::ProofType::Project,
+        crev_data::proof::ProofType::Package,
     )?;
 
     let proof = review.sign_by(&id)?;
@@ -141,10 +141,10 @@ const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 fn find_reviews(
     crate_: &opts::CrateSelector,
     trust_params: &crev_lib::trustdb::TrustDistanceParams,
-) -> Result<impl Iterator<Item = proof::review::Project>> {
+) -> Result<impl Iterator<Item = proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let (db, _trust_set) = local.load_db(&trust_params)?;
-    Ok(db.get_project_reviews_for_project(
+    Ok(db.get_package_reviews_for_package(
         PROJECT_SOURCE_CRATES_IO,
         crate_.name.as_ref().map(|s| s.as_str()),
         crate_.version.as_ref().map(|s| s.as_str()),

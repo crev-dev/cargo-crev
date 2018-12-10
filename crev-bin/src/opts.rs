@@ -61,37 +61,37 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ProjectTrust {
+pub struct PackageTrust {
     #[structopt(long = "allow-dirty")]
     pub allow_dirty: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ProjectVerify {
+pub struct PackageVerify {
     #[structopt(long = "allow-dirty")]
     pub allow_dirty: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ProjectDigest {
+pub struct PackageDigest {
     #[structopt(long = "allow-dirty")]
     pub allow_dirty: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Project {
+pub enum Package {
     #[structopt(name = "init")]
     /// Init `.crev` directory
     Init,
     #[structopt(name = "trust")]
-    /// Create a Project Review Proof for the whole directory
-    Trust(ProjectTrust),
+    /// Create a Package Review Proof for the whole directory
+    Trust(PackageTrust),
     #[structopt(name = "verify")]
-    /// Verify if the project is trusted in the current state
-    Verify(ProjectVerify),
+    /// Verify if the package is trusted in the current state
+    Verify(PackageVerify),
     #[structopt(name = "digest")]
-    /// Display project digest
-    Digest(ProjectDigest),
+    /// Display package digest
+    Digest(PackageDigest),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -126,16 +126,16 @@ pub enum Command {
     /// Create a new Review Proof from reviewed list
     #[structopt(name = "commit")]
     Commit(Commit),
-    #[structopt(name = "project")]
-    /// Project settings
-    Project(Project),
+    #[structopt(name = "package")]
+    /// Package settings
+    Package(Package),
     #[structopt(name = "status")]
     /// Display pending review list
     Status,
     #[structopt(name = "rm")]
     /// Remove path from reviewed list
     Remove(Remove),
-    /// Verify review coverage of the project
+    /// Verify review coverage of the package
     Verify(Verify),
     #[structopt(name = "trust")]
     /// Trust Store management
