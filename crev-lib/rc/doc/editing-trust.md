@@ -32,11 +32,6 @@ your other work, etc.
   * `low` - "I have some reservations about trusting this entity"
   * `none` - "I don't actually trust this entity"; use to overwrite trust from
              a previously issued Trust Proof
-* `distrust` - "I distrust this entity, and advise others to do the same"
-  * `high` - "I'm sure, it's very important not to trust this entity"
-  * `medium` - "I believe people should not trust this entity"
-  * `low` - "I distrust this entity, but don't feel strongly about it"
-  * `none` - "I don't actually distrust this entity"; use to overwrite distrust
-             from a previously issued Trust Proof
+  * `distrust` - "I distrust this person and so should you"
 * `comment` - Optional, human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)

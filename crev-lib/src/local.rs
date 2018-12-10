@@ -8,7 +8,7 @@ use crate::{
 use app_dirs::{app_root, AppDataType};
 use base64;
 use crev_common;
-use crev_data::{id::OwnId, level, proof, Id, PubId};
+use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId};
 use default::default;
 use failure::ResultExt;
 use git2;
@@ -380,14 +380,9 @@ impl Local {
             .from(from.to_owned())
             .comment("".into())
             .trust(if trust_or_distrust.is_trust() {
-                level::Level::Medium
+                TrustLevel::Medium
             } else {
-                level::Level::None
-            })
-            .distrust(if trust_or_distrust.is_trust() {
-                level::Level::None
-            } else {
-                level::Level::Medium
+                TrustLevel::Distrust
             })
             .ids(pub_ids)
             .build()

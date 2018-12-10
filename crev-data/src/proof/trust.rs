@@ -1,4 +1,4 @@
-use crate::{id, level::Level, proof, Result};
+use crate::{id, proof, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
@@ -10,6 +10,49 @@ use std::fmt;
 const BEGIN_BLOCK: &str = "-----BEGIN CREV TRUST -----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV TRUST SIGNATURE-----";
 const END_BLOCK: &str = "-----END CREV TRUST-----";
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TrustLevel {
+    High,
+    Medium,
+    Low,
+    None,
+    Distrust,
+}
+
+impl Default for TrustLevel {
+    fn default() -> Self {
+        TrustLevel::Medium
+    }
+}
+
+impl fmt::Display for TrustLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use self::TrustLevel::*;
+        f.write_str(match self {
+            Distrust => "distrust",
+            None => "none",
+            Low => "low",
+            Medium => "medium",
+            High => "high",
+        })
+    }
+}
+
+impl TrustLevel {
+    #[allow(unused)]
+    fn from_str(s: &str) -> Result<TrustLevel> {
+        Ok(match s {
+            "distrust" => TrustLevel::Distrust,
+            "none" => TrustLevel::None,
+            "low" => TrustLevel::Low,
+            "medium" => TrustLevel::Medium,
+            "high" => TrustLevel::High,
+            _ => bail!("Unknown level: {}", s),
+        })
+    }
+}
 
 /// Body of a Trust Proof
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
@@ -25,13 +68,7 @@ pub struct Trust {
     pub from: crate::PubId,
     pub ids: Vec<crate::PubId>,
     #[builder(default = "Default::default()")]
-    pub trust: Level,
-    #[builder(default = "proof::default_distrust_level()")]
-    #[serde(
-        skip_serializing_if = "proof::equals_default_distrust_level",
-        default = "proof::default_distrust_level"
-    )]
-    pub distrust: Level,
+    pub trust: TrustLevel,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     comment: String,
@@ -49,16 +86,7 @@ pub struct TrustDraft {
     pub date: chrono::DateTime<FixedOffset>,
     pub from: crate::PubId,
     pub ids: Vec<crate::PubId>,
-    #[serde(
-        skip_serializing_if = "proof::equals_none_level",
-        default = "proof::none_level"
-    )]
-    pub trust: Level,
-    #[serde(
-        skip_serializing_if = "proof::equals_none_level",
-        default = "proof::none_level"
-    )]
-    pub distrust: Level,
+    pub trust: TrustLevel,
     #[serde(default = "Default::default")]
     comment: String,
 }
@@ -71,7 +99,6 @@ impl From<Trust> for TrustDraft {
             from: trust.from,
             ids: trust.ids,
             trust: trust.trust,
-            distrust: trust.distrust,
             comment: trust.comment,
         }
     }
@@ -85,7 +112,6 @@ impl From<TrustDraft> for Trust {
             from: trust.from,
             ids: trust.ids,
             trust: trust.trust,
-            distrust: trust.distrust,
             comment: trust.comment,
         }
     }

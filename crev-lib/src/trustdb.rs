@@ -2,8 +2,8 @@ use crate::VerificationStatus;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
-    level::Level,
     proof::review::Rating,
+    proof::trust::TrustLevel,
     proof::{self, review, Content, ContentCommon},
     Digest, Id,
 };
@@ -13,21 +13,21 @@ use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
 struct TrustInfo {
     #[allow(unused)]
-    trust: crev_data::level::Level,
+    trust: TrustLevel,
     date: chrono::DateTime<Utc>,
 }
 
-impl<'a> From<&'a proof::Trust> for TrustInfo {
-    fn from(trust: &proof::Trust) -> Self {
+impl From<proof::Trust> for TrustInfo {
+    fn from(trust: proof::Trust) -> Self {
         TrustInfo {
-            trust: trust.trust,
             date: trust.date().with_timezone(&Utc),
+            trust: trust.trust,
         }
     }
 }
 
 impl TrustInfo {
-    fn maybe_update_with(&mut self, date: &chrono::DateTime<Utc>, trust: Level) {
+    fn maybe_update_with(&mut self, date: &chrono::DateTime<Utc>, trust: TrustLevel) {
         if *date > self.date {
             self.trust = trust;
         }
@@ -221,7 +221,7 @@ impl TrustDB {
         proofs.into_iter()
     }
 
-    fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: Level) {
+    fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: TrustLevel) {
         match self
             .trust_id_to_id
             .entry(from.to_owned())
@@ -375,7 +375,7 @@ impl TrustDB {
         }
     }
 
-    fn get_ids_trusted_by(&self, id: &Id) -> impl Iterator<Item = (Level, &Id)> {
+    fn get_ids_trusted_by(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
         if let Some(map) = self.trust_id_to_id.get(id) {
             Some(map.iter().map(|(id, trust_info)| (trust_info.trust, id)))
         } else {
@@ -458,12 +458,14 @@ pub struct TrustDistanceParams {
 }
 
 impl TrustDistanceParams {
-    fn distance_by_level(&self, level: Level) -> Option<u64> {
+    fn distance_by_level(&self, level: TrustLevel) -> Option<u64> {
+        use crev_data::proof::trust::TrustLevel::*;
         Some(match level {
-            Level::None => return None,
-            Level::Low => self.low_trust_distance,
-            Level::Medium => self.medium_trust_distance,
-            Level::High => self.high_trust_distance,
+            Distrust => return Option::None,
+            None => return Option::None,
+            Low => self.low_trust_distance,
+            Medium => self.medium_trust_distance,
+            High => self.high_trust_distance,
         })
     }
 }

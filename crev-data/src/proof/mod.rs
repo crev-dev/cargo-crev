@@ -392,8 +392,8 @@ pub fn default_revision_type() -> String {
     "git".into()
 }
 
-fn equals_default_distrust_level(l: &Level) -> bool {
-    *l == default_distrust_level()
+fn equals_default_trust_level(l: &TrustLevel) -> bool {
+    *l == default_trust_level()
 }
 
 fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
@@ -404,8 +404,8 @@ fn equals_none_level(l: &Level) -> bool {
     *l == Level::None
 }
 
-fn default_distrust_level() -> Level {
-    Level::None
+fn default_trust_level() -> TrustLevel {
+    TrustLevel::Medium
 }
 
 fn none_level() -> Level {
