@@ -65,22 +65,6 @@ impl fmt::Display for Id {
         }
     }
 }
-/*
-impl<T: Borrow<id::PubId>> From<T> for IdAndUrl {
-    fn from(id: T) -> Self {
-        let id = id.borrow();
-        IdAndUrl {
-            id: Id::Crev {
-                id: id.pub_key_as_base64(),
-            },
-            url: Some(Url {
-                url: id.url.clone(),
-                url_type: super::url::default_url_type(),
-            }),
-        }
-    }
-}
-*/
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PubId {
