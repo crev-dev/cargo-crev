@@ -27,7 +27,7 @@ main!(|opts: opts::Opts| match opts.command {
         opts::Trust::Add(trust) => {
             let local = Local::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(trust.pub_ids, passphrase, Trust)?;
+            local.build_trust_proof(trust.pub_ids, &passphrase, Trust)?;
         }
     },
     opts::Command::Add(add) => {

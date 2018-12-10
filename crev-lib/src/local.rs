@@ -76,6 +76,7 @@ pub struct Local {
 }
 
 impl Local {
+    #[allow(clippy::new_ret_no_self)]
     fn new() -> Result<Self> {
         let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
         let cache_path = app_root(AppDataType::UserCache, &APP_INFO)?;
@@ -84,6 +85,7 @@ impl Local {
             cache_path,
         })
     }
+
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
@@ -266,7 +268,7 @@ impl Local {
     pub fn build_trust_proof(
         &self,
         pub_ids: Vec<String>,
-        passphrase: String,
+        passphrase: &str,
         trust_or_distrust: crate::TrustOrDistrust,
     ) -> Result<()> {
         if pub_ids.is_empty() {

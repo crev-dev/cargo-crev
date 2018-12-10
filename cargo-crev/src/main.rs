@@ -197,12 +197,12 @@ fn main() -> Result<()> {
         opts::Command::Trust(args) => {
             let local = Local::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(args.pub_ids, passphrase, Trust)?;
+            local.build_trust_proof(args.pub_ids, &passphrase, Trust)?;
         }
         opts::Command::Distrust(args) => {
             let local = Local::auto_open()?;
             let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(args.pub_ids, passphrase, Distrust)?;
+            local.build_trust_proof(args.pub_ids, &passphrase, Distrust)?;
         }
         opts::Command::Db(cmd) => match cmd {
             opts::Db::Git(git) => {
