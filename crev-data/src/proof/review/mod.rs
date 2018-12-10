@@ -13,11 +13,11 @@ pub trait Common: super::ContentCommon {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Rating {
-    Superb,
-    Positive,
-    Neutral,
-    Negative,
     Dangerous,
+    Negative,
+    Neutral,
+    Positive,
+    Superb,
 }
 
 impl Default for Rating {

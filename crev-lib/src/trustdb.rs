@@ -223,7 +223,7 @@ impl TrustDB {
             let mut trust_count = 0;
             let mut distrust_count = 0;
             for matching_reviewer in matching_reviewers {
-                if reviews[matching_reviewer].value.rating > Rating::Negative {
+                if Rating::Neutral <= reviews[matching_reviewer].value.rating {
                     trust_count += 1;
                 }
                 if reviews[matching_reviewer].value.rating < Rating::Neutral {
