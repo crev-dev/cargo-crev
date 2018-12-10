@@ -410,8 +410,7 @@ impl Local {
         let mut something_was_fetched = true;
         while something_was_fetched {
             something_was_fetched = false;
-            let trust_set =
-                db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
+            let trust_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
 
             for id in &trust_set {
                 if already_fetched.contains(id) {
@@ -489,8 +488,7 @@ impl Local {
         let mut db = trustdb::TrustDB::new();
         db.import_from_iter(self.proofs_iter());
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
-        let trusted_set =
-            db.calculate_trust_set(user_config.get_current_userid()?.clone(), &params);
+        let trusted_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
 
         Ok((db, trusted_set))
     }

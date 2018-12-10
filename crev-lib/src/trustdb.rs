@@ -12,7 +12,6 @@ use std::collections::BTreeMap;
 use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
 struct TrustInfo {
-    #[allow(unused)]
     trust: TrustLevel,
     date: chrono::DateTime<Utc>,
 }
@@ -35,7 +34,6 @@ impl TrustInfo {
 }
 
 struct ReviewInfo {
-    #[allow(unused)]
     date: chrono::DateTime<Utc>,
     review: proof::review::Review,
 }
@@ -57,31 +55,27 @@ impl ReviewInfo {
     }
 }
 
-struct UrlInfo {
-    #[allow(unused)]
+struct TimestampedUrl {
     date: chrono::DateTime<Utc>,
     url: crev_data::Url,
 }
 
-impl UrlInfo {
+impl TimestampedUrl {
     fn maybe_update_with(&mut self, date: &DateTime<Utc>, url: &crev_data::Url) {
-        if date > &self.date {
+        if self.date < *date {
             self.url = url.clone()
         }
     }
 }
 
-/// In memory database tracking known trust relationships
+/// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effcttive trust set.
 pub struct TrustDB {
-    #[allow(unused)]
     trust_id_to_id: HashMap<Id, HashMap<Id, TrustInfo>>, // who -(trusts)-> whom
-    //trust_id_to_review: HashMap<String, HashMap<Vec<u8>, ReviewInfo>>, // who -(reviewed)-> what (file digest)
     digest_to_reviews: HashMap<Vec<u8>, HashMap<Id, ReviewInfo>>, // what (digest) -(reviewed)-> by whom
-    url_by_id: HashMap<Id, UrlInfo>,
-    url_by_id_secondary: HashMap<Id, UrlInfo>,
-    trusted_ids: HashSet<Id>,
+    url_by_id: HashMap<Id, TimestampedUrl>,
+    url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
     project_review_by_signature: HashMap<String, review::Project>,
     project_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
@@ -89,20 +83,24 @@ pub struct TrustDB {
     project_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
 }
 
-impl TrustDB {
-    pub fn new() -> Self {
-        TrustDB {
+impl Default for TrustDB {
+    fn default() -> Self {
+        Self {
             trust_id_to_id: Default::default(),
-            //trust_id_to_review: Default::default(),
             url_by_id: Default::default(),
             url_by_id_secondary: Default::default(),
             digest_to_reviews: Default::default(),
-            trusted_ids: Default::default(),
             project_review_by_signature: default(),
             project_reviews_by_source: default(),
             project_reviews_by_name: default(),
             project_reviews_by_version: default(),
         }
+    }
+}
+
+impl TrustDB {
+    pub fn new() -> Self {
+        default()
     }
 
     fn add_code_review(&mut self, review: &review::Code) {
@@ -112,7 +110,7 @@ impl TrustDB {
             match self
                 .digest_to_reviews
                 .entry(file.digest.to_owned())
-                .or_insert_with(|| HashMap::new())
+                .or_insert_with(HashMap::new)
                 .entry(from.id.clone())
             {
                 hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
@@ -129,7 +127,7 @@ impl TrustDB {
         match self
             .digest_to_reviews
             .entry(review.project.digest.to_owned())
-            .or_insert_with(|| HashMap::new())
+            .or_insert_with(HashMap::new)
             .entry(from.id.clone())
         {
             hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(review),
@@ -175,44 +173,29 @@ impl TrustDB {
                 .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
                 .map(|set| {
                     set.iter()
-                        .map(|signature| {
-                            self.project_review_by_signature
-                                .get(signature)
-                                .unwrap()
-                                .clone()
-                        })
+                        .map(|signature| self.project_review_by_signature[signature].clone())
                         .collect()
                 })
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
 
             (Some(name), None) => self
                 .project_reviews_by_name
                 .get(&(source.to_owned(), name.to_owned()))
                 .map(|set| {
                     set.iter()
-                        .map(|signature| {
-                            self.project_review_by_signature
-                                .get(signature)
-                                .unwrap()
-                                .clone()
-                        })
+                        .map(|signature| self.project_review_by_signature[signature].clone())
                         .collect()
                 })
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
             (None, None) => self
                 .project_reviews_by_source
                 .get(source)
                 .map(|set| {
                     set.iter()
-                        .map(|signature| {
-                            self.project_review_by_signature
-                                .get(signature)
-                                .unwrap()
-                                .clone()
-                        })
+                        .map(|signature| self.project_review_by_signature[signature].clone())
                         .collect()
                 })
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
             (None, Some(_)) => panic!("Wrong usage"),
         };
 
@@ -225,7 +208,7 @@ impl TrustDB {
         match self
             .trust_id_to_id
             .entry(from.to_owned())
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .entry(to.to_owned())
         {
             hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(&date, trust),
@@ -241,10 +224,8 @@ impl TrustDB {
         for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
-        if self.trusted_ids.contains(&from.id) {
-            for to in &trust.ids {
-                self.record_url_from_to_field(&trust.date_utc(), &to)
-            }
+        for to in &trust.ids {
+            self.record_url_from_to_field(&trust.date_utc(), &to)
         }
     }
 
@@ -291,9 +272,9 @@ impl TrustDB {
         if let Some(url) = to.url.as_ref() {
             self.url_by_id_secondary
                 .entry(to.id.clone())
-                .or_insert_with(|| UrlInfo {
+                .or_insert_with(|| TimestampedUrl {
                     url: url.clone(),
-                    date: date.clone(),
+                    date: *date,
                 });
         }
     }
@@ -305,15 +286,14 @@ impl TrustDB {
                     entry.get_mut().maybe_update_with(date, &url)
                 }
                 hash_map::Entry::Vacant(entry) => {
-                    entry.insert(UrlInfo {
+                    entry.insert(TimestampedUrl {
                         url: url.clone(),
-                        date: date.clone(),
+                        date: date.to_owned(),
                     });
                 }
             }
         }
     }
-
     fn add_proof(&mut self, proof: &proof::Proof) {
         proof
             .verify()
@@ -342,7 +322,7 @@ impl TrustDB {
     }
 
     // Oh god, please someone verify this :D
-    pub fn calculate_trust_set(&self, for_id: Id, params: &TrustDistanceParams) -> HashSet<Id> {
+    pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> HashSet<Id> {
         #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
         struct Visit {
             distance: u64,
