@@ -46,22 +46,24 @@ Eg. *Package Review Proofs* that review a whole package (aka. library, crate, et
 
 ```
 -----BEGIN CREV PACKAGE REVIEW-----
-date: "2018-12-08T20:33:22.144618385-08:00"
+version: -99999
+date: "2018-12-09T23:54:12.681862766-08:00"
 from:
-  id: SnfdW4LwLh7yHBRNvyKGa4je0bzfeEo4_H4Zs7mgDuc=
-  url: "https://github.com/test/crev-proofs"
+  id-type: crev
+  id: _xQgkbDAQx3nSV5SMfdEeQBSYiPwSI32wnMxnjExk24=
+  url: "https://github.com/dpc/crev-proofs"
 package:
   source: "https://crates.io"
-  name: toml
-  version: 0.4.9
-  digest: r0ex2BqsdMk5eK8Zo7dn1lJiC5hv9YXZ3otT7zoVnCc=
+  name: either
+  version: 1.5.0
+  digest: 1E88e0ya8wOX1jYLjl5OAEtl1EVzhWpji86dEQ-V720=
 review:
-  thoroughness: low
-  understanding: medium
-  trust: medium
-comment: Just testing
+  thoroughness: medium
+  understanding: high
+  rating: positive
+comment: "Simple `Either` type"
 -----BEGIN CREV PACKAGE REVIEW SIGNATURE-----
-r4kLN4tmAhDac3f5GdEEuA0ghq23tpvspX_TEy1CVA3OH5szA2BFtG8Uzl_lQiUr_ZYoHMj8LKJsjzaVsus7Dw==
+AiS2AKPLuIoStFuX3h9KRln3TGv-TArLExY6P3VaI46CL23_1HbB2Nf1o8MvW-_jl6pzXamiYCnRhXHXEOK5DQ==
 -----END CREV PACKAGE REVIEW-----
 ```
 
