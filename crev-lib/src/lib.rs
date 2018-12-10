@@ -198,14 +198,14 @@ where
 
 pub fn generate_id() -> Result<()> {
     eprintln!("Enter a public URL of a git repository for publishing your CrevID proofs.");
-    eprintln!("E.g.: https://github.com/<myusername>/crev-db");
+    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
     eprintln!("or just your github username to generate it.");
     let mut url;
     loop {
         url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
         eprintln!("");
         if !url.contains('/') {
-            url = format!("https://github.com/{}/crev-db", url)
+            url = format!("https://github.com/{}/crev-proofs", url)
         }
         eprintln!("Your URL: {}", url);
         eprintln!("It's recomended that it exist, and is initialized upfront.");

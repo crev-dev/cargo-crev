@@ -6,7 +6,7 @@ use crev_data::proof::trust::TrustLevel;
 
 #[test]
 fn lock_and_unlock() -> Result<()> {
-    let id = OwnId::generate("https://example.com/crev-db".into());
+    let id = OwnId::generate("https://example.com/crev-proofs".into());
 
     let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);

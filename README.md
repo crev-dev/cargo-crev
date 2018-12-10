@@ -49,7 +49,7 @@ Eg. *Project Review Proofs* that review a whole project (aka. package, crate, et
 date: "2018-12-08T20:33:22.144618385-08:00"
 from:
   id: SnfdW4LwLh7yHBRNvyKGa4je0bzfeEo4_H4Zs7mgDuc=
-  url: "https://github.com/test/crev-db"
+  url: "https://github.com/test/crev-proofs"
 project:
   source: "https://crates.io"
   name: toml
