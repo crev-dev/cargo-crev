@@ -46,7 +46,8 @@ your other work, etc.
   * `low` - "not good enough for production "
   * `none` - "I can't recommend it/haven't actually reviewed it"; use to overwrite
              trust from a previously issued Project Review Proof
-* `recommendation` - "I distrust this project, and advise others not to use it"
+* `rating`
+  * `superb`
   * `positive`
   * `neutral`
   * `negative`

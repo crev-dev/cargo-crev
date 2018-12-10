@@ -3,7 +3,7 @@ use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
     level::Level,
-    proof::review::Recommendation,
+    proof::review::Rating,
     proof::{self, review, Content, ContentCommon},
     Digest, Id,
 };
@@ -267,10 +267,10 @@ impl TrustDB {
             let mut trust_count = 0;
             let mut distrust_count = 0;
             for matching_reviewer in matching_reviewers {
-                if reviews[matching_reviewer].review.recommendation > Recommendation::Negative {
+                if reviews[matching_reviewer].review.rating > Rating::Negative {
                     trust_count += 1;
                 }
-                if reviews[matching_reviewer].review.recommendation < Recommendation::Neutral {
+                if reviews[matching_reviewer].review.rating < Rating::Neutral {
                     distrust_count += 1;
                 }
             }

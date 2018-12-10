@@ -39,21 +39,11 @@ your other work, etc.
   * `low` - "There are parts that are unclear to me, but I understand a decent chunk
              of it"
   * `none` - "I have no idea what is going on here"
-* `trust` - trust level; possible values:
-  * `high` - "I have a high confidence that this project is worth using
-              and I recommend it"
-  * `medium` - typical, normal level of trust; "IMO, good enough for production use"
-  * `low` - "I have some reservations and/or conerns, but is OK to use" 
-  * `none` - "I can't recommend it/haven't actually reviewed it"; use to overwrite
-             trust from a previously issued Project Review Proof
-* `distrust` - "I distrust this project, and advise others not to use it"
-  * `high` - "I'm confident it's very important not to trust this software", "this
-             project is harmful, contains malicious code, etc."
-  * `medium` - "I believe people should not use this project", "it might not be
-             malicious, but contains serious bugs and/or flaws"
-  * `low` - "I would advise not to use this project at it's current form, for
-            production use but I don't feel strongly about it"
-  * `none` - "I don't actually distrust this project"; use to overwrite distrust
-             from a previously issued Project Review Proof
+* `rating`
+  * `superb`
+  * `positive`
+  * `neutral`
+  * `negative`
+  * `dangerous`
 * `comment` - Optional, human-readable information about this review
 * `files` - list of reviewed files

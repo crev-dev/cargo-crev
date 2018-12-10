@@ -56,11 +56,11 @@ impl TrustOrDistrust {
         false
     }
 
-    pub fn to_default_score(self) -> crev_data::Review {
+    pub fn to_review(self) -> crev_data::Review {
         use self::TrustOrDistrust::*;
         match self {
-            Trust => crev_data::Review::new_default_trust(),
-            Distrust => crev_data::Review::new_default_distrust(),
+            Trust => crev_data::Review::new_positive(),
+            Distrust => crev_data::Review::new_negative(),
         }
     }
 }

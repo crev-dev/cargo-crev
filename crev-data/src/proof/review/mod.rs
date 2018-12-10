@@ -12,15 +12,17 @@ pub trait Common: super::ContentCommon {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum Recommendation {
-    Negative,
+pub enum Rating {
+    Superb,
+    Positive,
     Neutral,
-    Positivie,
+    Negative,
+    Dangerous,
 }
 
-impl Default for Recommendation {
+impl Default for Rating {
     fn default() -> Self {
-        Recommendation::Neutral
+        Rating::Neutral
     }
 }
 
@@ -32,9 +34,7 @@ pub struct Review {
     #[builder(default = "Default::default()")]
     pub understanding: Level,
     #[builder(default = "Default::default()")]
-    pub quality: Level,
-    #[builder(default = "Default::default()")]
-    pub recommendation: Recommendation,
+    pub rating: Rating,
 }
 
 impl Default for Review {
@@ -42,22 +42,20 @@ impl Default for Review {
         Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
-            quality: Level::Medium,
-            recommendation: Recommendation::Neutral,
+            rating: Rating::Positive,
         }
     }
 }
 
 impl Review {
-    pub fn new_default_trust() -> Self {
+    pub fn new_positive() -> Self {
         Default::default()
     }
-    pub fn new_default_distrust() -> Self {
+    pub fn new_negative() -> Self {
         Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
-            quality: Level::None,
-            recommendation: Recommendation::Negative,
+            rating: Rating::Negative,
         }
     }
 }

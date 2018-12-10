@@ -124,7 +124,7 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
             revision: "".into(),
             revision_type: proof::default_revision_type(),
         })
-        .review(trust.to_default_score())
+        .review(trust.to_review())
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
