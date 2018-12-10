@@ -29,11 +29,12 @@ you keep up with ever-changing ecosystem?
 
 #### Status
 
-Very early, looking for help.
+Still early, but there's a lot of working code and ironed-out ideas.
 
-The current focus is on a first conret implementation of Crev:
+The current focus is on a first concrete implementation of Crev:
 [`cargo-crev`](https://github.com/dpc/crev/tree/master/cargo-crev) -
 a tool for reviewing Rust language crates published on [crates.io](https://crates.io).
+It is available in an alpha version.
 
 Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
