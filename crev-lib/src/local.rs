@@ -280,8 +280,6 @@ impl Local {
 
         let own_id = self.read_current_unlocked_id(&passphrase)?;
 
-        let from = own_id.as_pubid();
-
         let pub_ids: Result<Vec<_>> = pub_ids
             .into_iter()
             .map(|s| {
@@ -293,19 +291,17 @@ impl Local {
                 Ok(id)
             })
             .collect();
+
         let pub_ids = pub_ids?;
 
-        let trust = proof::TrustBuilder::default()
-            .from(from.to_owned())
-            .comment("".into())
-            .trust(if trust_or_distrust.is_trust() {
+        let trust = own_id.create_trust_proof(
+            pub_ids,
+            if trust_or_distrust.is_trust() {
                 TrustLevel::Medium
             } else {
                 TrustLevel::Distrust
-            })
-            .ids(pub_ids)
-            .build()
-            .map_err(|e| format_err!("{}", e))?;
+            },
+        )?;
 
         let trust = util::edit_proof_content_iteractively(&trust.into(), proof::ProofType::Trust)?;
 

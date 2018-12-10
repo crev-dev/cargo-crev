@@ -1,3 +1,4 @@
+use crate::proof;
 use crate::{Result, Url};
 use base64;
 use blake2;
@@ -151,6 +152,21 @@ pub struct OwnId {
     pub keypair: ed25519_dalek::Keypair,
 }
 
+impl OwnId {
+    pub fn create_trust_proof(
+        &self,
+        ids: Vec<PubId>,
+        trust_level: proof::trust::TrustLevel,
+    ) -> Result<proof::Trust> {
+        Ok(proof::TrustBuilder::default()
+            .from(self.id.clone())
+            .trust(trust_level)
+            .ids(ids)
+            .build()
+            .map_err(|e| format_err!("{}", e))?)
+    }
+}
+
 impl AsRef<Id> for OwnId {
     fn as_ref(&self) -> &Id {
         &self.id.id
@@ -164,6 +180,7 @@ impl AsRef<PubId> for OwnId {
 }
 
 impl OwnId {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(url: String, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
         let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
