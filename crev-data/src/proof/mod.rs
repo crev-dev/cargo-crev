@@ -1,6 +1,5 @@
 //! Some common stuff for both Review and Trust Proofs
 
-use crate::level::Level;
 use base64;
 use chrono::{self, prelude::*};
 use crev_common;

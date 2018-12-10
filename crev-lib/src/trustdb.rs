@@ -225,7 +225,7 @@ impl TrustDB {
         match self
             .trust_id_to_id
             .entry(from.to_owned())
-            .or_insert_with(|| HashMap::new())
+            .or_insert(HashMap::new())
             .entry(to.to_owned())
         {
             hash_map::Entry::Occupied(mut entry) => entry.get_mut().maybe_update_with(&date, trust),
@@ -324,50 +324,6 @@ impl TrustDB {
             Content::Trust(ref trust) => self.add_trust(&trust),
         }
     }
-
-    /*
-        fn import_file(&mut self, path: &Path) -> Result<()> {
-            let proofs = proof::Proof::parse_from(path)?;
-            for proof in proofs.into_iter() {
-                util::err_eprint_and_ignore(self.add_proof(&proof).compat());
-            }
-
-            Ok(())
-        }
-
-        fn maybe_import_file(&mut self, path: &Path) -> Option<Result<()>> {
-            let osext_match: &OsStr = "crev".as_ref();
-            match path.extension() {
-                Some(osext) if osext == osext_match => Some(self.import_file(path)),
-                _ => None,
-            }
-        }
-
-        pub fn import_recursively(&mut self, path: &Path) -> Result<()> {
-            for entry in WalkDir::new(path).into_iter().filter_map(|e| match e {
-                Err(e) => {
-                    eprintln!("Error iterating {}: {}", path.display(), e);
-                    None
-                }
-                Ok(o) => Some(o),
-            }) {
-                let path = entry.path();
-
-                if !path.is_file() {
-                    continue;
-                }
-
-                let res = self.maybe_import_file(&path).unwrap_or(Ok(()));
-                util::err_eprint_and_ignore(
-                    res.with_context(|e| format!("Failed to import file: {}; {}", path.display(), e))
-                        .compat(),
-                );
-            }
-
-            Ok(())
-        }
-
-    */
 
     pub fn import_from_iter(&mut self, i: impl Iterator<Item = proof::Proof>) {
         for proof in i {
