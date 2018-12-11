@@ -210,6 +210,26 @@ fn main() -> Result<()> {
                 let status = local.run_git(git.args)?;
                 std::process::exit(status.code().unwrap_or(-159));
             }
+            opts::Db::Diff => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(vec!["diff".into(), "HEAD".into()])?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
+            opts::Db::Commit => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(vec!["commit".into(), "-a".into()])?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
+            opts::Db::Push => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(vec!["push".into()])?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
+            opts::Db::Pull => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(vec!["pull".into()])?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
         },
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {

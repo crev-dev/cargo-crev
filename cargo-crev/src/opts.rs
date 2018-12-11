@@ -88,8 +88,20 @@ pub struct Trust {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Db {
     #[structopt(name = "git")]
-    /// Run git commands in your own proof repository
+    /// Run raw git commands in your own proof repository
     Git(Git),
+    #[structopt(name = "diff")]
+    /// See changes
+    Diff,
+    #[structopt(name = "commit")]
+    /// Commit current changes
+    Commit,
+    #[structopt(name = "push")]
+    /// Pull from remote repo
+    Push,
+    #[structopt(name = "pull")]
+    /// Pull from remote repo
+    Pull,
 }
 
 #[derive(Debug, StructOpt, Clone)]
