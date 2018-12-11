@@ -91,8 +91,14 @@ pub enum Db {
     /// Run git commands in your own proof repository
     Git(Git),
     #[structopt(name = "fetch")]
-    /// Update proof database by fetching updates from trusted sources
-    Fetch,
+    /// Fetch proofs from other users
+    Fetch(Fetch),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Fetch {
+    /// Fetch just one url
+    pub url: Option<String>,
 }
 
 #[derive(Debug, StructOpt, Clone)]

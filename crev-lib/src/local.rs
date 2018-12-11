@@ -313,7 +313,12 @@ impl Local {
         Ok(())
     }
 
-    pub fn fetch_updates(&self) -> Result<()> {
+    pub fn fetch_url(&self, url: &str) -> Result<()> {
+        let _success = util::err_eprint_and_ignore(self.fetch_remote_git(None, url).compat());
+        Ok(())
+    }
+
+    pub fn fetch_trusted(&self) -> Result<()> {
         let mut already_fetched = HashSet::new();
         let mut db = trustdb::TrustDB::new();
         db.import_from_iter(self.proofs_iter());
@@ -337,11 +342,11 @@ impl Local {
                     continue;
                 } else if let Some(url) = db.lookup_url(id) {
                     let success =
-                        util::err_eprint_and_ignore(self.fetch_remote_git(id, url).compat());
+                        util::err_eprint_and_ignore(self.fetch_remote_git(Some(id), url).compat());
                     if success {
                         something_was_fetched = true;
                         db.import_from_iter(proofs_iter_for_path(
-                            self.get_remote_git_path(id, url),
+                            self.get_remote_git_path(Some(id), url),
                         ));
                     }
                 } else {
@@ -352,15 +357,19 @@ impl Local {
         Ok(())
     }
 
-    pub fn get_remote_git_path(&self, id: &Id, url: &str) -> PathBuf {
+    pub fn get_remote_git_path(&self, id: Option<&Id>, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
         self.cache_remotes_path()
-            .join(id.to_string())
+            .join(if let Some(id) = id {
+                id.to_string()
+            } else {
+                "unknown".to_owned()
+            })
             .join(format!("{}", digest))
     }
 
-    pub fn fetch_remote_git(&self, id: &Id, url: &str) -> Result<()> {
+    pub fn fetch_remote_git(&self, id: Option<&Id>, url: &str) -> Result<()> {
         let dir = self.get_remote_git_path(id, url);
 
         if dir.exists() {

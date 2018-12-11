@@ -82,7 +82,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Db::Fetch => {
             let local = Local::auto_open()?;
-            local.fetch_updates()?;
+            local.fetch_trusted()?;
         }
     },
 });
