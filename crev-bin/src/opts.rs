@@ -120,28 +120,37 @@ pub enum Command {
     #[structopt(name = "id")]
     /// CrevID management
     Id(Id),
+
     #[structopt(name = "add")]
     /// Add paths to reviewed list
     Add(Add),
-    /// Create a new Review Proof from reviewed list
+
     #[structopt(name = "commit")]
+    /// Create a new Review Proof from reviewed list
     Commit(Commit),
+
     #[structopt(name = "package")]
     /// Package settings
     Package(Package),
+
     #[structopt(name = "status")]
     /// Display pending review list
     Status,
+
     #[structopt(name = "rm")]
     /// Remove path from reviewed list
     Remove(Remove),
+
+    #[structopt(name = "verify")]
     /// Verify review coverage of the package
     Verify(Verify),
+
     #[structopt(name = "trust")]
     /// Trust Store management
     Trust(Trust),
-    /// Trust Store
+
     #[structopt(name = "db")]
+    /// Trust Store
     Db(Db),
 }
 
