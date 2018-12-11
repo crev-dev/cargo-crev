@@ -96,11 +96,11 @@ impl Local {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
         if !repo.root_path.exists() {
-            bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
+            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
         }
 
         if !repo.user_config_path().exists() {
-            bail!("User config not-initialized. Use `crev id gen` to generate CrevID.");
+            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
         }
 
         Ok(repo)

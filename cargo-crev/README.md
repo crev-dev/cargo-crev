@@ -50,7 +50,7 @@ Afterwards you can use `cargo crev` command.
 
 ```
 cd <your-project>
-cargo crev id gen # generate your id
+cargo crev id new # generate your id
 cargo crev verify # verify your depedencies
 cargo crev review <crate> # review a dependency
 cargo crev db git status # check git status of your proof database
