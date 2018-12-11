@@ -166,7 +166,7 @@ fn main() -> Result<()> {
     match command {
         opts::Command::Id(id) => match id.id_command {
             opts::IdCommand::Show => crev_lib::show_id()?,
-            opts::IdCommand::Gen => crev_lib::generate_id()?,
+            opts::IdCommand::New => crev_lib::generate_id()?,
             opts::IdCommand::Switch(args) => crev_lib::switch_id(&args.id)?,
             opts::IdCommand::List => crev_lib::list_ids()?,
         },

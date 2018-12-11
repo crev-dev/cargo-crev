@@ -29,9 +29,9 @@ pub struct Id {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum IdCommand {
-    #[structopt(name = "gen")]
+    #[structopt(name = "new")]
     /// Generate a CrevID
-    Gen,
+    New,
     #[structopt(name = "show")]
     /// Show CrevID information
     Show,

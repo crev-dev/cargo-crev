@@ -21,7 +21,7 @@ mod util;
 main!(|opts: opts::Opts| match opts.command {
     opts::Command::Id(id) => match id.id_command {
         opts::IdCommand::Show => crev_lib::show_id()?,
-        opts::IdCommand::Gen => crev_lib::generate_id()?,
+        opts::IdCommand::New => crev_lib::generate_id()?,
     },
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {
