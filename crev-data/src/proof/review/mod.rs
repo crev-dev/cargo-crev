@@ -17,7 +17,7 @@ pub enum Rating {
     Negative,
     Neutral,
     Positive,
-    Superb,
+    Strong,
 }
 
 impl Default for Rating {
