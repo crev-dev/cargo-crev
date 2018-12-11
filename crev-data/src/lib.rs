@@ -31,7 +31,7 @@ pub use crate::{
 
 /// Current API version
 pub fn current_version() -> i64 {
-    -99999 // still WIP; 0 == "release 1.0.0"
+    -1 // still in alpha, so less than 0
 }
 
 #[cfg(test)]
