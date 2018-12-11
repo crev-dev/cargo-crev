@@ -319,19 +319,19 @@ impl Local {
         Ok(())
     }
 
-    pub fn fetch_trusted(&self) -> Result<()> {
+    pub fn fetch_trusted(&self, trust_params: trustdb::TrustDistanceParams) -> Result<()> {
         let mut already_fetched = HashSet::new();
         let mut db = trustdb::TrustDB::new();
         db.import_from_iter(self.proofs_iter());
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
-        let params = Default::default();
         let user_config = self.load_user_config()?;
         let user_id = user_config.get_current_userid()?;
 
         let mut something_was_fetched = true;
         while something_was_fetched {
             something_was_fetched = false;
-            let trust_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
+            let trust_set =
+                db.calculate_trust_set(user_config.get_current_userid()?, &trust_params);
 
             for id in &trust_set {
                 if already_fetched.contains(id) {

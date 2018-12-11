@@ -1,5 +1,4 @@
 #![allow(deprecated)]
-//#[macro_use]
 
 #[macro_use]
 extern crate quicli;
@@ -14,6 +13,7 @@ use crev_lib::{local::Local, repo::Repo};
 use hex;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use default::default;
 
 mod opts;
 mod util;
@@ -82,7 +82,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Db::Fetch => {
             let local = Local::auto_open()?;
-            local.fetch_trusted()?;
+            local.fetch_trusted(default())?;
         }
     },
 });

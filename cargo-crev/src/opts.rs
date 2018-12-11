@@ -90,15 +90,22 @@ pub enum Db {
     #[structopt(name = "git")]
     /// Run git commands in your own proof repository
     Git(Git),
-    #[structopt(name = "fetch")]
-    /// Fetch proofs from other users
-    Fetch(Fetch),
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Fetch {
+pub struct FetchUrl {
     /// Fetch just one url
-    pub url: Option<String>,
+    pub url: String,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Fetch {
+    #[structopt(name = "trusted")]
+    /// Run git commands in your own proof repository
+    Trusted(TrustParams),
+    #[structopt(name = "url")]
+    /// Run git commands in your own proof repository
+    Url(FetchUrl),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -137,6 +144,9 @@ pub enum Command {
     /// List reviews for a given package
     #[structopt(name = "list-reviews")]
     ListReviews(ListReviews),
+    #[structopt(name = "fetch")]
+    /// Fetch proofs from other users
+    Fetch(Fetch),
 }
 
 #[derive(Debug, StructOpt, Clone)]

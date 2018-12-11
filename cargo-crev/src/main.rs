@@ -210,13 +210,15 @@ fn main() -> Result<()> {
                 let status = local.run_git(git.args)?;
                 std::process::exit(status.code().unwrap_or(-159));
             }
-            opts::Db::Fetch(args) => {
+        },
+        opts::Command::Fetch(cmd) => match cmd {
+            opts::Fetch::Trusted(params) => {
                 let local = Local::auto_open()?;
-                if let Some(url) = args.url {
-                    local.fetch_url(&url)?;
-                } else {
-                    local.fetch_trusted()?;
-                }
+                local.fetch_trusted(params.into())?;
+            }
+            opts::Fetch::Url(params) => {
+                let local = Local::auto_open()?;
+                local.fetch_url(&params.url)?;
             }
         },
         opts::Command::ListTrustedIds(args) => {
