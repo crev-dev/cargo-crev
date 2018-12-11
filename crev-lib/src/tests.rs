@@ -1,12 +1,12 @@
 use super::*;
 
 use crate::trustdb::{self, TrustDB};
-use crev_data::id::OwnId;
 use crev_data::proof::trust::TrustLevel;
+use crev_data::OwnId;
 
 #[test]
 fn lock_and_unlock() -> Result<()> {
-    let id = OwnId::generate("https://example.com/crev-proofs".into());
+    let id = OwnId::generate_for_git_url("https://example.com/crev-proofs");
 
     let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);
@@ -27,11 +27,11 @@ fn lock_and_unlock() -> Result<()> {
 
 #[test]
 fn trustdb_distance() -> Result<()> {
-    let a = OwnId::generate("https://a".into());
-    let b = OwnId::generate("https://b".into());
-    let c = OwnId::generate("https://c".into());
-    let d = OwnId::generate("https://d".into());
-    let e = OwnId::generate("https://e".into());
+    let a = OwnId::generate_for_git_url("https://a");
+    let b = OwnId::generate_for_git_url("https://b");
+    let c = OwnId::generate_for_git_url("https://c");
+    let d = OwnId::generate_for_git_url("https://d");
+    let e = OwnId::generate_for_git_url("https://e");
 
     let distance_params = trustdb::TrustDistanceParams {
         high_trust_distance: 1,

@@ -1,5 +1,6 @@
 //! Some common stuff for both Review and Trust Proofs
 
+use crate::Url;
 use base64;
 use chrono::{self, prelude::*};
 use crev_common;
@@ -26,8 +27,8 @@ pub trait ContentCommon {
         self.author().id.clone()
     }
 
-    fn author_url(&self) -> Option<String> {
-        self.author().url.as_ref().map(|v| v.url.to_owned())
+    fn author_url(&self) -> Url {
+        self.author().url.clone()
     }
 }
 
@@ -166,7 +167,7 @@ impl Content {
         }
     }
 
-    pub fn author_url(&self) -> Option<String> {
+    pub fn author_url(&self) -> Url {
         use self::Content::*;
         match self {
             Trust(trust) => trust.author_url(),

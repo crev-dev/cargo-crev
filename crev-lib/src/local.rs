@@ -267,32 +267,33 @@ impl Local {
 
     pub fn build_trust_proof(
         &self,
-        pub_ids: Vec<String>,
+        id_strings: Vec<String>,
         passphrase: &str,
         trust_or_distrust: crate::TrustOrDistrust,
     ) -> Result<()> {
-        if pub_ids.is_empty() {
+        if id_strings.is_empty() {
             bail!("No ids given.");
         }
 
         let mut trustdb = trustdb::TrustDB::new();
         trustdb.import_from_iter(self.proofs_iter());
 
+        let mut pub_ids = vec![];
+
+        for id_string in id_strings {
+            let id = Id::crevid_from_str(&id_string)?;
+
+            if let Some(url) = trustdb.lookup_url(&id) {
+                pub_ids.push(PubId::new(id, url.to_owned()));
+            } else {
+                bail!(
+                    "URL not found for Id {}; Fetch proofs with `fetch url <url>` first",
+                    id_string
+                )
+            }
+        }
+
         let own_id = self.read_current_unlocked_id(&passphrase)?;
-
-        let pub_ids: Result<Vec<_>> = pub_ids
-            .into_iter()
-            .map(|s| {
-                let mut id = PubId::new_crevid_from_base64(&s)?;
-
-                if let Some(url) = trustdb.lookup_url(&id.id) {
-                    id.set_git_url(url.to_owned())
-                }
-                Ok(id)
-            })
-            .collect();
-
-        let pub_ids = pub_ids?;
 
         let trust = own_id.create_trust_proof(
             pub_ids,
@@ -341,12 +342,13 @@ impl Local {
                 if user_id == id {
                     continue;
                 } else if let Some(url) = db.lookup_url(id) {
-                    let success =
-                        util::err_eprint_and_ignore(self.fetch_remote_git(Some(id), url).compat());
+                    let success = util::err_eprint_and_ignore(
+                        self.fetch_remote_git(Some(id), &url.url).compat(),
+                    );
                     if success {
                         something_was_fetched = true;
                         db.import_from_iter(proofs_iter_for_path(
-                            self.get_remote_git_path(Some(id), url),
+                            self.get_remote_git_path(Some(id), &url.url),
                         ));
                     }
                 } else {

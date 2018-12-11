@@ -72,78 +72,28 @@ pub struct PubId {
     #[serde(flatten)]
     pub id: Id,
     #[serde(flatten)]
-    pub url: Option<Url>,
+    pub url: Url,
 }
 
 impl PubId {
-    pub fn new(v: Vec<u8>, url: String) -> Self {
-        PubId {
-            id: Id::Crev { id: v },
-            url: Some(Url::new(url)),
-        }
+    pub fn new(id: Id, url: Url) -> Self {
+        PubId { id, url }
     }
-    pub fn new_from_pubkey(v: Vec<u8>) -> Self {
+    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Self {
         PubId {
             id: Id::Crev { id: v },
-            url: None,
+            url,
         }
     }
 
-    pub fn new_crevid_from_base64(s: &str) -> Result<Self> {
+    pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
         let v = base64::decode_config(s, base64::URL_SAFE)?;
         Ok(PubId {
             id: Id::Crev { id: v },
-            url: None,
+            url,
         })
     }
-    pub fn set_git_url(&mut self, url: String) {
-        self.url = Some(Url {
-            url,
-            url_type: super::url::default_url_type(),
-        })
-    }
-
-    /*
-    pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.id.id, base64::URL_SAFE)
-    }
-    */
 }
-
-/*
-#[derive(Clone, Debug, Serialize, Deserialize)]
-/// Public CrevId of someone
-pub struct PubId {
-    #[serde(
-        serialize_with = "as_base64",
-        deserialize_with = "from_base64"
-    )]
-    pub id: Vec<u8>,
-    #[serde(rename = "id-type")]
-    pub id_type: IdType,
-    pub url: String,
-}
-
-impl PubId {
-    pub fn new(url: String, id: Vec<u8>) -> Self {
-        Self {
-            url,
-            id,
-            id_type: IdType::Crev,
-        }
-    }
-
-    pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.id, base64::URL_SAFE)
-    }
-}
-
-impl fmt::Display for PubId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
-    }
-}
-*/
 
 /// A `PubId` with the corresponding secret key
 #[derive(Debug)]
@@ -181,12 +131,12 @@ impl AsRef<PubId> for OwnId {
 
 impl OwnId {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(url: String, sec_key: Vec<u8>) -> Result<Self> {
+    pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
         let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
 
         Ok(Self {
-            id: crate::PubId::new(calculated_pub_key.as_bytes().to_vec(), url),
+            id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
             keypair: ed25519_dalek::Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
@@ -209,17 +159,15 @@ impl OwnId {
         &self.id
     }
 
-    /*
-    pub fn pub_key_as_base64(&self) -> String {
-        self.id.pub_key_as_base64()
+    pub fn generate_for_git_url(url: &str) -> Self {
+        Self::generate(Url::new_git(url.to_owned()))
     }
-    */
 
-    pub fn generate(url: String) -> Self {
+    pub fn generate(url: Url) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let keypair = ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng);
         Self {
-            id: PubId::new(keypair.public.as_bytes().to_vec(), url),
+            id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,
         }
     }

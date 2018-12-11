@@ -5,7 +5,7 @@ use crev_data::{
     proof::review::Rating,
     proof::trust::TrustLevel,
     proof::{self, review, Content, ContentCommon},
-    Digest, Id,
+    Digest, Id, Url,
 };
 use default::default;
 use std::collections::BTreeMap;
@@ -35,7 +35,7 @@ impl<T> Timestamped<T> {
     }
 }
 
-type TimestampedUrl = Timestamped<crev_data::url::Url>;
+type TimestampedUrl = Timestamped<Url>;
 type TimestampedTrustLevel = Timestamped<TrustLevel>;
 type TimestampedReview = Timestamped<review::Review>;
 
@@ -244,24 +244,20 @@ impl TrustDB {
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
-        if let Some(url) = to.url.as_ref() {
-            self.url_by_id_secondary
-                .entry(to.id.clone())
-                .or_insert_with(|| TimestampedUrl {
-                    value: url.clone(),
-                    date: *date,
-                });
-        }
+        self.url_by_id_secondary
+            .entry(to.id.clone())
+            .or_insert_with(|| TimestampedUrl {
+                value: to.url.clone(),
+                date: *date,
+            });
     }
 
     fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId) {
-        if let Some(url) = from.url.as_ref() {
-            TimestampedUrl {
-                value: url.clone(),
-                date: date.to_owned(),
-            }
-            .insert_into_or_update_to_more_recent(self.url_by_id.entry(from.id.clone()));
+        TimestampedUrl {
+            value: from.url.clone(),
+            date: date.to_owned(),
         }
+        .insert_into_or_update_to_more_recent(self.url_by_id.entry(from.id.clone()));
     }
     fn add_proof(&mut self, proof: &proof::Proof) {
         proof
@@ -347,11 +343,11 @@ impl TrustDB {
         visited.keys().map(|id| (*id).clone()).collect()
     }
 
-    pub fn lookup_url(&self, id: &Id) -> Option<&str> {
+    pub fn lookup_url(&self, id: &Id) -> Option<&Url> {
         self.url_by_id
             .get(id)
             .or_else(|| self.url_by_id_secondary.get(id))
-            .map(|url_info| url_info.value.url.as_str())
+            .map(|url| &url.value)
     }
 }
 

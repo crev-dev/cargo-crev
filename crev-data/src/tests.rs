@@ -1,3 +1,4 @@
+use crate::Url;
 use crate::{
     id::OwnId,
     proof::{self, Proof, Serialized},
@@ -73,9 +74,7 @@ sig2
 }
 
 pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
-    let id = OwnId::generate("https://mypage.com/trust.git".into());
-
-    //let mut from = crate::PubId::new(&id.id, "https://github.com/someone/crev-trust".into());
+    let id = OwnId::generate(Url::new_git("https://mypage.com/trust.git".into()));
 
     let package_info = proof::PackageInfo {
         id: None,

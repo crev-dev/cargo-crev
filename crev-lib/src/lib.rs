@@ -223,7 +223,7 @@ pub fn generate_id() -> Result<()> {
     }
 
     eprintln!("");
-    let id = crev_data::id::OwnId::generate(url.clone());
+    let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
     eprintln!("CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = crev_common::read_new_passphrase()?;
