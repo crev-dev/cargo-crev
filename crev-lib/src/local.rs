@@ -14,7 +14,13 @@ use failure::ResultExt;
 use git2;
 use resiter::*;
 use serde_yaml;
-use std::{collections::HashSet, ffi::OsString, fs, io::Write, path::PathBuf};
+use std::{
+    collections::HashSet,
+    ffi::OsString,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserConfig {
@@ -257,10 +263,12 @@ impl Local {
         Ok(())
     }
 
+    // Get path relative to `get_proofs_dir_path` to store the `proof`
     fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(crate::proof::rel_store_path(&proof.content))
+        crate::proof::rel_store_path(&proof.content)
     }
 
+    // Path where the `proofs` are stored under `git` repository
     pub fn get_proofs_dir_path(&self) -> PathBuf {
         self.root_path.join("proofs")
     }
@@ -418,12 +426,22 @@ impl Local {
 
         Ok((db, trusted_set))
     }
+
+    pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
+        let proof_dir = self.get_proofs_dir_path();
+        let repo = git2::Repository::init(&proof_dir)?;
+        let mut index = repo.index()?;
+
+        index.add_path(rel_path)?;
+        index.write()?;
+        Ok(())
+    }
 }
 
 impl ProofStore for Local {
     fn insert(&self, proof: &proof::Proof) -> Result<()> {
         let rel_store_path = self.get_proof_rel_store_path(proof);
-        let path = self.user_dir_path().join(rel_store_path);
+        let path = self.get_proofs_dir_path().join(&rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;
         let mut file = fs::OpenOptions::new()
@@ -435,6 +453,9 @@ impl ProofStore for Local {
         file.write_all(proof.to_string().as_bytes())?;
         file.write_all(b"\n")?;
         file.flush()?;
+        drop(file);
+
+        self.proof_dir_git_add_path(&rel_store_path)?;
 
         Ok(())
     }
