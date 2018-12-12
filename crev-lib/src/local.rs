@@ -8,12 +8,14 @@ use crate::{
 use app_dirs::{app_root, AppDataType};
 use base64;
 use crev_common;
-use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId};
+use crev_data::Digest;
+use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
 use failure::ResultExt;
 use git2;
 use resiter::*;
 use serde_yaml;
+use std::cell::RefCell;
 use std::{
     collections::HashSet,
     ffi::OsString,
@@ -79,6 +81,7 @@ fn https_to_git_url_test() {
 pub struct Local {
     root_path: PathBuf,
     cache_path: PathBuf,
+    cur_url: RefCell<Option<Url>>,
 }
 
 impl Local {
@@ -89,6 +92,7 @@ impl Local {
         Ok(Self {
             root_path,
             cache_path,
+            cur_url: RefCell::new(None),
         })
     }
 
@@ -235,7 +239,7 @@ impl Local {
         let git_url = https_to_git_url(git_https_url);
 
         eprintln!("");
-        let proof_dir = self.get_proofs_dir_path();
+        let proof_dir = self.get_proofs_dir_path()?;
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
@@ -268,9 +272,29 @@ impl Local {
         crate::proof::rel_store_path(&proof.content)
     }
 
+    fn get_cur_url(&self) -> Result<Url> {
+        let url = self.cur_url.borrow().clone();
+        Ok(if let Some(url) = url {
+            url
+        } else {
+            let locked_id = self.read_current_locked_id()?;
+            *self.cur_url.borrow_mut() = Some(locked_id.url.clone());
+            locked_id.url
+        })
+    }
+
+    fn get_cur_url_digest(&self) -> Result<Digest> {
+        let url = self.get_cur_url()?;
+        let digest = crev_common::blake2sum(url.url.as_bytes());
+        Ok(crev_data::Digest::from_vec(digest))
+    }
+
     // Path where the `proofs` are stored under `git` repository
-    pub fn get_proofs_dir_path(&self) -> PathBuf {
-        self.root_path.join("proofs")
+    pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
+        Ok(self
+            .root_path
+            .join("proofs")
+            .join(self.get_cur_url_digest()?.to_string()))
     }
 
     pub fn build_trust_proof(
@@ -284,7 +308,7 @@ impl Local {
         }
 
         let mut trustdb = trustdb::TrustDB::new();
-        trustdb.import_from_iter(self.proofs_iter());
+        trustdb.import_from_iter(self.proofs_iter()?);
 
         let mut pub_ids = vec![];
 
@@ -323,14 +347,14 @@ impl Local {
     }
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
-        let _success = util::err_eprint_and_ignore(self.fetch_remote_git(None, url).compat());
+        let _success = util::err_eprint_and_ignore(self.fetch_remote_git(url).compat());
         Ok(())
     }
 
     pub fn fetch_trusted(&self, trust_params: trustdb::TrustDistanceParams) -> Result<()> {
         let mut already_fetched = HashSet::new();
         let mut db = trustdb::TrustDB::new();
-        db.import_from_iter(self.proofs_iter());
+        db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
         let user_id = user_config.get_current_userid()?;
@@ -350,13 +374,12 @@ impl Local {
                 if user_id == id {
                     continue;
                 } else if let Some(url) = db.lookup_url(id) {
-                    let success = util::err_eprint_and_ignore(
-                        self.fetch_remote_git(Some(id), &url.url).compat(),
-                    );
+                    let success =
+                        util::err_eprint_and_ignore(self.fetch_remote_git(&url.url).compat());
                     if success {
                         something_was_fetched = true;
                         db.import_from_iter(proofs_iter_for_path(
-                            self.get_remote_git_path(Some(id), &url.url),
+                            self.get_remote_git_cache_path(&url.url),
                         ));
                     }
                 } else {
@@ -367,14 +390,14 @@ impl Local {
         Ok(())
     }
 
-    pub fn get_remote_git_path(&self, id: Option<&Id>, url: &str) -> PathBuf {
+    pub fn get_remote_git_cache_path(&self, url: &str) -> PathBuf {
         let digest = crev_common::blake2sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
-        self.cache_remotes_path().join(format!("{}", digest))
+        self.cache_remotes_path().join(digest.to_string())
     }
 
-    pub fn fetch_remote_git(&self, id: Option<&Id>, url: &str) -> Result<()> {
-        let dir = self.get_remote_git_path(id, url);
+    pub fn fetch_remote_git(&self, url: &str) -> Result<()> {
+        let dir = self.get_remote_git_cache_path(url);
 
         if dir.exists() {
             eprintln!("Fetching {} to {}", url, dir.display());
@@ -394,7 +417,7 @@ impl Local {
 
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
-        std::env::set_current_dir(self.get_proofs_dir_path())?;
+        std::env::set_current_dir(self.get_proofs_dir_path()?)?;
 
         use std::process::Command;
 
@@ -414,7 +437,7 @@ impl Local {
     ) -> Result<(trustdb::TrustDB, HashSet<Id>)> {
         let user_config = self.load_user_config()?;
         let mut db = trustdb::TrustDB::new();
-        db.import_from_iter(self.proofs_iter());
+        db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let trusted_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
 
@@ -422,7 +445,7 @@ impl Local {
     }
 
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
-        let proof_dir = self.get_proofs_dir_path();
+        let proof_dir = self.get_proofs_dir_path()?;
         let repo = git2::Repository::init(&proof_dir)?;
         let mut index = repo.index()?;
 
@@ -435,7 +458,7 @@ impl Local {
 impl ProofStore for Local {
     fn insert(&self, proof: &proof::Proof) -> Result<()> {
         let rel_store_path = self.get_proof_rel_store_path(proof);
-        let path = self.get_proofs_dir_path().join(&rel_store_path);
+        let path = self.get_proofs_dir_path()?.join(&rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;
         let mut file = fs::OpenOptions::new()
@@ -454,8 +477,8 @@ impl ProofStore for Local {
         Ok(())
     }
 
-    fn proofs_iter(&self) -> Box<Iterator<Item = proof::Proof>> {
-        proofs_iter_for_path(self.get_proofs_dir_path())
+    fn proofs_iter(&self) -> Result<Box<Iterator<Item = proof::Proof>>> {
+        Ok(proofs_iter_for_path(self.get_proofs_dir_path()?))
     }
 }
 

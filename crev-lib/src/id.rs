@@ -33,7 +33,7 @@ pub struct PassConfig {
 pub struct LockedId {
     version: i64,
     #[serde(flatten)]
-    url: crev_data::Url,
+    pub url: crev_data::Url,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,

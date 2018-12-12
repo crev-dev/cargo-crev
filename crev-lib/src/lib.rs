@@ -30,7 +30,7 @@ use std::{
 /// Typically serialized and persisted.
 pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
-    fn proofs_iter(&self) -> Box<dyn Iterator<Item = crev_data::proof::Proof>>;
+    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
 }
 
 /// Result of verification
