@@ -2,8 +2,8 @@
 edition = '2018'
 name = "cargo-crev"
 version = "0.1.0"
-license = "MPL-2.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+license = "MPL-2.0 OR MIT OR Apache-2.0"
 
 [[bin]]
 name = "cargo-crev"
