@@ -1,7 +1,7 @@
-# `cargo-crev` - Code REView for Rust!
+# `cargo-crev` - Cargo Code REView!
 
 
-`cargo-crev` is a tool helping Rustaceans review crates they use.
+`cargo-crev` is a tool helping Rust users review crates they use.
 
 ## How it works
 
