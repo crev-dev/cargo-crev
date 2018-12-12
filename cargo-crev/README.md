@@ -56,7 +56,7 @@ cargo crev verify                                       # verify your depedencie
 cargo crev query id all                                 # show all known ids
 cargo crev query reviews <package>                      # show all reviews of a package
 cargo crev trust <id>                                   # trust someone
-cargo crev fetch                                        # fetch proofs from all trusted ids
+cargo crev fetch trusted                                # fetch proofs from all trusted ids
 cargo crev review <crate>                               # review a dependency
 cargo crev commit                                       # commit new proofs (reviews, trust)
 cargo crev push                                         # push proofs to your public github repository
