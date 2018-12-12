@@ -74,17 +74,18 @@ pub struct Trust {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct FetchUrl {
-    /// Fetch just one url
+    /// URL to public proof repository
     pub url: String,
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Fetch {
     #[structopt(name = "trusted")]
-    /// Run git commands in your own proof repository
+    /// Fetch updates from trusted Ids
     Trusted(TrustParams),
+
     #[structopt(name = "url")]
-    /// Run git commands in your own proof repository
+    /// Fetch from a single public proof repository
     Url(FetchUrl),
 }
 
@@ -142,11 +143,11 @@ pub struct Git {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
-    /// Create an Id...
+    /// Create an Id, ...
     #[structopt(name = "new")]
     New(New),
 
-    /// Change Ids, readme...
+    /// Change Ids, readme, ...
     #[structopt(name = "change")]
     Change(Change),
 
@@ -154,7 +155,7 @@ pub enum Command {
     #[structopt(name = "verify")]
     Verify(Verify),
 
-    /// Positively review a crate
+    /// Review a crate
     #[structopt(name = "review")]
     Review(CrateSelectorNameRequired),
 
@@ -174,27 +175,27 @@ pub enum Command {
     #[structopt(name = "distrust")]
     Distrust(Trust),
 
-    /// Fetch proofs from other users
+    /// Fetch proofs from external sources
     #[structopt(name = "fetch")]
     Fetch(Fetch),
 
-    /// Run raw git commands in your own proof repository
+    /// Run raw git commands in the local proof repository
     #[structopt(name = "git")]
     Git(Git),
 
-    /// See changes to proofs (alias to `git diff`)
+    /// See changes in the local proof repository (alias to `git diff`)
     #[structopt(name = "diff")]
     Diff,
 
-    /// Commit changes to proofs (alias to `git commit -a`)
+    /// Commit changes to the local proof repository (alias to `git commit -a`)
     #[structopt(name = "commit")]
     Commit,
 
-    /// Pull changes to own public git repository (alias to `git push HEAD`)
+    /// Push local changes to the public proof repository (alias to `git push HEAD`)
     #[structopt(name = "push")]
     Push,
 
-    /// Pull changes from own publish git repository (alias to `git pull`)
+    /// Pull changes from the public proof repository (alias to `git pull`)
     #[structopt(name = "pull")]
     Pull,
 }
