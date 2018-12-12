@@ -8,7 +8,6 @@ use crate::{
 use app_dirs::{app_root, AppDataType};
 use base64;
 use crev_common;
-use crev_data::Digest;
 use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
 use failure::ResultExt;
@@ -143,6 +142,8 @@ impl Local {
             bail!("Id file not found.");
         }
 
+        *self.cur_url.borrow_mut() = None;
+
         let mut config = self.load_user_config()?;
         config.current_id = Some(id.clone());
         self.store_user_config(&config)?;
@@ -239,7 +240,8 @@ impl Local {
         let git_url = https_to_git_url(git_https_url);
 
         eprintln!("");
-        let proof_dir = self.get_proofs_dir_path()?;
+        let proof_dir =
+            self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
@@ -283,10 +285,8 @@ impl Local {
         })
     }
 
-    fn get_cur_url_digest(&self) -> Result<Digest> {
-        let url = self.get_cur_url()?;
-        let digest = crev_common::blake2sum(url.url.as_bytes());
-        Ok(crev_data::Digest::from_vec(digest))
+    pub fn get_proofs_dir_path_for_url(&self, url: &Url) -> Result<PathBuf> {
+        Ok(self.root_path.join("proofs").join(url.digest().to_string()))
     }
 
     // Path where the `proofs` are stored under `git` repository
@@ -294,7 +294,7 @@ impl Local {
         Ok(self
             .root_path
             .join("proofs")
-            .join(self.get_cur_url_digest()?.to_string()))
+            .join(self.get_cur_url()?.digest().to_string()))
     }
 
     pub fn build_trust_proof(

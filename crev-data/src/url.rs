@@ -16,6 +16,11 @@ impl Url {
             url_type: default_url_type(),
         }
     }
+
+    pub fn digest(&self) -> crate::Digest {
+        let digest = crev_common::blake2sum(self.url.as_bytes());
+        crate::Digest::from_vec(digest)
+    }
 }
 
 pub(crate) fn equals_default_url_type(s: &str) -> bool {
