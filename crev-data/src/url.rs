@@ -18,7 +18,7 @@ impl Url {
     }
 
     pub fn digest(&self) -> crate::Digest {
-        let digest = crev_common::blake2sum(self.url.as_bytes());
+        let digest = crev_common::blake2sum(self.url.to_ascii_lowercase().as_bytes());
         crate::Digest::from_vec(digest)
     }
 }
