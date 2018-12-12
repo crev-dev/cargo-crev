@@ -22,29 +22,19 @@ impl From<CrateSelectorNameRequired> for CrateSelector {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Id {
-    #[structopt(subcommand)]
-    pub id_command: IdCommand,
+pub struct NewId {
+    pub id: String,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum IdCommand {
-    #[structopt(name = "new")]
+pub enum New {
+    #[structopt(name = "id")]
     /// Generate a CrevID
-    New,
-    #[structopt(name = "show")]
-    /// Show CrevID information
-    Show,
-    #[structopt(name = "switch")]
-    /// Switch to a different CrevID
-    Switch(IdSwitch),
-    #[structopt(name = "list")]
-    /// List available CrevIDs
-    List,
+    Id,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct IdSwitch {
+pub struct ChangeId {
     pub id: String,
 }
 
@@ -102,6 +92,49 @@ pub enum Fetch {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum QueryId {
+    /// Show current Id
+    #[structopt(name = "current")]
+    Current,
+
+    /// Show own Ids
+    #[structopt(name = "own")]
+    Own,
+
+    /// List trusted ids
+    #[structopt(name = "trusted")]
+    Trusted(QueryIdTrusted),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct QueryIdTrusted {
+    #[structopt(flatten)]
+    pub trust_params: TrustParams,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct QueryReview {
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Query {
+    /// Ids
+    #[structopt(name = "id")]
+    Id(QueryId),
+
+    /// Reviews
+    #[structopt(name = "review")]
+    Review(QueryReview),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Change {
+    /// Change current Id
+    Id(ChangeId),
+}
+#[derive(Debug, StructOpt, Clone)]
 pub struct Git {
     /// Arguments to git command
     #[structopt(parse(from_os_str))]
@@ -110,6 +143,14 @@ pub struct Git {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
+    /// Create an object
+    #[structopt(name = "new")]
+    New(New),
+
+    /// Change
+    #[structopt(name = "change")]
+    Change(Change),
+
     /// Verify dependencies of the current project
     #[structopt(name = "verify")]
     Verify(Verify),
@@ -122,9 +163,9 @@ pub enum Command {
     #[structopt(name = "flag")]
     Flag(CrateSelectorNameRequired),
 
-    /// ID-related operations
-    #[structopt(name = "id")]
-    Id(Id),
+    /// Query
+    #[structopt(name = "find")]
+    Query(Query),
 
     /// Trust another user
     #[structopt(name = "trust")]
@@ -133,14 +174,6 @@ pub enum Command {
     /// Distrust another user
     #[structopt(name = "distrust")]
     Distrust(Trust),
-
-    /// List trusted ids
-    #[structopt(name = "list-trusted-ids")]
-    ListTrustedIds(ListTrustedIds),
-
-    /// List reviews for a given package
-    #[structopt(name = "list-reviews")]
-    ListReviews(ListReviews),
 
     #[structopt(name = "fetch")]
     /// Fetch proofs from other users
@@ -165,18 +198,6 @@ pub enum Command {
     #[structopt(name = "pull")]
     /// Pull from remote repo
     Pull,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct ListTrustedIds {
-    #[structopt(flatten)]
-    pub trust_params: TrustParams,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct ListReviews {
-    #[structopt(flatten)]
-    pub crate_: CrateSelector,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

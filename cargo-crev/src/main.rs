@@ -164,11 +164,11 @@ fn main() -> Result<()> {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
     match command {
-        opts::Command::Id(id) => match id.id_command {
-            opts::IdCommand::Show => crev_lib::show_id()?,
-            opts::IdCommand::New => crev_lib::generate_id()?,
-            opts::IdCommand::Switch(args) => crev_lib::switch_id(&args.id)?,
-            opts::IdCommand::List => crev_lib::list_ids()?,
+        opts::Command::New(cmd) => match cmd {
+            opts::New::Id => crev_lib::generate_id()?,
+        },
+        opts::Command::Change(cmd) => match cmd {
+            opts::Change::Id(args) => crev_lib::switch_id(&args.id)?,
         },
         opts::Command::Verify(args) => {
             let local = crev_lib::Local::auto_open()?;
@@ -188,6 +188,20 @@ fn main() -> Result<()> {
                 Ok(())
             })?;
         }
+        opts::Command::Query(cmd) => match cmd {
+            opts::Query::Id(cmd) => match cmd {
+                opts::QueryId::Current => crev_lib::show_id()?,
+                opts::QueryId::Own => crev_lib::list_ids()?,
+                opts::QueryId::Trusted(args) => {
+                    let local = crev_lib::Local::auto_open()?;
+                    let (_db, trust_set) = local.load_db(&args.trust_params.into())?;
+                    for id in &trust_set {
+                        println!("{}", id);
+                    }
+                }
+            },
+            opts::Query::Review(args) => list_reviews(&args.crate_)?,
+        },
         opts::Command::Review(args) => {
             review_crate(&args, TrustOrDistrust::Trust)?;
         }
@@ -239,16 +253,6 @@ fn main() -> Result<()> {
                 local.fetch_url(&params.url)?;
             }
         },
-        opts::Command::ListTrustedIds(args) => {
-            let local = crev_lib::Local::auto_open()?;
-            let (_db, trust_set) = local.load_db(&args.trust_params.into())?;
-            for id in &trust_set {
-                println!("{}", id);
-            }
-        }
-        opts::Command::ListReviews(args) => {
-            list_reviews(&args.crate_)?;
-        }
     }
 
     Ok(())
