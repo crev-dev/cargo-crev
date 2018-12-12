@@ -204,33 +204,31 @@ fn main() -> Result<()> {
             let passphrase = crev_common::read_passphrase()?;
             local.build_trust_proof(args.pub_ids, &passphrase, Distrust)?;
         }
-        opts::Command::Db(cmd) => match cmd {
-            opts::Db::Git(git) => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(git.args)?;
-                std::process::exit(status.code().unwrap_or(-159));
-            }
-            opts::Db::Diff => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(vec!["diff".into(), "HEAD".into()])?;
-                std::process::exit(status.code().unwrap_or(-159));
-            }
-            opts::Db::Commit => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(vec!["commit".into(), "-a".into()])?;
-                std::process::exit(status.code().unwrap_or(-159));
-            }
-            opts::Db::Push => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(vec!["push".into()])?;
-                std::process::exit(status.code().unwrap_or(-159));
-            }
-            opts::Db::Pull => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(vec!["pull".into()])?;
-                std::process::exit(status.code().unwrap_or(-159));
-            }
-        },
+        opts::Command::Git(git) => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(git.args)?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
+        opts::Command::Diff => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["diff".into(), "HEAD".into()])?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
+        opts::Command::Commit => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["commit".into(), "-a".into()])?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
+        opts::Command::Push => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["push".into()])?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
+        opts::Command::Pull => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["pull".into()])?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {
                 let local = Local::auto_open()?;

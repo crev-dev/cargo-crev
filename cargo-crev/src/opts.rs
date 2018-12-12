@@ -86,25 +86,6 @@ pub struct Trust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Db {
-    #[structopt(name = "git")]
-    /// Run raw git commands in your own proof repository
-    Git(Git),
-    #[structopt(name = "diff")]
-    /// See changes
-    Diff,
-    #[structopt(name = "commit")]
-    /// Commit current changes
-    Commit,
-    #[structopt(name = "push")]
-    /// Pull from remote repo
-    Push,
-    #[structopt(name = "pull")]
-    /// Pull from remote repo
-    Pull,
-}
-
-#[derive(Debug, StructOpt, Clone)]
 pub struct FetchUrl {
     /// Fetch just one url
     pub url: String,
@@ -132,33 +113,58 @@ pub enum Command {
     /// Verify dependencies of the current project
     #[structopt(name = "verify")]
     Verify(Verify),
+
     /// Positively review a crate
     #[structopt(name = "review")]
     Review(CrateSelectorNameRequired),
+
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
     Flag(CrateSelectorNameRequired),
+
     /// ID-related operations
     #[structopt(name = "id")]
     Id(Id),
+
     /// Trust another user
     #[structopt(name = "trust")]
     Trust(Trust),
+
     /// Distrust another user
     #[structopt(name = "distrust")]
     Distrust(Trust),
-    /// Trust Database operations
-    #[structopt(name = "db")]
-    Db(Db),
+
     /// List trusted ids
     #[structopt(name = "list-trusted-ids")]
     ListTrustedIds(ListTrustedIds),
+
     /// List reviews for a given package
     #[structopt(name = "list-reviews")]
     ListReviews(ListReviews),
+
     #[structopt(name = "fetch")]
     /// Fetch proofs from other users
     Fetch(Fetch),
+
+    #[structopt(name = "git")]
+    /// Run raw git commands in your own proof repository
+    Git(Git),
+
+    #[structopt(name = "diff")]
+    /// See changes
+    Diff,
+
+    #[structopt(name = "commit")]
+    /// Commit current changes
+    Commit,
+
+    #[structopt(name = "push")]
+    /// Pull from remote repo
+    Push,
+
+    #[structopt(name = "pull")]
+    /// Pull from remote repo
+    Pull,
 }
 
 #[derive(Debug, StructOpt, Clone)]
