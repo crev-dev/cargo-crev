@@ -185,6 +185,7 @@ pub enum Command {
 
     /// Run raw git commands in the local proof repository
     #[structopt(name = "git")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     Git(Git),
 
     /// See changes in the local proof repository (alias to `git diff`)
