@@ -126,7 +126,7 @@ where
     ))
 }
 
-pub fn show_id() -> Result<()> {
+pub fn show_current_id() -> Result<()> {
     let local = Local::auto_open()?;
     let id = local.read_current_locked_id()?;
     let id = id.to_pubid();
@@ -250,7 +250,7 @@ pub fn switch_id(id_str: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn list_ids() -> Result<()> {
+pub fn list_own_ids() -> Result<()> {
     let local = Local::auto_open()?;
     for id in local.list_ids()? {
         println!("{}", id);

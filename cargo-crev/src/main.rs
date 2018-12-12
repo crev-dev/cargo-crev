@@ -190,12 +190,20 @@ fn main() -> Result<()> {
         }
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
-                opts::QueryId::Current => crev_lib::show_id()?,
-                opts::QueryId::Own => crev_lib::list_ids()?,
+                opts::QueryId::Current => crev_lib::show_current_id()?,
+                opts::QueryId::Own => crev_lib::list_own_ids()?,
                 opts::QueryId::Trusted(args) => {
                     let local = crev_lib::Local::auto_open()?;
                     let (_db, trust_set) = local.load_db(&args.trust_params.into())?;
                     for id in &trust_set {
+                        println!("{}", id);
+                    }
+                }
+                opts::QueryId::All => {
+                    let local = crev_lib::Local::auto_open()?;
+                    let (db, _trust_set) = local.load_db(&default())?;
+
+                    for id in &db.all_known_ids() {
                         println!("{}", id);
                     }
                 }

@@ -204,6 +204,14 @@ impl TrustDB {
         }
     }
 
+    pub fn all_known_ids(&self) -> BTreeSet<Id> {
+        self.url_by_id
+            .keys()
+            .chain(self.url_by_id_secondary.keys())
+            .cloned()
+            .collect()
+    }
+
     fn get_reviews_of(&self, digest: &Digest) -> Option<&HashMap<Id, TimestampedReview>> {
         self.digest_to_reviews.get(digest.as_slice())
     }

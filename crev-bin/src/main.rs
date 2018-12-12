@@ -10,17 +10,17 @@ extern crate structopt;
 
 use crev_lib::TrustOrDistrust::*;
 use crev_lib::{local::Local, repo::Repo};
+use default::default;
 use hex;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use default::default;
 
 mod opts;
 mod util;
 
 main!(|opts: opts::Opts| match opts.command {
     opts::Command::Id(id) => match id.id_command {
-        opts::IdCommand::Show => crev_lib::show_id()?,
+        opts::IdCommand::Show => crev_lib::show_current_id()?,
         opts::IdCommand::New => crev_lib::generate_id()?,
     },
     opts::Command::Trust(trust) => match trust {

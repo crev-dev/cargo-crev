@@ -95,6 +95,10 @@ pub enum QueryId {
     #[structopt(name = "current")]
     Current,
 
+    /// Show all known Ids
+    #[structopt(name = "all")]
+    All,
+
     /// Show own Ids
     #[structopt(name = "own")]
     Own,
