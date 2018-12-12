@@ -22,11 +22,6 @@ impl From<CrateSelectorNameRequired> for CrateSelector {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct NewId {
-    pub id: String,
-}
-
-#[derive(Debug, StructOpt, Clone)]
 pub enum New {
     #[structopt(name = "id")]
     /// Generate a CrevID
@@ -35,9 +30,11 @@ pub enum New {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct ChangeId {
+    /// Own Id to switch to
     pub id: String,
 }
 
+/// Parameters describing trust graph traversal
 #[derive(Debug, StructOpt, Clone)]
 pub struct TrustParams {
     #[structopt(long = "depth", default_value = "10")]
@@ -120,11 +117,11 @@ pub struct QueryReview {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Query {
-    /// Ids
+    /// Query Ids
     #[structopt(name = "id")]
     Id(QueryId),
 
-    /// Reviews
+    /// Query reviews
     #[structopt(name = "review")]
     Review(QueryReview),
 }
@@ -132,8 +129,10 @@ pub enum Query {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Change {
     /// Change current Id
+    #[structopt(name = "id")]
     Id(ChangeId),
 }
+
 #[derive(Debug, StructOpt, Clone)]
 pub struct Git {
     /// Arguments to git command
@@ -143,15 +142,15 @@ pub struct Git {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
-    /// Create an object
+    /// Create an Id...
     #[structopt(name = "new")]
     New(New),
 
-    /// Change
+    /// Change Ids, readme...
     #[structopt(name = "change")]
     Change(Change),
 
-    /// Verify dependencies of the current project
+    /// Verify dependencies
     #[structopt(name = "verify")]
     Verify(Verify),
 
@@ -163,40 +162,40 @@ pub enum Command {
     #[structopt(name = "flag")]
     Flag(CrateSelectorNameRequired),
 
-    /// Query
-    #[structopt(name = "find")]
+    /// Query Ids, packages, reviews...
+    #[structopt(name = "query")]
     Query(Query),
 
-    /// Trust another user
+    /// Trust an Id
     #[structopt(name = "trust")]
     Trust(Trust),
 
-    /// Distrust another user
+    /// Distrust an Id
     #[structopt(name = "distrust")]
     Distrust(Trust),
 
-    #[structopt(name = "fetch")]
     /// Fetch proofs from other users
+    #[structopt(name = "fetch")]
     Fetch(Fetch),
 
-    #[structopt(name = "git")]
     /// Run raw git commands in your own proof repository
+    #[structopt(name = "git")]
     Git(Git),
 
+    /// See changes to proofs (alias to `git diff`)
     #[structopt(name = "diff")]
-    /// See changes
     Diff,
 
+    /// Commit changes to proofs (alias to `git commit -a`)
     #[structopt(name = "commit")]
-    /// Commit current changes
     Commit,
 
+    /// Pull changes to own public git repository (alias to `git push HEAD`)
     #[structopt(name = "push")]
-    /// Pull from remote repo
     Push,
 
+    /// Pull changes from own publish git repository (alias to `git pull`)
     #[structopt(name = "pull")]
-    /// Pull from remote repo
     Pull,
 }
 
