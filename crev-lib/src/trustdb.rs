@@ -242,12 +242,12 @@ impl TrustDB {
             if distrust_count > 0 {
                 VerificationStatus::Flagged
             } else if trust_count > 0 {
-                VerificationStatus::Trusted
+                VerificationStatus::Verified
             } else {
-                VerificationStatus::Untrusted
+                VerificationStatus::Unknown
             }
         } else {
-            VerificationStatus::Untrusted
+            VerificationStatus::Unknown
         }
     }
 

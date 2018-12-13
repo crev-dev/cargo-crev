@@ -37,8 +37,8 @@ pub trait ProofStore {
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
 pub enum VerificationStatus {
-    Trusted,
-    Untrusted,
+    Verified,
+    Unknown,
     Flagged,
 }
 
@@ -68,8 +68,8 @@ impl TrustOrDistrust {
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VerificationStatus::Trusted => f.pad("trusted"),
-            VerificationStatus::Untrusted => f.pad("untrusted"),
+            VerificationStatus::Verified => f.pad("verified"),
+            VerificationStatus::Unknown => f.pad("unknown"),
             VerificationStatus::Flagged => f.pad("flagged"),
         }
     }

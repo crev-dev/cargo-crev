@@ -187,9 +187,9 @@ fn main() -> Result<()> {
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                     let result = db.verify_digest(&digest, &trust_set);
                     if args.verbose {
-                        println!("{:9} {} {:40}", result, digest, path.display(),);
+                        println!("{:8} {} {:40}", result, digest, path.display(),);
                     } else {
-                        println!("{:9} {:40}", result, path.display(),);
+                        println!("{:8} {:40}", result, path.display(),);
                     }
 
                     Ok(())
