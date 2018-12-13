@@ -48,8 +48,11 @@ impl UserConfig {
 }
 
 fn https_to_git_url(http_url: &str) -> Option<String> {
-    let split: Vec<_> = http_url.split('/').collect();
+    let mut split: Vec<_> = http_url.split('/').collect();
 
+    while let Some(&"") = split.last() {
+        split.pop();
+    }
     if split.len() != 5 {
         return None;
     }
@@ -72,6 +75,14 @@ fn https_to_git_url_test() {
     );
     assert_eq!(
         https_to_git_url("https://gitlab.com/hackeraudit/web.git"),
+        Some("git@gitlab.com:hackeraudit/web.git".into())
+    );
+    assert_eq!(
+        https_to_git_url("https://gitlab.com/hackeraudit/web.git/"),
+        Some("git@gitlab.com:hackeraudit/web.git".into())
+    );
+    assert_eq!(
+        https_to_git_url("https://gitlab.com/hackeraudit/web.git/////////"),
         Some("git@gitlab.com:hackeraudit/web.git".into())
     );
 }
@@ -237,9 +248,15 @@ impl Local {
     }
 
     pub fn git_init_proof_dir(&self, git_https_url: &str) -> Result<()> {
-        let git_url = https_to_git_url(git_https_url);
-
         eprintln!("");
+        let git_url = https_to_git_url(git_https_url);
+        if git_url.is_none() {
+            eprintln!("Could not deduce `ssh` push url. Call:");
+            eprintln!("cargo crev git remote set-url --push origin <url>");
+            eprintln!("manually, after id is generated.");
+            eprintln!("");
+        }
+
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
         match git2::Repository::clone(git_https_url, &proof_dir) {
