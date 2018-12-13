@@ -360,8 +360,6 @@ impl Local {
         let proof = trust.sign_by(&own_id)?;
 
         self.insert(&proof)?;
-        println!("{}", proof);
-        eprintln!("Proof added to your store");
         Ok(())
     }
 
