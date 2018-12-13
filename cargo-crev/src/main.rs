@@ -177,7 +177,13 @@ fn main() -> Result<()> {
 
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_ignore_list();
+                let current_dir = std::env::current_dir()?;
                 repo.for_every_dependency_dir(|_, path| {
+                    if path.starts_with(&current_dir) {
+                        // ignore local dependencies
+                        return Ok(());
+                    }
+
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                     let result = db.verify_digest(&digest, &trust_set);
                     if args.verbose {
