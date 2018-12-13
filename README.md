@@ -36,6 +36,10 @@ The current focus is on a first concrete implementation of Crev:
 a tool for reviewing Rust language crates published on [crates.io](https://crates.io).
 It is available in an alpha version.
 
+See it in action:
+
+[![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695)
+
 Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Overview
