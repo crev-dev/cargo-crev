@@ -309,7 +309,7 @@ impl Local {
 
         let mut trustdb = trustdb::TrustDB::new();
         trustdb.import_from_iter(self.proofs_iter()?);
-
+        trustdb.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let mut pub_ids = vec![];
 
         for id_string in id_strings {
