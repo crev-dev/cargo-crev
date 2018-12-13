@@ -208,7 +208,7 @@ pub fn generate_id() -> Result<()> {
             url = format!("https://github.com/{}/crev-proofs", url)
         }
         eprintln!("Your URL: {}", url);
-        eprintln!("It's recomended that it exist, and is initialized upfront.");
+        eprintln!("It is recomended that it exists and is initialized upfront.");
         eprintln!("Open URL and check.");
         if crev_common::yes_or_no_was_y("Is it correct? (y/n) ")? {
             break;
