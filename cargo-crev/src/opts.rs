@@ -59,11 +59,18 @@ impl From<TrustParams> for crev_lib::trustdb::TrustDistanceParams {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Verify {
+pub struct VerifyDeps {
     #[structopt(long = "verbose", short = "v")]
     pub verbose: bool,
     #[structopt(flatten)]
     pub trust_params: TrustParams,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Verify {
+    /// Verify dependencies
+    #[structopt(name = "deps")]
+    Deps(VerifyDeps),
 }
 
 #[derive(Debug, StructOpt, Clone)]

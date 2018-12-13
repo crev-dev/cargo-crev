@@ -170,24 +170,26 @@ fn main() -> Result<()> {
         opts::Command::Change(cmd) => match cmd {
             opts::Change::Id(args) => crev_lib::switch_id(&args.id)?,
         },
-        opts::Command::Verify(args) => {
-            let local = crev_lib::Local::auto_open()?;
-            let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
+        opts::Command::Verify(cmd) => match cmd {
+            opts::Verify::Deps(args) => {
+                let local = crev_lib::Local::auto_open()?;
+                let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
 
-            let repo = Repo::auto_open_cwd()?;
-            let ignore_list = cargo_ignore_list();
-            repo.for_every_dependency_dir(|_, path| {
-                let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
-                let result = db.verify_digest(&digest, &trust_set);
-                if args.verbose {
-                    println!("{:9} {} {:40}", result, digest, path.display(),);
-                } else {
-                    println!("{:9} {:40}", result, path.display(),);
-                }
+                let repo = Repo::auto_open_cwd()?;
+                let ignore_list = cargo_ignore_list();
+                repo.for_every_dependency_dir(|_, path| {
+                    let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
+                    let result = db.verify_digest(&digest, &trust_set);
+                    if args.verbose {
+                        println!("{:9} {} {:40}", result, digest, path.display(),);
+                    } else {
+                        println!("{:9} {:40}", result, path.display(),);
+                    }
 
-                Ok(())
-            })?;
-        }
+                    Ok(())
+                })?;
+            }
+        },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
                 opts::QueryId::Current => crev_lib::show_current_id()?,
