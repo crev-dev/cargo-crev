@@ -11,6 +11,12 @@ const BEGIN_BLOCK: &str = "-----BEGIN CREV TRUST -----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV TRUST SIGNATURE-----";
 const END_BLOCK: &str = "-----END CREV TRUST-----";
 
+const CURRENT_TRUST_PROOF_SERIALIZATION_VERSION: i64 = -1;
+
+fn cur_version() -> i64 {
+    CURRENT_TRUST_PROOF_SERIALIZATION_VERSION
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TrustLevel {
@@ -57,7 +63,7 @@ impl TrustLevel {
 /// Body of a Trust Proof
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
-    #[builder(default = "crate::current_version()")]
+    #[builder(default = "cur_version()")]
     version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
@@ -77,7 +83,10 @@ pub struct Trust {
 /// Like `Trust` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TrustDraft {
-    #[serde(skip_serializing, default = "crate::current_version")]
+    #[serde(
+        skip_serializing,
+        default = "cur_version"
+    )]
     version: i64,
     #[serde(
         serialize_with = "as_rfc3339_fixed",

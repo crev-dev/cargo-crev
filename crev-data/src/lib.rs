@@ -29,10 +29,5 @@ pub use crate::{
     url::Url,
 };
 
-/// Current API version
-pub fn current_version() -> i64 {
-    -1 // still in alpha, so less than 0
-}
-
 #[cfg(test)]
 mod tests;

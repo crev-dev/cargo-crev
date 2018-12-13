@@ -11,11 +11,17 @@ const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CREV PACKAGE REVIEW-----";
 
+const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
+
+fn cur_version() -> i64 {
+    CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION
+}
+
 /// Body of a Package Review Proof
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Package {
-    #[builder(default = "crate::current_version()")]
+    #[builder(default = "cur_version()")]
     version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
@@ -36,7 +42,10 @@ pub struct Package {
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PackageDraft {
-    #[serde(skip_serializing, default = "crate::current_version")]
+    #[serde(
+        skip_serializing,
+        default = "cur_version"
+    )]
     version: i64,
     #[serde(
         serialize_with = "as_rfc3339_fixed",

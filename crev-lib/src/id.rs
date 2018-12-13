@@ -17,6 +17,8 @@ use std::{
 use crate::Result;
 use crev_data::id::{OwnId, PubId};
 
+const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PassConfig {
     version: u32,
@@ -77,7 +79,7 @@ impl LockedId {
 
         assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
         Ok(LockedId {
-            version: crev_data::current_version(),
+            version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce,
@@ -128,8 +130,8 @@ impl LockedId {
             ref pass,
         } = self;
         {
-            if *version != crev_data::current_version() {
-                bail!("Unsupported version");
+            if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
+                bail!("Unsupported version: {}", *version);
             }
             use miscreant::aead::Algorithm;
 

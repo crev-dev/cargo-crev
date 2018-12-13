@@ -23,6 +23,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserConfig {
     pub version: i64,
@@ -33,7 +35,7 @@ pub struct UserConfig {
 impl Default for UserConfig {
     fn default() -> Self {
         Self {
-            version: crev_data::current_version(),
+            version: CURRENT_USER_CONFIG_SERIALIZATION_VERSION,
             current_id: None,
         }
     }

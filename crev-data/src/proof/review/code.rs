@@ -10,6 +10,12 @@ const BEGIN_BLOCK: &str = "-----BEGIN CODE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CODE REVIEW SIGNATURE-----";
 const END_BLOCK: &str = "-----END CODE REVIEW-----";
 
+const CURRENT_CODE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
+
+fn cur_version() -> i64 {
+    CURRENT_CODE_REVIEW_PROOF_SERIALIZATION_VERSION
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct File {
     pub path: PathBuf,
@@ -28,7 +34,7 @@ pub struct File {
 // TODO: validate setters(no newlines, etc)
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Code {
-    #[builder(default = "crate::current_version()")]
+    #[builder(default = "cur_version()")]
     version: i64,
     #[builder(default = "crev_common::now()")]
     #[serde(
@@ -56,7 +62,7 @@ pub struct Code {
 /// Like `Code` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CodeDraft {
-    #[serde(skip_serializing, default = "crate::current_version")]
+    #[serde(skip_serializing, default = "cur_version")]
     version: i64,
     #[serde(
         serialize_with = "as_rfc3339_fixed",
