@@ -18,6 +18,10 @@ Crev is is a language and ecosystem agnostic, social Code REView system.
 
 `cargo-crev` is an implementation of Crev for `cargo` and Rust.
 
+See it in action:
+
+[![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695)
+
 ## Getting started
 
 `cargo-crev` is a work in progress, but it should be usable at all times.
