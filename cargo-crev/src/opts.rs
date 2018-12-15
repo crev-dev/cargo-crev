@@ -94,6 +94,10 @@ pub enum Fetch {
     #[structopt(name = "url")]
     /// Fetch from a single public proof repository
     Url(FetchUrl),
+
+    #[structopt(name = "all")]
+    /// Fetch all previously retrieved public proof repositories
+    All,
 }
 
 #[derive(Debug, StructOpt, Clone)]
