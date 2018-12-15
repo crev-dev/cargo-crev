@@ -41,7 +41,7 @@ your other work, etc.
                of it"
     * `none` - "I have no idea what is going on here"
   * `rating`
-    * `superb`
+    * `strong`
     * `positive`
     * `neutral`
     * `negative`
