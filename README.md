@@ -51,24 +51,24 @@ Eg. *Package Review Proofs* that review a whole package (aka. library, crate, et
 
 ```
 -----BEGIN CREV PACKAGE REVIEW-----
-version: -99999
-date: "2018-12-09T23:54:12.681862766-08:00"
+version: -1
+date: "2018-12-16T00:09:27.905713993-08:00"
 from:
   id-type: crev
-  id: _xQgkbDAQx3nSV5SMfdEeQBSYiPwSI32wnMxnjExk24=
+  id: 8iUv_SPgsAQ4paabLfs1D9tIptMnuSRZ344_M-6m9RE
   url: "https://github.com/dpc/crev-proofs"
 package:
   source: "https://crates.io"
-  name: either
-  version: 1.5.0
-  digest: 1E88e0ya8wOX1jYLjl5OAEtl1EVzhWpji86dEQ-V720=
+  name: default
+  version: 0.1.2
+  digest: RtL75KvBdj_Zk42wp2vzNChkT1RDUdLxbWovRvEm1yA
 review:
-  thoroughness: medium
+  thoroughness: high
   understanding: high
   rating: positive
-comment: "Simple `Either` type"
+comment: "I'm the author, and this crate is trivial"
 -----BEGIN CREV PACKAGE REVIEW SIGNATURE-----
-AiS2AKPLuIoStFuX3h9KRln3TGv-TArLExY6P3VaI46CL23_1HbB2Nf1o8MvW-_jl6pzXamiYCnRhXHXEOK5DQ==
+QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8nXz5CQ
 -----END CREV PACKAGE REVIEW-----
 ```
 
