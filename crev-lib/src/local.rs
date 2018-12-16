@@ -250,14 +250,7 @@ impl Local {
     }
 
     pub fn git_init_proof_dir(&self, git_https_url: &str) -> Result<()> {
-        eprintln!("");
         let git_url = https_to_git_url(git_https_url);
-        if git_url.is_none() {
-            eprintln!("Could not deduce `ssh` push url. Call:");
-            eprintln!("cargo crev git remote set-url --push origin <url>");
-            eprintln!("manually, after id is generated.");
-            eprintln!("");
-        }
 
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
@@ -277,11 +270,21 @@ impl Local {
                     "Empty git repository initialized in {}",
                     proof_dir.display()
                 );
+
+                eprintln!("");
                 if let Some(git_url) = git_url {
+                    eprintln!("Setting push url to: {}", git_url);
                     repo.remote_set_url("origin", &git_url)?;
                 } else {
+                    eprintln!("Could not deduce ssh push url.");
+                    eprintln!("Setting push url to: {}", git_https_url);
                     repo.remote_set_url("origin", &git_https_url)?;
                 }
+
+                eprintln!("Use:");
+                eprintln!("cargo crev git remote set-url --push origin <url>");
+                eprintln!("to change it at later time");
+                eprintln!("");
             }
         }
 
