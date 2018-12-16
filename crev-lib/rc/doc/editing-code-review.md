@@ -18,32 +18,31 @@ your other work, etc.
 
 ## Data fields
 
-* `data` - timestamp of the proof creation
-* `from` - information about the entity creating the proof
-  * `id` - ID of the entity
-  * `url` - URL where entity publishes their Web of Trust
-* `review`
+* `date` - proof timestamp
+* `from` - proof author
+* `review` - review details
   * `revision` - revision-system checksum at the time of the review
   * `digest` - recursive hash of the whole project content at the time of the review
-  * `thoroughness` - time and effort spent reviewing this project
-    * `high` - "I've spent hours or more carefully reviewing"; more than an hour,
-               of a focused review; possibly a part of a formal security review;
-               compared with previous releases, etc.
-    * `medium` - a standard, focused code review of a decent depth
-    * `low` - "I glanced through it"
-    * `none` - "I actually haven't looked inside, or it was too brief to count"
+  * `thoroughness` - time and effort spent on the review
+    * `high` - long, deep, focused review - possibly as a part of a formal
+               security review; "~hours per file"
+    * `medium` - a standard, focused code review of a decent depth;
+                 "~15 minutes per file"
+    * `low` - low intensity review: "~2 minutes per file"
+    * `none` - no review, or just skimming; "seconds per file";
+               still useful for a trusted or reputable project
+               or when when proof is created to warn about problems
   * `understanding`
-    * `high` - "I'm one of the authors and/or experts in the area"
-    * `medium` - "It's within my competency to judge this project, and there's nothing
-                 in it that I can't understand"
-    * `low` - "There are parts that are unclear to me, but I understand a decent chunk
-               of it"
-    * `none` - "I have no idea what is going on here"
+    * `high` - complete understanding
+    * `medium` - good understanding
+    * `low` - some parts are unclear
+    * `none` - lack of understanding
   * `rating`
-    * `strong`
-    * `positive`
-    * `neutral`
-    * `negative`
-    * `dangerous`
-* `comment` - Optional, human-readable information about this review
+    * `strong` - secure and good in all respects, for all applications
+    * `positive` - secure and ok to use; possibly minor issues
+    * `neutral` - secure but with flaws
+    * `negative` - severe flaws and not ok for production usage
+    * `dangerous` - unsafe to use; severe flaws and/or possibly malicious
+* `comment` - human-readable information about this review
+              (eg. why it was done, how, and `rating` explanation)
 * `files` - list of reviewed files

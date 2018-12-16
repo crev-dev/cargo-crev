@@ -19,11 +19,9 @@ your other work, etc.
 
 ## Data fields
 
-* `data` - timestamp of the proof creation
-* `from` - information about the entity creating the proof
-  * `id` - ID of the entity
-  * `url` - URL where entity publishes their Web of Trust
-* `ids` - list of ids that are now trusted by the signer; same form as `from`
+* `date` - proof timestamp
+* `from` - proof author
+* `ids` - objects of the trust relationship
 * `trust` - trust level; possible values:
   * `high` - "for most practically purposes, I trust this ID as much or more
              than myself" eg. "my dayjob ID", "known and reputatable expert",
@@ -33,5 +31,5 @@ your other work, etc.
   * `none` - "I don't actually trust this entity"; use to overwrite trust from
              a previously issued Trust Proof
   * `distrust` - "I distrust this person and so should you"
-* `comment` - Optional, human-readable information about this trust relationship,
+* `comment` - human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)
