@@ -3,7 +3,6 @@
 use serde;
 
 use self::serde::Deserialize;
-use base64;
 use chrono::{self, offset::FixedOffset, prelude::*};
 use hex::{self, FromHex, FromHexError};
 use serde_yaml;
@@ -23,9 +22,9 @@ where
     use self::serde::de::Error;
     String::deserialize(deserializer)
         .and_then(|string| {
-            base64::decode_config(&string, base64::URL_SAFE)
-                .map_err(|err| Error::custom(err.to_string()))
-        }).and_then(|ref bytes| {
+            crate::base64_decode(&string).map_err(|err| Error::custom(err.to_string()))
+        })
+        .and_then(|ref bytes| {
             T::try_from(bytes)
                 .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
@@ -36,7 +35,7 @@ where
     T: AsRef<[u8]>,
     S: serde::Serializer,
 {
-    serializer.serialize_str(&base64::encode_config(key.as_ref(), base64::URL_SAFE))
+    serializer.serialize_str(&crate::base64_encode(key.as_ref()))
 }
 
 pub fn from_hex<'d, T, D>(deserializer: D) -> Result<T, D::Error>
@@ -49,7 +48,8 @@ where
         .and_then(|string| {
             FromHex::from_hex(string.as_str())
                 .map_err(|err: FromHexError| Error::custom(err.to_string()))
-        }).and_then(|bytes: Vec<u8>| {
+        })
+        .and_then(|bytes: Vec<u8>| {
             T::try_from(&bytes)
                 .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
@@ -72,7 +72,8 @@ where
         .and_then(|string| {
             DateTime::<FixedOffset>::parse_from_rfc3339(&string)
                 .map_err(|err| Error::custom(err.to_string()))
-        }).map(|dt| dt.with_timezone(&dt.timezone()))
+        })
+        .map(|dt| dt.with_timezone(&dt.timezone()))
 }
 
 pub fn as_rfc3339_fixed<S>(

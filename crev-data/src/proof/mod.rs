@@ -1,7 +1,6 @@
 //! Some common stuff for both Review and Trust Proofs
 
 use crate::Url;
-use base64;
 use chrono::{self, prelude::*};
 use crev_common;
 use std::{default, fmt, fs, io, mem, path::Path};
@@ -135,7 +134,7 @@ impl Content {
         Ok(Proof {
             digest: crev_common::blake2b256sum(&body.as_bytes()),
             body: body,
-            signature: base64::encode_config(&signature, base64::URL_SAFE),
+            signature: crev_common::base64_encode(&signature),
             content: self.clone(),
         })
     }
@@ -356,13 +355,6 @@ impl Proof {
         }
         Ok(v)
     }
-
-    /*
-    pub fn signature(&self) -> Result<Vec<u8>> {
-        let sig = self.signature.trim();
-        Ok(base64::decode_config(sig, base64::URL_SAFE)?)
-    }
-    */
 
     pub fn signature(&self) -> &str {
         self.signature.trim()

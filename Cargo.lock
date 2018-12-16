@@ -561,7 +561,6 @@ name = "crev-data"
 version = "0.0.1"
 dependencies = [
  "argonautica 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -583,7 +582,6 @@ version = "0.0.1"
 dependencies = [
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "argonautica 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "base64 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",

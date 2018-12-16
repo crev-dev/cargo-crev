@@ -13,7 +13,6 @@ readme = "../README.md"
 
 [dependencies]
 app_dirs = "1"
-base64 = "0.10"
 blake2 = "0.8"
 chrono = "0.4"
 common_failures = "0.1"

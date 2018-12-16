@@ -35,6 +35,14 @@ pub fn blake2b256sum_file(path: &Path) -> io::Result<Vec<u8>> {
     Ok(hasher.fixed_result().to_vec())
 }
 
+pub fn base64_decode<T: ?Sized + AsRef<[u8]>>(input: &T) -> Result<Vec<u8>, base64::DecodeError> {
+    base64::decode_config(input, base64::URL_SAFE_NO_PAD)
+}
+
+pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
+    base64::encode_config(input, base64::URL_SAFE_NO_PAD)
+}
+
 pub fn read_file_to_digest_input(
     path: &Path,
     input: &mut impl blake2::digest::Input,

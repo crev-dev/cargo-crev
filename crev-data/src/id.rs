@@ -1,6 +1,5 @@
 use crate::proof;
 use crate::{Result, Url};
-use base64;
 use blake2;
 use crev_common;
 use crev_common::serde::{as_base64, from_base64};
@@ -39,7 +38,7 @@ pub enum Id {
 
 impl Id {
     pub fn crevid_from_str(s: &str) -> Result<Self> {
-        let bytes = base64::decode_config(s, base64::URL_SAFE)?;
+        let bytes = crev_common::base64_decode(s)?;
 
         Ok(Id::Crev { id: bytes })
     }
@@ -49,7 +48,7 @@ impl Id {
             Id::Crev { id } => {
                 let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)?;
 
-                let sig_bytes = base64::decode_config(sig_str, base64::URL_SAFE)?;
+                let sig_bytes = crev_common::base64_decode(sig_str)?;
                 let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
 
                 pubkey.verify::<blake2::Blake2b>(content, &signature)?;
@@ -63,7 +62,7 @@ impl Id {
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Id::Crev { id } => f.write_str(&base64::encode_config(id, base64::URL_SAFE)),
+            Id::Crev { id } => f.write_str(&crev_common::base64_encode(id)),
         }
     }
 }
@@ -88,7 +87,7 @@ impl PubId {
     }
 
     pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
-        let v = base64::decode_config(s, base64::URL_SAFE)?;
+        let v = crev_common::base64_decode(s)?;
         Ok(PubId {
             id: Id::Crev { id: v },
             url,

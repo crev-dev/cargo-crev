@@ -6,7 +6,6 @@ use crate::{
     Result,
 };
 use app_dirs::{app_root, AppDataType};
-use base64;
 use crev_common;
 use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
@@ -174,10 +173,9 @@ impl Local {
 
     fn id_path(&self, id: &Id) -> PathBuf {
         match id {
-            Id::Crev { id } => self.user_ids_path().join(format!(
-                "{}.yaml",
-                base64::encode_config(id, base64::URL_SAFE)
-            )),
+            Id::Crev { id } => self
+                .user_ids_path()
+                .join(format!("{}.yaml", crev_common::base64_encode(id))),
         }
     }
 

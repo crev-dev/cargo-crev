@@ -1,5 +1,4 @@
 use crate::proof;
-use base64;
 
 use crev_common::serde::{as_base64, from_base64};
 

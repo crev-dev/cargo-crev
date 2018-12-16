@@ -1,12 +1,7 @@
 use argonautica::{self, Hasher};
-use base64;
-use rand::{self, Rng};
-/*
-use blake2;
-use common_failures::prelude::*;
-*/
 use crev_common::serde::{as_base64, from_base64};
 use miscreant;
+use rand::{self, Rng};
 use serde_yaml;
 use std::{
     self, fmt,
@@ -99,7 +94,7 @@ impl LockedId {
     }
 
     pub fn pub_key_as_base64(&self) -> String {
-        base64::encode_config(&self.public_key, base64::URL_SAFE)
+        crev_common::base64_encode(&self.public_key)
     }
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
