@@ -411,7 +411,7 @@ impl Local {
     }
 
     pub fn get_remote_git_cache_path(&self, url: &str) -> PathBuf {
-        let digest = crev_common::blake2sum(url.as_bytes());
+        let digest = crev_common::blake2b256sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
         self.cache_remotes_path().join(digest.to_string())
     }
@@ -436,18 +436,20 @@ impl Local {
     }
 
     pub fn fetch_all(&self) -> Result<()> {
-        eprintln!("Fetching all crev-proofs repositories ({})",
-                  self.cache_remotes_path().display());
+        eprintln!(
+            "Fetching all crev-proofs repositories ({})",
+            self.cache_remotes_path().display()
+        );
 
         for entry in fs::read_dir(self.cache_remotes_path())? {
             let path = entry?.path();
             if !path.is_dir() {
-                continue
+                continue;
             }
 
             let repo = git2::Repository::open(&path);
             if repo.is_err() {
-                continue
+                continue;
             }
 
             let repo = repo?;

@@ -2,6 +2,7 @@ use crate::proof;
 use crate::{Result, Url};
 use base64;
 use blake2;
+use crev_common;
 use crev_common::serde::{as_base64, from_base64};
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;

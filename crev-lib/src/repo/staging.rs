@@ -75,7 +75,7 @@ impl Staging {
         self.entries.insert(
             path.to_owned(),
             StagingPathInfo {
-                blake_hash: crev_common::blake2sum_file(&full_path)?,
+                blake_hash: crev_common::blake2b256sum_file(&full_path)?,
             },
         );
 
@@ -107,7 +107,7 @@ impl Staging {
     pub fn enforce_current(&self) -> Result<()> {
         for (rel_path, info) in self.entries.iter() {
             let path = self.root_path.join(rel_path);
-            if crev_common::blake2sum_file(&path)? != info.blake_hash {
+            if crev_common::blake2b256sum_file(&path)? != info.blake_hash {
                 bail!(
                     "File {} not current. Review again use `crev add` to
                       update.",

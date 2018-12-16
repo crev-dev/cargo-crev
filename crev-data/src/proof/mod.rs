@@ -133,7 +133,7 @@ impl Content {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
-            digest: crev_common::blake2sum(&body.as_bytes()),
+            digest: crev_common::blake2b256sum(&body.as_bytes()),
             body: body,
             signature: base64::encode_config(&signature, base64::URL_SAFE),
             content: self.clone(),
@@ -232,7 +232,7 @@ impl Serialized {
         Ok(Proof {
             body: self.body.clone(),
             signature: self.signature.clone(),
-            digest: crev_common::blake2sum(&self.body.as_bytes()),
+            digest: crev_common::blake2b256sum(&self.body.as_bytes()),
             content: match self.type_ {
                 ProofType::Code => Content::Code(review::Code::parse(&self.body)?),
                 ProofType::Package => Content::Package(review::Package::parse(&self.body)?),

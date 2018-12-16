@@ -1,6 +1,9 @@
 //! Bunch of code that is auxiliary and common for all `crev`
 
+pub mod blake2b256;
 pub mod serde;
+
+pub use crate::blake2b256::Blake2b256;
 
 use blake2;
 use chrono;
@@ -20,14 +23,14 @@ pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {
     date.with_timezone(&date.offset())
 }
 
-pub fn blake2sum(bytes: &[u8]) -> Vec<u8> {
-    let mut hasher = blake2::Blake2b::new();
+pub fn blake2b256sum(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = Blake2b256::new();
     hasher.input(bytes);
     hasher.fixed_result().to_vec()
 }
 
-pub fn blake2sum_file(path: &Path) -> io::Result<Vec<u8>> {
-    let mut hasher = blake2::Blake2b::new();
+pub fn blake2b256sum_file(path: &Path) -> io::Result<Vec<u8>> {
+    let mut hasher = Blake2b256::new();
     read_file_to_digest_input(path, &mut hasher)?;
     Ok(hasher.fixed_result().to_vec())
 }

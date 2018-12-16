@@ -89,7 +89,7 @@ where
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
         Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
-            blake2::Blake2b,
+            crev_common::Blake2b256,
             H1,
         >(path, ignore_list)?)
     };
@@ -108,7 +108,7 @@ where
     H2: std::hash::BuildHasher + std::default::Default,
 {
     let digest = Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
-        blake2::Blake2b,
+        crev_common::Blake2b256,
         H1,
     >(path, ignore_list)?);
     Ok(db.verify_digest(&digest, trusted_set))
@@ -119,7 +119,7 @@ where
     H1: std::hash::BuildHasher + std::default::Default,
 {
     Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H1>(
+        crev_recursive_digest::get_recursive_digest_for_dir::<crev_common::Blake2b256, H1>(
             path,
             ignore_list,
         )?,
@@ -162,7 +162,7 @@ where
     }
 
     Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_paths::<blake2::Blake2b, H>(
+        crev_recursive_digest::get_recursive_digest_for_paths::<crev_common::Blake2b256, H>(
             root_path, paths,
         )?,
     ))
@@ -176,7 +176,7 @@ where
     H: std::hash::BuildHasher,
 {
     Ok(crev_recursive_digest::get_recursive_digest_for_paths::<
-        blake2::Blake2b,
+        crev_common::Blake2b256,
         H,
     >(root_path, paths)?)
 }
@@ -189,7 +189,7 @@ where
     H: std::hash::BuildHasher,
 {
     Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, H>(
+        crev_recursive_digest::get_recursive_digest_for_dir::<crev_common::Blake2b256, H>(
             root_path,
             rel_path_ignore_list,
         )?,
