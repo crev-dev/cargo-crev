@@ -268,6 +268,10 @@ fn main() -> Result<()> {
                 let local = Local::auto_open()?;
                 local.fetch_url(&params.url)?;
             }
+            opts::Fetch::All => {
+                let local = Local::auto_open()?;
+                local.fetch_all()?;
+            }
         },
     }
 

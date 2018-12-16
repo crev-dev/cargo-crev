@@ -435,6 +435,35 @@ impl Local {
         Ok(())
     }
 
+    pub fn fetch_all(&self) -> Result<()> {
+        eprintln!("Fetching all crev-proofs repositories ({})",
+                  self.cache_remotes_path().display());
+
+        for entry in fs::read_dir(self.cache_remotes_path())? {
+            let path = entry?.path();
+            if !path.is_dir() {
+                continue
+            }
+
+            let repo = git2::Repository::open(&path);
+            if repo.is_err() {
+                continue
+            }
+
+            let repo = repo?;
+            repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+            repo.set_head("FETCH_HEAD")?;
+            let mut opts = git2::build::CheckoutBuilder::new();
+            opts.force();
+            repo.checkout_head(Some(&mut opts))?;
+
+            let remote = repo.find_remote("origin")?;
+            eprintln!("fetch\t{}", remote.url().unwrap());
+        }
+
+        Ok(())
+    }
+
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
         std::env::set_current_dir(self.get_proofs_dir_path()?)?;
