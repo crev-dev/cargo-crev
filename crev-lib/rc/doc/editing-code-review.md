@@ -22,7 +22,7 @@ your other work, etc.
 * `from` - proof author
 * `review` - review details
   * `revision` - revision-system checksum at the time of the review
-  * `digest` - recursive hash of the whole project content at the time of the review
+  * `digest` - recursive digest of the whole project content
   * `thoroughness` - time and effort spent on the review
     * `high` - long, deep, focused review - possibly as a part of a formal
                security review; "hour or more per file"
@@ -46,3 +46,9 @@ your other work, etc.
 * `comment` - human-readable information about this review
               (eg. why it was done, how, and `rating` explanation)
 * `files` - list of reviewed files
+
+## Further reading
+
+See https://github.com/dpc/crev/wiki/Howto:-Create-Review-Proofs wiki
+page for more information and Frequently Asked Questions, or join
+https://gitter.im/dpc/crev discussion channel.

@@ -33,3 +33,9 @@ your other work, etc.
   * `distrust` - "I distrust this person and so should you"
 * `comment` - human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)
+
+## Further reading
+
+See https://github.com/dpc/crev/wiki/Howto:-Create-Review-Proofs wiki
+page for more information and Frequently Asked Questions, or join
+https://gitter.im/dpc/crev discussion channel.
