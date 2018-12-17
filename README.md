@@ -17,19 +17,17 @@ You're ultimately responsible for vetting your dependencies.
 But in a world of NPM/PIP/Cargo/RubyGems - how do you do that? Can
 you keep up with ever-changing ecosystem?
 
-`crev` is an actual *code review* system as opposed to typical *code-change review* system.
+`crev` is an actual *code review* system as opposed to typicaly practiced *code-change review* system.
 
-`crev` is scalable, distributed and social.
+`crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encuraging high quality by peer review.
 
-`crev` records review metadata: who, when, how did the review.
+`crev` allows building a personal web of trust in people and software quality.
 
-`crev` allows building web of trust and reusing reviews of trusted parites.
-
-`crev` is a tool that we desperately need.
+`crev` is a tool that we desperately need. It protects against compromised accounts, intentional malicious code, compromised package registries, or just plain poor quality libraries.
 
 #### Status
 
-Still early, but there's a lot of working code and ironed-out ideas.
+Still early, but there's a team already, a lot of working code and ironed-out ideas.
 
 The current focus is on a first concrete implementation of Crev:
 [`cargo-crev`](https://github.com/dpc/crev/tree/master/cargo-crev) -
@@ -44,10 +42,9 @@ Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Overview
 
-Using `crev` you can generate cryptographically signed artifacts reviewing whole
-releases, parts of the code, or specifying trust (or mistrust) into reviews of other people.
+Using `crev` you can generate cryptographically signed artifacts (*Proofs*). Proofs can share details of code reviews (whole releases, parts of the code), or specifying trust (or mistrust) into reviews of other people.
 
-Eg. *Package Review Proofs* that review a whole package (aka. library, crate, etc.):
+Example of *Package Review Proofs* that review a whole package (aka. library, crate, etc.):
 
 ```
 -----BEGIN CREV PACKAGE REVIEW-----
