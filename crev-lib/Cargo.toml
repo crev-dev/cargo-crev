@@ -29,7 +29,7 @@ serde_derive = "1"
 serde_yaml = "0.8"
 tempdir = "0.3"
 walkdir = "2"
-resiter = { git = "https://github.com/dpc/resiter" }
+resiter-dpc-tmp = "0.3"
 rprompt = "1"
 default = "0.1"
 

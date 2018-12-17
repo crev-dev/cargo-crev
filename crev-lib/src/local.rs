@@ -11,7 +11,7 @@ use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
 use failure::ResultExt;
 use git2;
-use resiter::*;
+use resiter_dpc_tmp::*;
 use serde_yaml;
 use std::cell::RefCell;
 use std::{
