@@ -8,9 +8,15 @@
 * `crev-data` contains core data types, crypto, and serialization code.
 * `crev-lib` implements basic concepts (think `libgit2`)
 * binary crates - the actual utilities that users will call
+    * `crev-bin` - generic tool, currently not meant to be used
+    * `cargo-crev` - frontend integraded with Cargo for Rust
+* auxilary tools:
+    * `recursive-digest` - library implementing a recursive digest
+      over a directory content
+    * `rblake2sum` - a binary on top of `recursive-digest`
 
 
-The rule is that any given crate can only depend on the lower layer.
+For core crates, the rule is that any given crate can only depend on the lower layer.
 
 ### Misc.
 
@@ -20,9 +26,4 @@ and not neccessarily properly done.
 Seek help on [crev gitter channel](https://gitter.im/dpc/crev) before you start hacking
 on the code.
 
-The imediate goal is to get `cargo` binary to be usable. See
-[cargo-trust: Concept](https://github.com/dpc/crev/wiki/cargo-trust:-Concept)
-for more information about the vision.
-
-
-
+The imediate goal is to get `cargo-cargo` binary to be usable.
