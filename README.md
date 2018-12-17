@@ -23,7 +23,21 @@ you keep up with ever-changing ecosystem?
 
 `crev` allows building a personal web of trust in people and software quality.
 
-`crev` is a tool that we desperately need. It protects against compromised accounts, intentional malicious code, compromised package registries, or just plain poor quality libraries.
+`crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typesquating, compromised package registries, or just plain poor quality.
+
+[a]: https://www.csoonline.com/article/3214624/security/malicious-code-in-the-node-js-npm-registry-shakes-open-source-trust-model.html
+
+[b]: https://thenewstack.io/npm-attackers-sneak-a-backdoor-into-node-js-deployments-through-dependencies/
+
+[c]: https://news.ycombinator.com/item?id=17513709
+
+[c]: https://www.theregister.co.uk/2018/11/26/npm_repo_bitcoin_stealer/
+
+[d]: https://www.zdnet.com/article/twelve-malicious-python-libraries-found-and-removed-from-pypi/
+
+[e]: https://www.itnews.com.au/news/rubygems-in-recovery-mode-after-site-hack-330819
+
+[f]: https://users.rust-lang.org/t/security-advisory-for-crates-io-2017-09-19/12960
 
 #### Status
 
