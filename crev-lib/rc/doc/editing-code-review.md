@@ -25,7 +25,7 @@ your other work, etc.
   * `digest` - recursive hash of the whole project content at the time of the review
   * `thoroughness` - time and effort spent on the review
     * `high` - long, deep, focused review - possibly as a part of a formal
-               security review; "~hours per file"
+               security review; "hour or more per file"
     * `medium` - a standard, focused code review of a decent depth;
                  "~15 minutes per file"
     * `low` - low intensity review: "~2 minutes per file"
