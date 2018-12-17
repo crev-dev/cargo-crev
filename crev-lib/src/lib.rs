@@ -202,11 +202,12 @@ pub fn generate_id() -> Result<()> {
     eprintln!("or just your github username to generate it.");
     let mut url;
     loop {
-        url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
         eprintln!("");
+        url = rprompt::prompt_reply_stdout("URL or Github username: ")?;
         if !url.contains('/') {
             url = format!("https://github.com/{}/crev-proofs", url)
         }
+        eprintln!("");
         eprintln!("Your URL: {}", url);
         eprintln!("It is recomended that it exists and is initialized upfront.");
         eprintln!("Open URL and check.");

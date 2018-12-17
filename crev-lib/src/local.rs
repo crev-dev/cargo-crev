@@ -110,12 +110,8 @@ impl Local {
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
-        if !repo.root_path.exists() {
-            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
-        }
-
-        if !repo.user_config_path().exists() {
-            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
+        if !repo.root_path.exists() || !repo.user_config_path().exists() {
+            bail!("User config not-initialized. Use `crev new id` to generate CrevID.");
         }
 
         Ok(repo)
