@@ -2,21 +2,31 @@
 
 
 `cargo-crev` is a tool helping Rust users review crates they use,
-and share it with the community.
+and share it with the community. It works as a recomendation system,
+helps identify poor quality, protects against many attack
+vectors, and aims at driving the quality of Rust ecosystem even higher,
+by encouraging continous peer review culture.
+
+All of this neatly integrated with the `cargo` itself!
 
 ## How it works
 
-* Review crates: judge their safety, quality and find problems.
+* Identify your dependencies: list in many useful ways.
+* Review crates: judge their safety, quality and document problems.
 * Publish verifiable reviews in a public git repository.
-* People download your reviews, you download reviews of others!
-* We build a web of trust veting whole Rust ecosystem.
-* Noone ever again is bitten by running unreviewed and untrusted code.
+* People download your reviews, you download reviews of others.
+* Build a web of trust veting whole Rust ecosystem.
+* Gain reputation and trust. Maybe even monetize it, by reving code for money.
+* Implement it in your company and/or team to stay ahead! 
+* Never again get bitten by unreviewed and untrusted code.
 
 ## More info
 
-Crev is is a language and ecosystem agnostic, social Code REView system.
+[Crev](https://github.com/dpc/crev/) is is a language and ecosystem agnostic,
+social Code REView system.
 
-`cargo-crev` is an implementation of Crev for `cargo` and Rust.
+`cargo-crev` is an implementation/frontend of Crev integrated with `cargo` and
+for Rust/crates.io ecosystem.
 
 See it in action:
 
