@@ -21,7 +21,6 @@ quicli = "0.3"
 structopt = "0.2"
 common_failures = "0.1"
 cargo = "0.31"
-cargo-clone = { git = "https://github.com/dpc/cargo-clone" }
 crev-lib = { path = "../crev-lib", version = "0.1" }
 crev-data = { path = "../crev-data", version = "0.1" }
 crev-common = { path = "../crev-common", version = "0.1" }
