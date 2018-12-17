@@ -39,6 +39,14 @@ you keep up with ever-changing ecosystem?
 
 [f]: https://users.rust-lang.org/t/security-advisory-for-crates-io-2017-09-19/12960
 
+## Vision
+
+We would like Crev to become a general, language and ecosystem agnostic 
+system for estabilishing trust in Open Source code. We would like to have
+frontends integrated with all major Open Source package managers and ecosystems.
+
+Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
+
 #### Status
 
 Still early, but there's a team already, a lot of working code and ironed-out ideas.
@@ -52,7 +60,6 @@ See it in action:
 
 [![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695)
 
-Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Overview
 
