@@ -4,6 +4,13 @@ name = "cargo-crev"
 version = "0.1.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
+description = "Scalable, social, Code REView system that we desperately need - cargo fronted"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
+documentation = "https://docs.rs/crev"
+repository = "https://github.com/dpc/crev"
+homepage = "https://github.com/dpc/crev"
+keywords = ["code", "review", "tool", "distributed", "cargo"]
+readme = "README.md"
 
 [[bin]]
 name = "cargo-crev"
@@ -16,9 +23,9 @@ structopt = "0.2"
 common_failures = "0.1"
 cargo = "0.31"
 cargo-clone = { git = "https://github.com/dpc/cargo-clone" }
-crev-lib = { path = "../crev-lib" }
-crev-data = { path = "../crev-data" }
-crev-common = { path = "../crev-common" }
-crev-recursive-digest = { path = "../recursive-digest" }
+crev-lib = { path = "../crev-lib", version = "0.1" }
+crev-data = { path = "../crev-data", version = "0.1" }
+crev-common = { path = "../crev-common", version = "0.1" }
+crev-recursive-digest = { path = "../recursive-digest", version = "0.1" }
 semver = "0.9"
 default = "0.1"
