@@ -21,7 +21,7 @@ you keep up with ever-changing ecosystem?
 
 `crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encuraging high quality by peer review.
 
-`crev` allows building a personal web of trust in people and software quality.
+`crev` allows building a personal web of trust in people and code.
 
 `crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typesquating, compromised package registries, or just plain poor quality.
 
