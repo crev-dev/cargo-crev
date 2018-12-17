@@ -47,7 +47,7 @@ frontends integrated with all major Open Source package managers and ecosystems.
 
 Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
-#### Status
+## Status
 
 Still early, but there's a team already, a lot of working code and ironed-out ideas.
 
