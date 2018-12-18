@@ -240,6 +240,8 @@ pub fn generate_id() -> Result<()> {
     eprintln!("");
     println!("{}", locked);
 
+    local.init_readme_using_this_repo_file()?;
+
     Ok(())
 }
 

@@ -248,6 +248,7 @@ impl Local {
 
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
+
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
@@ -282,6 +283,15 @@ impl Local {
             }
         }
 
+        Ok(())
+    }
+
+    pub fn init_readme_using_this_repo_file(&self) -> Result<()> {
+        let proof_dir = self.get_proofs_dir_path()?;
+        let mut file = std::fs::File::create(proof_dir.join("README_USING_THIS_REPO.md"))?;
+        file.write_all(include_bytes!("../rc/doc/README_USING_THIS_REPO.md"))?;
+        file.flush()?;
+        self.proof_dir_git_add_path(&PathBuf::from("README_USING_THIS_REPO.md"))?;
         Ok(())
     }
 
