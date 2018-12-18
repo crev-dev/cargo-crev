@@ -6,5 +6,6 @@ members = [
 	"crev-bin",
 	"cargo-crev",
 	"recursive-digest",
-	"rblake2sum"
+	"rblake2sum",
+	"crevsum"
 ]
