@@ -167,8 +167,14 @@ fn main() -> Result<()> {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id => crev_lib::generate_id()?,
         },
-        opts::Command::Change(cmd) => match cmd {
-            opts::Change::Id(args) => crev_lib::switch_id(&args.id)?,
+        opts::Command::Switch(cmd) => match cmd {
+            opts::Switch::Id(args) => crev_lib::switch_id(&args.id)?,
+        },
+        opts::Command::Edit(cmd) => match cmd {
+            opts::Edit::Readme => {
+                let local = crev_lib::Local::auto_open()?;
+                local.edit_readme()?;
+            }
         },
         opts::Command::Verify(cmd) => match cmd {
             opts::Verify::Deps(args) => {

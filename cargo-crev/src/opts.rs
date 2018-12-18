@@ -29,7 +29,7 @@ pub enum New {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ChangeId {
+pub struct SwitchId {
     /// Own Id to switch to
     pub id: String,
 }
@@ -143,10 +143,17 @@ pub enum Query {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Change {
+pub enum Switch {
     /// Change current Id
     #[structopt(name = "id")]
-    Id(ChangeId),
+    Id(SwitchId),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Edit {
+    /// Edit your README.md file
+    #[structopt(name = "readme")]
+    Readme,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -162,9 +169,13 @@ pub enum Command {
     #[structopt(name = "new")]
     New(New),
 
-    /// Change Ids, readme, ...
-    #[structopt(name = "change")]
-    Change(Change),
+    /// Switch current Id, ...
+    #[structopt(name = "switch")]
+    Switch(Switch),
+
+    /// Edit README.md of the current Id, ...
+    #[structopt(name = "edit")]
+    Edit(Edit),
 
     /// Verify dependencies
     #[structopt(name = "verify")]

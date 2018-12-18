@@ -75,6 +75,16 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
+pub fn edit_file(path: &Path) -> Result<()> {
+    let editor = get_editor_to_use();
+    let status = process::Command::new(editor).arg(&path).status()?;
+
+    if !status.success() {
+        bail!("Editor returned {}", status);
+    }
+    Ok(())
+}
+
 pub fn get_documentation_for(content: &proof::Content) -> &'static str {
     use crev_data::proof::Content;
     match content {

@@ -476,6 +476,12 @@ impl Local {
         Ok(status)
     }
 
+    pub fn edit_readme(&self) -> Result<()> {
+        util::edit_file(&self.get_proofs_dir_path()?.join("README.md"))?;
+        self.proof_dir_git_add_path(&PathBuf::from("README.md"))?;
+        Ok(())
+    }
+
     pub fn load_db(
         &self,
         params: &trustdb::TrustDistanceParams,
