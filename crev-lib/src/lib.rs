@@ -197,9 +197,10 @@ where
 }
 
 pub fn generate_id() -> Result<()> {
-    eprintln!("Enter a public URL of a git repository for publishing your CrevID proofs.");
-    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
+    eprintln!("Enter URL of your Proof Repository to associate with the new CrevId");
+    eprintln!("E.g.: https://github.com/<yourusername>/crev-proofs");
     eprintln!("or just your github username to generate it.");
+    eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
     let mut url;
     loop {
         eprintln!("");
@@ -209,9 +210,8 @@ pub fn generate_id() -> Result<()> {
         }
         eprintln!("");
         eprintln!("Your URL: {}", url);
-        eprintln!("It is recomended that it exists and is initialized upfront.");
-        eprintln!("Open URL and check.");
-        if crev_common::yes_or_no_was_y("Is it correct? (y/n) ")? {
+        eprintln!("It is recomended that this repository exists and is initialized upfront (can be empty).");
+        if crev_common::yes_or_no_was_y("Proceed? (y/n) ")? {
             break;
         }
     }
