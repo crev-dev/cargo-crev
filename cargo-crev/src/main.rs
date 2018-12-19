@@ -98,6 +98,8 @@ impl Repo {
 fn cargo_ignore_list() -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
+    ignore_list.insert(PathBuf::from("Cargo.lock"));
+    ignore_list.insert(PathBuf::from("target"));
     ignore_list
 }
 

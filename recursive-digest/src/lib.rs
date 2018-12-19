@@ -177,7 +177,16 @@ pub fn get_recursive_digest_for_dir<
 ) -> Result<Vec<u8>> {
     let mut hasher = RecursiveDigest::<Digest>::new(root_path.into(), None);
 
-    for entry in walkdir::WalkDir::new(root_path) {
+    for entry in walkdir::WalkDir::new(root_path)
+        .into_iter()
+        .filter_entry(|entry| {
+            let path = entry
+                .path()
+                .strip_prefix(&root_path)
+                .unwrap_or_else(|_| entry.path());
+            !rel_path_ignore_list.contains(path)
+        })
+    {
         let entry = entry?;
         let path = entry
             .path()
