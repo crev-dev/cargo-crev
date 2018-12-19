@@ -166,12 +166,8 @@ fn main() -> Result<()> {
     match command {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
-                let res = crev_lib::generate_id(
-                    args.url,
-                    args.github_username,
-                    args.create_repo,
-                    args.use_https_push,
-                );
+                let res =
+                    crev_lib::generate_id(args.url, args.github_username, args.use_https_push);
                 if res.is_err() {
                     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
                 }

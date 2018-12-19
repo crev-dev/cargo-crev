@@ -308,58 +308,6 @@ impl Local {
         id.save_to(&path)
     }
 
-    pub(crate) fn create_github_proof_dir(
-        &self,
-        git_https_url: &str,
-        use_https_push: bool,
-    ) -> Result<()> {
-        let push_url = if use_https_push {
-            git_https_url.to_owned()
-        } else {
-            match https_to_git_url(git_https_url) {
-                Some(git_url) => git_url.to_owned(),
-                None => {
-                    bail!("Could not deduce `ssh` push url. Call:");
-                }
-            }
-        };
-
-        let parsed_url = if let Some(parsed) = parse_git_url_https(git_https_url) {
-            parsed
-        } else {
-            bail!("Could not use URL: {}", git_https_url);
-        };
-
-        if parsed_url.domain != "github.com" {
-            bail!("Only github.com repositories can be created.");
-        }
-
-        eprint!("Enter Github password: ");
-        let github_password = rpassword::read_password()?;
-
-        let _new = crate::github::create_remote_github_repository(
-            &parsed_url.username,
-            &github_password,
-            &parsed_url.repo,
-        )?
-        .was_created();
-
-        let proof_dir =
-            self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
-
-        fs::create_dir_all(&proof_dir)?;
-
-        let repo = git2::Repository::init(&proof_dir)?;
-        eprintln!(
-            "Initialized empty local git repository: {}",
-            proof_dir.display()
-        );
-
-        repo.remote_set_url("origin", &push_url)?;
-
-        Ok(())
-    }
-
     /// Git clone or init new remote Github crev-proof repo
     pub fn clone_proof_dir_from_git(
         &self,

@@ -29,9 +29,6 @@ pub struct NewId {
     #[structopt(long = "github-username")]
     /// Github username (instead of --url)
     pub github_username: Option<String>,
-    #[structopt(long = "create-repo")]
-    /// Attempt to create new github repository, using github API
-    pub create_repo: bool,
     #[structopt(long = "https-push")]
     /// Setup `https` instead of recommended `ssh`-based push url
     pub use_https_push: bool,

@@ -6,7 +6,6 @@ use common_failures::prelude::*;
 #[macro_use]
 extern crate failure;
 
-mod github;
 pub mod id;
 pub mod local;
 pub mod proof;
@@ -199,7 +198,6 @@ where
 pub fn generate_id(
     url: Option<String>,
     github_username: Option<String>,
-    create_repo: bool,
     use_https_push: bool,
 ) -> Result<()> {
     let url = match (url, github_username) {
@@ -214,11 +212,7 @@ pub fn generate_id(
     }
 
     let local = Local::auto_create_or_open()?;
-    if create_repo {
-        local.create_github_proof_dir(&url, use_https_push)?;
-    } else {
-        local.clone_proof_dir_from_git(&url, use_https_push)?;
-    }
+    local.clone_proof_dir_from_git(&url, use_https_push)?;
 
     let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
     eprintln!("CrevID will be protected by a passphrase.");
