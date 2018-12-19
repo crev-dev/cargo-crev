@@ -58,7 +58,7 @@ It is available in an alpha version.
 
 See it in action:
 
-[![asciicast](https://asciinema.org/a/216695.png?speed=3)](https://asciinema.org/a/216695)
+[![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695?speed=3)
 
 
 ## Overview
