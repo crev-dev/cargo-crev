@@ -15,12 +15,17 @@ use resiter_dpc_tmp::*;
 use serde_yaml;
 use std::cell::RefCell;
 use std::{
+    str,
     collections::HashSet,
     ffi::OsString,
     fs,
     io::Write,
+    io::Read,
     path::{Path, PathBuf},
 };
+
+use rpassword;
+use curl;
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -48,7 +53,15 @@ impl UserConfig {
     }
 }
 
-fn https_to_git_url(http_url: &str) -> Option<String> {
+#[derive(PartialEq, Debug, Default)]
+pub struct GitUrlComponents {
+    pub domain: String,
+    pub username: String,
+    pub repo: String,
+    pub suffix: String
+}
+
+pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     let mut split: Vec<_> = http_url.split('/').collect();
 
     while let Some(&"") = split.last() {
@@ -60,12 +73,67 @@ fn https_to_git_url(http_url: &str) -> Option<String> {
     if split[0] != "https:" && split[0] != "http:" {
         return None;
     }
-    let host = split[2];
-    let user = split[3];
+    let domain = split[2];
+    let username = split[3];
     let repo = split[4];
     let suffix = if repo.ends_with(".git") { "" } else { ".git" };
 
-    Some(format!("git@{}:{}/{}{}", host, user, repo, suffix))
+    Some(GitUrlComponents {
+        domain: domain.to_string(),
+        username: username.to_string(),
+        repo: repo.to_string(),
+        suffix: suffix.to_string()
+    })
+}
+
+#[test]
+fn parse_git_url_https_test() {
+    assert_eq!(
+        parse_git_url_https("https://github.com/dpc/trust"),
+        Some(GitUrlComponents {
+            domain: "github.com".to_string(),
+            username: "dpc".to_string(),
+            repo: "trust".to_string(),
+            suffix: ".git".to_string()
+        })
+    );
+    assert_eq!(
+        parse_git_url_https("https://gitlab.com/hackeraudit/web.git"),
+        Some(GitUrlComponents {
+            domain: "gitlab.com".to_string(),
+            username: "hackeraudit".to_string(),
+            repo: "web.git".to_string(),
+            suffix: "".to_string()
+        })
+    );
+    assert_eq!(
+        parse_git_url_https("https://gitlab.com/hackeraudit/web.git/"),
+        Some(GitUrlComponents {
+            domain: "gitlab.com".to_string(),
+            username: "hackeraudit".to_string(),
+            repo: "web.git".to_string(),
+            suffix: "".to_string()
+        })
+    );
+    assert_eq!(
+        parse_git_url_https("https://gitlab.com/hackeraudit/web.git/////////"),
+        Some(GitUrlComponents {
+            domain: "gitlab.com".to_string(),
+            username: "hackeraudit".to_string(),
+            repo: "web.git".to_string(),
+            suffix: "".to_string()
+        })
+    );
+}
+
+fn https_to_git_url(http_url: &str) -> Option<String> {
+    parse_git_url_https(http_url).map(|components| {
+        format!("git@{}:{}/{}{}",
+                components.domain,
+                components.username,
+                components.repo,
+                components.suffix)
+    })
 }
 
 #[test]
@@ -86,6 +154,58 @@ fn https_to_git_url_test() {
         https_to_git_url("https://gitlab.com/hackeraudit/web.git/////////"),
         Some("git@gitlab.com:hackeraudit/web.git".into())
     );
+}
+
+fn check_github_response(response: &Result<String>) {
+    match response {
+        Ok(r) => {
+            if r.contains("name already exists on this account") {
+                eprintln!("Github repo name already used")
+            } else if r.contains("Bad credentials") {
+                eprintln!("Bad Github credentials")
+            } else if r.contains("crev-proofs") {
+                eprintln!("Remote Github repo setup success")
+            } else {
+                eprintln!("Unknown failure")
+            }
+        }
+
+        Err(e) => {
+            eprintln!("Unknown error: {}", e)
+        }
+    }
+}
+
+fn setup_remote_github_repository(username: &str, password: &str, repository_name: &str) -> Result<String> {
+    let mut handle = curl::easy::Easy::new();
+    handle.url("https://api.github.com/user/repos")?;
+    handle.post(true)?;
+
+    handle.useragent("CREV")?;
+    handle.username(username)?;
+    handle.password(password)?;
+
+    let post_data = format!("{{\"name\":\"{}\"}}", repository_name);
+    let mut post_data = post_data.as_bytes();
+    handle.post_field_size(post_data.len() as u64)?;
+    let mut response_bytes = Vec::new();
+
+    {
+        let mut transfer = handle.transfer();
+
+        transfer.read_function(|r| {
+            Ok(post_data.read(r).unwrap_or(0))
+        })?;
+
+        transfer.write_function(|w| {
+            response_bytes.extend_from_slice(w);
+            Ok(w.len())
+        })?;
+
+        transfer.perform()?;
+    }
+
+    Ok(str::from_utf8(&response_bytes).unwrap_or("").to_string())
 }
 
 /// Local config stored in `~/.config/crev`
@@ -243,37 +363,113 @@ impl Local {
         id.save_to(&path)
     }
 
-    pub fn git_init_proof_dir(&self, git_https_url: &str) -> Result<()> {
-        let git_url = https_to_git_url(git_https_url);
+    fn init_remote_github_proof_repo(
+        &self,
+        proof_dir: &Path,
+        github_username: &str,
+        git_https_url: &str,
+        git_ssh_url: &Option<String>,
+    ) -> Result<()> {
+        fs::create_dir_all(&proof_dir)?;
 
-        let proof_dir =
-            self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
+        let repo = git2::Repository::init(&proof_dir)?;
+        eprintln!("Initialized empty local git repository: {}", proof_dir.display());
+
+        if let Some(git_ssh_url) = git_ssh_url {
+            repo.remote_set_url("origin", &git_ssh_url)?;
+        } else {
+            repo.remote_set_url("origin", &git_https_url)?;
+        }
+
+        eprint!("Enter Github password: ");
+        let github_password = rpassword::read_password()?;
+
+        let repo_name = parse_git_url_https(git_https_url)
+            .unwrap_or(GitUrlComponents{
+                repo:"crev-proofs".to_string(),
+                ..Default::default()
+            }).repo;
+
+        let response = setup_remote_github_repository(
+            &github_username,
+            &github_password,
+            &repo_name);
+        check_github_response(&response);
+
+        let readme_file_name = Path::new("README_USING_THIS_REPO.md");
+        let mut file = fs::File::create(&proof_dir.join(&readme_file_name))?;
+        file.write_all(b"# crev-proofs")?;
+
+        let mut index = repo.index()?;
+        index.add_path(&readme_file_name)?;
+        index.write()?;
+
+        let tree_id = index.write_tree()?;
+        let tree = repo.find_tree(tree_id)?;
+
+        let signature = repo.signature()?;
+
+        repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            "Initial commit",
+            &tree,
+            &[]
+        )?;
+
+        {
+            let args: Vec<OsString> = vec![
+                "push".into(),
+                "--set-upstream".into(),
+                "origin".into(),
+                "master".into()
+            ];
+
+            let orig_dir = std::env::current_dir()?;
+            std::env::set_current_dir(&proof_dir)?;
+            std::process::Command::new("git")
+                .args(args)
+                .status()
+                .expect("Failed to execute git initial commit push");
+            std::env::set_current_dir(orig_dir)?;
+        }
+
+        Ok(())
+    }
+
+    /// Git clone or init new remote Github crev-proof repo
+    pub fn git_setup_proof_dir(&self, git_https_url: &str, github_username: Option<String>) -> Result<()> {
+        let git_ssh_url = https_to_git_url(git_https_url);
+        if git_ssh_url.is_none() {
+            eprintln!("Could not deduce `ssh` push url. Call:");
+            eprintln!("cargo crev git remote set-url --push origin <url>");
+            eprintln!("manually, after id is generated.");
+            eprintln!("");
+        }
+
+        let proof_dir = self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
 
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
-                if let Some(git_url) = git_url {
-                    repo.remote_set_url("origin", &git_url)?;
+                if let Some(git_ssh_url) = git_ssh_url {
+                    repo.remote_set_url("origin", &git_ssh_url)?;
                 }
             }
             Err(e) => {
                 eprintln!("Couldn't clone {}: {}", git_https_url, e);
-                fs::create_dir_all(&proof_dir)?;
-
-                let repo = git2::Repository::init(&proof_dir)?;
-                eprintln!(
-                    "Empty git repository initialized in {}",
-                    proof_dir.display()
-                );
-
-                eprintln!("");
-                if let Some(git_url) = git_url {
-                    eprintln!("Setting push url to: {}", git_url);
-                    repo.remote_set_url("origin", &git_url)?;
-                } else {
-                    eprintln!("Could not deduce ssh push url.");
-                    eprintln!("Setting push url to: {}", git_https_url);
-                    repo.remote_set_url("origin", &git_https_url)?;
+                match github_username {
+                    None => {
+                        eprintln!("Github username not found");
+                    },
+                    Some(username) => {
+                        eprintln!("Setting up remote repo using Github username");
+                        self.init_remote_github_proof_repo(&proof_dir,
+                                                           &username,
+                                                           &git_https_url,
+                                                           &git_ssh_url)?;
+                    }
                 }
 
                 eprintln!("Use:");

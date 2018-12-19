@@ -196,11 +196,35 @@ where
     ))
 }
 
+fn parse_url_and_username(git_url_or_github_username: &str) -> (String, Option<String>) {
+    let mut git_https_url;
+    let mut github_username;
+
+    let is_username = !git_url_or_github_username.contains('/');
+    if is_username {
+        github_username = Some(git_url_or_github_username.to_string());
+        git_https_url = format!("https://github.com/{}/crev-proofs", git_url_or_github_username);
+    } else {
+        git_https_url = git_url_or_github_username.to_string();
+        match self::local::parse_git_url_https(&git_https_url) {
+            Some(components) => {
+                github_username = Some(components.username);
+            },
+            None => {
+                github_username = None;
+            }
+        }
+    }
+
+    (git_https_url, github_username)
+}
+
 pub fn generate_id() -> Result<()> {
     eprintln!("Enter URL of your Proof Repository to associate with the new CrevId");
-    eprintln!("E.g.: https://github.com/<yourusername>/crev-proofs");
+    eprintln!("E.g.: https://github.com/<myusername>/crev-proofs");
     eprintln!("or just your github username to generate it.");
     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
+
     let mut url;
     loop {
         eprintln!("");
@@ -216,15 +240,17 @@ pub fn generate_id() -> Result<()> {
         }
     }
 
+    let (git_https_url, github_username) = parse_url_and_username(&url);
+    eprintln!("Repository URL: {}\n", git_https_url);
+    eprintln!("It is recomended that this repository exists and is initialized upfront (can be empty).");
+
     let local = Local::auto_create_or_open()?;
-    let res = local.git_init_proof_dir(&url);
+    let res = local.git_setup_proof_dir(&git_https_url, github_username);
     if let Err(e) = res {
-        eprintln!("");
         eprintln!("Ignoring git initialization err: {}", e);
     }
 
-    eprintln!("");
-    let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
+    let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(git_https_url.clone()));
     eprintln!("CrevID will be protected by a passphrase.");
     eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
     let passphrase = crev_common::read_new_passphrase()?;
