@@ -63,9 +63,11 @@ Afterwards you can use `cargo crev` command.
 
 ### Usage
 
+First **create an empty github repository with name: `crev-proofs`**.
+
 ```
 cd <your-project>
-cargo crev new id                                       # generate your id
+cargo crev new id --github-username <username>          # generate your id
 cargo crev fetch url https://github.com/dpc/crev-proofs # fetch proofs from dpc
 cargo crev verify                                       # verify your depedencies
 cargo crev query id all                                 # show all known ids
