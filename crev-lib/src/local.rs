@@ -22,9 +22,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use curl;
-use rpassword;
-
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
