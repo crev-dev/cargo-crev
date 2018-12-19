@@ -165,7 +165,18 @@ fn main() -> Result<()> {
     let opts::MainCommand::Crev(command) = opts.command;
     match command {
         opts::Command::New(cmd) => match cmd {
-            opts::New::Id => crev_lib::generate_id()?,
+            opts::New::Id(args) => {
+                let res = crev_lib::generate_id(
+                    args.url,
+                    args.github_username,
+                    args.create_repo,
+                    args.use_https_push,
+                );
+                if res.is_err() {
+                    eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
+                }
+                res?;
+            }
         },
         opts::Command::Switch(cmd) => match cmd {
             opts::Switch::Id(args) => crev_lib::switch_id(&args.id)?,

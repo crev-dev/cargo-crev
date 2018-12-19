@@ -22,10 +22,26 @@ impl From<CrateSelectorNameRequired> for CrateSelector {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct NewId {
+    #[structopt(long = "url")]
+    /// URL of a git repository to be associated with the new Id
+    pub url: Option<String>,
+    #[structopt(long = "github-username")]
+    /// Github username (instead of --url)
+    pub github_username: Option<String>,
+    #[structopt(long = "create-repo")]
+    /// Attempt to create new github repository, using github API
+    pub create_repo: bool,
+    #[structopt(long = "https-push")]
+    /// Setup `https` instead of recommended `ssh`-based push url
+    pub use_https_push: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum New {
     #[structopt(name = "id")]
     /// Generate a CrevID
-    Id,
+    Id(NewId),
 }
 
 #[derive(Debug, StructOpt, Clone)]
