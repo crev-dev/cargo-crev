@@ -329,6 +329,14 @@ impl Local {
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
 
+        if proof_dir.exists() {
+            eprintln!(
+                "Proof directory `{}` already exists. Will not clone.",
+                proof_dir.display()
+            );
+            return Ok(());
+        }
+
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
