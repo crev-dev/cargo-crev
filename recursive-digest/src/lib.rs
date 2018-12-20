@@ -4,7 +4,6 @@ use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
     fs,
-    os::unix::ffi::OsStrExt,
     path::{Component, Path, PathBuf},
 };
 
@@ -31,8 +30,6 @@ fn read_file_to_digest_input(path: &Path, input: &mut impl digest::Digest) -> st
 /// Sorted list of all descendants of a directory
 type Descendants = BTreeMap<OsString, Entry>;
 
-pub type Result<T> = std::io::Result<T>;
-
 #[derive(Default)]
 struct Entry(Descendants);
 
@@ -40,6 +37,42 @@ struct RecursiveDigest<Digest = blake2::Blake2b> {
     root_path: PathBuf,
     root: Entry,
     digest: std::marker::PhantomData<Digest>,
+}
+
+#[derive(Debug)]
+pub enum DigestError {
+    OsStrConversionError,
+    IoError(std::io::Error),
+    WalkdirError(walkdir::Error)
+}
+
+impl From<std::io::Error> for DigestError {
+    fn from(err: std::io::Error) -> Self {
+        DigestError::IoError(err)
+    }
+}
+
+impl From<walkdir::Error> for DigestError {
+    fn from(err: walkdir::Error) -> Self {
+        DigestError::WalkdirError(err)
+    }
+}
+
+impl std::error::Error for DigestError {
+    fn description(&self) -> &str {
+        match self {
+            DigestError::WalkdirError(inner) => inner.description(),
+            DigestError::IoError(inner) => inner.description(),
+            DigestError::OsStrConversionError => &"OsStr conversion failed"
+        }
+    }
+}
+
+impl std::fmt::Display for DigestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use std::error::Error;
+        write!(f, "{}", self.description())
+    }
 }
 
 impl<Digest, OutputSize> RecursiveDigest<Digest>
@@ -70,7 +103,7 @@ where
         s
     }
 
-    fn get_digest(self) -> Result<Vec<u8>> {
+    fn get_digest(self) -> Result<Vec<u8>, DigestError> {
         let mut hasher = Digest::new();
 
         self.read_content_of(&self.root_path, &self.root, &mut hasher)?;
@@ -91,7 +124,7 @@ where
         }
     }
 
-    fn read_content_of(&self, full_path: &Path, entry: &Entry, hasher: &mut Digest) -> Result<()> {
+    fn read_content_of(&self, full_path: &Path, entry: &Entry, hasher: &mut Digest) -> Result<(), DigestError> {
         let attr = fs::symlink_metadata(full_path)?;
         if attr.is_file() {
             self.read_content_of_file(full_path, entry, hasher)?;
@@ -111,11 +144,13 @@ where
         full_path: &Path,
         entry: &Entry,
         parent_hasher: &mut Digest,
-    ) -> Result<()> {
+    ) -> Result<(), DigestError> {
         parent_hasher.input(b"D");
         for (k, v) in &entry.0 {
             let mut hasher = Digest::new();
-            hasher.input(k.as_bytes());
+            hasher.input(k.to_str()
+                .ok_or(DigestError::OsStrConversionError)?
+                .as_bytes());
             parent_hasher.input(hasher.fixed_result().as_slice());
 
             let mut hasher = Digest::new();
@@ -132,12 +167,12 @@ where
         full_path: &Path,
         entry: &Entry,
         parent_hasher: &mut Digest,
-    ) -> Result<()> {
+    ) -> Result<(), DigestError> {
         if !entry.0.is_empty() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "an entry that was supposed to be a file, contains sub-entries",
-            ));
+            ).into());
         }
 
         parent_hasher.input(b"F");
@@ -150,10 +185,13 @@ where
         full_path: &Path,
         entry: &Entry,
         parent_hasher: &mut Digest,
-    ) -> Result<()> {
+    ) -> Result<(), DigestError> {
         assert!(entry.0.is_empty());
         parent_hasher.input(b"L");
-        parent_hasher.input(full_path.read_link()?.as_os_str().as_bytes());
+        parent_hasher.input(full_path.read_link()?
+            .to_str()
+            .ok_or(DigestError::OsStrConversionError)?
+            .as_bytes());
         Ok(())
     }
 }
@@ -161,7 +199,7 @@ where
 pub fn get_recursive_digest_for_paths<Digest: digest::Digest + digest::FixedOutput, H>(
     root_path: &Path,
     paths: HashSet<PathBuf, H>,
-) -> Result<Vec<u8>>
+) -> Result<Vec<u8>, DigestError>
 where
     H: std::hash::BuildHasher,
 {
@@ -174,7 +212,7 @@ pub fn get_recursive_digest_for_dir<
 >(
     root_path: &Path,
     rel_path_ignore_list: &HashSet<PathBuf, H>,
-) -> Result<Vec<u8>> {
+) -> Result<Vec<u8>, DigestError> {
     let mut hasher = RecursiveDigest::<Digest>::new(root_path.into(), None);
 
     for entry in walkdir::WalkDir::new(root_path)
