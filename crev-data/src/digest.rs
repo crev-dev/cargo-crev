@@ -1,5 +1,7 @@
 use std::fmt;
 
+
+#[derive(Eq, PartialEq)]
 pub struct Digest(Vec<u8>);
 
 impl Digest {

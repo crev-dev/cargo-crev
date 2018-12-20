@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate structopt;
 
-use failure::format_err;
+use failure::{bail, format_err};
 
 use self::prelude::*;
 use cargo::{
@@ -108,7 +108,34 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
     let (pkg_dir, crate_version) = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
     let local = Local::auto_open()?;
 
-    let digest = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_ignore_list())?;
+    // to protect from creating a digest from a crate in unclean state
+    // we move the old directory, download a fresh one and double
+    // check if the digest was the same
+    let reviewed_pkg_dir = pkg_dir.with_extension("crev.reviewed");
+    if reviewed_pkg_dir.is_dir() {
+        std::fs::remove_dir_all(&reviewed_pkg_dir)?;
+    }
+    std::fs::rename(&pkg_dir, &reviewed_pkg_dir)?;
+    let (pkg_dir_second, crate_version_second) =
+        repo.find_dependency_dir(&args.name, args.version.as_deref())?;
+    assert_eq!(pkg_dir, pkg_dir_second);
+    assert_eq!(crate_version, crate_version_second);
+
+    let digest_clean = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_ignore_list())?;
+    let digest_reviewed =
+        crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_ignore_list())?;
+
+    if digest_clean != digest_reviewed {
+        bail!(
+            "The digest of the reviewed and freshly downloaded crate were different; {} != {}; {} != {}",
+            digest_clean,
+            digest_reviewed,
+            pkg_dir.display(),
+            reviewed_pkg_dir.display(),
+        );
+    }
+    std::fs::remove_dir_all(&reviewed_pkg_dir)?;
+
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_current_unlocked_id(&passphrase)?;
 
@@ -119,7 +146,7 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
             name: args.name.clone(),
             version: crate_version.to_string(),
-            digest: digest.into_vec(),
+            digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
             revision: "".into(),
             revision_type: proof::default_revision_type(),
