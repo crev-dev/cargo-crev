@@ -276,7 +276,7 @@ dependencies = [
  "cargo 0.31.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.1.0",
- "crev-data 0.1.0",
+ "crev-data 0.1.1",
  "crev-lib 0.1.3",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -452,7 +452,7 @@ version = "0.1.0"
 dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.1.0",
- "crev-data 0.1.0",
+ "crev-data 0.1.1",
  "crev-lib 0.1.3",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -480,7 +480,7 @@ dependencies = [
 
 [[package]]
 name = "crev-data"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "argonautica 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -508,7 +508,7 @@ dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.1.0",
- "crev-data 0.1.0",
+ "crev-data 0.1.1",
  "crev-recursive-digest 0.1.1",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive_builder 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",

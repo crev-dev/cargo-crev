@@ -141,6 +141,32 @@ impl TrustDB {
             .insert(signature.to_owned());
     }
 
+    pub fn get_package_review_count(
+        &self,
+        source: &str,
+        name: Option<&str>,
+        version: Option<&str>,
+    ) -> usize {
+        match (name, version) {
+            (Some(name), Some(version)) => self
+                .package_reviews_by_version
+                .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
+                .map(|set| set.len())
+                .unwrap_or(0),
+            (Some(name), None) => self
+                .package_reviews_by_name
+                .get(&(source.to_owned(), name.to_owned()))
+                .map(|set| set.len())
+                .unwrap_or(0),
+            (None, None) => self
+                .package_reviews_by_source
+                .get(source)
+                .map(|set| set.len())
+                .unwrap_or(0),
+            (None, Some(_)) => panic!("Wrong usage"),
+        }
+    }
+    
     pub fn get_package_reviews_for_package(
         &self,
         source: &str,

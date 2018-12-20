@@ -220,7 +220,7 @@ fn main() -> Result<()> {
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_ignore_list();
                 let current_dir = std::env::current_dir()?;
-                repo.for_every_dependency_dir(|_, path| {
+                repo.for_every_dependency_dir(|pkg_id, path| {
                     if path.starts_with(&current_dir) {
                         // ignore local dependencies
                         return Ok(());
@@ -228,10 +228,33 @@ fn main() -> Result<()> {
 
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                     let result = db.verify_digest(&digest, &trust_set);
+                    let pkg_review_count = db.get_package_review_count(
+                        PROJECT_SOURCE_CRATES_IO,
+                        Some(pkg_id.name().as_str()),
+                        None,
+                    );
+                    let pkg_version_review_count = db.get_package_review_count(
+                        PROJECT_SOURCE_CRATES_IO,
+                        Some(pkg_id.name().as_str()),
+                        Some(&pkg_id.version().to_string()),
+                    );
                     if args.verbose {
-                        println!("{:8} {} {:40}", result, digest, path.display(),);
+                        println!(
+                            "{:8} {:2} {:2} {} {:40}",
+                            result,
+                            pkg_review_count,
+                            pkg_version_review_count,
+                            digest,
+                            path.display()
+                        );
                     } else {
-                        println!("{:8} {:40}", result, path.display(),);
+                        println!(
+                            "{:8} {:2} {:2} {:40}",
+                            result,
+                            pkg_review_count,
+                            pkg_version_review_count,
+                            path.display()
+                        );
                     }
 
                     Ok(())
