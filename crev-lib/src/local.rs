@@ -81,6 +81,15 @@ pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     })
 }
 
+fn fetch_and_checkout_git_repo(repo: &git2::Repository) -> Result<()> {
+    repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+    repo.set_head("FETCH_HEAD")?;
+    let mut opts = git2::build::CheckoutBuilder::new();
+    opts.force();
+    repo.checkout_head(Some(&mut opts))?;
+    Ok(())
+}
+
 #[test]
 fn parse_git_url_https_test() {
     assert_eq!(
@@ -478,6 +487,50 @@ impl Local {
         Ok(())
     }
 
+    fn fetch_all_ids_recursively(&self, mut already_fetched_urls: HashSet<String>) -> Result<()> {
+        let mut already_fetched = HashSet::new();
+        let mut db = trustdb::TrustDB::new();
+        db.import_from_iter(self.proofs_iter()?);
+        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        let user_config = self.load_user_config()?;
+        let user_id = user_config.get_current_userid()?;
+
+        let mut something_was_fetched = true;
+        while something_was_fetched {
+            something_was_fetched = false;
+
+            for id in &db.all_known_ids() {
+                if already_fetched.contains(id) {
+                    continue;
+                } else {
+                    already_fetched.insert(id.to_owned());
+                }
+                if user_id == id {
+                    continue;
+                } else if let Some(url) = db.lookup_url(id) {
+                    let url = url.url.to_string();
+
+                    if already_fetched_urls.contains(&url) {
+                        continue;
+                    } else {
+                        already_fetched_urls.insert(url.clone());
+                    }
+
+                    let success = util::err_eprint_and_ignore(self.fetch_remote_git(&url).compat());
+                    if success {
+                        something_was_fetched = true;
+                        db.import_from_iter(proofs_iter_for_path(
+                            self.get_remote_git_cache_path(&url),
+                        ));
+                    }
+                } else {
+                    eprintln!("No URL for {}", id);
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn get_remote_git_cache_path(&self, url: &str) -> PathBuf {
         let digest = crev_common::blake2b256sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
@@ -490,11 +543,7 @@ impl Local {
         if dir.exists() {
             eprintln!("Fetching {} to {}", url, dir.display());
             let repo = git2::Repository::open(dir)?;
-            repo.find_remote("origin")?.fetch(&["master"], None, None)?;
-            repo.set_head("FETCH_HEAD")?;
-            let mut opts = git2::build::CheckoutBuilder::new();
-            opts.force();
-            repo.checkout_head(Some(&mut opts))?;
+            fetch_and_checkout_git_repo(&repo)?
         } else {
             eprintln!("Cloning {} to {}", url, dir.display());
             git2::Repository::clone(url, dir)?;
@@ -504,11 +553,7 @@ impl Local {
     }
 
     pub fn fetch_all(&self) -> Result<()> {
-        eprintln!(
-            "Fetching all crev-proofs repositories ({})",
-            self.cache_remotes_path().display()
-        );
-
+        let mut fetched_urls = HashSet::new();
         for entry in fs::read_dir(self.cache_remotes_path())? {
             let path = entry?.path();
             if !path.is_dir() {
@@ -520,16 +565,30 @@ impl Local {
                 continue;
             }
 
-            let repo = repo?;
-            repo.find_remote("origin")?.fetch(&["master"], None, None)?;
-            repo.set_head("FETCH_HEAD")?;
-            let mut opts = git2::build::CheckoutBuilder::new();
-            opts.force();
-            repo.checkout_head(Some(&mut opts))?;
+            let url = {
+                || -> Result<String> {
+                    let repo = repo.unwrap();
+                    let remote = repo.find_remote("origin")?;
+                    let url = remote
+                        .url()
+                        .ok_or_else(|| format_err!("origin has no url"))?;
+                    Ok(url.to_string())
+                }
+            }();
 
-            let remote = repo.find_remote("origin")?;
-            eprintln!("fetch\t{}", remote.url().unwrap());
+            match url {
+                Ok(url) => {
+                    fetched_urls.insert(url.clone());
+                    let _success =
+                        util::err_eprint_and_ignore(self.fetch_remote_git(&url).compat());
+                }
+                Err(e) => {
+                    eprintln!("ERR: {} {}", path.display(), e);
+                }
+            }
         }
+
+        self.fetch_all_ids_recursively(fetched_urls)?;
 
         Ok(())
     }
