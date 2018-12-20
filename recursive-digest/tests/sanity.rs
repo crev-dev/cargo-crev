@@ -1,12 +1,12 @@
+use crev_recursive_digest::DigestError;
 use digest::Digest;
 use std::collections::HashSet;
 use std::fs;
-use std::io;
 use std::io::Write;
 use tempdir::TempDir;
 
 #[test]
-fn sanity() -> io::Result<()> {
+fn sanity() -> Result<(), DigestError> {
     let tmp_dir = TempDir::new("recursive-digest-test")?;
 
     let msg = b"foo";
@@ -73,7 +73,7 @@ fn sanity() -> io::Result<()> {
 /// rblake2sum /tmp/a
 /// ```
 #[test]
-fn backward_comp() -> io::Result<()> {
+fn backward_comp() -> Result<(), DigestError> {
     let tmp_dir = TempDir::new("recursive-digest-test2")?;
 
     let dir_path = tmp_dir.path().join("a");
