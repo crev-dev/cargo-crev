@@ -271,13 +271,13 @@ dependencies = [
 
 [[package]]
 name = "cargo-crev"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "cargo 0.31.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.1.0",
  "crev-data 0.1.0",
- "crev-lib 0.1.2",
+ "crev-lib 0.1.3",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "quicli 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -453,7 +453,7 @@ dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.1.0",
  "crev-data 0.1.0",
- "crev-lib 0.1.2",
+ "crev-lib 0.1.3",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -500,7 +500,7 @@ dependencies = [
 
 [[package]]
 name = "crev-lib"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "argonautica 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
