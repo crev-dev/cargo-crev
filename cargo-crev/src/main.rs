@@ -80,18 +80,22 @@ impl Repo {
         name: &str,
         version: Option<&str>,
     ) -> Result<(PathBuf, semver::Version)> {
-        let mut ret = None;
+        let mut ret = vec![];
 
         self.for_every_dependency_dir(|pkg_id, path| {
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
-                ret = Some((path.to_owned(), pkg_id.version().to_owned()));
+                ret.push((path.to_owned(), pkg_id.version().to_owned()));
             }
             Ok(())
         })?;
 
-        Ok(ret.ok_or_else(|| format_err!("Not found"))?)
+        match ret.len() {
+            0 => bail!("Not found"),
+            1 => Ok(ret[0].clone()),
+            n => bail!("{} matches found", n),
+        }
     }
 }
 
@@ -155,9 +159,7 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
-    let review = crev_lib::util::edit_proof_content_iteractively(
-        &review.into(),
-    )?;
+    let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
 
     let proof = review.sign_by(&id)?;
 
