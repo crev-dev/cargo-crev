@@ -1,3 +1,4 @@
+use std::path::Path;
 use crev_recursive_digest::DigestError;
 use digest::Digest;
 use std::collections::HashSet;
@@ -65,6 +66,16 @@ fn sanity() -> Result<(), DigestError> {
     Ok(())
 }
 
+#[cfg(target_family = "windows")]
+pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_file(src, dst)
+}
+
+#[cfg(target_family = "unix")]
+pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(src, dst)
+}
+
 /// Captured by:
 ///
 /// ```
@@ -86,7 +97,7 @@ fn backward_comp() -> Result<(), DigestError> {
     let path = path.join("g");
     fs::create_dir_all(&path)?;
 
-    std::os::unix::fs::symlink(std::path::PathBuf::from("../../a"), path.join("h"))?;
+    symlink_file(std::path::PathBuf::from("../../a"), path.join("h"))?;
 
     let dir_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
         &dir_path,

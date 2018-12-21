@@ -38,7 +38,9 @@ See it in action:
 Join [crev gitter channel](https://gitter.im/dpc/crev), get help,
 report problems and feedback. Thank you!
 
-### Dependencies
+### Installation
+
+#### Unix
 
 `cargo-crev` has a couple of non-Rust dependencies:
 
@@ -49,6 +51,23 @@ sudo apt-get install openssl libssl-dev
 # argonautica build system
 sudo apt-get install clang llvm-dev libclang-dev
 ```
+
+Soon you should be able to to just `cargo install cargo-crev`, but until then,
+you need to install `cargo-crev` directly from github directory.
+
+```
+git clone https://github.com/dpc/crev
+cd crev
+cargo install -f --path cargo-crev
+```
+
+Afterwards you can use `cargo crev` command.
+
+#### Windows
+
+`cargo-crev` has a couple op non-Rust dependencies. Make sure you have
+[LLVM](http://releases.llvm.org/download.html) installed and added to your
+path.
 
 Soon you should be able to to just `cargo install cargo-crev`, but until then,
 you need to install `cargo-crev` directly from github directory.
