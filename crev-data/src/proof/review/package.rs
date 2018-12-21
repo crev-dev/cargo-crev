@@ -79,6 +79,13 @@ impl proof::ContentCommon for Package {
     fn author(&self) -> &crate::PubId {
         &self.from
     }
+
+    fn draft_title(&self) -> String {
+        format!(
+            "Package Review of {} {}",
+            self.package.name, self.package.version
+        )
+    }
 }
 
 impl super::Common for Package {

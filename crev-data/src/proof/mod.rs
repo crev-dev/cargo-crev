@@ -29,6 +29,8 @@ pub trait ContentCommon {
     fn author_url(&self) -> Url {
         self.author().url.clone()
     }
+
+    fn draft_title(&self) -> String;
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -113,6 +115,14 @@ impl From<Trust> for Content {
 }
 
 impl Content {
+    pub fn draft_title(&self) -> String {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.draft_title(),
+            Code(review) => review.draft_title(),
+            Package(review) => review.draft_title(),
+        }
+    }
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
             ProofType::Code => Content::Code(review::Code::parse(&s)?),

@@ -132,6 +132,10 @@ impl proof::ContentCommon for Trust {
     fn author(&self) -> &crate::PubId {
         &self.from
     }
+
+    fn draft_title(&self) -> String {
+        format!("Trust of {} Ids", self.ids.len())
+    }
 }
 
 impl Trust {

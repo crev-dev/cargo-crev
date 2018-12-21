@@ -95,8 +95,10 @@ pub fn get_documentation_for(content: &proof::Content) -> &'static str {
 }
 
 pub fn edit_proof_content_iteractively(content: &proof::Content) -> Result<proof::Content> {
-    let mut text = content.to_draft_string();
+    let mut text = String::new();
 
+    text.write_str(&format!("# {}\n", content.draft_title()))?;
+    text.write_str(&content.to_draft_string())?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
         text.write_fmt(format_args!("# {}\n", line))?;

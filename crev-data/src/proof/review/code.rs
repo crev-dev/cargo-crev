@@ -98,6 +98,15 @@ impl proof::ContentCommon for Code {
     fn author(&self) -> &crate::PubId {
         &self.from
     }
+
+    fn draft_title(&self) -> String {
+        format!(
+            "Code Review of {} files of {} {}",
+            self.files.len(),
+            self.package.name,
+            self.package.version
+        )
+    }
 }
 
 impl super::Common for Code {
