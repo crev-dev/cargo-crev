@@ -346,6 +346,8 @@ impl Local {
             return Ok(());
         }
 
+        fs::create_dir_all(&proof_dir)?;
+
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
