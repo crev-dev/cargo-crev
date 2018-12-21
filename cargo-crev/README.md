@@ -75,22 +75,6 @@ cd crev
 cargo install -f --path cargo-crev
 ```
 
-Afterwards you can use `cargo crev` command.
-
-
-`cargo-crev` has a couple op non-Rust dependencies. 
-
-Soon you should be able to to just `cargo install cargo-crev`, but until then,
-you need to install `cargo-crev` directly from github directory.
-
-```
-git clone https://github.com/dpc/crev
-cd crev
-cargo install -f --path cargo-crev
-```
-
-Afterwards you can use `cargo crev` command.
-
 ## Usage
 
 First **create an empty github repository with name: `crev-proofs`**.
