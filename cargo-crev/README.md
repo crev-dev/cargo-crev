@@ -69,12 +69,12 @@ First **create an empty github repository with name: `crev-proofs`**.
 cd <your-project>
 cargo crev new id --github-username <username>          # generate your id
 cargo crev fetch url https://github.com/dpc/crev-proofs # fetch proofs from dpc
+cargo crev fetch all                                    # fetch proofs from all known ids
 cargo crev verify                                       # verify your depedencies
 cargo crev query id all                                 # show all known ids
 cargo crev query reviews                                # show all reviews
 cargo crev query reviews <package>                      # show all reviews of a package
 cargo crev trust <id>                                   # trust someone
-cargo crev fetch trusted                                # fetch proofs from all trusted ids
 cargo crev review <crate>                               # review a dependency
 cargo crev commit                                       # commit new proofs (reviews, trust)
 cargo crev push                                         # push proofs to your public github repository
