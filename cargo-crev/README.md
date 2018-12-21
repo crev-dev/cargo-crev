@@ -38,11 +38,10 @@ See it in action:
 Join [crev gitter channel](https://gitter.im/dpc/crev), get help,
 report problems and feedback. Thank you!
 
-### Installation
+### Dependencies
+`cargo-crev` has a couple of non-Rust dependencies:
 
 #### Unix
-
-`cargo-crev` has a couple of non-Rust dependencies:
 
 ```
 # openssl
@@ -52,25 +51,23 @@ sudo apt-get install openssl libssl-dev
 sudo apt-get install clang llvm-dev libclang-dev
 ```
 
-Soon you should be able to to just `cargo install cargo-crev`, but until then,
-you need to install `cargo-crev` directly from github directory.
-
-```
-git clone https://github.com/dpc/crev
-cd crev
-cargo install -f --path cargo-crev
-```
-
-Afterwards you can use `cargo crev` command.
-
 #### Windows
 
-`cargo-crev` has a couple op non-Rust dependencies. Make sure you have
+Make sure you have
 [LLVM](http://releases.llvm.org/download.html) installed and added to your
 path.
 
-Soon you should be able to to just `cargo install cargo-crev`, but until then,
-you need to install `cargo-crev` directly from github directory.
+### Installing from crates.io
+
+```
+cargo install cargo-crev
+```
+
+and you're all set.
+
+### Installing from github
+
+If you want to live on the edge, you can install `cargo-crev` directly from github, too:
 
 ```
 git clone https://github.com/dpc/crev
@@ -78,9 +75,7 @@ cd crev
 cargo install -f --path cargo-crev
 ```
 
-Afterwards you can use `cargo crev` command.
-
-### Usage
+## Usage
 
 First **create an empty github repository with name: `crev-proofs`**.
 
