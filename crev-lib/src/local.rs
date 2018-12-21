@@ -238,6 +238,10 @@ impl Local {
         self.user_dir_path().join("ids")
     }
 
+    pub fn user_proofs_path(&self) -> PathBuf {
+        self.root_path.join("proofs")
+    }
+
     fn id_path(&self, id: &Id) -> PathBuf {
         match id {
             Id::Crev { id } => self
@@ -346,6 +350,8 @@ impl Local {
             return Ok(());
         }
 
+        self.ensure_proofs_root_exists()?;
+
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
@@ -384,8 +390,16 @@ impl Local {
         })
     }
 
+    fn ensure_proofs_root_exists(&self) -> Result<()> {
+        let proofs_dir = self.user_proofs_path();
+        if !proofs_dir.exists() {
+            fs::create_dir_all(&self.user_proofs_path())?;
+        }
+        Ok(())
+    }
+
     pub fn get_proofs_dir_path_for_url(&self, url: &Url) -> Result<PathBuf> {
-        Ok(self.root_path.join("proofs").join(url.digest().to_string()))
+        Ok(self.user_proofs_path().join(url.digest().to_string()))
     }
 
     // Path where the `proofs` are stored under `git` repository
