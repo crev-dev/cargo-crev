@@ -435,7 +435,7 @@ impl Local {
             },
         )?;
 
-        let trust = util::edit_proof_content_iteractively(&trust.into(), proof::ProofType::Trust)?;
+        let trust = util::edit_proof_content_iteractively(&trust.into())?;
 
         let proof = trust.sign_by(&own_id)?;
 

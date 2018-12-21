@@ -244,8 +244,7 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review =
-            util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Package)?;
+        let review = util::edit_proof_content_iteractively(&review.into())?;
 
         let proof = review.sign_by(&id)?;
 
@@ -270,7 +269,7 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review = util::edit_proof_content_iteractively(&review.into(), proof::ProofType::Code)?;
+        let review = util::edit_proof_content_iteractively(&review.into())?;
 
         let proof = review.sign_by(&id)?;
 

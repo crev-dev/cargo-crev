@@ -121,11 +121,17 @@ impl Content {
         })
     }
 
-    pub fn parse_draft(s: &str, type_: ProofType) -> Result<Content> {
-        Ok(match type_ {
-            ProofType::Code => Content::Code(review::CodeDraft::parse(&s)?.into()),
-            ProofType::Package => Content::Package(review::PackageDraft::parse(&s)?.into()),
-            ProofType::Trust => Content::Trust(TrustDraft::parse(&s)?.into()),
+    pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
+        Ok(match original_proof {
+            Content::Code(code) => {
+                Content::Code(code.apply_draft(review::CodeDraft::parse(&s)?.into()))
+            }
+            Content::Package(package) => {
+                Content::Package(package.apply_draft(review::PackageDraft::parse(&s)?.into()))
+            }
+            Content::Trust(trust) => {
+                Content::Trust(trust.apply_draft(TrustDraft::parse(&s)?.into()))
+            }
         })
     }
     pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {

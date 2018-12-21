@@ -59,53 +59,28 @@ pub struct Code {
     pub files: Vec<File>,
 }
 
+impl Code {
+    pub fn apply_draft(&self, draft: CodeDraft) -> Code {
+        let mut copy = self.clone();
+        copy.review = draft.review;
+        copy.comment = draft.comment;
+        copy
+    }
+}
+
 /// Like `Code` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CodeDraft {
-    #[serde(skip_serializing, default = "cur_version")]
-    version: i64,
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    date: chrono::DateTime<FixedOffset>,
-    pub from: crate::PubId,
-    #[serde(rename = "package")]
-    pub package: proof::PackageInfo,
     review: super::Review,
     #[serde(default = "Default::default")]
     comment: String,
-    #[serde(
-        skip_serializing_if = "std::vec::Vec::is_empty",
-        default = "std::vec::Vec::new"
-    )]
-    pub files: Vec<File>,
 }
 
 impl From<Code> for CodeDraft {
     fn from(code: Code) -> Self {
         CodeDraft {
-            version: code.version,
-            date: code.date,
-            from: code.from,
-            package: code.package,
             review: code.review,
             comment: code.comment,
-            files: code.files,
-        }
-    }
-}
-
-impl From<CodeDraft> for Code {
-    fn from(code: CodeDraft) -> Self {
-        Code {
-            version: code.version,
-            date: code.date,
-            from: code.from,
-            package: code.package,
-            review: code.review,
-            comment: code.comment,
-            files: code.files,
         }
     }
 }

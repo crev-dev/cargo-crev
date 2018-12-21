@@ -39,22 +39,18 @@ pub struct Package {
     comment: String,
 }
 
+impl Package {
+    pub fn apply_draft(&self, draft: PackageDraft) -> Package {
+        let mut copy = self.clone();
+        copy.review = draft.review;
+        copy.comment = draft.comment;
+        copy
+    }
+}
+
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PackageDraft {
-    #[serde(
-        skip_serializing,
-        default = "cur_version"
-    )]
-    version: i64,
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    date: chrono::DateTime<FixedOffset>,
-    pub from: crate::PubId,
-    #[serde(rename = "package")]
-    pub package: proof::PackageInfo,
     review: super::Review,
     #[serde(default = "Default::default")]
     comment: String,
@@ -63,23 +59,6 @@ pub struct PackageDraft {
 impl From<Package> for PackageDraft {
     fn from(package: Package) -> Self {
         PackageDraft {
-            version: package.version,
-            date: package.date,
-            from: package.from,
-            package: package.package,
-            review: package.review,
-            comment: package.comment,
-        }
-    }
-}
-
-impl From<PackageDraft> for Package {
-    fn from(package: PackageDraft) -> Self {
-        Package {
-            version: package.version,
-            date: package.date,
-            from: package.from,
-            package: package.package,
             review: package.review,
             comment: package.comment,
         }

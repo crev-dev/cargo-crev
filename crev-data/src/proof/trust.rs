@@ -80,21 +80,18 @@ pub struct Trust {
     comment: String,
 }
 
+impl Trust {
+    pub fn apply_draft(&self, draft: TrustDraft) -> Trust {
+        let mut copy = self.clone();
+        copy.trust = draft.trust;
+        copy.comment = draft.comment;
+        copy
+    }
+}
+
 /// Like `Trust` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TrustDraft {
-    #[serde(
-        skip_serializing,
-        default = "cur_version"
-    )]
-    version: i64,
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    pub date: chrono::DateTime<FixedOffset>,
-    pub from: crate::PubId,
-    pub ids: Vec<crate::PubId>,
     pub trust: TrustLevel,
     #[serde(default = "Default::default")]
     comment: String,
@@ -103,28 +100,12 @@ pub struct TrustDraft {
 impl From<Trust> for TrustDraft {
     fn from(trust: Trust) -> Self {
         TrustDraft {
-            version: trust.version,
-            date: trust.date,
-            from: trust.from,
-            ids: trust.ids,
             trust: trust.trust,
             comment: trust.comment,
         }
     }
 }
 
-impl From<TrustDraft> for Trust {
-    fn from(trust: TrustDraft) -> Self {
-        Trust {
-            version: trust.version,
-            date: trust.date,
-            from: trust.from,
-            ids: trust.ids,
-            trust: trust.trust,
-            comment: trust.comment,
-        }
-    }
-}
 impl fmt::Display for Trust {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)

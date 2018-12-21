@@ -157,7 +157,6 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
 
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review.into(),
-        crev_data::proof::ProofType::Package,
     )?;
 
     let proof = review.sign_by(&id)?;
