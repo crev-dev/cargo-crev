@@ -1,6 +1,6 @@
 [package]
 name = "rblake2sum"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 edition = "2018"
 description = "Library implementing recursive digest for filesystem directories"
@@ -15,7 +15,7 @@ readme = "README.md"
 base64 = "0.9.0"
 blake2 = "0.8"
 hex = "0.3"
-crev-recursive-digest = { path = "../recursive-digest", version = "0.1" }
+crev-recursive-digest = { path = "../recursive-digest", version = "0.2" }
 structopt = "0.2"
 common_failures = "0.1"
 failure = "0.1"
