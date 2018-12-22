@@ -26,3 +26,4 @@ crev-data = { path = "../crev-data", version = "0.1.1" }
 crev-common = { path = "../crev-common", version = "0.1" }
 semver = "0.9"
 default = "0.1"
+crates_io_api = "0.3"
