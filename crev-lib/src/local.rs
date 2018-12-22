@@ -395,7 +395,6 @@ impl Local {
     }
 
     fn ensure_proofs_root_exists(&self) -> Result<()> {
-        let proofs_dir = self.user_proofs_path();
         fs::create_dir_all(&self.user_proofs_path())?;
         Ok(())
     }
