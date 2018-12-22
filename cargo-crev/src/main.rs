@@ -1,14 +1,11 @@
 #[macro_use]
 extern crate structopt;
 
-use failure::{bail, format_err};
-
 use self::prelude::*;
 use cargo::{
     core::{package_id::PackageId, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
-use common_failures::prelude::*;
 use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
 use default::default;
@@ -222,7 +219,7 @@ fn main() -> Result<()> {
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_ignore_list();
                 let current_dir = std::env::current_dir()?;
-                let cratesio = crates_io::Client::new();
+                let cratesio = crates_io::Client::new(&local)?;
 
                 repo.for_every_dependency_dir(|pkg_id, path| {
                     if path.starts_with(&current_dir) {
@@ -243,12 +240,17 @@ fn main() -> Result<()> {
                         Some(&pkg_version),
                     );
 
-                    let (version_downloads, total_downloads) =
-                        cratesio.get_downloads_count(&pkg_name, &pkg_version);
+                    let (version_downloads, total_downloads) = cratesio
+                        .get_downloads_count(&pkg_name, &pkg_version)
+                        .map(|(a, b)| (a.to_string(), b.to_string()))
+                        .unwrap_or_else(|e| {
+                            eprintln!("Error: {}", e);
+                            ("err".into(), "err".into())
+                        });
 
                     if args.verbose {
                         println!(
-                            "{:8} {:2} {:2} {:7} {:8} {} {:40}",
+                            "{:8} {:2} {:2} {:>7} {:>8} {} {:40}",
                             result,
                             pkg_version_review_count,
                             pkg_review_count,
@@ -259,7 +261,7 @@ fn main() -> Result<()> {
                         );
                     } else {
                         println!(
-                            "{:8} {:2} {:2} {:7} {:8} {:40}",
+                            "{:8} {:2} {:2} {:>7} {:>8} {:40}",
                             result,
                             pkg_version_review_count,
                             pkg_review_count,

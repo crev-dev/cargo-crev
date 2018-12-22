@@ -11,6 +11,7 @@ use chrono;
 use blake2::{digest::FixedOutput, Digest};
 use rpassword;
 use rprompt;
+use std::io::{Read, Write};
 use std::{
     env, fs,
     io::{self, BufRead},
@@ -102,4 +103,40 @@ pub fn read_new_passphrase() -> io::Result<String> {
         }
         eprintln!("\nPassphrases don't match, try again.");
     }
+}
+
+pub fn read_file_to_string(path: &Path) -> io::Result<String> {
+    let mut file = fs::File::open(&path)?;
+    let mut res = String::new();
+    file.read_to_string(&mut res)?;
+
+    Ok(res)
+}
+
+pub fn store_str_to_file(path: &Path, s: &str) -> io::Result<()> {
+    fs::create_dir_all(path.parent().expect("Not a root path"))?;
+    let tmp_path = path.with_extension("tmp");
+    let mut file = fs::File::create(&tmp_path)?;
+    file.write_all(&s.as_bytes())?;
+    file.flush()?;
+    drop(file);
+    fs::rename(tmp_path, path)?;
+    Ok(())
+}
+
+pub fn store_to_file_with<E, F>(path: &Path, f: F) -> io::Result<Result<(), E>>
+where
+    F: Fn(&mut dyn io::Write) -> Result<(), E>,
+{
+    fs::create_dir_all(path.parent().expect("Not a root path"))?;
+    let tmp_path = path.with_extension("tmp");
+    let mut file = fs::File::create(&tmp_path)?;
+    if let Err(e) = f(&mut file) {
+        return Ok(Err(e));
+    }
+    file.flush()?;
+    file.sync_data()?;
+    drop(file);
+    fs::rename(tmp_path, path)?;
+    Ok(Ok(()))
 }

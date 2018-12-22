@@ -68,10 +68,8 @@ impl Repo {
                     version: 0,
                     trust_root: id_str.clone(),
                 },
-            )?;
-
-            Ok(())
-        })?;
+            )
+        })??;
 
         Ok(repo)
     }

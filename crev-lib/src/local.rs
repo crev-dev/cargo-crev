@@ -178,6 +178,10 @@ impl Local {
         })
     }
 
+    pub fn get_root_cache_dir(&self) -> &Path {
+        &self.cache_path
+    }
+
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
@@ -272,7 +276,7 @@ impl Local {
     pub fn load_user_config(&self) -> Result<UserConfig> {
         let path = self.user_config_path();
 
-        let config_str = util::read_file_to_string(&path)?;
+        let config_str = crev_common::read_file_to_string(&path)?;
 
         Ok(serde_yaml::from_str(&config_str)?)
     }
@@ -282,7 +286,7 @@ impl Local {
 
         let config_str = serde_yaml::to_string(&config)?;
 
-        util::store_str_to_file(&path, &config_str)
+        Ok(util::store_str_to_file(&path, &config_str)?)
     }
 
     pub fn get_current_userid(&self) -> Result<Id> {

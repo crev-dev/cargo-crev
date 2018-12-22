@@ -3,14 +3,10 @@ use app_dirs;
 use crev_common;
 use crev_data::proof;
 use std::fmt::Write as FmtWrite;
-use std::{
-    self, env, ffi, fs,
-    io::{self, Read, Write},
-    path::Path,
-    process,
-};
+use std::{self, env, ffi, fs, io::Write, path::Path, process};
 use tempdir;
 
+pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};
 pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     name: "crev",
     author: "Dawid Ciężarkiewicz",
@@ -24,37 +20,6 @@ fn get_editor_to_use() -> ffi::OsString {
     } else {
         return "vi".into();
     }
-}
-
-pub fn read_file_to_string(path: &Path) -> Result<String> {
-    let mut file = fs::File::open(&path)?;
-    let mut res = String::new();
-    file.read_to_string(&mut res)?;
-
-    Ok(res)
-}
-
-pub fn store_str_to_file(path: &Path, s: &str) -> Result<()> {
-    fs::create_dir_all(path.parent().expect("Not a root path"))?;
-    let tmp_path = path.with_extension("tmp");
-    let mut file = fs::File::create(&tmp_path)?;
-    file.write_all(&s.as_bytes())?;
-    file.flush()?;
-    drop(file);
-    fs::rename(tmp_path, path)?;
-    Ok(())
-}
-
-pub fn store_to_file_with(path: &Path, f: impl Fn(&mut dyn io::Write) -> Result<()>) -> Result<()> {
-    fs::create_dir_all(path.parent().expect("Not a root path"))?;
-    let tmp_path = path.with_extension("tmp");
-    let mut file = fs::File::create(&tmp_path)?;
-    f(&mut file)?;
-    file.flush()?;
-    file.sync_data()?;
-    drop(file);
-    fs::rename(tmp_path, path)?;
-    Ok(())
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
