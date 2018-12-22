@@ -188,6 +188,17 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
+fn tilda_home_path(home: &Option<PathBuf>, path: &Path) -> String {
+    if let Some(home) = home {
+        match path.strip_prefix(home) {
+            Ok(rel) => format!("~/{}", rel.display()),
+            Err(_) => path.display().to_string(),
+        }
+    } else {
+        path.display().to_string()
+    }
+}
+
 fn main() -> Result<()> {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
@@ -220,6 +231,7 @@ fn main() -> Result<()> {
                 let ignore_list = cargo_ignore_list();
                 let current_dir = std::env::current_dir()?;
                 let cratesio = crates_io::Client::new(&local)?;
+                let home_dir = dirs::home_dir();
 
                 repo.for_every_dependency_dir(|pkg_id, path| {
                     if path.starts_with(&current_dir) {
@@ -257,7 +269,7 @@ fn main() -> Result<()> {
                             version_downloads,
                             total_downloads,
                             digest,
-                            path.display()
+                            tilda_home_path(&home_dir, &path)
                         );
                     } else {
                         println!(
@@ -267,7 +279,7 @@ fn main() -> Result<()> {
                             pkg_review_count,
                             version_downloads,
                             total_downloads,
-                            path.display()
+                            tilda_home_path(&home_dir, &path)
                         );
                     }
 
