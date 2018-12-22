@@ -1,4 +1,5 @@
 use blake2;
+use failure_derive::Fail;
 use std::io::BufRead;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -39,11 +40,18 @@ struct RecursiveDigest<Digest = blake2::Blake2b> {
     digest: std::marker::PhantomData<Digest>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum DigestError {
+    #[fail(display = "could not convert OsStr string to utf8")]
     OsStrConversionError,
+    #[fail(display = "io Error: {}", _0)]
     IoError(std::io::Error),
-    WalkdirError(walkdir::Error)
+    #[fail(display = "walkdir Error: {}", _0)]
+    WalkdirError(walkdir::Error),
+    #[fail(display = "an entry that was supposed to be a file, contains sub-entries")]
+    FileWithSubentriesError,
+    #[fail(display = "file not supported: {}", _0)]
+    FileNotSupported(String)
 }
 
 impl From<std::io::Error> for DigestError {
@@ -55,23 +63,6 @@ impl From<std::io::Error> for DigestError {
 impl From<walkdir::Error> for DigestError {
     fn from(err: walkdir::Error) -> Self {
         DigestError::WalkdirError(err)
-    }
-}
-
-impl std::error::Error for DigestError {
-    fn description(&self) -> &str {
-        match self {
-            DigestError::WalkdirError(inner) => inner.description(),
-            DigestError::IoError(inner) => inner.description(),
-            DigestError::OsStrConversionError => &"OsStr conversion failed"
-        }
-    }
-}
-
-impl std::fmt::Display for DigestError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::error::Error;
-        write!(f, "{}", self.description())
     }
 }
 
@@ -91,12 +82,11 @@ where
         };
 
         for path in rel_paths.into_iter() {
-            if path.is_absolute() {
-                panic!(
-                    "RecursiveDigest: Expected only relative paths: {}",
-                    path.display()
-                );
-            }
+            assert!(
+                !path.is_absolute(),
+                "RecursiveDigest: Expected only relative paths: {}",
+                path.display()
+            );
             s.insert_path(&path);
         }
 
@@ -124,19 +114,22 @@ where
         }
     }
 
-    fn read_content_of(&self, full_path: &Path, entry: &Entry, hasher: &mut Digest) -> Result<(), DigestError> {
+    fn read_content_of(
+        &self,
+        full_path: &Path,
+        entry: &Entry,
+        hasher: &mut Digest,
+    ) -> Result<(), DigestError> {
         let attr = fs::symlink_metadata(full_path)?;
         if attr.is_file() {
-            self.read_content_of_file(full_path, entry, hasher)?;
+            self.read_content_of_file(full_path, entry, hasher)
         } else if attr.is_dir() {
-            self.read_content_of_dir(full_path, entry, hasher)?;
+            self.read_content_of_dir(full_path, entry, hasher)
         } else if attr.file_type().is_symlink() {
-            self.read_content_of_symlink(full_path, entry, hasher)?;
+            self.read_content_of_symlink(full_path, entry, hasher)
         } else {
-            eprintln!("Skipping {} - not supported file type", full_path.display());
+            Err(DigestError::FileNotSupported(full_path.to_string_lossy().to_string()))
         }
-
-        Ok(())
     }
 
     fn read_content_of_dir(
@@ -148,9 +141,11 @@ where
         parent_hasher.input(b"D");
         for (k, v) in &entry.0 {
             let mut hasher = Digest::new();
-            hasher.input(k.to_str()
-                .ok_or(DigestError::OsStrConversionError)?
-                .as_bytes());
+            hasher.input(
+                k.to_str()
+                    .ok_or(DigestError::OsStrConversionError)?
+                    .as_bytes(),
+            );
             parent_hasher.input(hasher.fixed_result().as_slice());
 
             let mut hasher = Digest::new();
@@ -169,10 +164,7 @@ where
         parent_hasher: &mut Digest,
     ) -> Result<(), DigestError> {
         if !entry.0.is_empty() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "an entry that was supposed to be a file, contains sub-entries",
-            ).into());
+            return Err(DigestError::FileWithSubentriesError);
         }
 
         parent_hasher.input(b"F");
@@ -188,10 +180,13 @@ where
     ) -> Result<(), DigestError> {
         assert!(entry.0.is_empty());
         parent_hasher.input(b"L");
-        parent_hasher.input(full_path.read_link()?
-            .to_str()
-            .ok_or(DigestError::OsStrConversionError)?
-            .as_bytes());
+        parent_hasher.input(
+            full_path
+                .read_link()?
+                .to_str()
+                .ok_or(DigestError::OsStrConversionError)?
+                .as_bytes(),
+        );
         Ok(())
     }
 }
@@ -206,6 +201,31 @@ where
     RecursiveDigest::<Digest>::new(root_path.into(), paths).get_digest()
 }
 
+/// A helper function that strips a root folder from a path. If the root folder
+/// is not part of the path it will simply return.
+fn strip_root_path_if_included<'a>(root_path: &Path, path: &'a Path) -> &'a Path {
+    path.strip_prefix(&root_path).unwrap_or(path)
+}
+
+#[test]
+fn test_strip_root_path_if_included() {
+    let root_path = Path::new("some/root/path");
+
+    // Should strip the root path here
+    let path_with_root = Path::new("some/root/path/and/subfolder");
+    assert_eq!(
+        strip_root_path_if_included(&root_path, path_with_root),
+        Path::new("and/subfolder")
+    );
+
+    // Should keep this path intact
+    let path_without_root = Path::new("other/path/and/subfolder");
+    assert_eq!(
+        strip_root_path_if_included(&root_path, path_without_root),
+        path_without_root
+    );
+}
+
 pub fn get_recursive_digest_for_dir<
     Digest: digest::Digest + digest::FixedOutput,
     H: std::hash::BuildHasher,
@@ -215,25 +235,13 @@ pub fn get_recursive_digest_for_dir<
 ) -> Result<Vec<u8>, DigestError> {
     let mut hasher = RecursiveDigest::<Digest>::new(root_path.into(), None);
 
-    for entry in walkdir::WalkDir::new(root_path)
-        .into_iter()
-        .filter_entry(|entry| {
-            let path = entry
-                .path()
-                .strip_prefix(&root_path)
-                .unwrap_or_else(|_| entry.path());
-            !rel_path_ignore_list.contains(path)
-        })
-    {
+    for entry in walkdir::WalkDir::new(root_path).into_iter() {
         let entry = entry?;
-        let path = entry
-            .path()
-            .strip_prefix(&root_path)
-            .unwrap_or_else(|_| entry.path());
+        let path = strip_root_path_if_included(&root_path, entry.path());
         if !rel_path_ignore_list.contains(path) {
-            hasher.insert_path(path)
+            hasher.insert_path(path);
         }
     }
 
-    Ok(hasher.get_digest()?)
+    hasher.get_digest()
 }

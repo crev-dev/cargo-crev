@@ -1,9 +1,9 @@
-use std::path::Path;
 use crev_recursive_digest::DigestError;
 use digest::Digest;
 use std::collections::HashSet;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use tempdir::TempDir;
 
 #[test]
@@ -11,29 +11,32 @@ fn sanity() -> Result<(), DigestError> {
     let tmp_dir = TempDir::new("recursive-digest-test")?;
 
     let msg = b"foo";
-    let dir_path = tmp_dir.path().join("a");
-    let file_path = tmp_dir.path().join("b");
 
+    // Directory "recursive-digest-test/a/"
+    let dir_path = tmp_dir.path().join("a");
     fs::create_dir_all(&dir_path)?;
 
+    // File "recursive-digest-test/a/foo"
     let file_in_dir_path = dir_path.join("foo");
     let mut file_in_dir = fs::File::create(&file_in_dir_path)?;
     file_in_dir.write_all(msg)?;
     drop(file_in_dir);
 
+    // File "recursive-digest-test/b"
+    let file_path = tmp_dir.path().join("b");
     let mut file = fs::File::create(&file_path)?;
-
     file.write_all(msg)?;
     drop(file);
 
     let empty = HashSet::new();
 
     let dir_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
-        &dir_path,
-        &empty.clone(),
+        &dir_path, // "recursive-digest-test/a/"
+        &empty, // Exclude no files
     )?;
     let file_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
-        &file_path, &empty,
+        &file_path, // "recursive-digest-test/b"
+        &empty, // Exclude no files
     )?;
 
     let mut hasher = blake2::Blake2b::new();
