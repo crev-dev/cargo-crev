@@ -134,7 +134,16 @@ impl proof::ContentCommon for Trust {
     }
 
     fn draft_title(&self) -> String {
-        format!("Trust of {} Ids", self.ids.len())
+        match self.ids.len() {
+            0 => "Trust for noone?!".into(),
+            1 => format!("Trust for {} {}", self.ids[0].id, self.ids[0].url.url),
+            n => format!(
+                "Trust for {} {} and {} other",
+                self.ids[0].id,
+                self.ids[0].url.url,
+                n - 1
+            ),
+        }
     }
 }
 
