@@ -41,7 +41,7 @@ impl Repo {
         })
     }
 
-    fn for_every_dependency_dir(
+    fn for_every_non_local_dependency_dir(
         &self,
         mut f: impl FnMut(&PackageId, &Path) -> Result<()>,
     ) -> Result<()> {
@@ -60,8 +60,14 @@ impl Repo {
         let mut source = map.load(&source_id)?;
         source.update()?;
 
+        let current_dir = std::env::current_dir()?;
         for pkg_id in package_set.package_ids() {
             let pkg = package_set.get(pkg_id)?;
+
+            if pkg.root().starts_with(&current_dir) {
+                // ignore local dependencies
+                continue;
+            }
 
             if !pkg.root().exists() {
                 source.download(pkg_id)?;
@@ -80,7 +86,7 @@ impl Repo {
     ) -> Result<(PathBuf, semver::Version)> {
         let mut ret = vec![];
 
-        self.for_every_dependency_dir(|pkg_id, path| {
+        self.for_every_non_local_dependency_dir(|pkg_id, path| {
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
@@ -108,6 +114,8 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
 fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let (pkg_dir, crate_version) = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
+
+    assert!(!pkg_dir.starts_with(std::env::current_dir()?));
     let local = Local::auto_open()?;
 
     // to protect from creating a digest from a crate in unclean state
@@ -229,16 +237,10 @@ fn main() -> Result<()> {
 
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_ignore_list();
-                let current_dir = std::env::current_dir()?;
                 let cratesio = crates_io::Client::new(&local)?;
                 let home_dir = dirs::home_dir();
 
-                repo.for_every_dependency_dir(|pkg_id, path| {
-                    if path.starts_with(&current_dir) {
-                        // ignore local dependencies
-                        return Ok(());
-                    }
-
+                repo.for_every_non_local_dependency_dir(|pkg_id, path| {
                     let pkg_name = pkg_id.name().as_str();
                     let pkg_version = pkg_id.version().to_string();
 
