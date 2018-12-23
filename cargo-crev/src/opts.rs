@@ -177,6 +177,16 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Review {
+    #[structopt(flatten)]
+    pub crate_: CrateSelectorNameRequired,
+
+    /// This crate is not neccesarily a dependency of the current cargo project
+    #[structopt(long="independent")]
+    pub independent: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Create an Id, ...
     #[structopt(name = "new")]
@@ -196,11 +206,11 @@ pub enum Command {
 
     /// Review a crate
     #[structopt(name = "review")]
-    Review(CrateSelectorNameRequired),
+    Review(Review),
 
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
-    Flag(CrateSelectorNameRequired),
+    Flag(Review),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]

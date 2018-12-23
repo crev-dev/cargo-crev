@@ -3,6 +3,7 @@ extern crate structopt;
 
 use self::prelude::*;
 use cargo::{
+    core::dependency::Dependency,
     core::{package_id::PackageId, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
@@ -77,6 +78,40 @@ impl Repo {
         Ok(())
     }
 
+    fn find_independent_package_dir(
+        &self,
+        name: &str,
+        version: Option<&str>,
+    ) -> Result<Option<(PathBuf, semver::Version)>> {
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source_id = SourceId::crates_io(&self.config)?;
+        let mut source = map.load(&source_id)?;
+        source.update()?;
+        let mut summaries = vec![];
+        let dependency_request =
+            Dependency::parse_no_deprecated(name, version, source.source_id())?;
+        source.query(&dependency_request, &mut |summary| {
+            summaries.push(summary.clone())
+        })?;
+        let summary = if let Some(version) = version {
+            summaries
+                .iter()
+                .find(|s| s.version().to_string() == version)
+        } else {
+            summaries.iter().max_by_key(|s| s.version())
+        };
+
+        let summary = if let Some(summary) = summary {
+            summary
+        } else {
+            return Ok(None);
+        };
+        let pkg_id = summary.package_id();
+        let pkg = source.download(pkg_id)?;
+
+        Ok(Some((pkg.root().to_owned(), pkg_id.version().to_owned())))
+    }
+
     fn find_dependency_dir(
         &self,
         name: &str,
@@ -99,6 +134,20 @@ impl Repo {
             n => bail!("{} matches found", n),
         }
     }
+
+    fn find_crate(
+        &self,
+        name: &str,
+        version: Option<&str>,
+        independent: bool,
+    ) -> Result<(PathBuf, semver::Version)> {
+        if independent {
+            let path_and_pkg_id = self.find_independent_package_dir(name, version)?;
+            path_and_pkg_id.ok_or_else(|| format_err!("Could not find requested crate"))
+        } else {
+            self.find_dependency_dir(name, version)
+        }
+    }
 }
 
 fn cargo_ignore_list() -> HashSet<PathBuf> {
@@ -109,9 +158,17 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
     ignore_list
 }
 
-fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) -> Result<()> {
+/// Review a crate
+///
+/// * `independent` - the crate might not actually be a dependency
+fn review_crate(
+    args: &opts::CrateSelectorNameRequired,
+    trust: TrustOrDistrust,
+    independent: bool,
+) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let (pkg_dir, crate_version) = repo.find_dependency_dir(&args.name, args.version.as_deref())?;
+    let (pkg_dir, crate_version) =
+        repo.find_crate(&args.name, args.version.as_deref(), independent)?;
 
     assert!(!pkg_dir.starts_with(std::env::current_dir()?));
     let local = Local::auto_open()?;
@@ -125,7 +182,7 @@ fn review_crate(args: &opts::CrateSelectorNameRequired, trust: TrustOrDistrust) 
     }
     std::fs::rename(&pkg_dir, &reviewed_pkg_dir)?;
     let (pkg_dir_second, crate_version_second) =
-        repo.find_dependency_dir(&args.name, args.version.as_deref())?;
+        repo.find_crate(&args.name, args.version.as_deref(), independent)?;
     assert_eq!(pkg_dir, pkg_dir_second);
     assert_eq!(crate_version, crate_version_second);
 
@@ -310,10 +367,10 @@ fn main() -> Result<()> {
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
         },
         opts::Command::Review(args) => {
-            review_crate(&args, TrustOrDistrust::Trust)?;
+            review_crate(&args.crate_, TrustOrDistrust::Trust, args.independent)?;
         }
         opts::Command::Flag(args) => {
-            review_crate(&args, TrustOrDistrust::Distrust)?;
+            review_crate(&args.crate_, TrustOrDistrust::Distrust, args.independent)?;
         }
         opts::Command::Trust(args) => {
             let local = Local::auto_open()?;
