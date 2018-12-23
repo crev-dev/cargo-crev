@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate term;
 
 use common_failures::prelude::*;
 
@@ -32,15 +33,6 @@ pub trait ProofStore {
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
 }
 
-/// Result of verification
-///
-/// Not named `Result` to avoid confusion with `Result` type.
-pub enum VerificationStatus {
-    Verified,
-    Unknown,
-    Flagged,
-}
-
 #[derive(Copy, Clone)]
 pub enum TrustOrDistrust {
     Trust,
@@ -61,6 +53,49 @@ impl TrustOrDistrust {
             Trust => crev_data::Review::new_positive(),
             Distrust => crev_data::Review::new_negative(),
         }
+    }
+}
+
+/// Result of verification
+///
+/// Not named `Result` to avoid confusion with `Result` type.
+pub enum VerificationStatus {
+    Verified,
+    Unknown,
+    Flagged,
+}
+
+impl VerificationStatus {
+
+    fn set_term_color(&self, t: &mut Box<term::StdoutTerminal>) -> Result<()> {
+        if !t.supports_color() {
+            return Ok(());
+        }
+
+        match *self {
+            VerificationStatus::Verified => {
+                t.fg(term::color::GREEN)?;
+            },
+            VerificationStatus::Flagged => {
+                t.fg(term::color::RED)?;
+            },
+            _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn write_colored_to_stdout(&self) -> Result<()> {
+        match term::stdout() {
+            Some(ref mut t) => {
+                self.set_term_color(t)?;
+                write!(t, "{:8}", *self)?;
+                t.reset()?;
+            }
+            None => {
+                print!("{:8}", *self);
+            }
+        }
+        Ok(())
     }
 }
 
