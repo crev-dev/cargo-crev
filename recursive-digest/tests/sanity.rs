@@ -1,9 +1,9 @@
-use std::path::Path;
 use crev_recursive_digest::DigestError;
 use digest::Digest;
 use std::collections::HashSet;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use tempdir::TempDir;
 
 #[test]
@@ -11,29 +11,32 @@ fn sanity() -> Result<(), DigestError> {
     let tmp_dir = TempDir::new("recursive-digest-test")?;
 
     let msg = b"foo";
-    let dir_path = tmp_dir.path().join("a");
-    let file_path = tmp_dir.path().join("b");
 
+    // Directory "recursive-digest-test/a/"
+    let dir_path = tmp_dir.path().join("a");
     fs::create_dir_all(&dir_path)?;
 
+    // File "recursive-digest-test/a/foo"
     let file_in_dir_path = dir_path.join("foo");
     let mut file_in_dir = fs::File::create(&file_in_dir_path)?;
     file_in_dir.write_all(msg)?;
     drop(file_in_dir);
 
+    // File "recursive-digest-test/b"
+    let file_path = tmp_dir.path().join("b");
     let mut file = fs::File::create(&file_path)?;
-
     file.write_all(msg)?;
     drop(file);
 
     let empty = HashSet::new();
 
     let dir_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
-        &dir_path,
-        &empty.clone(),
+        &dir_path, // "recursive-digest-test/a/"
+        &empty, // Exclude no files
     )?;
     let file_digest = crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(
-        &file_path, &empty,
+        &file_path, // "recursive-digest-test/b"
+        &empty, // Exclude no files
     )?;
 
     let mut hasher = blake2::Blake2b::new();
@@ -109,5 +112,81 @@ fn backward_comp() -> Result<(), DigestError> {
         "bc97399633e1228a563d57adecf98810364526a8e7bfc24b89985c5607e77605575d10989d5954b762af45c498129854dca603688fd63bd580bbf952c650b735"
     );
     tmp_dir.into_path();
+    Ok(())
+}
+
+
+#[test]
+fn test_file_digest() -> Result<(), DigestError> {
+    let tmp_dir = TempDir::new("recursive-digest-test3")?;
+    let foo_content = b"foo_content";
+    let file_in_dir_path = tmp_dir.path().join("foo");
+    let mut file_in_dir = fs::File::create(&file_in_dir_path)?;
+    file_in_dir.write_all(foo_content)?;
+
+    let empty = HashSet::new();
+
+    let expected = {
+        let mut hasher = blake2::Blake2b::new();
+        hasher.input(b"F");
+        hasher.input(foo_content);
+        hasher.result().to_vec()
+    };
+
+    assert_eq!(
+        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(&file_in_dir_path, &empty)?,
+        expected
+    );
+
+    Ok(())
+}
+
+#[test]
+// Tests the inclusion and exclusing of paths.
+fn test_exclude_include_path() -> Result<(), DigestError> {
+    let tmp_dir = TempDir::new("recursive-digest-test3")?;
+
+    let foo_content = b"foo_content";
+    let file_in_dir_path = tmp_dir.path().join("foo");
+    let mut file_in_dir = fs::File::create(&file_in_dir_path)?;
+    file_in_dir.write_all(foo_content)?;
+    
+    let bar_content = b"bar_content";
+    let file_in_dir_path_2 = tmp_dir.path().join("bar");
+    let mut file_in_dir_2 = fs::File::create(&file_in_dir_path_2)?;
+    file_in_dir_2.write_all(bar_content)?;
+
+
+    let expected = {
+        let mut hasher = blake2::Blake2b::new();
+        hasher.input(b"F");
+        hasher.input(bar_content);
+        let file_sum = hasher.result().to_vec();
+
+        let mut hasher = blake2::Blake2b::new();
+        hasher.input("bar".as_bytes());
+        let dir_sum = hasher.result().to_vec();
+
+        let mut hasher = blake2::Blake2b::new();
+        hasher.input(b"D");
+        hasher.input(dir_sum);
+        hasher.input(file_sum);
+        hasher.result().to_vec()
+    };
+
+    let mut excluded = HashSet::new();
+    excluded.insert(Path::new("foo").to_path_buf());
+    assert_eq!(
+        crev_recursive_digest::get_recursive_digest_for_dir::<blake2::Blake2b, _>(&tmp_dir.path(), &excluded)?,
+        expected
+    );
+
+    let mut included = HashSet::new();
+    included.insert(Path::new("bar").to_path_buf());
+    assert_eq!(
+        crev_recursive_digest::get_recursive_digest_for_paths::<blake2::Blake2b, _>(&tmp_dir.path(), included)?,
+        expected
+    );
+
     Ok(())
 }
