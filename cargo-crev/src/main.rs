@@ -78,7 +78,7 @@ impl Repo {
         Ok(())
     }
 
-    fn find_independent_package_dir(
+    fn find_idependent_crate_dir(
         &self,
         name: &str,
         version: Option<&str>,
@@ -116,7 +116,7 @@ impl Repo {
         &self,
         name: &str,
         version: Option<&str>,
-    ) -> Result<(PathBuf, semver::Version)> {
+    ) -> Result<Option<(PathBuf, semver::Version)>> {
         let mut ret = vec![];
 
         self.for_every_non_local_dependency_dir(|pkg_id, path| {
@@ -129,9 +129,9 @@ impl Repo {
         })?;
 
         match ret.len() {
-            0 => bail!("Not found"),
-            1 => Ok(ret[0].clone()),
-            n => bail!("{} matches found", n),
+            0 => Ok(None),
+            1 => Ok(Some(ret[0].clone())),
+            n => bail!("Ambiguous selection: {} matches found", n),
         }
     }
 
@@ -142,11 +142,11 @@ impl Repo {
         independent: bool,
     ) -> Result<(PathBuf, semver::Version)> {
         if independent {
-            let path_and_pkg_id = self.find_independent_package_dir(name, version)?;
-            path_and_pkg_id.ok_or_else(|| format_err!("Could not find requested crate"))
+            self.find_idependent_crate_dir(name, version)?
         } else {
-            self.find_dependency_dir(name, version)
+            self.find_dependency_dir(name, version)?
         }
+        .ok_or_else(|| format_err!("Could not find requested crate"))
     }
 }
 
@@ -162,13 +162,13 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
 ///
 /// * `independent` - the crate might not actually be a dependency
 fn review_crate(
-    args: &opts::CrateSelectorNameRequired,
+    selector: &opts::CrateSelectorNameRequired,
     trust: TrustOrDistrust,
     independent: bool,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let (pkg_dir, crate_version) =
-        repo.find_crate(&args.name, args.version.as_deref(), independent)?;
+        repo.find_crate(&selector.name, selector.version.as_deref(), independent)?;
 
     assert!(!pkg_dir.starts_with(std::env::current_dir()?));
     let local = Local::auto_open()?;
@@ -182,7 +182,7 @@ fn review_crate(
     }
     std::fs::rename(&pkg_dir, &reviewed_pkg_dir)?;
     let (pkg_dir_second, crate_version_second) =
-        repo.find_crate(&args.name, args.version.as_deref(), independent)?;
+        repo.find_crate(&selector.name, selector.version.as_deref(), independent)?;
     assert_eq!(pkg_dir, pkg_dir_second);
     assert_eq!(crate_version, crate_version_second);
 
@@ -209,7 +209,7 @@ fn review_crate(
         .package(proof::PackageInfo {
             id: None,
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: args.name.clone(),
+            name: selector.name.clone(),
             version: crate_version.to_string(),
             digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
