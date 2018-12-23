@@ -60,12 +60,10 @@ impl Repo {
         let mut source = map.load(&source_id)?;
         source.update()?;
 
-        let current_dir = std::env::current_dir()?;
         for pkg_id in package_set.package_ids() {
             let pkg = package_set.get(pkg_id)?;
 
-            if pkg.root().starts_with(&current_dir) {
-                // ignore local dependencies
+            if !pkg.summary().source_id().is_registry() {
                 continue;
             }
 
