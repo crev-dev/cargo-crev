@@ -20,7 +20,7 @@ failure = "0.1"
 quicli = "0.3"
 structopt = "0.2"
 common_failures = "0.1"
-cargo = "0.31"
+cargo = "0.32"
 crev-lib = { path = "../crev-lib", version = "0.2.0" }
 crev-data = { path = "../crev-data", version = "0.2.0" }
 crev-common = { path = "../crev-common", version = "0.2" }

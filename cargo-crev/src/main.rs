@@ -4,6 +4,7 @@ extern crate structopt;
 use self::prelude::*;
 use cargo::{
     core::dependency::Dependency,
+    core::source::SourceMap,
     core::{package_id::PackageId, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
@@ -61,18 +62,18 @@ impl Repo {
         let mut source = map.load(&source_id)?;
         source.update()?;
 
-        for pkg_id in package_set.package_ids() {
-            let pkg = package_set.get(pkg_id)?;
+        let pkgs = package_set.get_many(package_set.package_ids())?;
 
+        for pkg in pkgs {
             if !pkg.summary().source_id().is_registry() {
                 continue;
             }
 
             if !pkg.root().exists() {
-                source.download(pkg_id)?;
+                source.download(pkg.package_id())?;
             }
 
-            f(&pkg_id, &pkg.root())?;
+            f(&pkg.package_id(), &pkg.root())?;
         }
 
         Ok(())
@@ -106,8 +107,16 @@ impl Repo {
         } else {
             return Ok(None);
         };
+
+        let mut source_map = SourceMap::new();
+        source_map.insert(source);
+        let package_set = cargo::core::PackageSet::new(
+            &[summary.package_id().clone()],
+            source_map,
+            &self.config,
+        )?;
         let pkg_id = summary.package_id();
-        let pkg = source.download(pkg_id)?;
+        let pkg = package_set.get_one(pkg_id)?;
 
         Ok(Some((pkg.root().to_owned(), pkg_id.version().to_owned())))
     }
