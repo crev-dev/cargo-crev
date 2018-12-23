@@ -254,12 +254,12 @@ impl Local {
         }
     }
 
-    pub fn list_ids(&self) -> Result<Vec<Id>> {
+    pub fn list_ids(&self) -> Result<Vec<PubId>> {
         let ids_path = self.user_ids_path();
         let mut ids = vec![];
         for dir_entry in std::fs::read_dir(&ids_path)? {
             let locked_id = LockedId::read_from_yaml_file(&dir_entry?.path())?;
-            ids.push(locked_id.to_pubid().id)
+            ids.push(locked_id.to_pubid())
         }
 
         Ok(ids)

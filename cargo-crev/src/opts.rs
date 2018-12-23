@@ -117,25 +117,37 @@ pub enum Fetch {
 pub enum QueryId {
     /// Show current Id
     #[structopt(name = "current")]
-    Current,
+    Current {
+        /// Show URL
+        #[structopt(long = "url")]
+        url: bool,
+    },
 
     /// Show all known Ids
     #[structopt(name = "all")]
-    All,
+    All {
+        /// Show URLs
+        #[structopt(long = "url")]
+        url: bool,
+    },
 
     /// Show own Ids
     #[structopt(name = "own")]
-    Own,
+    Own {
+        /// Show URLs
+        #[structopt(long = "url")]
+        url: bool,
+    },
 
     /// List trusted ids
     #[structopt(name = "trusted")]
-    Trusted(QueryIdTrusted),
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct QueryIdTrusted {
-    #[structopt(flatten)]
-    pub trust_params: TrustParams,
+    Trusted {
+        #[structopt(flatten)]
+        trust_params: TrustParams,
+        /// Show URLs
+        #[structopt(long = "url")]
+        url: bool,
+    },
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -182,7 +194,7 @@ pub struct Review {
     pub crate_: CrateSelectorNameRequired,
 
     /// This crate is not neccesarily a dependency of the current cargo project
-    #[structopt(long="independent")]
+    #[structopt(long = "independent")]
     pub independent: bool,
 }
 

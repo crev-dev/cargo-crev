@@ -362,21 +362,39 @@ fn main() -> Result<()> {
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
-                opts::QueryId::Current => crev_lib::show_current_id()?,
-                opts::QueryId::Own => crev_lib::list_own_ids()?,
-                opts::QueryId::Trusted(args) => {
+                opts::QueryId::Current { url } => crev_lib::show_current_id(url)?,
+                opts::QueryId::Own { url } => crev_lib::list_own_ids(url)?,
+                // TODO: move to crev-lib
+                opts::QueryId::Trusted { url, trust_params } => {
                     let local = crev_lib::Local::auto_open()?;
-                    let (_db, trust_set) = local.load_db(&args.trust_params.into())?;
+                    let (db, trust_set) = local.load_db(&trust_params.into())?;
                     for id in &trust_set {
-                        println!("{}", id);
+                        if url {
+                            println!(
+                                "{} {}",
+                                id,
+                                db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+                            );
+                        } else {
+                            println!("{}", id);
+                        }
                     }
                 }
-                opts::QueryId::All => {
+                // TODO: move to crev-lib
+                opts::QueryId::All { url } => {
                     let local = crev_lib::Local::auto_open()?;
                     let (db, _trust_set) = local.load_db(&default())?;
 
                     for id in &db.all_known_ids() {
-                        println!("{}", id);
+                        if url {
+                            println!(
+                                "{} {}",
+                                id,
+                                db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+                            );
+                        } else {
+                            println!("{}", id);
+                        }
                     }
                 }
             },
