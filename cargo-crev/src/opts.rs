@@ -117,36 +117,21 @@ pub enum Fetch {
 pub enum QueryId {
     /// Show current Id
     #[structopt(name = "current")]
-    Current {
-        /// Show URL
-        #[structopt(long = "url")]
-        url: bool,
-    },
+    Current,
 
     /// Show all known Ids
     #[structopt(name = "all")]
-    All {
-        /// Show URLs
-        #[structopt(long = "url")]
-        url: bool,
-    },
+    All,
 
     /// Show own Ids
     #[structopt(name = "own")]
-    Own {
-        /// Show URLs
-        #[structopt(long = "url")]
-        url: bool,
-    },
+    Own,
 
     /// List trusted ids
     #[structopt(name = "trusted")]
     Trusted {
         #[structopt(flatten)]
         trust_params: TrustParams,
-        /// Show URLs
-        #[structopt(long = "url")]
-        url: bool,
     },
 }
 

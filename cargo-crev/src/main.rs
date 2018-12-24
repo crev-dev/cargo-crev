@@ -362,39 +362,31 @@ fn main() -> Result<()> {
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
-                opts::QueryId::Current { url } => crev_lib::show_current_id(url)?,
-                opts::QueryId::Own { url } => crev_lib::list_own_ids(url)?,
+                opts::QueryId::Current => crev_lib::show_current_id()?,
+                opts::QueryId::Own => crev_lib::list_own_ids()?,
                 // TODO: move to crev-lib
-                opts::QueryId::Trusted { url, trust_params } => {
+                opts::QueryId::Trusted { trust_params } => {
                     let local = crev_lib::Local::auto_open()?;
                     let (db, trust_set) = local.load_db(&trust_params.into())?;
                     for id in &trust_set {
-                        if url {
-                            println!(
-                                "{} {}",
-                                id,
-                                db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
-                            );
-                        } else {
-                            println!("{}", id);
-                        }
+                        println!(
+                            "{} {}",
+                            id,
+                            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+                        );
                     }
                 }
                 // TODO: move to crev-lib
-                opts::QueryId::All { url } => {
+                opts::QueryId::All => {
                     let local = crev_lib::Local::auto_open()?;
                     let (db, _trust_set) = local.load_db(&default())?;
 
                     for id in &db.all_known_ids() {
-                        if url {
-                            println!(
-                                "{} {}",
-                                id,
-                                db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
-                            );
-                        } else {
-                            println!("{}", id);
-                        }
+                        println!(
+                            "{} {}",
+                            id,
+                            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+                        );
                     }
                 }
             },

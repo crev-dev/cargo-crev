@@ -125,15 +125,11 @@ where
     ))
 }
 
-pub fn show_current_id(show_urls: bool) -> Result<()> {
+pub fn show_current_id() -> Result<()> {
     let local = Local::auto_open()?;
     let id = local.read_current_locked_id()?;
     let id = id.to_pubid();
-    if show_urls {
-        println!("{} {}", id.id, id.url.url);
-    } else {
-        println!("{}", id.id);
-    }
+    println!("{} {}", id.id, id.url.url);
     Ok(())
 }
 
@@ -247,14 +243,10 @@ pub fn switch_id(id_str: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn list_own_ids(show_urls: bool) -> Result<()> {
+pub fn list_own_ids() -> Result<()> {
     let local = Local::auto_open()?;
     for id in local.list_ids()? {
-        if show_urls {
-            println!("{} {}", id.id, id.url.url);
-        } else {
-            println!("{}", id.id);
-        }
+        println!("{} {}", id.id, id.url.url);
     }
     Ok(())
 }
