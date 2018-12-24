@@ -21,6 +21,7 @@ use structopt::StructOpt;
 mod crates_io;
 mod opts;
 mod prelude;
+mod term;
 
 use crev_data::proof;
 use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
@@ -302,6 +303,7 @@ fn main() -> Result<()> {
         },
         opts::Command::Verify(cmd) => match cmd {
             opts::Verify::Deps(args) => {
+                let mut term = term::Term::new();
                 let local = crev_lib::Local::auto_open()?;
                 let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
 
@@ -335,7 +337,7 @@ fn main() -> Result<()> {
                     let owners_string = cratesio.get_owners(&pkg_name)?.join(", ");
 
                     if args.verbose {
-                        result.write_colored_to_stdout()?;
+                        term.stdout(&result)?;
                         println!(
                             " {:2} {:2} {:>7} {:>8} {} {:<80} {}",
                             pkg_version_review_count,
@@ -347,7 +349,7 @@ fn main() -> Result<()> {
                             owners_string,
                         );
                     } else {
-                        result.write_colored_to_stdout()?;
+                        term.stdout(&result)?;
                         println!(
                             " {:2} {:2} {:>7} {:>8} {:<80} {}",
                             pkg_version_review_count,

@@ -65,37 +65,17 @@ pub enum VerificationStatus {
     Flagged,
 }
 
-impl VerificationStatus {
+pub trait Colored {
+    fn color(&self) -> Option<term::color::Color>;
+}
 
-    fn set_term_color(&self, t: &mut Box<term::StdoutTerminal>) -> Result<()> {
-        if !t.supports_color() {
-            return Ok(());
-        }
-
+impl Colored for VerificationStatus {
+    fn color(&self) -> Option<term::color::Color> {
         match *self {
-            VerificationStatus::Verified => {
-                t.fg(term::color::GREEN)?;
-            },
-            VerificationStatus::Flagged => {
-                t.fg(term::color::RED)?;
-            },
-            _ => {}
+            VerificationStatus::Verified => Some(term::color::GREEN),
+            VerificationStatus::Flagged => Some(term::color::RED),
+            _ => None,
         }
-        Ok(())
-    }
-
-    pub fn write_colored_to_stdout(&self) -> Result<()> {
-        match term::stdout() {
-            Some(ref mut t) => {
-                self.set_term_color(t)?;
-                write!(t, "{:8}", *self)?;
-                t.reset()?;
-            }
-            None => {
-                print!("{:8}", *self);
-            }
-        }
-        Ok(())
     }
 }
 
