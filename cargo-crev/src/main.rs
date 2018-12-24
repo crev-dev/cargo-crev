@@ -332,27 +332,30 @@ fn main() -> Result<()> {
                             eprintln!("Error: {}", e);
                             ("err".into(), "err".into())
                         });
+                    let owners_string = cratesio.get_owners(&pkg_name)?.join(", ");
 
                     if args.verbose {
                         println!(
-                            "{:8} {:2} {:2} {:>7} {:>8} {} {:40}",
+                            "{:8} {:2} {:2} {:>7} {:>8} {} {:<80} {}",
                             result,
                             pkg_version_review_count,
                             pkg_review_count,
                             version_downloads,
                             total_downloads,
                             digest,
-                            tilda_home_path(&home_dir, &path)
+                            tilda_home_path(&home_dir, &path),
+                            owners_string,
                         );
                     } else {
                         println!(
-                            "{:8} {:2} {:2} {:>7} {:>8} {:40}",
+                            "{:8} {:2} {:2} {:>7} {:>8} {:<80} {}",
                             result,
                             pkg_version_review_count,
                             pkg_review_count,
                             version_downloads,
                             total_downloads,
-                            tilda_home_path(&home_dir, &path)
+                            tilda_home_path(&home_dir, &path),
+                            owners_string,
                         );
                     }
 
