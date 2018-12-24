@@ -337,7 +337,7 @@ fn main() -> Result<()> {
                     let owners_string = cratesio.get_owners(&pkg_name)?.join(", ");
 
                     if args.verbose {
-                        term.stdout(&result)?;
+                        term.stdout(format_args!("{:8}", result), &result)?;
                         println!(
                             " {:2} {:2} {:>7} {:>8} {} {:<80} {}",
                             pkg_version_review_count,
@@ -349,7 +349,7 @@ fn main() -> Result<()> {
                             owners_string,
                         );
                     } else {
-                        term.stdout(&result)?;
+                        term.stdout(format_args!("{:8}", result), &result)?;
                         println!(
                             " {:2} {:2} {:>7} {:>8} {:<80} {}",
                             pkg_version_review_count,
