@@ -7,21 +7,6 @@ pub struct CrateSelector {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct CrateSelectorNameRequired {
-    pub name: String,
-    pub version: Option<String>,
-}
-
-impl From<CrateSelectorNameRequired> for CrateSelector {
-    fn from(c: CrateSelectorNameRequired) -> Self {
-        Self {
-            name: Some(c.name),
-            version: c.version,
-        }
-    }
-}
-
-#[derive(Debug, StructOpt, Clone)]
 pub struct NewId {
     #[structopt(long = "url")]
     /// URL of a git repository to be associated with the new Id
@@ -176,7 +161,7 @@ pub struct Git {
 #[derive(Debug, StructOpt, Clone)]
 pub struct ReviewOrGoto {
     #[structopt(flatten)]
-    pub crate_: CrateSelectorNameRequired,
+    pub crate_: CrateSelector,
 
     /// This crate is not neccesarily a dependency of the current cargo project
     #[structopt(long = "independent")]
