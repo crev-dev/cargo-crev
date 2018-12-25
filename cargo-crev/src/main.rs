@@ -304,17 +304,6 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
-fn tilda_home_path(home: &Option<PathBuf>, path: &Path) -> String {
-    if let Some(home) = home {
-        match path.strip_prefix(home) {
-            Ok(rel) => format!("~/{}", rel.display()),
-            Err(_) => path.display().to_string(),
-        }
-    } else {
-        path.display().to_string()
-    }
-}
-
 fn handle_review_cmd(args: &opts::ReviewOrGoto, trust_or_distrust: TrustOrDistrust) -> Result<()> {
     if let Some(org_dir) = env::var_os(GOTO_ORIGINAL_DIR_ENV) {
         if args.crate_.name.is_some() {
@@ -377,14 +366,13 @@ fn main() -> Result<()> {
                 repo.update_crates_io()?;
                 let ignore_list = cargo_ignore_list();
                 let cratesio = crates_io::Client::new(&local)?;
-                let home_dir = dirs::home_dir();
 
                 if term.stderr_is_tty && term.stdout_is_tty {
                     eprint!("{:8} {:7} {:^14}", "status", "reviews", "downloads");
                     if args.verbose {
                         eprint!(" {:43}", "digest");
                     }
-                    eprintln!(" {:<80} {}", "src-dir", "authors");
+                    eprintln!(" {:<20} {:<15} {}", "crate", "version", "authors");
                 }
                 repo.for_every_non_local_dependency_dir(|pkg_id, path| {
                     let pkg_name = pkg_id.name().as_str();
@@ -420,11 +408,7 @@ fn main() -> Result<()> {
                     if args.verbose {
                         print!(" {:43}", digest,);
                     }
-                    println!(
-                        " {:<80} {}",
-                        tilda_home_path(&home_dir, &path),
-                        owners_string,
-                    );
+                    println!(" {:<20} {:<15} {}", pkg_name, pkg_version, owners_string,);
 
                     Ok(())
                 })?;
