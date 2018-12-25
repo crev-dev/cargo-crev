@@ -195,11 +195,9 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
     let shell = env::var_os("SHELL").ok_or_else(|| format_err!("$SHELL not set"))?;
     let cwd = env::current_dir()?;
 
-    eprintln!(
-        "Starting shell in {}. Use `exit` or Ctrl-D to return to the original project.",
-        pkg_dir.display()
-    );
-    eprintln!("You can use `review` and `flag` command without any arguments now.");
+    eprintln!("Opening shell in: {}", pkg_dir.display());
+    eprintln!("Use `exit` or Ctrl-D to return to the original project.",);
+    eprintln!("Use `review` and `flag` without any arguments to review this crate.");
     let status = process::Command::new(shell)
         .current_dir(pkg_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
