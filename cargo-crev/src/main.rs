@@ -26,6 +26,8 @@ mod term;
 use crev_data::proof;
 use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
 
+use std::process;
+
 struct Repo {
     manifest_path: PathBuf,
     config: cargo::util::config::Config,
@@ -172,6 +174,30 @@ fn cargo_ignore_list() -> HashSet<PathBuf> {
     ignore_list.insert(PathBuf::from("Cargo.lock"));
     ignore_list.insert(PathBuf::from("target"));
     ignore_list
+}
+
+fn goto_crate_src(selector: &opts::CrateSelectorNameRequired, independent: bool) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+    let (pkg_dir, _crate_version) =
+        repo.find_crate(&selector.name, selector.version.as_deref(), independent)?;
+
+    let shell = std::env::var_os("SHELL").ok_or_else(|| format_err!("$SHELL not set"))?;
+    let cwd = std::env::current_dir()?;
+
+    eprintln!(
+        "Starting shell in {}. Use `exit` or Ctrl-D to return to the original project.",
+        pkg_dir.display()
+    );
+    let status = process::Command::new(shell)
+        .current_dir(pkg_dir)
+        .env("CARGO_CREV_GOTO_ORIGINAL_DIR", cwd)
+        .status()?;
+
+    if !status.success() {
+        bail!("Shell returned {}", status);
+    }
+
+    Ok(())
 }
 
 /// Review a crate
@@ -398,6 +424,9 @@ fn main() -> Result<()> {
         },
         opts::Command::Review(args) => {
             review_crate(&args.crate_, TrustOrDistrust::Trust, args.independent)?;
+        }
+        opts::Command::Goto(args) => {
+            goto_crate_src(&args.crate_, args.independent)?;
         }
         opts::Command::Flag(args) => {
             review_crate(&args.crate_, TrustOrDistrust::Distrust, args.independent)?;

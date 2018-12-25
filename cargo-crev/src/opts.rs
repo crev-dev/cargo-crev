@@ -174,7 +174,7 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Review {
+pub struct ReviewOrGoto {
     #[structopt(flatten)]
     pub crate_: CrateSelectorNameRequired,
 
@@ -203,11 +203,11 @@ pub enum Command {
 
     /// Review a crate
     #[structopt(name = "review")]
-    Review(Review),
+    Review(ReviewOrGoto),
 
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
-    Flag(Review),
+    Flag(ReviewOrGoto),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]
@@ -245,6 +245,10 @@ pub enum Command {
     /// Pull changes from the public proof repository (alias to `git pull`)
     #[structopt(name = "pull")]
     Pull,
+
+    /// Start a shell in source directory of a crate under review
+    #[structopt(name = "goto")]
+    Goto(ReviewOrGoto),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`
