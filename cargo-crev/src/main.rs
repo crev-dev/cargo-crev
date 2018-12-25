@@ -314,17 +314,11 @@ fn main() -> Result<()> {
                 let home_dir = dirs::home_dir();
 
                 if term.stderr_is_tty && term.stdout_is_tty {
+                    eprint!("{:8} {:7} {:^14}", "status", "reviews", "downloads");
                     if args.verbose {
-                        eprintln!(
-                            "{:8} {:7}{:^15} {} {:<80} {}",
-                            "verifi.", "reviews", "downloads", "digest", "src-dir", "authors"
-                        );
-                    } else {
-                        eprintln!(
-                            "{:8} {:7}{:^15} {:<80} {}",
-                            "verific.", "reviews", "downloads", "src-dir", "authors"
-                        );
+                        eprint!(" {:43}", "digest");
                     }
+                    eprintln!(" {:<80} {}", "src-dir", "authors");
                 }
                 repo.for_every_non_local_dependency_dir(|pkg_id, path| {
                     let pkg_name = pkg_id.name().as_str();
@@ -349,30 +343,22 @@ fn main() -> Result<()> {
                         });
                     let owners_string = cratesio.get_owners(&pkg_name)?.join(", ");
 
+                    term.stdout(format_args!("{:8}", result), &result)?;
+                    print!(
+                        " {:2} {:2} {:>7} {:>8}",
+                        pkg_version_review_count,
+                        pkg_review_count,
+                        version_downloads,
+                        total_downloads,
+                    );
                     if args.verbose {
-                        term.stdout(format_args!("{:8}", result), &result)?;
-                        println!(
-                            " {:2} {:2} {:>7} {:>8} {} {:<80} {}",
-                            pkg_version_review_count,
-                            pkg_review_count,
-                            version_downloads,
-                            total_downloads,
-                            digest,
-                            tilda_home_path(&home_dir, &path),
-                            owners_string,
-                        );
-                    } else {
-                        term.stdout(format_args!("{:8}", result), &result)?;
-                        println!(
-                            " {:2} {:2} {:>7} {:>8} {:<80} {}",
-                            pkg_version_review_count,
-                            pkg_review_count,
-                            version_downloads,
-                            total_downloads,
-                            tilda_home_path(&home_dir, &path),
-                            owners_string,
-                        );
+                        print!(" {:43}", digest,);
                     }
+                    println!(
+                        " {:<80} {}",
+                        tilda_home_path(&home_dir, &path),
+                        owners_string,
+                    );
 
                     Ok(())
                 })?;
