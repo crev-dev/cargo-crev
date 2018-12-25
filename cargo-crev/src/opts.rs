@@ -149,6 +149,10 @@ pub enum Edit {
     /// Edit your README.md file
     #[structopt(name = "readme")]
     Readme,
+
+    /// Edit your KNOWN_CRATE_OWNERS.md file
+    #[structopt(name = "known")]
+    Known,
 }
 
 #[derive(Debug, StructOpt, Clone)]

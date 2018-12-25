@@ -212,6 +212,31 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
     Ok(())
 }
 
+const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
+
+fn read_known_owners() -> Result<HashSet<String>> {
+    let local = Local::auto_create_or_open()?;
+    let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
+
+    Ok(crev_common::read_file_to_string(&path)?
+        .lines()
+        .map(|s| s.trim())
+        .filter(|s| !s.starts_with("#"))
+        .map(|s| s.to_string())
+        .collect())
+}
+
+fn edit_known_owners() -> Result<()> {
+    let local = Local::auto_create_or_open()?;
+    let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
+    if !path.exists() {
+        crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_header.txt"))?;
+        local.proof_dir_git_add_path(&PathBuf::from(KNOWN_CARGO_OWNERS_FILE))?;
+    }
+    crev_lib::util::edit_file(&path)?;
+    Ok(())
+}
+
 /// Review a crate
 ///
 /// * `independent` - the crate might not actually be a dependency
@@ -355,6 +380,9 @@ fn main() -> Result<()> {
                 let local = crev_lib::Local::auto_open()?;
                 local.edit_readme()?;
             }
+            opts::Edit::Known => {
+                edit_known_owners()?;
+            }
         },
         opts::Command::Verify(cmd) => match cmd {
             opts::Verify::Deps(args) => {
@@ -368,12 +396,16 @@ fn main() -> Result<()> {
                 let cratesio = crates_io::Client::new(&local)?;
 
                 if term.stderr_is_tty && term.stdout_is_tty {
-                    eprint!("{:8} {:7} {:^14}", "status", "reviews", "downloads");
                     if args.verbose {
-                        eprint!(" {:43}", "digest");
+                        eprint!("{:43}", "digest");
                     }
-                    eprintln!(" {:<20} {:<15} {}", "crate", "version", "authors");
+                    eprint!(
+                        " {:8} {:8} {:^11} {:6}",
+                        "status", "reviews", "downloads", "owners"
+                    );
+                    eprintln!(" {:<18} {:<15}", "crate", "version");
                 }
+                let known_owners = read_known_owners().unwrap_or_else(|_| HashSet::new());
                 repo.for_every_non_local_dependency_dir(|pkg_id, path| {
                     let pkg_name = pkg_id.name().as_str();
                     let pkg_version = pkg_id.version().to_string();
@@ -395,20 +427,28 @@ fn main() -> Result<()> {
                             eprintln!("Error: {}", e);
                             ("err".into(), "err".into())
                         });
-                    let owners_string = cratesio.get_owners(&pkg_name)?.join(", ");
 
-                    term.stdout(format_args!("{:8}", result), &result)?;
+                    let owners = cratesio.get_owners(&pkg_name)?;
+                    let total_owners_count = owners.len();
+                    let known_owners_count = owners
+                        .iter()
+                        .filter(|o| known_owners.contains(o.as_str()))
+                        .count();
+
+                    if args.verbose {
+                        print!(" {:43}", digest);
+                    }
+                    term.stdout(format_args!(" {:8}", result), &result)?;
                     print!(
-                        " {:2} {:2} {:>7} {:>8}",
+                        " {:2} {:2} {:>7} {:>8} {}/{}",
                         pkg_version_review_count,
                         pkg_review_count,
                         version_downloads,
                         total_downloads,
+                        known_owners_count,
+                        total_owners_count,
                     );
-                    if args.verbose {
-                        print!(" {:43}", digest,);
-                    }
-                    println!(" {:<20} {:<15} {}", pkg_name, pkg_version, owners_string,);
+                    println!(" {:<20} {:<15}", pkg_name, pkg_version);
 
                     Ok(())
                 })?;
