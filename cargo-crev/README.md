@@ -22,7 +22,7 @@ All of this neatly integrated with the `cargo` itself!
 
 ## More info
 
-[Crev](https://github.com/dpc/crev/) is is a language and ecosystem agnostic,
+[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
 social Code REView system.
 
 `cargo-crev` is an implementation/frontend of Crev integrated with `cargo` and
@@ -86,8 +86,8 @@ cargo crev fetch url https://github.com/dpc/crev-proofs # fetch proofs from dpc
 cargo crev fetch all                                    # fetch proofs from all known ids
 cargo crev verify                                       # verify your depedencies
 cargo crev query id all                                 # show all known ids
-cargo crev query reviews                                # show all reviews
-cargo crev query reviews <package>                      # show all reviews of a package
+cargo crev query review                                 # show all reviews
+cargo crev query review <package>                       # show all reviews of a package
 cargo crev trust <id>                                   # trust someone
 cargo crev review <crate>                               # review a dependency
 cargo crev commit                                       # commit new proofs (reviews, trust)
