@@ -313,6 +313,19 @@ fn main() -> Result<()> {
                 let cratesio = crates_io::Client::new(&local)?;
                 let home_dir = dirs::home_dir();
 
+                if term.stderr_is_tty && term.stdout_is_tty {
+                    if args.verbose {
+                        eprintln!(
+                            "{:8} {:7}{:^15} {} {:<80} {}",
+                            "verifi.", "reviews", "downloads", "digest", "src-dir", "authors"
+                        );
+                    } else {
+                        eprintln!(
+                            "{:8} {:7}{:^15} {:<80} {}",
+                            "verific.", "reviews", "downloads", "src-dir", "authors"
+                        );
+                    }
+                }
                 repo.for_every_non_local_dependency_dir(|pkg_id, path| {
                     let pkg_name = pkg_id.name().as_str();
                     let pkg_version = pkg_id.version().to_string();
