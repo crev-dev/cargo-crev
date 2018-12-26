@@ -442,6 +442,11 @@ fn main() -> Result<()> {
 
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                     let result = db.verify_digest(&digest, &trust_set);
+
+                    if result == crev_lib::VerificationStatus::Verified && args.skip_verified {
+                        return Ok(());
+                    }
+
                     let pkg_review_count =
                         db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(pkg_name), None);
                     let pkg_version_review_count = db.get_package_review_count(
@@ -464,6 +469,10 @@ fn main() -> Result<()> {
                         .iter()
                         .filter(|o| known_owners.contains(o.as_str()))
                         .count();
+
+                    if known_owners_count > 0 && args.skip_known_owners {
+                        return Ok(());
+                    }
 
                     if args.verbose {
                         print!(" {:43}", digest);

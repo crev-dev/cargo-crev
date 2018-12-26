@@ -59,6 +59,7 @@ impl TrustOrDistrust {
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
+#[derive(PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
     Verified,
     Unknown,

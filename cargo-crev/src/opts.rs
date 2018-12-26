@@ -60,8 +60,15 @@ impl From<TrustParams> for crev_lib::trustdb::TrustDistanceParams {
 pub struct VerifyDeps {
     #[structopt(long = "verbose", short = "v")]
     pub verbose: bool,
+
     #[structopt(flatten)]
     pub trust_params: TrustParams,
+
+    #[structopt(long = "skip-verified")]
+    pub skip_verified: bool,
+
+    #[structopt(long = "skip-known-owners")]
+    pub skip_known_owners: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
