@@ -14,10 +14,9 @@ use default::default;
 use semver;
 use std::{
     collections::HashSet,
-    env,
+    env, fmt,
     path::{Path, PathBuf},
     process,
-    fmt,
 };
 use structopt::StructOpt;
 
@@ -243,7 +242,7 @@ fn read_known_owners() -> Result<HashSet<String>> {
     Ok(crev_common::read_file_to_string(&path)?
         .lines()
         .map(|s| s.trim())
-        .filter(|s| !s.starts_with("#"))
+        .filter(|s| !s.starts_with('#'))
         .map(|s| s.to_string())
         .collect())
 }
@@ -252,7 +251,7 @@ fn edit_known_owners() -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
     if !path.exists() {
-        crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_header.txt"))?;
+        crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_defaults.txt"))?;
         local.proof_dir_git_add_path(&PathBuf::from(KNOWN_CARGO_OWNERS_FILE))?;
     }
     crev_lib::util::edit_file(&path)?;

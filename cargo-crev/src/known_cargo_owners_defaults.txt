@@ -10,3 +10,25 @@
 # published by their real owners. This feature is only
 # meant to help identify crates that should be reviewed
 # and verified first, and might be removed in the future.
+
+
+alexcrichton
+BurntSushi
+cramertj
+dtolnay
+fitzgen
+Geal
+huonw
+japaric
+kbknapp
+killercup
+nikomatsakis
+nox
+pnkfelix
+sfackler
+withoutboats
+
+github:rust-lang:libs
+github:rust-lang-nursery:log-owners
+github:rust-random:maintainers
+github:rust-lang-nursery:libs
