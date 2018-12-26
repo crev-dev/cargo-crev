@@ -235,6 +235,16 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
 
 const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
 
+fn ensure_known_owners_exists(local: &crev_lib::Local) -> Result<()> {
+    let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
+    if !path.exists() {
+        crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_defaults.txt"))?;
+        local.proof_dir_git_add_path(&PathBuf::from(KNOWN_CARGO_OWNERS_FILE))?;
+    }
+
+    Ok(())
+}
+
 fn read_known_owners() -> Result<HashSet<String>> {
     let local = Local::auto_create_or_open()?;
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
@@ -250,10 +260,7 @@ fn read_known_owners() -> Result<HashSet<String>> {
 fn edit_known_owners() -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
-    if !path.exists() {
-        crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_defaults.txt"))?;
-        local.proof_dir_git_add_path(&PathBuf::from(KNOWN_CARGO_OWNERS_FILE))?;
-    }
+    ensure_known_owners_exists(&local)?;
     crev_lib::util::edit_file(&path)?;
     Ok(())
 }
@@ -390,6 +397,8 @@ fn main() -> Result<()> {
                 if res.is_err() {
                     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
                 }
+                let local = crev_lib::Local::auto_open()?;
+                let _ = ensure_known_owners_exists(&local);
                 res?;
             }
         },
