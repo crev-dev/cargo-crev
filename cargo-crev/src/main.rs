@@ -430,7 +430,7 @@ fn main() -> Result<()> {
                         eprint!("{:43}", "digest");
                     }
                     eprint!(
-                        " {:8} {:8} {:^11} {:6}",
+                        " {:8} {:8} {:^13} {:6}",
                         "status", "reviews", "downloads", "owners"
                     );
                     eprintln!(" {:<18} {:<15}", "crate", "version");
@@ -470,7 +470,7 @@ fn main() -> Result<()> {
                     }
                     term.stdout(format_args!(" {:8}", result), &result)?;
                     print!(
-                        " {:2} {:2} {:>7} {:>8}",
+                        " {:2} {:2} {:>8} {:>9}",
                         pkg_version_review_count,
                         pkg_review_count,
                         version_downloads,
