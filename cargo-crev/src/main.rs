@@ -17,8 +17,11 @@ use std::{
     env,
     path::{Path, PathBuf},
     process,
+    fmt,
 };
 use structopt::StructOpt;
+
+use ::term::color;
 
 mod crates_io;
 mod opts;
@@ -36,6 +39,25 @@ struct Repo {
 const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
 const GOTO_CRATE_NAME: &str = "CARGO_CREV_GOTO_ORIGINAL_NAME";
 const GOTO_CRATE_VERSION: &str = "CARGO_CREV_GOTO_ORIGINAL_VERSION";
+
+#[derive(Debug)]
+struct KnownOwnersColored(usize);
+
+impl fmt::Display for KnownOwnersColored {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+impl crev_lib::Colored for KnownOwnersColored {
+    fn color(&self) -> Option<color::Color> {
+        if self.0 > 0 {
+            Some(color::GREEN)
+        } else {
+            None
+        }
+    }
+}
 
 impl Repo {
     fn auto_open_cwd() -> Result<Self> {
@@ -440,14 +462,15 @@ fn main() -> Result<()> {
                     }
                     term.stdout(format_args!(" {:8}", result), &result)?;
                     print!(
-                        " {:2} {:2} {:>7} {:>8} {}/{}",
+                        " {:2} {:2} {:>7} {:>8}",
                         pkg_version_review_count,
                         pkg_review_count,
                         version_downloads,
                         total_downloads,
-                        known_owners_count,
-                        total_owners_count,
                     );
+                    let colored_count = KnownOwnersColored(known_owners_count);
+                    term.stdout(format_args!(" {}", &colored_count), &colored_count)?;
+                    print!("/{}", total_owners_count);
                     println!(" {:<20} {:<15}", pkg_name, pkg_version);
 
                     Ok(())

@@ -65,6 +65,9 @@ pub enum VerificationStatus {
     Flagged,
 }
 
+/// Trait for stuff that has a coresponding color somewhere in the "UI"
+//
+// TODO: This has to find some better place than here.
 pub trait Colored {
     fn color(&self) -> Option<term::color::Color>;
 }
