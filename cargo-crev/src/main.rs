@@ -469,21 +469,25 @@ fn main() -> Result<()> {
                     let (version_downloads, total_downloads) = cratesio
                         .get_downloads_count(&pkg_name, &pkg_version)
                         .map(|(a, b)| (a.to_string(), b.to_string()))
-                        .unwrap_or_else(|e| {
-                            eprintln!("Error: {}", e);
+                        .unwrap_or_else(|_e| {
                             ("err".into(), "err".into())
                         });
 
-                    let owners = cratesio.get_owners(&pkg_name)?;
-                    let total_owners_count = owners.len();
-                    let known_owners_count = owners
-                        .iter()
-                        .filter(|o| known_owners.contains(o.as_str()))
-                        .count();
+                    let owners = cratesio.get_owners(&pkg_name).ok();
+                    let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
+                        let total_owners_count = owners.len();
+                        let known_owners_count = owners
+                            .iter()
+                            .filter(|o| known_owners.contains(o.as_str()))
+                            .count();
 
-                    if known_owners_count > 0 && args.skip_known_owners {
-                        return Ok(());
-                    }
+                        if known_owners_count > 0 && args.skip_known_owners {
+                            return Ok(());
+                        }
+                        (Some(known_owners_count), Some(total_owners_count))
+                    } else {
+                        (None, None)
+                    };
 
                     if args.verbose {
                         print!("{:43} ", digest);
@@ -496,9 +500,9 @@ fn main() -> Result<()> {
                         version_downloads,
                         total_downloads,
                     );
-                    let colored_count = KnownOwnersColored(known_owners_count);
-                    term.stdout(format_args!(" {}", &colored_count), &colored_count)?;
-                    print!("/{}", total_owners_count);
+                    let colored_count_color = KnownOwnersColored(known_owners_count.unwrap_or(0));
+                    term.stdout(format_args!(" {}", &known_owners_count.map(|c| c.to_string()).unwrap_or_else(|| "?".into())), &colored_count_color)?;
+                    print!("/{}", total_owners_count.map(|c| c.to_string()).unwrap_or_else(|| "?".into()));
                     println!(" {:<20} {:<15}", pkg_name, pkg_version);
 
                     Ok(())
