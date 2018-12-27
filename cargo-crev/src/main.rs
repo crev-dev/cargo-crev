@@ -320,7 +320,11 @@ fn review_crate(
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
     let passphrase = crev_common::read_passphrase()?;
-    let id = local.read_current_unlocked_id(&passphrase)?;
+
+    let id = local.read_current_unlocked_id(&passphrase).unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
+    });
 
     let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())

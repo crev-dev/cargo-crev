@@ -142,13 +142,15 @@ impl LockedId {
                 .opt_out_of_secret_key(true);
 
             let pwhash = hasher.with_password(passphrase).hash_raw()?;
-
             let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
-
-            let sec_key = siv.open(&seal_nonce, &[], &sealed_secret_key)?;
+            let sec_key = match siv.open(&seal_nonce, &[], &sealed_secret_key) {
+                Ok(k) => k,
+                Err(_) => {
+                    return Err(format_err!("incorrect password"));
+                }
+            };
 
             let res = OwnId::new(url.to_owned(), sec_key)?;
-
             if public_key != &res.keypair.public.to_bytes() {
                 bail!("PubKey mismatch");
             }

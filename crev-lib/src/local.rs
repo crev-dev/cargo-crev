@@ -439,7 +439,10 @@ impl Local {
             }
         }
 
-        let own_id = self.read_current_unlocked_id(&passphrase)?;
+        let own_id = self.read_current_unlocked_id(&passphrase).unwrap_or_else(|e| {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        });
 
         let trust = own_id.create_trust_proof(
             pub_ids,
