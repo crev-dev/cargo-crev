@@ -238,6 +238,10 @@ pub enum Command {
     #[structopt(name = "push")]
     Push,
 
+    /// Commit and Push local changes to the public proof repository (alias to `git commit -a && git push HEAD`)
+    #[structopt(name = "publish")]
+    Publish,
+
     /// Pull changes from the public proof repository (alias to `git pull`)
     #[structopt(name = "pull")]
     Pull,
