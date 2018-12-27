@@ -438,10 +438,10 @@ fn main() -> Result<()> {
 
                 if term.stderr_is_tty && term.stdout_is_tty {
                     if args.verbose {
-                        eprint!("{:43}", "digest");
+                        eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        " {:8} {:8} {:^13} {:6}",
+                        "{:8} {:8} {:^13} {:6}",
                         "status", "reviews", "downloads", "owners"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
@@ -486,9 +486,9 @@ fn main() -> Result<()> {
                     }
 
                     if args.verbose {
-                        print!("{:43}", digest);
+                        print!("{:43} ", digest);
                     }
-                    term.stdout(format_args!(" {:8}", result), &result)?;
+                    term.stdout(format_args!("{:8}", result), &result)?;
                     print!(
                         " {:2} {:2} {:>8} {:>9}",
                         pkg_version_review_count,
