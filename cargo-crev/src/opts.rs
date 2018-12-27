@@ -249,6 +249,10 @@ pub enum Command {
     /// Start a shell in source directory of a crate under review
     #[structopt(name = "goto")]
     Goto(ReviewOrGoto),
+
+    /// Clean a crate source code (eg. after review)
+    #[structopt(name = "clean")]
+    Clean(ReviewOrGoto),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

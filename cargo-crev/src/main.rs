@@ -193,11 +193,17 @@ impl Repo {
     }
 }
 
-fn cargo_ignore_list() -> HashSet<PathBuf> {
+fn cargo_full_ignore_list() -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list.insert(PathBuf::from("Cargo.lock"));
     ignore_list.insert(PathBuf::from("target"));
+    ignore_list
+}
+
+fn cargo_min_ignore_list() -> HashSet<PathBuf> {
+    let mut ignore_list = HashSet::new();
+    ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list
 }
 
@@ -265,6 +271,19 @@ fn edit_known_owners() -> Result<()> {
     Ok(())
 }
 
+fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+    let (pkg_dir, _crate_version) = repo.find_crate(name, version, independent)?;
+
+    assert!(!pkg_dir.starts_with(std::env::current_dir()?));
+
+    if pkg_dir.is_dir() {
+        std::fs::remove_dir_all(&pkg_dir)?;
+    }
+    let (_pkg_dir, _crate_version) = repo.find_crate(name, version, independent)?;
+    Ok(())
+}
+
 /// Review a crate
 ///
 /// * `independent` - the crate might not actually be a dependency
@@ -283,6 +302,7 @@ fn review_crate(
     // to protect from creating a digest from a crate in unclean state
     // we move the old directory, download a fresh one and double
     // check if the digest was the same
+    // BUG: TODO: https://users.rust-lang.org/t/append-an-additional-extension/23586
     let reviewed_pkg_dir = pkg_dir.with_extension("crev.reviewed");
     if reviewed_pkg_dir.is_dir() {
         std::fs::remove_dir_all(&reviewed_pkg_dir)?;
@@ -292,9 +312,9 @@ fn review_crate(
     assert_eq!(pkg_dir, pkg_dir_second);
     assert_eq!(crate_version, crate_version_second);
 
-    let digest_clean = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_ignore_list())?;
+    let digest_clean = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_min_ignore_list())?;
     let digest_reviewed =
-        crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_ignore_list())?;
+        crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_full_ignore_list())?;
 
     if digest_clean != digest_reviewed {
         bail!(
@@ -333,6 +353,7 @@ fn review_crate(
     local.insert(&proof)?;
     Ok(())
 }
+
 const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 
 fn find_reviews(
@@ -357,7 +378,10 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
-fn handle_review_cmd(args: &opts::ReviewOrGoto, trust_or_distrust: TrustOrDistrust) -> Result<()> {
+fn handle_goto_mode_command<F>(args: &opts::ReviewOrGoto, f: F) -> Result<()>
+where
+    F: FnOnce(&str, Option<&str>, bool) -> Result<()>,
+{
     if let Some(org_dir) = env::var_os(GOTO_ORIGINAL_DIR_ENV) {
         if args.crate_.name.is_some() {
             bail!("In `crev goto` mode no arguments can be given");
@@ -368,7 +392,7 @@ fn handle_review_cmd(args: &opts::ReviewOrGoto, trust_or_distrust: TrustOrDistru
                 .map_err(|_| format_err!("crate versoin env var not found"))?;
 
             env::set_current_dir(org_dir)?;
-            review_crate(&name, Some(&version), true, trust_or_distrust)?;
+            f(&name, Some(&version), true)?;
         }
     } else {
         let name = args
@@ -377,15 +401,11 @@ fn handle_review_cmd(args: &opts::ReviewOrGoto, trust_or_distrust: TrustOrDistru
             .clone()
             .ok_or_else(|| format_err!("Crate name required"))?;
 
-        review_crate(
-            &name,
-            args.crate_.version.as_deref(),
-            args.independent,
-            trust_or_distrust,
-        )?;
+        f(&name, args.crate_.version.as_deref(), args.independent)?;
     }
     Ok(())
 }
+
 fn main() -> Result<()> {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
@@ -422,7 +442,7 @@ fn main() -> Result<()> {
 
                 let repo = Repo::auto_open_cwd()?;
                 repo.update_crates_io()?;
-                let ignore_list = cargo_ignore_list();
+                let ignore_list = cargo_min_ignore_list();
                 let cratesio = crates_io::Client::new(&local)?;
 
                 if term.stderr_is_tty && term.stdout_is_tty {
@@ -527,13 +547,20 @@ fn main() -> Result<()> {
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
         },
         opts::Command::Review(args) => {
-            handle_review_cmd(&args, TrustOrDistrust::Trust)?;
+            handle_goto_mode_command(&args, |c, v, i| {
+                review_crate(c, v, i, TrustOrDistrust::Trust)
+            })?;
         }
         opts::Command::Goto(args) => {
             goto_crate_src(&args.crate_, args.independent)?;
         }
         opts::Command::Flag(args) => {
-            handle_review_cmd(&args, TrustOrDistrust::Distrust)?;
+            handle_goto_mode_command(&args, |c, v, i| {
+                review_crate(c, v, i, TrustOrDistrust::Distrust)
+            })?;
+        }
+        opts::Command::Clean(args) => {
+            handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
         }
         opts::Command::Trust(args) => {
             let local = Local::auto_open()?;
