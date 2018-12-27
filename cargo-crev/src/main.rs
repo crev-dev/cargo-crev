@@ -486,7 +486,7 @@ fn main() -> Result<()> {
                     }
 
                     if args.verbose {
-                        print!(" {:43}", digest);
+                        print!("{:43}", digest);
                     }
                     term.stdout(format_args!(" {:8}", result), &result)?;
                     print!(
