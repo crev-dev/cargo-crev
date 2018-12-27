@@ -2,6 +2,7 @@
 extern crate structopt;
 
 use self::prelude::*;
+use ::term::color;
 use cargo::{
     core::dependency::Dependency,
     core::source::SourceMap,
@@ -12,6 +13,7 @@ use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
 use default::default;
 use semver;
+use serde::Deserialize;
 use std::{
     collections::HashSet,
     env, fmt,
@@ -19,8 +21,6 @@ use std::{
     process,
 };
 use structopt::StructOpt;
-
-use ::term::color;
 
 mod crates_io;
 mod opts;
@@ -48,6 +48,37 @@ const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
 /// Constant we use for `source` in the review proof
 const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 
+const VCS_INFO_JSON_FILE: &str = ".cargo_vcs_info.json";
+
+/// Data from `.cargo_vcs_info.json`
+#[derive(Debug, Clone, Deserialize)]
+struct VcsInfoJson {
+    git: VcsInfoJsonGit,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+enum VcsInfoJsonGit {
+    #[serde(rename = "sha1")]
+    Sha1(String),
+}
+
+impl VcsInfoJson {
+    fn read_from_crate_dir(pkg_dir: &Path) -> Result<Option<Self>> {
+        let path = pkg_dir.join(VCS_INFO_JSON_FILE);
+
+        if path.exists() {
+            let txt = crev_common::read_file_to_string(&path)?;
+            let info: VcsInfoJson = serde_json::from_str(&txt)?;
+            Ok(Some(info))
+        } else {
+            Ok(None)
+        }
+    }
+    fn get_git_revision(&self) -> Option<String> {
+        let VcsInfoJsonGit::Sha1(ref s) = self.git;
+        Some(s.to_string())
+    }
+}
 #[derive(Debug)]
 struct KnownOwnersColored(usize);
 
@@ -326,6 +357,8 @@ fn review_crate(
     }
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
+    let vcs = VcsInfoJson::read_from_crate_dir(&pkg_dir)?;
+
     let passphrase = crev_common::read_passphrase()?;
     let id = local.read_current_unlocked_id(&passphrase)?;
 
@@ -338,7 +371,9 @@ fn review_crate(
             version: crate_version.to_string(),
             digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
-            revision: "".into(),
+            revision: vcs
+                .and_then(|vcs| vcs.get_git_revision())
+                .unwrap_or("".into()),
             revision_type: proof::default_revision_type(),
         })
         .review(trust.to_review())
