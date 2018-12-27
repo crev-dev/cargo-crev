@@ -35,9 +35,18 @@ struct Repo {
     config: cargo::util::config::Config,
 }
 
+/// Name of ENV with original location `crev goto` was called from
 const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
-const GOTO_CRATE_NAME: &str = "CARGO_CREV_GOTO_ORIGINAL_NAME";
-const GOTO_CRATE_VERSION: &str = "CARGO_CREV_GOTO_ORIGINAL_VERSION";
+/// Name of ENV with name of the crate that we've `goto`ed to
+const GOTO_CRATE_NAME_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_NAME";
+/// Name of ENV with version of the crate that we've `goto`ed to
+const GOTO_CRATE_VERSION_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_VERSION";
+
+/// Name of file we store user-personalized
+const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
+
+/// Constant we use for `source` in the review proof
+const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 
 #[derive(Debug)]
 struct KnownOwnersColored(usize);
@@ -220,8 +229,8 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
     let status = process::Command::new(shell)
         .current_dir(pkg_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
-        .env(GOTO_CRATE_NAME, name)
-        .env(GOTO_CRATE_VERSION, &crate_version.to_string())
+        .env(GOTO_CRATE_NAME_ENV, name)
+        .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string())
         .status()?;
 
     if !status.success() {
@@ -230,8 +239,6 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
 
     Ok(())
 }
-
-const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
 
 fn ensure_known_owners_exists(local: &crev_lib::Local) -> Result<()> {
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
@@ -346,8 +353,6 @@ fn review_crate(
     Ok(())
 }
 
-const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
-
 fn find_reviews(
     crate_: &opts::CrateSelector,
     trust_params: &crev_lib::trustdb::TrustDistanceParams,
@@ -378,9 +383,9 @@ where
         if args.crate_.name.is_some() {
             bail!("In `crev goto` mode no arguments can be given");
         } else {
-            let name = env::var(GOTO_CRATE_NAME)
+            let name = env::var(GOTO_CRATE_NAME_ENV)
                 .map_err(|_| format_err!("crate name env var not found"))?;
-            let version = env::var(GOTO_CRATE_VERSION)
+            let version = env::var(GOTO_CRATE_VERSION_ENV)
                 .map_err(|_| format_err!("crate versoin env var not found"))?;
 
             env::set_current_dir(org_dir)?;
@@ -469,9 +474,7 @@ fn main() -> Result<()> {
                     let (version_downloads, total_downloads) = cratesio
                         .get_downloads_count(&pkg_name, &pkg_version)
                         .map(|(a, b)| (a.to_string(), b.to_string()))
-                        .unwrap_or_else(|_e| {
-                            ("err".into(), "err".into())
-                        });
+                        .unwrap_or_else(|_e| ("err".into(), "err".into()));
 
                     let owners = cratesio.get_owners(&pkg_name).ok();
                     let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
@@ -501,8 +504,21 @@ fn main() -> Result<()> {
                         total_downloads,
                     );
                     let colored_count_color = KnownOwnersColored(known_owners_count.unwrap_or(0));
-                    term.stdout(format_args!(" {}", &known_owners_count.map(|c| c.to_string()).unwrap_or_else(|| "?".into())), &colored_count_color)?;
-                    print!("/{}", total_owners_count.map(|c| c.to_string()).unwrap_or_else(|| "?".into()));
+                    term.stdout(
+                        format_args!(
+                            " {}",
+                            &known_owners_count
+                                .map(|c| c.to_string())
+                                .unwrap_or_else(|| "?".into())
+                        ),
+                        &colored_count_color,
+                    )?;
+                    print!(
+                        "/{}",
+                        total_owners_count
+                            .map(|c| c.to_string())
+                            .unwrap_or_else(|| "?".into())
+                    );
                     println!(" {:<20} {:<15}", pkg_name, pkg_version);
 
                     Ok(())
