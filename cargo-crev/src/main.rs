@@ -71,14 +71,6 @@ impl Repo {
         })
     }
 
-    fn update_crates_io(&self) -> Result<()> {
-        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let source_id = SourceId::crates_io(&self.config)?;
-        let mut source = map.load(&source_id)?;
-        source.update()?;
-        Ok(())
-    }
-
     fn for_every_non_local_dependency_dir(
         &self,
         mut f: impl FnMut(&PackageId, &Path) -> Result<()>,
@@ -441,7 +433,6 @@ fn main() -> Result<()> {
                 let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
 
                 let repo = Repo::auto_open_cwd()?;
-                repo.update_crates_io()?;
                 let ignore_list = cargo_min_ignore_list();
                 let cratesio = crates_io::Client::new(&local)?;
 
