@@ -444,7 +444,7 @@ fn main() -> Result<()> {
                         " {:8} {:8} {:^13} {:6}",
                         "status", "reviews", "downloads", "owners"
                     );
-                    eprintln!(" {:<18} {:<15}", "crate", "version");
+                    eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
                 let known_owners = read_known_owners().unwrap_or_else(|_| HashSet::new());
                 repo.for_every_non_local_dependency_dir(|pkg_id, path| {
