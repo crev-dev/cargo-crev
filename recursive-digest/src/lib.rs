@@ -51,7 +51,7 @@ pub enum DigestError {
     #[fail(display = "an entry that was supposed to be a file, contains sub-entries")]
     FileWithSubentriesError,
     #[fail(display = "file not supported: {}", _0)]
-    FileNotSupported(String)
+    FileNotSupported(String),
 }
 
 impl From<std::io::Error> for DigestError {
@@ -128,7 +128,9 @@ where
         } else if attr.file_type().is_symlink() {
             self.read_content_of_symlink(full_path, entry, hasher)
         } else {
-            Err(DigestError::FileNotSupported(full_path.to_string_lossy().to_string()))
+            Err(DigestError::FileNotSupported(
+                full_path.to_string_lossy().to_string(),
+            ))
         }
     }
 
@@ -235,7 +237,13 @@ pub fn get_recursive_digest_for_dir<
 ) -> Result<Vec<u8>, DigestError> {
     let mut hasher = RecursiveDigest::<Digest>::new(root_path.into(), None);
 
-    for entry in walkdir::WalkDir::new(root_path).into_iter() {
+    for entry in walkdir::WalkDir::new(root_path)
+        .into_iter()
+        .filter_entry(|entry| {
+            let path = strip_root_path_if_included(&root_path, entry.path());
+            !rel_path_ignore_list.contains(path)
+        })
+    {
         let entry = entry?;
         let path = strip_root_path_if_included(&root_path, entry.path());
         if !rel_path_ignore_list.contains(path) {
