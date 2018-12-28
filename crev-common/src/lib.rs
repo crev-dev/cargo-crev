@@ -1,6 +1,7 @@
 //! Bunch of code that is auxiliary and common for all `crev`
 
 pub mod blake2b256;
+pub mod fs;
 pub mod serde;
 
 pub use crate::blake2b256::Blake2b256;
@@ -13,7 +14,7 @@ use rpassword;
 use rprompt;
 use std::io::{Read, Write};
 use std::{
-    env, fs,
+    env,
     io::{self, BufRead},
     path::Path,
 };
@@ -48,7 +49,7 @@ pub fn read_file_to_digest_input(
     path: &Path,
     input: &mut impl blake2::digest::Input,
 ) -> io::Result<()> {
-    let file = fs::File::open(path)?;
+    let file = std::fs::File::open(path)?;
 
     let mut reader = io::BufReader::new(file);
 
@@ -106,7 +107,7 @@ pub fn read_new_passphrase() -> io::Result<String> {
 }
 
 pub fn read_file_to_string(path: &Path) -> io::Result<String> {
-    let mut file = fs::File::open(&path)?;
+    let mut file = std::fs::File::open(&path)?;
     let mut res = String::new();
     file.read_to_string(&mut res)?;
 
@@ -114,13 +115,13 @@ pub fn read_file_to_string(path: &Path) -> io::Result<String> {
 }
 
 pub fn store_str_to_file(path: &Path, s: &str) -> io::Result<()> {
-    fs::create_dir_all(path.parent().expect("Not a root path"))?;
+    std::fs::create_dir_all(path.parent().expect("Not a root path"))?;
     let tmp_path = path.with_extension("tmp");
-    let mut file = fs::File::create(&tmp_path)?;
+    let mut file = std::fs::File::create(&tmp_path)?;
     file.write_all(&s.as_bytes())?;
     file.flush()?;
     drop(file);
-    fs::rename(tmp_path, path)?;
+    std::fs::rename(tmp_path, path)?;
     Ok(())
 }
 
@@ -128,15 +129,15 @@ pub fn store_to_file_with<E, F>(path: &Path, f: F) -> io::Result<Result<(), E>>
 where
     F: Fn(&mut dyn io::Write) -> Result<(), E>,
 {
-    fs::create_dir_all(path.parent().expect("Not a root path"))?;
+    std::fs::create_dir_all(path.parent().expect("Not a root path"))?;
     let tmp_path = path.with_extension("tmp");
-    let mut file = fs::File::create(&tmp_path)?;
+    let mut file = std::fs::File::create(&tmp_path)?;
     if let Err(e) = f(&mut file) {
         return Ok(Err(e));
     }
     file.flush()?;
     file.sync_data()?;
     drop(file);
-    fs::rename(tmp_path, path)?;
+    std::fs::rename(tmp_path, path)?;
     Ok(Ok(()))
 }
