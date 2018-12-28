@@ -314,6 +314,23 @@ fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<(
     Ok(())
 }
 
+/// Move dir content from `from` dir to `to` dir
+fn move_dir_content(from: &Path, to: &Path) -> std::io::Result<()> {
+    use std::fs;
+
+    fs::create_dir_all(&to)?;
+
+    for entry in fs::read_dir(&from)? {
+        let entry = entry?;
+        let path = entry.path();
+        let path = path
+            .strip_prefix(&from)
+            .expect("Strip prefix should have worked");
+        fs::rename(from.join(&path), to.join(&path))?;
+    }
+
+    Ok(())
+}
 /// Review a crate
 ///
 /// * `independent` - the crate might not actually be a dependency
@@ -337,7 +354,12 @@ fn review_crate(
     if reviewed_pkg_dir.is_dir() {
         std::fs::remove_dir_all(&reviewed_pkg_dir)?;
     }
-    std::fs::rename(&pkg_dir, &reviewed_pkg_dir)?;
+
+    // to prevent user calling `crev review` from the source dir,
+    // having the cwd pulled from under them and confusing their
+    // shells, we move all the entries in a dir, instead of the whole
+    // dir. this is not a perfect solution, but better than nothing.
+    move_dir_content(&pkg_dir, &reviewed_pkg_dir)?;
     let (pkg_dir_second, crate_version_second) = repo.find_crate(name, version, independent)?;
     assert_eq!(pkg_dir, pkg_dir_second);
     assert_eq!(crate_version, crate_version_second);
