@@ -444,9 +444,7 @@ where
     Ok(())
 }
 
-fn main() -> Result<()> {
-    let opts = opts::Opts::from_args();
-    let opts::MainCommand::Crev(command) = opts.command;
+fn run_command(command: opts::Command) -> Result<()> {
     match command {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
@@ -674,4 +672,10 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn main() {
+    let opts = opts::Opts::from_args();
+    let opts::MainCommand::Crev(command) = opts.command;
+    run_command(command).unwrap_or_else(|e| eprintln!("Error: {}", e));
 }
