@@ -1,8 +1,8 @@
 use crate::ProofStore;
 use crate::{
     id::{self, LockedId},
+    prelude::*,
     util::{self, APP_INFO},
-    Result,
 };
 use app_dirs::{app_root, AppDataType};
 use crev_common;
@@ -45,117 +45,6 @@ impl UserConfig {
             .as_ref()
             .ok_or_else(|| format_err!("Current Id not set"))
     }
-}
-
-#[derive(PartialEq, Debug, Default)]
-pub struct GitUrlComponents {
-    pub domain: String,
-    pub username: String,
-    pub repo: String,
-    pub suffix: String,
-}
-
-pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
-    let mut split: Vec<_> = http_url.split('/').collect();
-
-    while let Some(&"") = split.last() {
-        split.pop();
-    }
-    if split.len() != 5 {
-        return None;
-    }
-    if split[0] != "https:" && split[0] != "http:" {
-        return None;
-    }
-    let domain = split[2];
-    let username = split[3];
-    let repo = split[4];
-    let suffix = if repo.ends_with(".git") { "" } else { ".git" };
-
-    Some(GitUrlComponents {
-        domain: domain.to_string(),
-        username: username.to_string(),
-        repo: repo.to_string(),
-        suffix: suffix.to_string(),
-    })
-}
-
-fn fetch_and_checkout_git_repo(repo: &git2::Repository) -> Result<()> {
-    repo.find_remote("origin")?.fetch(&["master"], None, None)?;
-    repo.set_head("FETCH_HEAD")?;
-    let mut opts = git2::build::CheckoutBuilder::new();
-    opts.force();
-    repo.checkout_head(Some(&mut opts))?;
-    Ok(())
-}
-
-#[test]
-fn parse_git_url_https_test() {
-    assert_eq!(
-        parse_git_url_https("https://github.com/dpc/trust"),
-        Some(GitUrlComponents {
-            domain: "github.com".to_string(),
-            username: "dpc".to_string(),
-            repo: "trust".to_string(),
-            suffix: ".git".to_string()
-        })
-    );
-    assert_eq!(
-        parse_git_url_https("https://gitlab.com/hackeraudit/web.git"),
-        Some(GitUrlComponents {
-            domain: "gitlab.com".to_string(),
-            username: "hackeraudit".to_string(),
-            repo: "web.git".to_string(),
-            suffix: "".to_string()
-        })
-    );
-    assert_eq!(
-        parse_git_url_https("https://gitlab.com/hackeraudit/web.git/"),
-        Some(GitUrlComponents {
-            domain: "gitlab.com".to_string(),
-            username: "hackeraudit".to_string(),
-            repo: "web.git".to_string(),
-            suffix: "".to_string()
-        })
-    );
-    assert_eq!(
-        parse_git_url_https("https://gitlab.com/hackeraudit/web.git/////////"),
-        Some(GitUrlComponents {
-            domain: "gitlab.com".to_string(),
-            username: "hackeraudit".to_string(),
-            repo: "web.git".to_string(),
-            suffix: "".to_string()
-        })
-    );
-}
-
-fn https_to_git_url(http_url: &str) -> Option<String> {
-    parse_git_url_https(http_url).map(|components| {
-        format!(
-            "git@{}:{}/{}{}",
-            components.domain, components.username, components.repo, components.suffix
-        )
-    })
-}
-
-#[test]
-fn https_to_git_url_test() {
-    assert_eq!(
-        https_to_git_url("https://github.com/dpc/trust"),
-        Some("git@github.com:dpc/trust.git".into())
-    );
-    assert_eq!(
-        https_to_git_url("https://gitlab.com/hackeraudit/web.git"),
-        Some("git@gitlab.com:hackeraudit/web.git".into())
-    );
-    assert_eq!(
-        https_to_git_url("https://gitlab.com/hackeraudit/web.git/"),
-        Some("git@gitlab.com:hackeraudit/web.git".into())
-    );
-    assert_eq!(
-        https_to_git_url("https://gitlab.com/hackeraudit/web.git/////////"),
-        Some("git@gitlab.com:hackeraudit/web.git".into())
-    );
 }
 
 /// Local config stored in `~/.config/crev`
@@ -332,7 +221,7 @@ impl Local {
         let push_url = if use_https_push {
             git_https_url.to_string()
         } else {
-            match https_to_git_url(git_https_url) {
+            match util::git::https_to_git_url(git_https_url) {
                 Some(git_url) => git_url,
                 None => {
                     eprintln!("Could not deduce `ssh` push url. Call:");
@@ -559,7 +448,7 @@ impl Local {
         if dir.exists() {
             eprintln!("Fetching {} to {}", url, dir.display());
             let repo = git2::Repository::open(dir)?;
-            fetch_and_checkout_git_repo(&repo)?
+            util::git::fetch_and_checkout_git_repo(&repo)?
         } else {
             eprintln!("Cloning {} to {}", url, dir.display());
             git2::Repository::clone(url, dir)?;

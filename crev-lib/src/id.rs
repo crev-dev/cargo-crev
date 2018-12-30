@@ -1,5 +1,7 @@
+use crate::prelude::*;
 use argonautica::{self, Hasher};
 use crev_common::serde::{as_base64, from_base64};
+use crev_data::id::{OwnId, PubId};
 use miscreant;
 use rand::{self, Rng};
 use serde_yaml;
@@ -8,9 +10,6 @@ use std::{
     io::{Read, Write},
     path::Path,
 };
-
-use crate::Result;
-use crev_data::id::{OwnId, PubId};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 

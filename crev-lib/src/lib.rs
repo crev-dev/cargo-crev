@@ -2,13 +2,12 @@
 extern crate serde_derive;
 extern crate term;
 
-use common_failures::prelude::*;
-
 #[macro_use]
 extern crate failure;
 
 pub mod id;
 pub mod local;
+pub(crate) mod prelude;
 pub mod proof;
 pub mod proofdb;
 pub mod repo;
@@ -16,6 +15,7 @@ pub mod staging;
 pub mod util;
 
 pub use self::local::Local;
+use crate::prelude::*;
 use crev_data::Digest;
 use crev_data::Id;
 use std::{

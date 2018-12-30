@@ -1,5 +1,6 @@
 use crate::ProofStore;
-use crate::{local::Local, util, Result};
+use crate::{local::Local, util};
+use crate::prelude::*;
 use crev_data::proof;
 use crev_data::Digest;
 use git2;
