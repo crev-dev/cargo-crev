@@ -1,6 +1,5 @@
 use super::*;
 
-use crate::trustdb::{self, ProofDB};
 use crev_data::proof::trust::TrustLevel;
 use crev_data::OwnId;
 
@@ -33,7 +32,7 @@ fn trustdb_distance() -> Result<()> {
     let d = OwnId::generate_for_git_url("https://d");
     let e = OwnId::generate_for_git_url("https://e");
 
-    let distance_params = trustdb::TrustDistanceParams {
+    let distance_params = TrustDistanceParams {
         high_trust_distance: 1,
         medium_trust_distance: 10,
         low_trust_distance: 100,

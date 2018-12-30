@@ -396,7 +396,7 @@ fn review_crate(
 
 fn find_reviews(
     crate_: &opts::CrateSelector,
-    trust_params: &crev_lib::trustdb::TrustDistanceParams,
+    trust_params: &crev_lib::TrustDistanceParams,
 ) -> Result<impl Iterator<Item = proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let (db, _trust_set) = local.load_db(&trust_params)?;

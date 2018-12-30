@@ -10,9 +10,9 @@ extern crate failure;
 pub mod id;
 pub mod local;
 pub mod proof;
+pub mod proofdb;
 pub mod repo;
 pub mod staging;
-pub mod trustdb;
 pub mod util;
 
 pub use self::local::Local;
@@ -24,6 +24,8 @@ use std::{
     fmt,
     path::{Path, PathBuf},
 };
+
+pub use crate::proofdb::{ProofDB, TrustDistanceParams};
 
 /// Trait representing a place that can keep proofs
 ///
@@ -96,7 +98,7 @@ impl fmt::Display for VerificationStatus {
 pub fn dir_or_git_repo_verify<H1, H2>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
-    db: &trustdb::ProofDB,
+    db: &ProofDB,
     trusted_set: &HashSet<Id, H2>,
 ) -> Result<crate::VerificationStatus>
 where
@@ -118,7 +120,7 @@ where
 pub fn dir_verify<H1, H2>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
-    db: &trustdb::ProofDB,
+    db: &ProofDB,
     trusted_set: &HashSet<Id, H2>,
 ) -> Result<crate::VerificationStatus>
 where

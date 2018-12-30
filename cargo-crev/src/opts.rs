@@ -45,9 +45,9 @@ pub struct TrustParams {
     pub low_cost: u64,
 }
 
-impl From<TrustParams> for crev_lib::trustdb::TrustDistanceParams {
+impl From<TrustParams> for crev_lib::TrustDistanceParams {
     fn from(params: TrustParams) -> Self {
-        crev_lib::trustdb::TrustDistanceParams {
+        crev_lib::TrustDistanceParams {
             max_distance: params.depth,
             high_trust_distance: params.high_cost,
             medium_trust_distance: params.medium_cost,
