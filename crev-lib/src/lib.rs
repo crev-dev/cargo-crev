@@ -113,7 +113,7 @@ where
         >(path, ignore_list)?)
     };
 
-    Ok(db.verify_digest(&digest, trusted_set))
+    Ok(db.verify_package_digest(&digest, trusted_set))
 }
 
 pub fn dir_verify<H1, H2>(
@@ -130,7 +130,7 @@ where
         crev_common::Blake2b256,
         H1,
     >(path, ignore_list)?);
-    Ok(db.verify_digest(&digest, trusted_set))
+    Ok(db.verify_package_digest(&digest, trusted_set))
 }
 
 pub fn get_dir_digest<H1>(path: &Path, ignore_list: &HashSet<PathBuf, H1>) -> Result<Digest>

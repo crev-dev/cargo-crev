@@ -379,7 +379,7 @@ fn review_crate(
             digest_type: proof::default_digest_type(),
             revision: vcs
                 .and_then(|vcs| vcs.get_git_revision())
-                .unwrap_or("".into()),
+                .unwrap_or_else(|| "".into()),
             revision_type: proof::default_revision_type(),
         })
         .review(trust.to_review())
@@ -500,7 +500,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                     let pkg_version = pkg_id.version().to_string();
 
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
-                    let result = db.verify_digest(&digest, &trust_set);
+                    let result = db.verify_package_digest(&digest, &trust_set);
 
                     if result == crev_lib::VerificationStatus::Verified && args.skip_verified {
                         return Ok(());

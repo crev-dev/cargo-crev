@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use crate::ProofStore;
 use crate::{local::Local, util};
-use crate::prelude::*;
 use crev_data::proof;
 use crev_data::Digest;
 use git2;
@@ -163,7 +163,7 @@ impl Repo {
         let (db, trusted_set) = local.load_db(&params)?;
         let ignore_list = HashSet::new();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        Ok(db.verify_digest(&digest, &trusted_set))
+        Ok(db.verify_package_digest(&digest, &trusted_set))
     }
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {

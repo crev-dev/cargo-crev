@@ -15,6 +15,7 @@ use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 ///
 /// This allows easily keeping track of a most recent version
 /// of `T`. Typically `T` is a *proof* of some kind.
+#[derive(Clone, Debug)]
 pub struct Timestamped<T> {
     pub date: chrono::DateTime<Utc>,
     value: T,
@@ -61,6 +62,47 @@ impl<'a, T: review::Common> From<&'a T> for TimestampedReview {
     }
 }
 
+/// Unique package review
+///
+/// Since package review can be overwritten, it's useful
+/// to refer to a review by an unique combination of
+///
+/// * author's ID
+/// * source
+/// * crate
+/// * version
+#[derive(Hash, Debug, Clone, PartialEq, Eq)]
+pub struct UniquePackageReview {
+    from: Id,
+    source: String,
+    name: String,
+    version: String,
+}
+
+type TimestampedSignature = Timestamped<String>;
+
+impl From<review::Package> for UniquePackageReview {
+    fn from(review: review::Package) -> Self {
+        Self {
+            from: review.from.id,
+            source: review.package.source,
+            name: review.package.name,
+            version: review.package.version,
+        }
+    }
+}
+
+impl<Tz> From<(&DateTime<Tz>, String)> for TimestampedSignature
+where
+    Tz: chrono::TimeZone,
+{
+    fn from(args: (&DateTime<Tz>, String)) -> Self {
+        Self {
+            date: args.0.with_timezone(&Utc),
+            value: args.1,
+        }
+    }
+}
 /// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effcttive trust set, etc.
@@ -71,9 +113,13 @@ impl<'a, T: review::Common> From<&'a T> for TimestampedReview {
 /// of some kind.
 pub struct ProofDB {
     trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>, // who -(trusts)-> whom
-    digest_to_reviews: HashMap<Vec<u8>, HashMap<Id, TimestampedReview>>, // what (digest) -(reviewed)-> by whom
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
+
+    package_review_signatures_by_package_digest:
+        HashMap<Vec<u8>, HashMap<UniquePackageReview, TimestampedSignature>>,
+    package_review_signatures_by_unique_package_review:
+        HashMap<UniquePackageReview, TimestampedSignature>,
 
     package_review_by_signature: HashMap<String, review::Package>,
     package_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
@@ -84,10 +130,11 @@ pub struct ProofDB {
 impl Default for ProofDB {
     fn default() -> Self {
         ProofDB {
-            trust_id_to_id: Default::default(),
-            url_by_id: Default::default(),
-            url_by_id_secondary: Default::default(),
-            digest_to_reviews: Default::default(),
+            trust_id_to_id: default(),
+            url_by_id: default(),
+            url_by_id_secondary: default(),
+            package_review_signatures_by_package_digest: default(),
+            package_review_signatures_by_unique_package_review: default(),
             package_review_by_signature: default(),
             package_reviews_by_source: default(),
             package_reviews_by_name: default(),
@@ -104,13 +151,8 @@ impl ProofDB {
     fn add_code_review(&mut self, review: &review::Code) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
-        for file in &review.files {
-            TimestampedReview::from(review).insert_into_or_update_to_more_recent(
-                self.digest_to_reviews
-                    .entry(file.digest.to_owned())
-                    .or_insert_with(HashMap::new)
-                    .entry(from.id.clone()),
-            )
+        for _file in &review.files {
+            // not implemented right now; just ignore
         }
     }
 
@@ -118,11 +160,21 @@ impl ProofDB {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
 
-        TimestampedReview::from(review).insert_into_or_update_to_more_recent(
-            self.digest_to_reviews
-                .entry(review.package.digest.to_owned())
-                .or_insert_with(HashMap::new)
-                .entry(from.id.clone()),
+        let unique = UniquePackageReview::from(review.clone());
+        let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
+
+        timestamp_signature
+            .clone()
+            .insert_into_or_update_to_more_recent(
+                self.package_review_signatures_by_package_digest
+                    .entry(review.package.digest.to_owned())
+                    .or_insert_with(|| default())
+                    .entry(unique.clone()),
+            );
+
+        timestamp_signature.insert_into_or_update_to_more_recent(
+            self.package_review_signatures_by_unique_package_review
+                .entry(unique),
         );
 
         self.package_review_by_signature
@@ -247,11 +299,23 @@ impl ProofDB {
             .collect()
     }
 
-    fn get_reviews_of(&self, digest: &Digest) -> Option<&HashMap<Id, TimestampedReview>> {
-        self.digest_to_reviews.get(digest.as_slice())
+    pub fn get_package_reviews_by_digest<'a>(
+        &'a self,
+        digest: &Digest,
+    ) -> impl Iterator<Item = review::Package> + 'a {
+        self.package_review_signatures_by_package_digest
+            .get(digest.as_slice())
+            .into_iter()
+            .flat_map(move |unique_reviews| {
+                unique_reviews
+                    .iter()
+                    .map(move |(_unique_review, signature)| {
+                        self.package_review_by_signature[&signature.value].clone()
+                    })
+            })
     }
 
-    pub fn verify_digest<H>(
+    pub fn verify_package_digest<H>(
         &self,
         digest: &Digest,
         trust_set: &HashSet<Id, H>,
@@ -259,28 +323,28 @@ impl ProofDB {
     where
         H: std::hash::BuildHasher + std::default::Default,
     {
-        if let Some(reviews) = self.get_reviews_of(digest) {
-            // Faster somehow maybe?
-            let reviews_by: HashSet<Id, H> = reviews.keys().map(|s| s.to_owned()).collect();
-            let matching_reviewers = trust_set.intersection(&reviews_by);
-            let mut trust_count = 0;
-            let mut distrust_count = 0;
-            for matching_reviewer in matching_reviewers {
-                if Rating::Neutral <= reviews[matching_reviewer].value.rating {
-                    trust_count += 1;
-                }
-                if reviews[matching_reviewer].value.rating < Rating::Neutral {
-                    distrust_count += 1;
-                }
+        let reviews: HashMap<Id, review::Package> = self
+            .get_package_reviews_by_digest(digest)
+            .map(|review| (review.from.id.clone(), review))
+            .collect();
+        // Faster somehow maybe?
+        let reviews_by: HashSet<Id, H> = reviews.keys().map(|s| s.to_owned()).collect();
+        let matching_reviewers = trust_set.intersection(&reviews_by);
+        let mut trust_count = 0;
+        let mut distrust_count = 0;
+        for matching_reviewer in matching_reviewers {
+            if Rating::Neutral <= reviews[matching_reviewer].review.rating {
+                trust_count += 1;
             }
+            if reviews[matching_reviewer].review.rating < Rating::Neutral {
+                distrust_count += 1;
+            }
+        }
 
-            if distrust_count > 0 {
-                VerificationStatus::Flagged
-            } else if trust_count > 0 {
-                VerificationStatus::Verified
-            } else {
-                VerificationStatus::Unknown
-            }
+        if distrust_count > 0 {
+            VerificationStatus::Flagged
+        } else if trust_count > 0 {
+            VerificationStatus::Verified
         } else {
             VerificationStatus::Unknown
         }

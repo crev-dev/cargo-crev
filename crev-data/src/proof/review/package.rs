@@ -33,10 +33,10 @@ pub struct Package {
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
     #[builder(default = "Default::default()")]
-    review: super::Review,
+    pub review: super::Review,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
-    comment: String,
+    pub comment: String,
 }
 
 impl Package {

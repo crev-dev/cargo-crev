@@ -115,6 +115,21 @@ impl OwnId {
             .build()
             .map_err(|e| format_err!("{}", e))?)
     }
+
+    pub fn create_package_review_proof(
+        &self,
+        package: proof::PackageInfo,
+        review: proof::review::Review,
+        comment: String,
+    ) -> Result<proof::review::Package> {
+        Ok(proof::review::PackageBuilder::default()
+            .from(self.id.clone())
+            .package(package)
+            .review(review)
+            .comment(comment)
+            .build()
+            .map_err(|e| format_err!("{}", e))?)
+    }
 }
 
 impl AsRef<Id> for OwnId {
