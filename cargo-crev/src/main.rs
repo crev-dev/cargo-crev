@@ -283,9 +283,13 @@ fn ensure_known_owners_exists(local: &crev_lib::Local) -> Result<()> {
 
 fn read_known_owners() -> Result<HashSet<String>> {
     let local = Local::auto_create_or_open()?;
-    let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
-
-    Ok(crev_common::read_file_to_string(&path)?
+    let content = if let Some(path) = local.get_proofs_dir_path_opt()? {
+        let path = path.join(KNOWN_CARGO_OWNERS_FILE);
+        crev_common::read_file_to_string(&path)?
+    } else {
+        include_str!("known_cargo_owners_defaults.txt").to_string()
+    };
+    Ok(content
         .lines()
         .map(|s| s.trim())
         .filter(|s| !s.starts_with('#'))
@@ -449,8 +453,7 @@ fn run_command(command: opts::Command) -> Result<()> {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
                 let local = Local::auto_create_or_open()?;
-                let res =
-                    local.generate_id(args.url, args.github_username, args.use_https_push);
+                let res = local.generate_id(args.url, args.github_username, args.use_https_push);
                 if res.is_err() {
                     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
                 }
@@ -462,7 +465,7 @@ fn run_command(command: opts::Command) -> Result<()> {
         opts::Command::Switch(cmd) => match cmd {
             opts::Switch::Id(args) => {
                 let local = Local::auto_open()?;
-               local.switch_id(&args.id)?
+                local.switch_id(&args.id)?
             }
         },
         opts::Command::Edit(cmd) => match cmd {
@@ -477,7 +480,7 @@ fn run_command(command: opts::Command) -> Result<()> {
         opts::Command::Verify(cmd) => match cmd {
             opts::Verify::Deps(args) => {
                 let mut term = term::Term::new();
-                let local = crev_lib::Local::auto_open()?;
+                let local = crev_lib::Local::auto_create_or_open()?;
                 let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
 
                 let repo = Repo::auto_open_cwd()?;
@@ -575,7 +578,6 @@ fn run_command(command: opts::Command) -> Result<()> {
                     local.show_current_id()?
                 }
                 opts::QueryId::Own => {
-
                     let local = Local::auto_open()?;
                     local.list_own_ids()?
                 }

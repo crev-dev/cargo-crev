@@ -10,6 +10,7 @@ use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
 use failure::ResultExt;
 use git2;
+use insideout::InsideOut;
 use resiter_dpc_tmp::*;
 use serde_yaml;
 use std::cell::RefCell;
@@ -41,9 +42,11 @@ impl Default for UserConfig {
 
 impl UserConfig {
     pub fn get_current_userid(&self) -> Result<&Id> {
-        self.current_id
-            .as_ref()
+        self.get_current_userid_opt()
             .ok_or_else(|| format_err!("Current Id not set"))
+    }
+    pub fn get_current_userid_opt(&self) -> Option<&Id> {
+        self.current_id.as_ref()
     }
 }
 
@@ -179,11 +182,9 @@ impl Local {
         Ok(util::store_str_to_file(&path, &config_str)?)
     }
 
-    pub fn get_current_userid(&self) -> Result<Id> {
+    pub fn get_current_userid(&self) -> Result<Option<Id>> {
         let config = self.load_user_config()?;
-        Ok(config
-            .current_id
-            .ok_or_else(|| format_err!("Current id not set"))?)
+        Ok(config.current_id)
     }
 
     pub fn read_locked_id(&self, id: &Id) -> Result<LockedId> {
@@ -191,14 +192,25 @@ impl Local {
         LockedId::read_from_yaml_file(&path)
     }
 
-    pub fn read_current_locked_id(&self) -> Result<LockedId> {
-        let current_id = self.get_current_userid()?;
-        self.read_locked_id(&current_id)
+    pub fn read_current_locked_id_opt(&self) -> Result<Option<LockedId>> {
+        self.get_current_userid()?
+            .map(|current_id| self.read_locked_id(&current_id))
+            .inside_out()
     }
 
+    pub fn read_current_locked_id(&self) -> Result<LockedId> {
+        self.read_current_locked_id_opt()?
+            .ok_or_else(|| format_err!("Current Id not set"))
+    }
+
+    pub fn read_current_unlocked_id_opt(&self, passphrase: &str) -> Result<Option<OwnId>> {
+        self.get_current_userid()?
+            .map(|current_id| self.read_unlocked_id(&current_id, passphrase))
+            .inside_out()
+    }
     pub fn read_current_unlocked_id(&self, passphrase: &str) -> Result<OwnId> {
-        let current_id = self.get_current_userid()?;
-        self.read_unlocked_id(&current_id, passphrase)
+        self.read_current_unlocked_id_opt(passphrase)?
+            .ok_or_else(|| format_err!("Current Id not set"))
     }
 
     pub fn read_unlocked_id(&self, id: &Id, passphrase: &str) -> Result<OwnId> {
@@ -273,14 +285,15 @@ impl Local {
         crate::proof::rel_store_path(&proof.content)
     }
 
-    fn get_cur_url(&self) -> Result<Url> {
+    fn get_cur_url(&self) -> Result<Option<Url>> {
         let url = self.cur_url.borrow().clone();
         Ok(if let Some(url) = url {
-            url
-        } else {
-            let locked_id = self.read_current_locked_id()?;
+            Some(url)
+        } else if let Some(locked_id) = self.read_current_locked_id_opt()? {
             *self.cur_url.borrow_mut() = Some(locked_id.url.clone());
-            locked_id.url
+            Some(locked_id.url)
+        } else {
+            None
         })
     }
 
@@ -294,11 +307,15 @@ impl Local {
     }
 
     // Path where the `proofs` are stored under `git` repository
-    pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
+    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
         Ok(self
-            .root_path
-            .join("proofs")
-            .join(self.get_cur_url()?.digest().to_string()))
+            .get_cur_url()?
+            .map(|url| self.root_path.join("proofs").join(url.digest().to_string())))
+    }
+
+    pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
+        self.get_proofs_dir_path_opt()?
+            .ok_or_else(|| format_err!("Current Id not set"))
     }
 
     pub fn build_trust_proof(
@@ -528,9 +545,13 @@ impl Local {
         let mut db = crate::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
-        let trusted_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
 
-        Ok((db, trusted_set))
+        let trust_set = if let Some(id) = user_config.get_current_userid_opt() {
+            db.calculate_trust_set(id, &params)
+        } else {
+            HashSet::new()
+        };
+        Ok((db, trust_set))
     }
 
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
@@ -544,9 +565,10 @@ impl Local {
     }
 
     pub fn show_current_id(&self) -> Result<()> {
-        let id = self.read_current_locked_id()?;
-        let id = id.to_pubid();
-        println!("{} {}", id.id, id.url.url);
+        if let Some(id) = self.read_current_locked_id_opt()? {
+            let id = id.to_pubid();
+            println!("{} {}", id.id, id.url.url);
+        }
         Ok(())
     }
 
@@ -628,11 +650,15 @@ impl ProofStore for Local {
     }
 
     fn proofs_iter(&self) -> Result<Box<Iterator<Item = proof::Proof>>> {
-        Ok(proofs_iter_for_path(self.get_proofs_dir_path()?))
+        Ok(Box::new(
+            self.get_proofs_dir_path_opt()?
+                .into_iter()
+                .flat_map(proofs_iter_for_path),
+        ))
     }
 }
 
-fn proofs_iter_for_path(path: PathBuf) -> Box<Iterator<Item = proof::Proof>> {
+fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     use std::ffi::OsStr;
     let file_iter = walkdir::WalkDir::new(path)
         .into_iter()
@@ -661,5 +687,5 @@ fn proofs_iter_for_path(path: PathBuf) -> Box<Iterator<Item = proof::Proof>> {
             eprintln!("Failed processing a proof: {}", e);
         });
 
-    Box::new(proofs_iter.oks())
+    proofs_iter.oks()
 }

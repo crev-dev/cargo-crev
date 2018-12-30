@@ -13,7 +13,7 @@ use std::{
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PassConfig {
     version: u32,
     variant: String,
@@ -25,7 +25,7 @@ pub struct PassConfig {
 }
 
 /// Serialized, stored on disk
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LockedId {
     version: i64,
     #[serde(flatten)]

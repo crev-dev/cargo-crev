@@ -33,6 +33,7 @@ resiter-dpc-tmp = "0.3"
 rprompt = "1"
 default = "0.1"
 term = "0.5.1"
+insideout = "0.2"
 
 [dependencies.argonautica]
 features = ["serde"]
