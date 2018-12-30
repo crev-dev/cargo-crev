@@ -11,6 +11,10 @@ use default::default;
 use std::collections::BTreeMap;
 use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
 
+/// A `T` with a timestamp
+///
+/// This allows easily keeping track of a most recent version
+/// of `T`. Typically `T` is a *proof* of some kind.
 pub struct Timestamped<T> {
     pub date: chrono::DateTime<Utc>,
     value: T,
@@ -60,7 +64,12 @@ impl<'a, T: review::Common> From<&'a T> for TimestampedReview {
 /// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effcttive trust set, etc.
-pub struct TrustDB {
+///
+/// Right now, for every invocation of crev, we just load it up with
+/// all known proofs, and then query. If it ever becomes too slow,
+/// all the logic here will have to be moved to a real embedded db
+/// of some kind.
+pub struct ProofDB {
     trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>, // who -(trusts)-> whom
     digest_to_reviews: HashMap<Vec<u8>, HashMap<Id, TimestampedReview>>, // what (digest) -(reviewed)-> by whom
     url_by_id: HashMap<Id, TimestampedUrl>,
@@ -72,9 +81,9 @@ pub struct TrustDB {
     package_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
 }
 
-impl Default for TrustDB {
+impl Default for ProofDB {
     fn default() -> Self {
-        Self {
+        ProofDB {
             trust_id_to_id: Default::default(),
             url_by_id: Default::default(),
             url_by_id_secondary: Default::default(),
@@ -87,7 +96,7 @@ impl Default for TrustDB {
     }
 }
 
-impl TrustDB {
+impl ProofDB {
     pub fn new() -> Self {
         default()
     }
@@ -166,7 +175,7 @@ impl TrustDB {
             (None, Some(_)) => panic!("Wrong usage"),
         }
     }
-    
+
     pub fn get_package_reviews_for_package(
         &self,
         source: &str,

@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::trustdb::{self, TrustDB};
+use crate::trustdb::{self, ProofDB};
 use crev_data::proof::trust::TrustLevel;
 use crev_data::OwnId;
 
@@ -53,7 +53,7 @@ fn trustdb_distance() -> Result<()> {
         .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
         .sign_by(&d)?;
 
-    let mut trustdb = TrustDB::new();
+    let mut trustdb = ProofDB::new();
 
     trustdb.import_from_iter(vec![a_to_b, b_to_c, c_to_d, d_to_e].into_iter());
 

@@ -96,7 +96,7 @@ impl fmt::Display for VerificationStatus {
 pub fn dir_or_git_repo_verify<H1, H2>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
-    db: &trustdb::TrustDB,
+    db: &trustdb::ProofDB,
     trusted_set: &HashSet<Id, H2>,
 ) -> Result<crate::VerificationStatus>
 where
@@ -118,7 +118,7 @@ where
 pub fn dir_verify<H1, H2>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
-    db: &trustdb::TrustDB,
+    db: &trustdb::ProofDB,
     trusted_set: &HashSet<Id, H2>,
 ) -> Result<crate::VerificationStatus>
 where

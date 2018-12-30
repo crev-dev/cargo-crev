@@ -421,7 +421,7 @@ impl Local {
             bail!("No ids given.");
         }
 
-        let mut trustdb = trustdb::TrustDB::new();
+        let mut trustdb = trustdb::ProofDB::new();
         trustdb.import_from_iter(self.proofs_iter()?);
         trustdb.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let mut pub_ids = vec![];
@@ -465,7 +465,7 @@ impl Local {
 
     pub fn fetch_trusted(&self, trust_params: trustdb::TrustDistanceParams) -> Result<()> {
         let mut already_fetched = HashSet::new();
-        let mut db = trustdb::TrustDB::new();
+        let mut db = trustdb::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
@@ -504,7 +504,7 @@ impl Local {
 
     fn fetch_all_ids_recursively(&self, mut already_fetched_urls: HashSet<String>) -> Result<()> {
         let mut already_fetched = HashSet::new();
-        let mut db = trustdb::TrustDB::new();
+        let mut db = trustdb::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
@@ -633,9 +633,9 @@ impl Local {
     pub fn load_db(
         &self,
         params: &trustdb::TrustDistanceParams,
-    ) -> Result<(trustdb::TrustDB, HashSet<Id>)> {
+    ) -> Result<(trustdb::ProofDB, HashSet<Id>)> {
         let user_config = self.load_user_config()?;
-        let mut db = trustdb::TrustDB::new();
+        let mut db = trustdb::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let trusted_set = db.calculate_trust_set(user_config.get_current_userid()?, &params);
