@@ -159,6 +159,8 @@ fn https_to_git_url_test() {
 }
 
 /// Local config stored in `~/.config/crev`
+///
+/// This managed IDs, local proof repository, etc.
 pub struct Local {
     root_path: PathBuf,
     cache_path: PathBuf,
@@ -649,6 +651,67 @@ impl Local {
 
         index.add_path(rel_path)?;
         index.write()?;
+        Ok(())
+    }
+
+    pub fn show_current_id(&self) -> Result<()> {
+        let id = self.read_current_locked_id()?;
+        let id = id.to_pubid();
+        println!("{} {}", id.id, id.url.url);
+        Ok(())
+    }
+
+    pub fn generate_id(
+        &self,
+        url: Option<String>,
+        github_username: Option<String>,
+        use_https_push: bool,
+    ) -> Result<()> {
+        let url = match (url, github_username) {
+            (Some(url), None) => url,
+            (None, Some(username)) => format!("https://github.com/{}/crev-proofs", username),
+            (Some(_), Some(_)) => bail!("Can't provide both username and url"),
+            (None, None) => bail!("Must provide github username or url"),
+        };
+
+        if !url.starts_with("https://") {
+            bail!("URL must start with 'https://");
+        }
+
+        self.clone_proof_dir_from_git(&url, use_https_push)?;
+
+        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
+        eprintln!("CrevID will be protected by a passphrase.");
+        eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
+        let passphrase = crev_common::read_new_passphrase()?;
+        let locked = id::LockedId::from_own_id(&id, &passphrase)?;
+
+        self.save_locked_id(&locked)?;
+        self.save_current_id(id.as_ref())?;
+
+        eprintln!("");
+        eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
+        eprintln!("Make sure to back it up on another device, to prevent loosing it.");
+
+        eprintln!("");
+        println!("{}", locked);
+
+        self.init_readme_using_this_repo_file()?;
+
+        Ok(())
+    }
+
+    pub fn switch_id(&self, id_str: &str) -> Result<()> {
+        let id: Id = Id::crevid_from_str(id_str)?;
+        self.save_current_id(&id)?;
+
+        Ok(())
+    }
+
+    pub fn list_own_ids(&self) -> Result<()> {
+        for id in self.list_ids()? {
+            println!("{} {}", id.id, id.url.url);
+        }
         Ok(())
     }
 }

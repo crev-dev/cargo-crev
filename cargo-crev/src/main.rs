@@ -448,8 +448,9 @@ fn run_command(command: opts::Command) -> Result<()> {
     match command {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
+                let local = Local::auto_create_or_open()?;
                 let res =
-                    crev_lib::generate_id(args.url, args.github_username, args.use_https_push);
+                    local.generate_id(args.url, args.github_username, args.use_https_push);
                 if res.is_err() {
                     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
                 }
@@ -459,7 +460,10 @@ fn run_command(command: opts::Command) -> Result<()> {
             }
         },
         opts::Command::Switch(cmd) => match cmd {
-            opts::Switch::Id(args) => crev_lib::switch_id(&args.id)?,
+            opts::Switch::Id(args) => {
+                let local = Local::auto_open()?;
+               local.switch_id(&args.id)?
+            }
         },
         opts::Command::Edit(cmd) => match cmd {
             opts::Edit::Readme => {
@@ -566,8 +570,15 @@ fn run_command(command: opts::Command) -> Result<()> {
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
-                opts::QueryId::Current => crev_lib::show_current_id()?,
-                opts::QueryId::Own => crev_lib::list_own_ids()?,
+                opts::QueryId::Current => {
+                    let local = Local::auto_open()?;
+                    local.show_current_id()?
+                }
+                opts::QueryId::Own => {
+
+                    let local = Local::auto_open()?;
+                    local.list_own_ids()?
+                }
                 // TODO: move to crev-lib
                 opts::QueryId::Trusted { trust_params } => {
                     let local = crev_lib::Local::auto_open()?;
