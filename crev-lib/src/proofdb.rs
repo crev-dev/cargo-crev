@@ -116,15 +116,16 @@ pub struct ProofDB {
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
+    package_review_by_signature: HashMap<String, review::Package>,
+
     package_review_signatures_by_package_digest:
         HashMap<Vec<u8>, HashMap<UniquePackageReview, TimestampedSignature>>,
     package_review_signatures_by_unique_package_review:
         HashMap<UniquePackageReview, TimestampedSignature>,
 
-    package_review_by_signature: HashMap<String, review::Package>,
-    package_reviews_by_source: BTreeMap<String, BTreeSet<String>>,
-    package_reviews_by_name: BTreeMap<(String, String), BTreeSet<String>>,
-    package_reviews_by_version: BTreeMap<(String, String, String), BTreeSet<String>>,
+    package_reviews_by_source: BTreeMap<String, HashSet<UniquePackageReview>>,
+    package_reviews_by_name: BTreeMap<(String, String), HashSet<UniquePackageReview>>,
+    package_reviews_by_version: BTreeMap<(String, String, String), HashSet<UniquePackageReview>>,
 }
 
 impl Default for ProofDB {
@@ -160,6 +161,10 @@ impl ProofDB {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
 
+        self.package_review_by_signature
+            .entry(signature.to_owned())
+            .or_insert_with(|| review.to_owned());
+
         let unique = UniquePackageReview::from(review.clone());
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
 
@@ -174,24 +179,20 @@ impl ProofDB {
 
         timestamp_signature.insert_into_or_update_to_more_recent(
             self.package_review_signatures_by_unique_package_review
-                .entry(unique),
+                .entry(unique.clone()),
         );
-
-        self.package_review_by_signature
-            .entry(signature.to_owned())
-            .or_insert_with(|| review.to_owned());
 
         self.package_reviews_by_source
             .entry(review.package.source.to_owned())
             .or_default()
-            .insert(signature.to_owned());
+            .insert(unique.clone());
         self.package_reviews_by_name
             .entry((
                 review.package.source.to_owned(),
                 review.package.name.to_owned(),
             ))
             .or_default()
-            .insert(signature.to_owned());
+            .insert(unique.clone());
         self.package_reviews_by_version
             .entry((
                 review.package.source.to_owned(),
@@ -199,7 +200,7 @@ impl ProofDB {
                 review.package.version.to_owned(),
             ))
             .or_default()
-            .insert(signature.to_owned());
+            .insert(unique);
     }
 
     pub fn get_package_review_count(
@@ -208,24 +209,8 @@ impl ProofDB {
         name: Option<&str>,
         version: Option<&str>,
     ) -> usize {
-        match (name, version) {
-            (Some(name), Some(version)) => self
-                .package_reviews_by_version
-                .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
-                .map(|set| set.len())
-                .unwrap_or(0),
-            (Some(name), None) => self
-                .package_reviews_by_name
-                .get(&(source.to_owned(), name.to_owned()))
-                .map(|set| set.len())
-                .unwrap_or(0),
-            (None, None) => self
-                .package_reviews_by_source
-                .get(source)
-                .map(|set| set.len())
-                .unwrap_or(0),
-            (None, Some(_)) => panic!("Wrong usage"),
-        }
+        self.get_package_reviews_for_package(source, name, version)
+            .count()
     }
 
     pub fn get_package_reviews_for_package(
@@ -235,36 +220,29 @@ impl ProofDB {
         version: Option<&str>,
     ) -> impl Iterator<Item = proof::review::Package> {
         let mut proofs: Vec<_> = match (name, version) {
-            (Some(name), Some(version)) => self
-                .package_reviews_by_version
-                .get(&(source.to_owned(), name.to_owned(), version.to_owned()))
-                .map(|set| {
-                    set.iter()
-                        .map(|signature| self.package_review_by_signature[signature].clone())
-                        .collect()
-                })
-                .unwrap_or_else(|| vec![]),
+            (Some(name), Some(version)) => self.package_reviews_by_version.get(&(
+                source.to_owned(),
+                name.to_owned(),
+                version.to_owned(),
+            )),
 
             (Some(name), None) => self
                 .package_reviews_by_name
-                .get(&(source.to_owned(), name.to_owned()))
-                .map(|set| {
-                    set.iter()
-                        .map(|signature| self.package_review_by_signature[signature].clone())
-                        .collect()
-                })
-                .unwrap_or_else(|| vec![]),
-            (None, None) => self
-                .package_reviews_by_source
-                .get(source)
-                .map(|set| {
-                    set.iter()
-                        .map(|signature| self.package_review_by_signature[signature].clone())
-                        .collect()
-                })
-                .unwrap_or_else(|| vec![]),
+                .get(&(source.to_owned(), name.to_owned())),
+
+            (None, None) => self.package_reviews_by_source.get(source),
+
             (None, Some(_)) => panic!("Wrong usage"),
-        };
+        }
+        .into_iter()
+        .flat_map(|s| s)
+        .map(|unique_package_review| {
+            self.package_review_by_signature[&self
+                .package_review_signatures_by_unique_package_review[unique_package_review]
+                .value]
+                .clone()
+        })
+        .collect();
 
         proofs.sort_by(|a, b| a.date().cmp(&b.date()));
 

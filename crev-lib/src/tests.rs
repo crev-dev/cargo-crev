@@ -5,6 +5,12 @@ use crev_data::Digest;
 use crev_data::OwnId;
 use default::default;
 
+// Basic liftime of an `LockedId`:
+//
+// * generate
+// * lock with a passphrase
+// * unlock
+// * compare
 #[test]
 fn lock_and_unlock() -> Result<()> {
     let id = OwnId::generate_for_git_url("https://example.com/crev-proofs");
@@ -26,8 +32,10 @@ fn lock_and_unlock() -> Result<()> {
     Ok(())
 }
 
+// Exact distance of flooding the web of trust graph is configurable,
+// with the edges distance corresponding to the trust level.
 #[test]
-fn trustdb_distance() -> Result<()> {
+fn proofdb_distance() -> Result<()> {
     let a = OwnId::generate_for_git_url("https://a");
     let b = OwnId::generate_for_git_url("https://b");
     let c = OwnId::generate_for_git_url("https://c");
@@ -81,6 +89,10 @@ fn trustdb_distance() -> Result<()> {
     Ok(())
 }
 
+// A subsequent review of exactly same package version
+// is supposed to overwrite the previous one, and it
+// should be visible in all the user-facing stats, listings
+// and counts.
 #[test]
 fn overwritting_reviews() -> Result<()> {
     let a = OwnId::generate_for_git_url("https://a");
@@ -104,12 +116,15 @@ fn overwritting_reviews() -> Result<()> {
     #[allow(deprecated)]
     std::thread::sleep_ms(1);
     let proof2 = a
-        .create_package_review_proof(package, default(), "b".into())?
+        .create_package_review_proof(package.clone(), default(), "b".into())?
         .sign_by(&a)?;
 
-    {
+    for order in vec![
+        vec![proof1.clone(), proof2.clone()],
+        vec![proof2.clone(), proof1.clone()],
+    ] {
         let mut trustdb = ProofDB::new();
-        trustdb.import_from_iter(vec![proof1.clone(), proof2.clone()].into_iter());
+        trustdb.import_from_iter(order.into_iter());
         assert_eq!(
             trustdb
                 .get_package_reviews_by_digest(&Digest::from_vec(digest.clone()))
@@ -117,16 +132,27 @@ fn overwritting_reviews() -> Result<()> {
                 .collect::<Vec<_>>(),
             vec!["b".to_string()]
         );
-    }
-    {
-        let mut trustdb = ProofDB::new();
-        trustdb.import_from_iter(vec![proof2, proof1].into_iter());
         assert_eq!(
             trustdb
-                .get_package_reviews_by_digest(&Digest::from_vec(digest))
-                .map(|r| r.comment)
-                .collect::<Vec<_>>(),
-            vec!["b".to_string()]
+                .get_package_reviews_for_package(
+                    &package.source,
+                    Some(&package.name),
+                    Some(&package.version)
+                )
+                .count(),
+            1
+        );
+        assert_eq!(
+            trustdb
+                .get_package_reviews_for_package(&package.source, Some(&package.name), None)
+                .count(),
+            1
+        );
+        assert_eq!(
+            trustdb
+                .get_package_reviews_for_package(&package.source, None, None)
+                .count(),
+            1
         );
     }
 
