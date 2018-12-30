@@ -14,7 +14,6 @@ pub mod repo;
 pub mod staging;
 pub mod util;
 
-pub use self::local::Local;
 use crate::prelude::*;
 use crev_data::Digest;
 use crev_data::Id;
@@ -24,6 +23,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub use self::local::Local;
 pub use crate::proofdb::{ProofDB, TrustDistanceParams};
 
 /// Trait representing a place that can keep proofs
