@@ -469,10 +469,11 @@ impl TrustSet {
         distance: u64,
         effective_trust: TrustLevel,
     ) -> bool {
-        eprintln!(
-            "{} -> {} {} ({})",
-            referer, subject, distance, effective_trust
-        );
+        // TODO: turn into log or something
+        // eprintln!(
+        //     "{} -> {} {} ({})",
+        //     referer, subject, distance, effective_trust
+        // );
         use std::collections::hash_map::Entry;
 
         match self.trusted.entry(subject) {
