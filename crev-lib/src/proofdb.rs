@@ -361,7 +361,7 @@ impl ProofDB {
         }
     }
 
-    fn get_ids_trusted_by(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
+    fn get_trust_list_of_id(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
         if let Some(map) = self.trust_id_to_id.get(id) {
             Some(map.iter().map(|(id, trust)| (trust.value, id)))
         } else {
@@ -371,10 +371,30 @@ impl ProofDB {
         .flatten()
     }
 
+    pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> HashSet<Id> {
+        let mut distrusted = HashMap::new();
+
+        // We keep retrying the whole thing, with more and more
+        // distrusted Ids
+        loop {
+            let prev_distrusted_len = distrusted.len();
+            let trust_set = self.calculate_trust_set_internal(for_id, params, distrusted);
+            if trust_set.distrusted.len() <= prev_distrusted_len {
+                return trust_set.trusted.keys().map(|id| (*id).clone()).collect();
+            }
+            distrusted = trust_set.distrusted;
+        }
+    }
+
     /// Calculate the effective trust levels for IDs inside a WoT.
     ///
     /// This is one of the most important functions in `crev-lib`.
-    pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> HashSet<Id> {
+    fn calculate_trust_set_internal(
+        &self,
+        for_id: &Id,
+        params: &TrustDistanceParams,
+        distrusted: HashMap<Id, HashSet<Id>>,
+    ) -> TrustSet {
         #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
         struct Visit {
             distance: u64,
@@ -383,6 +403,7 @@ impl ProofDB {
 
         let mut pending = BTreeSet::new();
         let mut visited = TrustSet::default();
+        visited.distrusted = distrusted;
 
         pending.insert(Visit {
             distance: 0,
@@ -393,13 +414,26 @@ impl ProofDB {
         while let Some(current) = pending.iter().next().cloned() {
             pending.remove(&current);
 
-            for (level, candidate_id) in self.get_ids_trusted_by(&&current.id) {
+            for (level, candidate_id) in self.get_trust_list_of_id(&&current.id) {
+                if level == TrustLevel::Distrust {
+                    visited
+                        .distrusted
+                        .entry(candidate_id.clone())
+                        .or_default()
+                        .insert(current.id.clone());
+                    continue;
+                }
+
                 let candidate_distance_from_current =
                     if let Some(v) = params.distance_by_level(level) {
                         v
                     } else {
                         continue;
                     };
+
+                if visited.distrusted.contains_key(candidate_id) {
+                    continue;
+                }
                 let candidate_total_distance = current.distance + candidate_distance_from_current;
 
                 if candidate_total_distance > params.max_distance {
@@ -433,7 +467,7 @@ impl ProofDB {
             }
         }
 
-        visited.trusted.keys().map(|id| (*id).clone()).collect()
+        visited
     }
 
     pub fn lookup_url(&self, id: &Id) -> Option<&Url> {
@@ -455,6 +489,7 @@ struct TrustedIdDetails {
 #[derive(Default)]
 struct TrustSet {
     trusted: HashMap<Id, TrustedIdDetails>,
+    distrusted: HashMap<Id, HashSet<Id>>,
 }
 
 impl TrustSet {

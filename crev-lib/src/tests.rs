@@ -158,3 +158,62 @@ fn overwritting_reviews() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn proofdb_distrust() -> Result<()> {
+    let a = OwnId::generate_for_git_url("https://a");
+    let b = OwnId::generate_for_git_url("https://b");
+    let c = OwnId::generate_for_git_url("https://c");
+    let d = OwnId::generate_for_git_url("https://d");
+    let e = OwnId::generate_for_git_url("https://e");
+
+    let distance_params = TrustDistanceParams {
+        high_trust_distance: 1,
+        medium_trust_distance: 10,
+        low_trust_distance: 100,
+        max_distance: 10000,
+    };
+
+    let a_to_bc = a
+        .create_trust_proof(
+            vec![b.as_pubid().to_owned(), c.as_pubid().to_owned()],
+            TrustLevel::High,
+        )?
+        .sign_by(&a)?;
+    let b_to_d = b
+        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Low)?
+        .sign_by(&b)?;
+    let d_to_c = d
+        .create_trust_proof(vec![c.as_pubid().to_owned()], TrustLevel::Distrust)?
+        .sign_by(&d)?;
+    let c_to_e = c
+        .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
+        .sign_by(&c)?;
+
+    let mut trustdb = ProofDB::new();
+
+    trustdb.import_from_iter(vec![a_to_bc, b_to_d, d_to_c, c_to_e].into_iter());
+
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+
+    assert!(trust_set.contains(a.as_ref()));
+    assert!(trust_set.contains(b.as_ref()));
+    assert!(!trust_set.contains(c.as_ref()));
+    assert!(trust_set.contains(d.as_ref()));
+    assert!(!trust_set.contains(e.as_ref()));
+
+    let e_to_d = e
+        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Distrust)?
+        .sign_by(&e)?;
+
+    trustdb.import_from_iter(vec![e_to_d].into_iter());
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+
+    assert!(trust_set.contains(a.as_ref()));
+    assert!(trust_set.contains(b.as_ref()));
+    assert!(!trust_set.contains(c.as_ref()));
+    assert!(!trust_set.contains(d.as_ref()));
+    assert!(!trust_set.contains(e.as_ref()));
+
+    Ok(())
+}
