@@ -371,29 +371,27 @@ impl ProofDB {
         .flatten()
     }
 
-    // Oh god, please someone verify this :D
+    /// Calculate the effective trust levels for IDs inside a WoT.
+    ///
+    /// This is one of the most important functions in `crev-lib`.
     pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> HashSet<Id> {
         #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
         struct Visit {
             distance: u64,
             id: Id,
         }
+
         let mut pending = BTreeSet::new();
+        let mut visited = TrustSet::default();
+
         pending.insert(Visit {
             distance: 0,
             id: for_id.clone(),
         });
+        visited.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
-        let mut visited = HashMap::<&Id, _>::new();
-        visited.insert(&for_id, 0);
         while let Some(current) = pending.iter().next().cloned() {
             pending.remove(&current);
-
-            if let Some(visited_distance) = visited.get(&current.id) {
-                if *visited_distance < current.distance {
-                    continue;
-                }
-            }
 
             for (level, candidate_id) in self.get_ids_trusted_by(&&current.id) {
                 let candidate_distance_from_current =
@@ -403,20 +401,30 @@ impl ProofDB {
                         continue;
                     };
                 let candidate_total_distance = current.distance + candidate_distance_from_current;
+
                 if candidate_total_distance > params.max_distance {
                     continue;
                 }
 
-                if let Some(prev_candidate_distance) = visited.get(candidate_id).cloned() {
-                    if prev_candidate_distance > candidate_total_distance {
-                        visited.insert(candidate_id, candidate_total_distance);
-                        pending.insert(Visit {
-                            distance: candidate_total_distance,
-                            id: candidate_id.to_owned(),
-                        });
-                    }
-                } else {
-                    visited.insert(candidate_id, candidate_total_distance);
+                let candidate_effective_trust = std::cmp::min(
+                    level,
+                    visited
+                        .get_effective_trust_level(&current.id)
+                        .expect("Id should have been inserted to `visited` beforehand"),
+                );
+
+                if candidate_effective_trust < TrustLevel::None {
+                    // can this even happen?
+                    debug_assert!(false);
+                    continue;
+                }
+
+                if visited.record_trusted_id(
+                    candidate_id.clone(),
+                    current.id.clone(),
+                    candidate_total_distance,
+                    candidate_effective_trust,
+                ) {
                     pending.insert(Visit {
                         distance: candidate_total_distance,
                         id: candidate_id.to_owned(),
@@ -425,7 +433,7 @@ impl ProofDB {
             }
         }
 
-        visited.keys().map(|id| (*id).clone()).collect()
+        visited.trusted.keys().map(|id| (*id).clone()).collect()
     }
 
     pub fn lookup_url(&self, id: &Id) -> Option<&Url> {
@@ -433,6 +441,82 @@ impl ProofDB {
             .get(id)
             .or_else(|| self.url_by_id_secondary.get(id))
             .map(|url| &url.value)
+    }
+}
+
+/// Details of a one Id that is
+struct TrustedIdDetails {
+    distance: u64,
+    // effective, global trust from the root of the WoT
+    effective_trust: TrustLevel,
+    referers: HashMap<Id, TrustLevel>,
+}
+
+#[derive(Default)]
+struct TrustSet {
+    trusted: HashMap<Id, TrustedIdDetails>,
+}
+
+impl TrustSet {
+    /// Record that an Id is considered trusted
+    ///
+    /// Returns `true` if this actually added or changed the `subject` details,
+    /// which requires revising it's own downstream trusted Id details in the graph algorithm for it.
+    fn record_trusted_id(
+        &mut self,
+        subject: Id,
+        referer: Id,
+        distance: u64,
+        effective_trust: TrustLevel,
+    ) -> bool {
+        eprintln!(
+            "{} -> {} {} ({})",
+            referer, subject, distance, effective_trust
+        );
+        use std::collections::hash_map::Entry;
+
+        match self.trusted.entry(subject) {
+            Entry::Vacant(entry) => {
+                let mut referers = HashMap::default();
+                referers.insert(referer, effective_trust);
+                entry.insert(TrustedIdDetails {
+                    distance,
+                    effective_trust,
+                    referers,
+                });
+                true
+            }
+            Entry::Occupied(mut entry) => {
+                let mut changed = false;
+                let details = entry.get_mut();
+                if details.distance > distance {
+                    details.distance = distance;
+                    changed = true;
+                }
+                if details.effective_trust < effective_trust {
+                    details.effective_trust = effective_trust;
+                    changed = true;
+                }
+                match details.referers.entry(referer.clone()) {
+                    Entry::Vacant(entry) => {
+                        entry.insert(effective_trust);
+                        changed = true;
+                    }
+                    Entry::Occupied(mut entry) => {
+                        let level = entry.get_mut();
+                        if *level < effective_trust {
+                            *level = effective_trust;
+                            changed = true;
+                        }
+                    }
+                }
+                changed
+            }
+        }
+    }
+
+    fn get_effective_trust_level(&self, id: &Id) -> Option<TrustLevel> {
+        self.trusted.get(id).map(|details| details.effective_trust)
     }
 }
 

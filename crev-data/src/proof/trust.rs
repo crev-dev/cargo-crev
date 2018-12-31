@@ -20,11 +20,11 @@ fn cur_version() -> i64 {
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TrustLevel {
-    High,
-    Medium,
-    Low,
-    None,
     Distrust,
+    None,
+    Low,
+    Medium,
+    High,
 }
 
 impl Default for TrustLevel {
