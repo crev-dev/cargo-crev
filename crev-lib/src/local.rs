@@ -2,6 +2,7 @@ use crate::ProofStore;
 use crate::{
     id::{self, LockedId},
     prelude::*,
+    proofdb::TrustSet,
     util::{self, APP_INFO},
 };
 use app_dirs::{app_root, AppDataType};
@@ -384,7 +385,7 @@ impl Local {
             let trust_set =
                 db.calculate_trust_set(user_config.get_current_userid()?, &trust_params);
 
-            for id in &trust_set {
+            for id in trust_set.trusted_ids() {
                 if already_fetched.contains(id) {
                     continue;
                 } else {
@@ -540,7 +541,7 @@ impl Local {
     pub fn load_db(
         &self,
         params: &crate::TrustDistanceParams,
-    ) -> Result<(crate::ProofDB, HashSet<Id>)> {
+    ) -> Result<(crate::ProofDB, TrustSet)> {
         let user_config = self.load_user_config()?;
         let mut db = crate::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
@@ -549,7 +550,7 @@ impl Local {
         let trust_set = if let Some(id) = user_config.get_current_userid_opt() {
             db.calculate_trust_set(id, &params)
         } else {
-            HashSet::new()
+            TrustSet::default()
         };
         Ok((db, trust_set))
     }

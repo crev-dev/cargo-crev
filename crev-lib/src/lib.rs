@@ -15,8 +15,8 @@ pub mod staging;
 pub mod util;
 
 use crate::prelude::*;
+use crate::proofdb::TrustSet;
 use crev_data::Digest;
-use crev_data::Id;
 use std::{
     collections::HashSet,
     fmt,
@@ -62,9 +62,19 @@ impl TrustOrDistrust {
 /// Not named `Result` to avoid confusion with `Result` type.
 #[derive(PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
-    Verified,
+    Verified(crev_data::proof::TrustLevel),
     Unknown,
     Flagged,
+    Dangerous,
+}
+
+impl VerificationStatus {
+    pub fn is_verified(&self) -> bool {
+        match self {
+            VerificationStatus::Verified(_) => true,
+            _ => false,
+        }
+    }
 }
 
 /// Trait for stuff that has a coresponding color somewhere in the "UI"
@@ -77,8 +87,9 @@ pub trait Colored {
 impl Colored for VerificationStatus {
     fn color(&self) -> Option<term::color::Color> {
         match *self {
-            VerificationStatus::Verified => Some(term::color::GREEN),
-            VerificationStatus::Flagged => Some(term::color::RED),
+            VerificationStatus::Verified(_) => Some(term::color::GREEN),
+            VerificationStatus::Flagged => Some(term::color::YELLOW),
+            VerificationStatus::Dangerous => Some(term::color::RED),
             _ => None,
         }
     }
@@ -87,22 +98,22 @@ impl Colored for VerificationStatus {
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VerificationStatus::Verified => f.pad("verified"),
+            VerificationStatus::Verified(level) => f.pad(&level.to_string()),
             VerificationStatus::Unknown => f.pad("unknown"),
             VerificationStatus::Flagged => f.pad("flagged"),
+            VerificationStatus::Dangerous => f.pad("danger"),
         }
     }
 }
 
-pub fn dir_or_git_repo_verify<H1, H2>(
+pub fn dir_or_git_repo_verify<H1>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
     db: &ProofDB,
-    trusted_set: &HashSet<Id, H2>,
+    trusted_set: &TrustSet,
 ) -> Result<crate::VerificationStatus>
 where
     H1: std::hash::BuildHasher + std::default::Default,
-    H2: std::hash::BuildHasher + std::default::Default,
 {
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
@@ -116,15 +127,14 @@ where
     Ok(db.verify_package_digest(&digest, trusted_set))
 }
 
-pub fn dir_verify<H1, H2>(
+pub fn dir_verify<H1>(
     path: &Path,
     ignore_list: &HashSet<PathBuf, H1>,
     db: &ProofDB,
-    trusted_set: &HashSet<Id, H2>,
+    trusted_set: &TrustSet,
 ) -> Result<crate::VerificationStatus>
 where
     H1: std::hash::BuildHasher + std::default::Default,
-    H2: std::hash::BuildHasher + std::default::Default,
 {
     let digest = Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
         crev_common::Blake2b256,

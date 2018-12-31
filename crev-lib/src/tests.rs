@@ -66,7 +66,11 @@ fn proofdb_distance() -> Result<()> {
 
     trustdb.import_from_iter(vec![a_to_b, b_to_c, c_to_d, d_to_e].into_iter());
 
-    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+    let trust_set: HashSet<crev_data::Id> = trustdb
+        .calculate_trust_set(a.as_ref(), &distance_params)
+        .trusted_ids()
+        .cloned()
+        .collect();
 
     assert!(trust_set.contains(a.as_ref()));
     assert!(trust_set.contains(b.as_ref()));
@@ -79,7 +83,12 @@ fn proofdb_distance() -> Result<()> {
         .sign_by(&b)?;
 
     trustdb.import_from_iter(vec![b_to_d].into_iter());
-    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+
+    let trust_set: HashSet<_> = trustdb
+        .calculate_trust_set(a.as_ref(), &distance_params)
+        .trusted_ids()
+        .cloned()
+        .collect();
 
     assert!(trust_set.contains(a.as_ref()));
     assert!(trust_set.contains(b.as_ref()));
@@ -194,7 +203,11 @@ fn proofdb_distrust() -> Result<()> {
 
     trustdb.import_from_iter(vec![a_to_bc, b_to_d, d_to_c, c_to_e].into_iter());
 
-    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+    let trust_set: HashSet<_> = trustdb
+        .calculate_trust_set(a.as_ref(), &distance_params)
+        .trusted_ids()
+        .cloned()
+        .collect();
 
     assert!(trust_set.contains(a.as_ref()));
     assert!(trust_set.contains(b.as_ref()));
@@ -207,7 +220,12 @@ fn proofdb_distrust() -> Result<()> {
         .sign_by(&e)?;
 
     trustdb.import_from_iter(vec![e_to_d].into_iter());
-    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
+
+    let trust_set: HashSet<_> = trustdb
+        .calculate_trust_set(a.as_ref(), &distance_params)
+        .trusted_ids()
+        .cloned()
+        .collect();
 
     assert!(trust_set.contains(a.as_ref()));
     assert!(trust_set.contains(b.as_ref()));

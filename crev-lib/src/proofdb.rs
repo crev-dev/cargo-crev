@@ -293,36 +293,46 @@ impl ProofDB {
             })
     }
 
-    pub fn verify_package_digest<H>(
+    pub fn verify_package_digest(
         &self,
         digest: &Digest,
-        trust_set: &HashSet<Id, H>,
-    ) -> VerificationStatus
-    where
-        H: std::hash::BuildHasher + std::default::Default,
-    {
+        trust_set: &TrustSet,
+    ) -> VerificationStatus {
         let reviews: HashMap<Id, review::Package> = self
             .get_package_reviews_by_digest(digest)
             .map(|review| (review.from.id.clone(), review))
             .collect();
         // Faster somehow maybe?
-        let reviews_by: HashSet<Id, H> = reviews.keys().map(|s| s.to_owned()).collect();
-        let matching_reviewers = trust_set.intersection(&reviews_by);
+        let reviews_by: HashSet<Id, _> = reviews.keys().map(|s| s.to_owned()).collect();
+        let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
+        let matching_reviewers = trusted_ids.intersection(&reviews_by);
         let mut trust_count = 0;
-        let mut distrust_count = 0;
+        let mut trust_level = TrustLevel::None;
+        let mut flagged_count = 0;
+        let mut dangerous_count = 0;
         for matching_reviewer in matching_reviewers {
-            if Rating::Neutral <= reviews[matching_reviewer].review.rating {
+            let rating = &reviews[matching_reviewer].review.rating;
+            if Rating::Neutral <= *rating {
                 trust_count += 1;
-            }
-            if reviews[matching_reviewer].review.rating < Rating::Neutral {
-                distrust_count += 1;
+                trust_level = std::cmp::max(
+                    trust_level,
+                    trust_set
+                        .get_effective_trust_level(matching_reviewer)
+                        .expect("Id should have been there"),
+                );
+            } else if *rating <= Rating::Dangerous {
+                dangerous_count += 1;
+            } else if *rating < Rating::Neutral {
+                flagged_count += 1;
             }
         }
 
-        if distrust_count > 0 {
+        if dangerous_count > 0 {
+            VerificationStatus::Dangerous
+        } else if flagged_count > 0 {
             VerificationStatus::Flagged
         } else if trust_count > 0 {
-            VerificationStatus::Verified
+            VerificationStatus::Verified(trust_level)
         } else {
             VerificationStatus::Unknown
         }
@@ -371,7 +381,7 @@ impl ProofDB {
         .flatten()
     }
 
-    pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> HashSet<Id> {
+    pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> TrustSet {
         let mut distrusted = HashMap::new();
 
         // We keep retrying the whole thing, with more and more
@@ -380,7 +390,7 @@ impl ProofDB {
             let prev_distrusted_len = distrusted.len();
             let trust_set = self.calculate_trust_set_internal(for_id, params, distrusted);
             if trust_set.distrusted.len() <= prev_distrusted_len {
-                return trust_set.trusted.keys().map(|id| (*id).clone()).collect();
+                return trust_set;
             }
             distrusted = trust_set.distrusted;
         }
@@ -487,12 +497,16 @@ struct TrustedIdDetails {
 }
 
 #[derive(Default)]
-struct TrustSet {
+pub struct TrustSet {
     trusted: HashMap<Id, TrustedIdDetails>,
     distrusted: HashMap<Id, HashSet<Id>>,
 }
 
 impl TrustSet {
+    pub fn trusted_ids(&self) -> impl Iterator<Item = &Id> {
+        self.trusted.keys()
+    }
+
     /// Record that an Id is considered trusted
     ///
     /// Returns `true` if this actually added or changed the `subject` details,
@@ -551,7 +565,7 @@ impl TrustSet {
         }
     }
 
-    fn get_effective_trust_level(&self, id: &Id) -> Option<TrustLevel> {
+    pub fn get_effective_trust_level(&self, id: &Id) -> Option<TrustLevel> {
         self.trusted.get(id).map(|details| details.effective_trust)
     }
 }

@@ -493,7 +493,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                     }
                     eprint!(
                         "{:8} {:8} {:^13} {:6}",
-                        "status", "reviews", "downloads", "owners"
+                        "verifi.", "reviews", "downloads", "owners"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
@@ -505,7 +505,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                     let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
                     let result = db.verify_package_digest(&digest, &trust_set);
 
-                    if result == crev_lib::VerificationStatus::Verified && args.skip_verified {
+                    if result.is_verified() && args.skip_verified {
                         return Ok(());
                     }
 
@@ -585,7 +585,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                 opts::QueryId::Trusted { trust_params } => {
                     let local = crev_lib::Local::auto_open()?;
                     let (db, trust_set) = local.load_db(&trust_params.into())?;
-                    for id in &trust_set {
+                    for id in trust_set.trusted_ids() {
                         println!(
                             "{} {}",
                             id,
