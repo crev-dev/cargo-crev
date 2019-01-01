@@ -12,6 +12,7 @@ use std::{
 };
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
+pub type PassphraseFn<'a> = &'a Fn() -> std::io::Result<String>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PassConfig {
@@ -114,7 +115,7 @@ impl LockedId {
         Ok(serde_yaml::from_str::<LockedId>(&content)?)
     }
 
-    pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
+    pub fn to_unlocked(&self, passphrase_callback: PassphraseFn) -> Result<OwnId> {
         let LockedId {
             ref version,
             ref url,
@@ -140,10 +141,9 @@ impl LockedId {
                 .configure_hash_len(64)
                 .opt_out_of_secret_key(true);
 
+            let passphrase = passphrase_callback()?;
             let pwhash = hasher.with_password(passphrase).hash_raw()?;
-
             let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
-
             let sec_key = siv.open(&seal_nonce, &[], &sealed_secret_key)?;
 
             let res = OwnId::new(url.to_owned(), sec_key)?;

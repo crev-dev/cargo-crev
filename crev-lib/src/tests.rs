@@ -15,16 +15,17 @@ use default::default;
 fn lock_and_unlock() -> Result<()> {
     let id = OwnId::generate_for_git_url("https://example.com/crev-proofs");
 
-    let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
+    let id_relocked = id::LockedId::from_own_id(&id, "password")?
+        .to_unlocked(&|| Ok("password".to_string()))?;
     assert_eq!(id.id.id, id_relocked.id.id);
 
     assert!(id::LockedId::from_own_id(&id, "password")?
-        .to_unlocked("wrongpassword")
+        .to_unlocked(&|| Ok("wrongpassword".to_string()))
         .is_err());
 
     let id_stored = serde_yaml::to_string(&id::LockedId::from_own_id(&id, "pass")?)?;
-    let id_restored: OwnId =
-        serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
+    let id_restored: OwnId = serde_yaml::from_str::<id::LockedId>(&id_stored)?
+        .to_unlocked(&|| Ok("pass".to_string()))?;
 
     println!("{}", id_stored);
 
