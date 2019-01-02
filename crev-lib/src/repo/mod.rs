@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::ProofStore;
 use crate::{local::Local, util};
+use crate::id::PassphraseFn;
 use crev_data::proof;
 use crev_data::Digest;
 use git2;
@@ -222,7 +223,7 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn trust_package(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
+    pub fn trust_package(&mut self, passphrase_callback: PassphraseFn, allow_dirty: bool) -> Result<()> {
         if !self.staging()?.is_empty() {
             bail!("Can't review with uncommitted staged files.");
         }
@@ -236,7 +237,7 @@ impl Repo {
 
         let ignore_list = HashSet::new();
         let _digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        let id = local.read_current_unlocked_id(&passphrase)?;
+        let id = local.read_current_unlocked_id(passphrase_callback)?;
 
         let review = proof::review::PackageBuilder::default()
             .from(id.id.to_owned())
@@ -251,7 +252,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn commit(&mut self, passphrase: &str, allow_dirty: bool) -> Result<()> {
+    pub fn commit(&mut self, passphrase_callback: PassphraseFn, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() && !allow_dirty {
             bail!("No reviews to commit. Use `add` first or use `-a` for the whole package.");
         }
@@ -260,7 +261,7 @@ impl Repo {
         let _revision = self.read_revision()?;
         self.staging()?.enforce_current()?;
         let files = self.staging()?.to_review_files();
-        let id = local.read_current_unlocked_id(&passphrase)?;
+        let id = local.read_current_unlocked_id(passphrase_callback)?;
 
         let review = proof::review::CodeBuilder::default()
             .from(id.id.to_owned())

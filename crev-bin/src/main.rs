@@ -26,8 +26,7 @@ main!(|opts: opts::Opts| match opts.command {
     opts::Command::Trust(trust) => match trust {
         opts::Trust::Add(trust) => {
             let local = Local::auto_open()?;
-            let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(trust.pub_ids, &passphrase, Trust)?;
+            local.build_trust_proof(trust.pub_ids, &crev_common::read_passphrase, Trust)?;
         }
     },
     opts::Command::Add(add) => {
@@ -36,10 +35,9 @@ main!(|opts: opts::Opts| match opts.command {
     }
     opts::Command::Commit(opts) => {
         let mut repo = Repo::auto_open()?;
-        let passphrase = crev_common::read_passphrase()?;
         if opts.all {
         } else {
-            repo.commit(&passphrase, opts.allow_dirty)?;
+            repo.commit(&crev_common::read_passphrase, opts.allow_dirty)?;
         }
     }
     opts::Command::Package(package) => match package {
@@ -50,8 +48,7 @@ main!(|opts: opts::Opts| match opts.command {
         }
         opts::Package::Trust(package_trust) => {
             let mut repo = Repo::auto_open()?;
-            let passphrase = crev_common::read_passphrase()?;
-            repo.trust_package(&passphrase, package_trust.allow_dirty)?;
+            repo.trust_package(&crev_common::read_passphrase, package_trust.allow_dirty)?;
         }
         opts::Package::Verify(verify) => {
             let mut repo = Repo::auto_open()?;

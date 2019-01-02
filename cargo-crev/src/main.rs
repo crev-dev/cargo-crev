@@ -368,9 +368,7 @@ fn review_crate(
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
     let vcs = VcsInfoJson::read_from_crate_dir(&pkg_dir)?;
-
-    let passphrase = crev_common::read_passphrase()?;
-    let id = local.read_current_unlocked_id(&passphrase)?;
+    let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
     let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
@@ -627,13 +625,11 @@ fn run_command(command: opts::Command) -> Result<()> {
         }
         opts::Command::Trust(args) => {
             let local = Local::auto_open()?;
-            let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(args.pub_ids, &passphrase, Trust)?;
+            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Trust)?;
         }
         opts::Command::Distrust(args) => {
             let local = Local::auto_open()?;
-            let passphrase = crev_common::read_passphrase()?;
-            local.build_trust_proof(args.pub_ids, &passphrase, Distrust)?;
+            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Distrust)?;
         }
         opts::Command::Git(git) => {
             let local = Local::auto_open()?;

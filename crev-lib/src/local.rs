@@ -1,6 +1,6 @@
 use crate::ProofStore;
 use crate::{
-    id::{self, LockedId},
+    id::{self, LockedId, PassphraseFn},
     prelude::*,
     proofdb::TrustSet,
     util::{self, APP_INFO},
@@ -204,19 +204,20 @@ impl Local {
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
-    pub fn read_current_unlocked_id_opt(&self, passphrase: &str) -> Result<Option<OwnId>> {
+    pub fn read_current_unlocked_id_opt(&self, passphrase_callback: PassphraseFn) -> Result<Option<OwnId>> {
         self.get_current_userid()?
-            .map(|current_id| self.read_unlocked_id(&current_id, passphrase))
+            .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
             .inside_out()
     }
-    pub fn read_current_unlocked_id(&self, passphrase: &str) -> Result<OwnId> {
-        self.read_current_unlocked_id_opt(passphrase)?
+
+    pub fn read_current_unlocked_id(&self, passphrase_callback: PassphraseFn) -> Result<OwnId> {
+        self.read_current_unlocked_id_opt(passphrase_callback)?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
-    pub fn read_unlocked_id(&self, id: &Id, passphrase: &str) -> Result<OwnId> {
+    pub fn read_unlocked_id(&self, id: &Id, passphrase_callback: PassphraseFn) -> Result<OwnId> {
         let locked = self.read_locked_id(id)?;
-        locked.to_unlocked(passphrase)
+        locked.to_unlocked(passphrase_callback)
     }
 
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
@@ -322,7 +323,7 @@ impl Local {
     pub fn build_trust_proof(
         &self,
         id_strings: Vec<String>,
-        passphrase: &str,
+        passphrase_callback: PassphraseFn,
         trust_or_distrust: crate::TrustOrDistrust,
     ) -> Result<()> {
         if id_strings.is_empty() {
@@ -347,7 +348,7 @@ impl Local {
             }
         }
 
-        let own_id = self.read_current_unlocked_id(&passphrase)?;
+        let own_id = self.read_current_unlocked_id(passphrase_callback)?;
 
         let trust = own_id.create_trust_proof(
             pub_ids,
