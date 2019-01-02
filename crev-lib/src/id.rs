@@ -131,7 +131,6 @@ impl LockedId {
             use miscreant::aead::Algorithm;
 
             let mut hasher = Hasher::default();
-
             hasher
                 .configure_memory_size(pass.memory_size)
                 .configure_version(argonautica::config::Version::from_u32(pass.version)?)
@@ -141,18 +140,30 @@ impl LockedId {
                 .configure_hash_len(64)
                 .opt_out_of_secret_key(true);
 
-            let passphrase = passphrase_callback()?;
-            let pwhash = hasher.with_password(passphrase).hash_raw()?;
-            let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
-            let sec_key = siv.open(&seal_nonce, &[], &sealed_secret_key)?;
+            let mut secret_key = Vec::new();
+            for _ in 0..5 {
+                let passphrase = passphrase_callback()?;
+                let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
+                let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
 
-            let res = OwnId::new(url.to_owned(), sec_key)?;
-
-            if public_key != &res.keypair.public.to_bytes() {
-                bail!("PubKey mismatch");
+                match siv.open(&seal_nonce, &[], &sealed_secret_key) {
+                    Ok(k) => {
+                        secret_key = k;
+                        break;
+                    },
+                    Err(_) => eprintln!("Error: incorrect passphrase")
+                }
             }
 
-            Ok(res)
+            if secret_key.is_empty() {
+                return Err(format_err!("incorrect passphrase"));
+            }
+
+            let result = OwnId::new(url.to_owned(), secret_key)?;
+            if public_key != &result.keypair.public.to_bytes() {
+                bail!("PubKey mismatch");
+            }
+            Ok(result)
         }
     }
 }
