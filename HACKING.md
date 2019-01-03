@@ -26,4 +26,4 @@ and not neccessarily properly done.
 Seek help on [crev gitter channel](https://gitter.im/dpc/crev) before you start hacking
 on the code.
 
-The imediate goal is to get `cargo-cargo` binary to be usable.
+The imediate goal is to get `cargo-crev` binary to be usable.
