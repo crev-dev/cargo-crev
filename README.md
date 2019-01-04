@@ -19,7 +19,7 @@ you keep up with ever-changing ecosystem?
 
 `crev` is an actual *code review* system as opposed to typicaly practiced *code-change review* system.
 
-`crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encuraging high quality by peer review.
+`crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encouraging high quality by peer review.
 
 `crev` allows building a personal web of trust in people and code.
 
