@@ -17,13 +17,13 @@ You're ultimately responsible for vetting your dependencies.
 But in a world of NPM/PIP/Cargo/RubyGems - how do you do that? Can
 you keep up with ever-changing ecosystem?
 
-`crev` is an actual *code review* system as opposed to typicaly practiced *code-change review* system.
+`crev` is an actual *code review* system as opposed to typically practiced *code-change review* system.
 
-`crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encuraging high quality by peer review.
+`crev` is scalable, distributed and social. Users publish and circulate results of their reviews: potentially warning about problems, malicious code, or just encouraging high quality by peer review.
 
 `crev` allows building a personal web of trust in people and code.
 
-`crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typesquating, compromised package registries, or just plain poor quality.
+`crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typosquating, compromised package registries, or just plain poor quality.
 
 [a]: https://www.csoonline.com/article/3214624/security/malicious-code-in-the-node-js-npm-registry-shakes-open-source-trust-model.html
 
@@ -42,7 +42,7 @@ you keep up with ever-changing ecosystem?
 ## Vision
 
 We would like Crev to become a general, language and ecosystem agnostic 
-system for estabilishing trust in Open Source code. We would like to have
+system for establishing trust in Open Source code. We would like to have
 frontends integrated with all major Open Source package managers and ecosystems.
 
 Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
@@ -97,7 +97,7 @@ people to establish trust.
 
 *Proofs* are stored and published in personal repositories for other people to use.
 
-They can be also included in a relevant source code itself through submiting
+They can be also included in a relevant source code itself through submitting
 a PR to the original project.
 
 `crev` collects *Proofs* from different sources, and builds a personalized web of trust.
