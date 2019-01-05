@@ -240,14 +240,6 @@ pub enum Command {
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     Git(Git),
 
-    /// See changes in the local proof repository (alias to `git diff`)
-    #[structopt(name = "diff")]
-    Diff,
-
-    /// Commit changes to the local proof repository (alias to `git commit -a`)
-    #[structopt(name = "commit")]
-    Commit,
-
     /// Push local changes to the public proof repository (alias to `git push HEAD`)
     #[structopt(name = "push")]
     Push,

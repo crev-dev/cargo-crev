@@ -589,7 +589,7 @@ impl Local {
             &tree,
             &[&head],
         )?;
-        
+
         Ok(())
     }
 
