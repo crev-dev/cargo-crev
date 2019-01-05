@@ -673,16 +673,6 @@ fn run_command(command: opts::Command) -> Result<()> {
             let status = local.run_git(git.args)?;
             std::process::exit(status.code().unwrap_or(-159));
         }
-        opts::Command::Diff => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["diff".into(), "HEAD".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Commit => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["commit".into(), "-a".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
         opts::Command::Push => {
             let local = Local::auto_open()?;
             let status = local.run_git(vec!["push".into()])?;
