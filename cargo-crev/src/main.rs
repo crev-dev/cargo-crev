@@ -686,5 +686,5 @@ fn run_command(command: opts::Command) -> Result<()> {
 fn main() {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
-    run_command(command).unwrap_or_else(|e| eprintln!("Error: {}", e));
+    run_command(command).unwrap_or_else(|e| eprintln!("{}", e.display_causes_and_backtrace()));
 }

@@ -34,7 +34,10 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
     file.flush()?;
     drop(file);
 
-    let status = process::Command::new(editor).arg(&file_path).status()?;
+    let status = process::Command::new(editor)
+        .arg(&file_path)
+        .status()
+        .with_context(|_e| format_err!("Couldn't start the editor"))?;
 
     if !status.success() {
         bail!("Editor returned {}", status);
