@@ -327,10 +327,10 @@ impl Local {
 
     pub fn build_trust_proof(
         &self,
+        from_id: &PubId,
         id_strings: Vec<String>,
-        passphrase_callback: PassphraseFn,
         trust_or_distrust: crate::TrustOrDistrust,
-    ) -> Result<()> {
+    ) -> Result<proof::Content> {
         if id_strings.is_empty() {
             bail!("No ids given.");
         }
@@ -353,9 +353,7 @@ impl Local {
             }
         }
 
-        let own_id = self.read_current_unlocked_id(passphrase_callback)?;
-
-        let trust = own_id.create_trust_proof(
+        let trust = from_id.create_trust_proof(
             pub_ids,
             if trust_or_distrust.is_trust() {
                 TrustLevel::Medium
@@ -364,12 +362,7 @@ impl Local {
             },
         )?;
 
-        let trust = util::edit_proof_content_iteractively(&trust.into())?;
-
-        let proof = trust.sign_by(&own_id)?;
-
-        self.insert(&proof)?;
-        Ok(())
+        Ok(util::edit_proof_content_iteractively(&trust.into())?)
     }
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {

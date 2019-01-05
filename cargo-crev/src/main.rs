@@ -321,12 +321,12 @@ fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<(
 /// Review a crate
 ///
 /// * `independent` - the crate might not actually be a dependency
-fn review_crate(
+fn create_review_proof(
     name: &str,
     version: Option<&str>,
     independent: bool,
     trust: TrustOrDistrust,
-    auto_commit: bool,
+    proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let (pkg_dir, crate_version) = repo.find_crate(name, version, independent)?;
@@ -391,19 +391,29 @@ fn review_crate(
 
     let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
 
+    if proof_create_opt.print_unsigned {
+        print!("{}", review);
+    }
+
     let proof = review.sign_by(&id)?;
 
-    local.insert(&proof)?;
+    if proof_create_opt.print_signed {
+        print!("{}", proof);
+    }
 
-    if auto_commit {
-        let commit_msg = format!(
-            "Add review for {crate} v{version}",
-            crate = name,
-            version = crate_version
-        );
-        local
-            .proof_dir_commit(&commit_msg)
-            .with_context(|_| format_err!("Could not not automatically commit"))?;
+    if !proof_create_opt.no_store {
+        local.insert(&proof)?;
+
+        if !proof_create_opt.no_commit {
+            let commit_msg = format!(
+                "Add review for {crate} v{version}",
+                crate = name,
+                version = crate_version
+            );
+            local
+                .proof_dir_commit(&commit_msg)
+                .with_context(|_| format_err!("Could not not automatically commit"))?;
+        }
     }
 
     Ok(())
@@ -459,27 +469,40 @@ where
     Ok(())
 }
 
-fn add_trust(
+fn create_trust_proof(
     ids: Vec<String>,
     trust_or_distrust: TrustOrDistrust,
-    auto_commit: bool,
+    proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let local = Local::auto_open()?;
-    local.build_trust_proof(
-        ids.clone(),
-        &crev_common::read_passphrase,
-        trust_or_distrust,
-    )?;
 
-    if auto_commit {
-        let commit_msg = format!(
-            "Add {t_or_d} for {ids}",
-            t_or_d = trust_or_distrust,
-            ids = ids.join(", ")
-        );
-        local
-            .proof_dir_commit(&commit_msg)
-            .with_context(|_| format_err!("Could not not automatically commit"))?;
+    let own_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+
+    let trust = local.build_trust_proof(own_id.as_pubid(), ids.clone(), trust_or_distrust)?;
+
+    if proof_create_opt.print_unsigned {
+        print!("{}", trust);
+    }
+
+    let proof = trust.sign_by(&own_id)?;
+
+    if proof_create_opt.print_signed {
+        print!("{}", proof);
+    }
+
+    if !proof_create_opt.no_store {
+        local.insert(&proof)?;
+
+        if !proof_create_opt.no_commit {
+            let commit_msg = format!(
+                "Add {t_or_d} for {ids}",
+                t_or_d = trust_or_distrust,
+                ids = ids.join(", ")
+            );
+            local
+                .proof_dir_commit(&commit_msg)
+                .with_context(|_| format_err!("Could not not automatically commit"))?;
+        }
     }
 
     Ok(())
@@ -648,7 +671,7 @@ fn run_command(command: opts::Command) -> Result<()> {
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Trust, !args.no_commit)
+                create_review_proof(c, v, i, TrustOrDistrust::Trust, &args.common_proof_create)
             })?;
         }
         opts::Command::Goto(args) => {
@@ -656,17 +679,23 @@ fn run_command(command: opts::Command) -> Result<()> {
         }
         opts::Command::Flag(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Distrust, !args.no_commit)
+                create_review_proof(
+                    c,
+                    v,
+                    i,
+                    TrustOrDistrust::Distrust,
+                    &args.common_proof_create,
+                )
             })?;
         }
         opts::Command::Clean(args) => {
             handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
         }
         opts::Command::Trust(args) => {
-            add_trust(args.pub_ids, Trust, !args.no_commit)?;
+            create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
         }
         opts::Command::Distrust(args) => {
-            add_trust(args.pub_ids, Distrust, !args.no_commit)?;
+            create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
         }
         opts::Command::Git(git) => {
             let local = Local::auto_open()?;

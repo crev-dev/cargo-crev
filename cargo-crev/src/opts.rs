@@ -83,9 +83,8 @@ pub struct Trust {
     /// Public IDs to create Trust Proof for
     pub pub_ids: Vec<String>,
 
-    /// Don't auto-commit local Proof Repository
-    #[structopt(long = "no-commit")]
-    pub no_commit: bool,
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -184,13 +183,31 @@ pub struct ReviewOrGotoCommon {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct CommonProofCreate {
+    /// Don't auto-commit local Proof Repository
+    #[structopt(long = "no-commit")]
+    pub no_commit: bool,
+
+    /// Print unsigned proof content on stdout
+    #[structopt(long = "print-unsigned")]
+    pub print_unsigned: bool,
+
+    /// Print signed proof content on stdout
+    #[structopt(long = "print-signed")]
+    pub print_signed: bool,
+
+    /// Print signed proof content on stdout
+    #[structopt(long = "no-store")]
+    pub no_store: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct Review {
     #[structopt(flatten)]
     pub common: ReviewOrGotoCommon,
 
-    /// Don't auto-commit local Proof Repository
-    #[structopt(long = "no-commit")]
-    pub no_commit: bool,
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
 }
 
 #[derive(Debug, StructOpt, Clone)]
