@@ -15,18 +15,23 @@ pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     author: "Dawid Ciężarkiewicz",
 };
 
-fn get_editor_to_use() -> ffi::OsString {
-    if let Some(v) = env::var_os("VISUAL") {
-        return v;
+fn get_editor_to_use() -> Result<Vec<ffi::OsString>> {
+    let cmd = if let Some(v) = env::var_os("VISUAL") {
+        v
     } else if let Some(v) = env::var_os("EDITOR") {
-        return v;
+        v
     } else {
-        return "vi".into();
-    }
+        "vi".into()
+    };
+
+    // TODO: change to use `split_ascii_whitespace` once it stabilizes
+    Ok(match cmd.into_string() {
+        Ok(s) => s.split_whitespace().map(Into::into).collect(),
+        Err(os_s) => vec![os_s],
+    })
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
-    let editor = get_editor_to_use();
     let dir = tempdir::TempDir::new("crev")?;
     let file_path = dir.path().join("crev.review");
     let mut file = fs::File::create(&file_path)?;
@@ -34,21 +39,21 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
     file.flush()?;
     drop(file);
 
-    let status = process::Command::new(editor)
-        .arg(&file_path)
-        .status()
-        .with_context(|_e| format_err!("Couldn't start the editor"))?;
-
-    if !status.success() {
-        bail!("Editor returned {}", status);
-    }
+    edit_file(&file_path)?;
 
     Ok(read_file_to_string(&file_path)?)
 }
 
 pub fn edit_file(path: &Path) -> Result<()> {
-    let editor = get_editor_to_use();
-    let status = process::Command::new(editor).arg(&path).status()?;
+    let editor = get_editor_to_use()?;
+
+    let status = process::Command::new(&editor[0])
+        .args(&editor[1..])
+        .arg(&path)
+        .status()
+        .with_context(|_e| {
+            format_err!("Couldn't start the editor: {}", editor[0].to_string_lossy())
+        })?;
 
     if !status.success() {
         bail!("Editor returned {}", status);
