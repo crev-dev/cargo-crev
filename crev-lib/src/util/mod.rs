@@ -25,10 +25,15 @@ fn get_editor_to_use() -> Result<Vec<ffi::OsString>> {
     };
 
     // TODO: change to use `split_ascii_whitespace` once it stabilizes
-    Ok(match cmd.into_string() {
+    let os_strings = match cmd.into_string() {
         Ok(s) => s.split_whitespace().map(Into::into).collect(),
         Err(os_s) => vec![os_s],
-    })
+    };
+
+    if os_strings.is_empty() {
+        bail!("Empty `EDITOR` or `VISUAL` environment variable")
+    }
+    Ok(os_strings)
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
