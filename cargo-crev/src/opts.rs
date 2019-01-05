@@ -82,6 +82,10 @@ pub enum Verify {
 pub struct Trust {
     /// Public IDs to create Trust Proof for
     pub pub_ids: Vec<String>,
+
+    /// Don't auto-commit local Proof Repository
+    #[structopt(long = "no-commit")]
+    pub no_commit: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -170,13 +174,23 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ReviewOrGoto {
+pub struct ReviewOrGotoCommon {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
 
     /// This crate is not neccesarily a dependency of the current cargo project
     #[structopt(long = "independent")]
     pub independent: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Review {
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+
+    /// Don't auto-commit local Proof Repository
+    #[structopt(long = "no-commit")]
+    pub no_commit: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -199,11 +213,11 @@ pub enum Command {
 
     /// Review a crate
     #[structopt(name = "review")]
-    Review(ReviewOrGoto),
+    Review(Review),
 
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
-    Flag(ReviewOrGoto),
+    Flag(Review),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]
@@ -248,11 +262,11 @@ pub enum Command {
 
     /// Start a shell in source directory of a crate under review
     #[structopt(name = "goto")]
-    Goto(ReviewOrGoto),
+    Goto(ReviewOrGotoCommon),
 
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]
-    Clean(ReviewOrGoto),
+    Clean(ReviewOrGotoCommon),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

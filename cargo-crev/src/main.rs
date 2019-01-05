@@ -326,6 +326,7 @@ fn review_crate(
     version: Option<&str>,
     independent: bool,
     trust: TrustOrDistrust,
+    auto_commit: bool,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let (pkg_dir, crate_version) = repo.find_crate(name, version, independent)?;
@@ -393,6 +394,18 @@ fn review_crate(
     let proof = review.sign_by(&id)?;
 
     local.insert(&proof)?;
+
+    if auto_commit {
+        let commit_msg = format!(
+            "Add review for {crate} v{version}",
+            crate = name,
+            version = crate_version
+        );
+        local
+            .proof_dir_commit(&commit_msg)
+            .with_context(|_| format_err!("Could not not automatically commit"))?;
+    }
+
     Ok(())
 }
 
@@ -418,7 +431,7 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
-fn handle_goto_mode_command<F>(args: &opts::ReviewOrGoto, f: F) -> Result<()>
+fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
 where
     F: FnOnce(&str, Option<&str>, bool) -> Result<()>,
 {
@@ -443,6 +456,32 @@ where
 
         f(&name, args.crate_.version.as_deref(), args.independent)?;
     }
+    Ok(())
+}
+
+fn add_trust(
+    ids: Vec<String>,
+    trust_or_distrust: TrustOrDistrust,
+    auto_commit: bool,
+) -> Result<()> {
+    let local = Local::auto_open()?;
+    local.build_trust_proof(
+        ids.clone(),
+        &crev_common::read_passphrase,
+        trust_or_distrust,
+    )?;
+
+    if auto_commit {
+        let commit_msg = format!(
+            "Add {t_or_d} for {ids}",
+            t_or_d = trust_or_distrust,
+            ids = ids.join(", ")
+        );
+        local
+            .proof_dir_commit(&commit_msg)
+            .with_context(|_| format_err!("Could not not automatically commit"))?;
+    }
+
     Ok(())
 }
 
@@ -608,28 +647,26 @@ fn run_command(command: opts::Command) -> Result<()> {
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
         },
         opts::Command::Review(args) => {
-            handle_goto_mode_command(&args, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Trust)
+            handle_goto_mode_command(&args.common, |c, v, i| {
+                review_crate(c, v, i, TrustOrDistrust::Trust, !args.no_commit)
             })?;
         }
         opts::Command::Goto(args) => {
             goto_crate_src(&args.crate_, args.independent)?;
         }
         opts::Command::Flag(args) => {
-            handle_goto_mode_command(&args, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Distrust)
+            handle_goto_mode_command(&args.common, |c, v, i| {
+                review_crate(c, v, i, TrustOrDistrust::Distrust, !args.no_commit)
             })?;
         }
         opts::Command::Clean(args) => {
             handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
         }
         opts::Command::Trust(args) => {
-            let local = Local::auto_open()?;
-            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Trust)?;
+            add_trust(args.pub_ids, Trust, !args.no_commit)?;
         }
         opts::Command::Distrust(args) => {
-            let local = Local::auto_open()?;
-            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Distrust)?;
+            add_trust(args.pub_ids, Distrust, !args.no_commit)?;
         }
         opts::Command::Git(git) => {
             let local = Local::auto_open()?;

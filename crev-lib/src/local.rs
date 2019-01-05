@@ -180,7 +180,9 @@ impl Local {
 
         let config_str = serde_yaml::to_string(&config)?;
 
-        Ok(util::store_str_to_file(&path, &config_str)?)
+        util::store_str_to_file(&path, &config_str)?;
+
+        Ok(())
     }
 
     pub fn get_current_userid(&self) -> Result<Option<Id>> {
@@ -204,7 +206,10 @@ impl Local {
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
-    pub fn read_current_unlocked_id_opt(&self, passphrase_callback: PassphraseFn) -> Result<Option<OwnId>> {
+    pub fn read_current_unlocked_id_opt(
+        &self,
+        passphrase_callback: PassphraseFn,
+    ) -> Result<Option<OwnId>> {
         self.get_current_userid()?
             .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
             .inside_out()
@@ -558,11 +563,33 @@ impl Local {
 
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
-        let repo = git2::Repository::init(&proof_dir)?;
+        let repo = git2::Repository::open(&proof_dir)?;
         let mut index = repo.index()?;
 
         index.add_path(rel_path)?;
         index.write()?;
+        Ok(())
+    }
+
+    pub fn proof_dir_commit(&self, commit_msg: &str) -> Result<()> {
+        let proof_dir = self.get_proofs_dir_path()?;
+        let repo = git2::Repository::open(&proof_dir)?;
+        let mut index = repo.index()?;
+        let tree_id = index.write_tree()?;
+        let tree = repo.find_tree(tree_id)?;
+        let head = repo.head()?.peel_to_commit()?;
+
+        let signature = repo.signature()?;
+
+        repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            commit_msg,
+            &tree,
+            &[&head],
+        )?;
+        
         Ok(())
     }
 

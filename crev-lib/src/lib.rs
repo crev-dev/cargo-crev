@@ -40,6 +40,15 @@ pub enum TrustOrDistrust {
     Distrust,
 }
 
+impl fmt::Display for TrustOrDistrust {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TrustOrDistrust::Trust => f.write_str("trust"),
+            TrustOrDistrust::Distrust => f.write_str("distrust"),
+        }
+    }
+}
+
 impl TrustOrDistrust {
     pub fn is_trust(self) -> bool {
         if let TrustOrDistrust::Trust = self {
