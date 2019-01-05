@@ -102,7 +102,10 @@ cargo crev query id all                                 # show all known ids
 cargo crev query review                                 # show all reviews
 cargo crev query review <package>                       # show all reviews of a package
 cargo crev trust <id>                                   # trust someone
+cargo crev goto <crate>                                 # jump to crate to review it
+cargo crev review                                       # review a crate (after goto)
 cargo crev review <crate>                               # review a dependency
+cargo crev review --independent <crate> <version>       # review a crate that is not a dependency
 cargo crev commit                                       # commit new proofs (reviews, trust)
 cargo crev push                                         # push proofs to your public github repository
 cargo crev help                                         # see what other things you can do
