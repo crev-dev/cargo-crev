@@ -211,6 +211,22 @@ pub struct Review {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct ExportId {
+    pub id: Option<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Export {
+    #[structopt(name = "id")]
+    Id(ExportId),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Import {
+    #[structopt(name = "id")]
+    Id,
+}
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Create an Id, ...
     #[structopt(name = "new")]
@@ -276,6 +292,14 @@ pub enum Command {
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
+
+    /// Export an id, ...
+    #[structopt(name = "export")]
+    Export(Export),
+
+    /// Import an Id, ...
+    #[structopt(name = "import")]
+    Import(Import),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

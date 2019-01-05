@@ -517,7 +517,14 @@ impl Local {
 
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
-        std::env::set_current_dir(self.get_proofs_dir_path()?)?;
+        let proof_dir_path = self.get_proofs_dir_path()?;
+        if !proof_dir_path.exists() {
+            let id = self.read_current_locked_id()?;
+            self.clone_proof_dir_from_git(&id.url.url, false)?;
+        }
+
+        std::env::set_current_dir(proof_dir_path)
+            .with_context(|_| "Trying to change dir to the current local proof repo")?;
 
         use std::process::Command;
 
@@ -646,6 +653,23 @@ impl Local {
             println!("{} {}", id.id, id.url.url);
         }
         Ok(())
+    }
+
+    pub fn export_locked_id(&self, id_str: Option<String>) -> Result<String> {
+        let id = if let Some(id_str) = id_str {
+            let id = Id::crevid_from_str(&id_str)?;
+            self.read_locked_id(&id)?
+        } else {
+            self.read_current_locked_id()?
+        };
+
+        Ok(id.to_string())
+    }
+
+    pub fn import_locked_id(&self, locked_id_serialized: &str) -> Result<PubId> {
+        let id = LockedId::from_str(locked_id_serialized)?;
+        self.save_locked_id(&id)?;
+        Ok(id.to_pubid())
     }
 }
 

@@ -17,6 +17,7 @@ use serde::Deserialize;
 use std::{
     collections::HashSet,
     env, fmt,
+    io::BufRead,
     path::{Path, PathBuf},
     process,
 };
@@ -732,6 +733,33 @@ fn run_command(command: opts::Command) -> Result<()> {
             opts::Fetch::All => {
                 let local = Local::auto_open()?;
                 local.fetch_all()?;
+            }
+        },
+        opts::Command::Export(cmd) => match cmd {
+            opts::Export::Id(params) => {
+                let local = Local::auto_open()?;
+                println!("{}", local.export_locked_id(params.id)?);
+            }
+        },
+        opts::Command::Import(cmd) => match cmd {
+            opts::Import::Id => {
+                let local = Local::auto_create_or_open()?;
+                let term = term::Term::new();
+                if term.stdin_is_tty {
+                    eprintln!("Paste in the text and press Ctrl+D.")
+                }
+                let mut s = vec![];
+
+                std::io::stdin().lock().read_until(0, &mut s)?;
+                let id = local.import_locked_id(&String::from_utf8(s)?)?;
+                // Note: It's unclear how much of this should be done by
+                // the library
+                local.save_current_id(&id.id)?;
+
+                let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
+                if !proof_dir_path.exists() {
+                    local.clone_proof_dir_from_git(&id.url.url, false)?;
+                }
             }
         },
     }

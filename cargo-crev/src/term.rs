@@ -6,6 +6,7 @@ use term::{self, StderrTerminal, StdoutTerminal};
 pub struct Term {
     pub stdout_is_tty: bool,
     pub stderr_is_tty: bool,
+    pub stdin_is_tty: bool,
     stdout: Option<Box<StdoutTerminal>>,
     stderr: Option<Box<StderrTerminal>>,
 }
@@ -39,6 +40,7 @@ impl Term {
         Term {
             stdout: term::stdout(),
             stderr: term::stderr(),
+            stdin_is_tty: atty::is(atty::Stream::Stdin),
             stdout_is_tty: atty::is(atty::Stream::Stdout),
             stderr_is_tty: atty::is(atty::Stream::Stderr),
         }

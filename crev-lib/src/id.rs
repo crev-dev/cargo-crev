@@ -115,6 +115,10 @@ impl LockedId {
         Ok(serde_yaml::from_str::<LockedId>(&content)?)
     }
 
+    pub fn from_str(yaml_s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str::<LockedId>(&yaml_s)?)
+    }
+
     pub fn to_unlocked(&self, passphrase_callback: PassphraseFn) -> Result<OwnId> {
         let LockedId {
             ref version,
@@ -150,8 +154,8 @@ impl LockedId {
                     Ok(k) => {
                         secret_key = k;
                         break;
-                    },
-                    Err(_) => eprintln!("Error: incorrect passphrase")
+                    }
+                    Err(_) => eprintln!("Error: incorrect passphrase"),
                 }
             }
 
