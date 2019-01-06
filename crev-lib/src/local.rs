@@ -3,12 +3,12 @@ use crate::{
     id::{self, LockedId, PassphraseFn},
     prelude::*,
     proofdb::TrustSet,
-    util::{self, APP_INFO},
+    util::self
 };
-use app_dirs::{app_root, AppDataType};
 use crev_common;
 use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
 use default::default;
+use directories::ProjectDirs;
 use failure::ResultExt;
 use git2;
 use insideout::InsideOut;
@@ -63,8 +63,10 @@ pub struct Local {
 impl Local {
     #[allow(clippy::new_ret_no_self)]
     fn new() -> Result<Self> {
-        let root_path = app_root(AppDataType::UserConfig, &APP_INFO)?;
-        let cache_path = app_root(AppDataType::UserCache, &APP_INFO)?;
+        let proj_dir = ProjectDirs::from("dev", "", "crev")
+            .expect("no valid home directory path could be retrieved from the operating system");
+        let root_path = proj_dir.config_dir().into();
+        let cache_path = proj_dir.cache_dir().into();
         Ok(Self {
             root_path,
             cache_path,
