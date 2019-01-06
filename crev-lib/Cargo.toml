@@ -12,12 +12,12 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "../README.md"
 
 [dependencies]
-app_dirs = "1"
 blake2 = "0.8"
 chrono = "0.4"
 common_failures = "0.1"
 derive_builder = "0.7"
 digest = "0.8"
+directories = "1.0.2"
 failure = "0.1"
 git2 = "0.7"
 hex = "0.3"

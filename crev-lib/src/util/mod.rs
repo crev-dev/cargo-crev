@@ -1,7 +1,6 @@
 pub mod git;
 
 use crate::prelude::*;
-use app_dirs;
 use crev_common;
 use crev_data::proof;
 use std::fmt::Write as FmtWrite;
@@ -9,11 +8,6 @@ use std::{self, env, ffi, fs, io::Write, path::Path, process};
 use tempdir;
 
 pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};
-
-pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
-    name: "crev",
-    author: "Dawid Ciężarkiewicz",
-};
 
 fn get_editor_to_use() -> Result<ffi::OsString> {
     Ok(if let Some(v) = env::var_os("VISUAL") {
