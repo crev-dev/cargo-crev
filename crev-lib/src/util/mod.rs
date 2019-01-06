@@ -15,25 +15,14 @@ pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     author: "Dawid Ciężarkiewicz",
 };
 
-fn get_editor_to_use() -> Result<Vec<ffi::OsString>> {
-    let cmd = if let Some(v) = env::var_os("VISUAL") {
+fn get_editor_to_use() -> Result<ffi::OsString> {
+    Ok(if let Some(v) = env::var_os("VISUAL") {
         v
     } else if let Some(v) = env::var_os("EDITOR") {
         v
     } else {
         "vi".into()
-    };
-
-    // TODO: change to use `split_ascii_whitespace` once it stabilizes
-    let os_strings = match cmd.into_string() {
-        Ok(s) => s.split_whitespace().map(Into::into).collect(),
-        Err(os_s) => vec![os_s],
-    };
-
-    if os_strings.is_empty() {
-        bail!("Empty `EDITOR` or `VISUAL` environment variable")
-    }
-    Ok(os_strings)
+    })
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
@@ -52,12 +41,19 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
 pub fn edit_file(path: &Path) -> Result<()> {
     let editor = get_editor_to_use()?;
 
-    let status = process::Command::new(&editor[0])
-        .args(&editor[1..])
-        .arg(&path)
+    let status = process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!(
+            "{} {}",
+            editor
+                .clone()
+                .into_string()
+                .map_err(|_| format_err!("$EDITOR or $VISUAL not a valid Unicode"))?,
+            shell_escape::escape(path.display().to_string().into())
+        ))
         .status()
         .with_context(|_e| {
-            format_err!("Couldn't start the editor: {}", editor[0].to_string_lossy())
+            format_err!("Couldn't start the editor: {}", editor.to_string_lossy())
         })?;
 
     if !status.success() {
