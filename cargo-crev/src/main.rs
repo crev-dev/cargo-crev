@@ -6,7 +6,7 @@ use ::term::color;
 use cargo::{
     core::dependency::Dependency,
     core::source::SourceMap,
-    core::{package_id::PackageId, SourceId},
+    core::{Package, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_lib::ProofStore;
@@ -114,7 +114,7 @@ impl Repo {
 
     fn for_every_non_local_dependency_dir(
         &self,
-        mut f: impl FnMut(&PackageId, &Path) -> Result<()>,
+        mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
@@ -141,7 +141,7 @@ impl Repo {
                 source.download(pkg.package_id())?;
             }
 
-            f(&pkg.package_id(), &pkg.root())?;
+            f(&pkg)?;
         }
 
         Ok(())
@@ -195,11 +195,12 @@ impl Repo {
     ) -> Result<Option<(PathBuf, semver::Version)>> {
         let mut ret = vec![];
 
-        self.for_every_non_local_dependency_dir(|pkg_id, path| {
+        self.for_every_non_local_dependency_dir(|pkg| {
+            let pkg_id = pkg.package_id();
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
-                ret.push((path.to_owned(), pkg_id.version().to_owned()));
+                ret.push((pkg.root().to_owned(), pkg_id.version().to_owned()));
             }
             Ok(())
         })?;
@@ -553,17 +554,19 @@ fn run_command(command: opts::Command) -> Result<()> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^13} {:6}",
-                        "verifi.", "reviews", "downloads", "owners"
+                        "{:8} {:8} {:^15} {:4} {:4}",
+                        "verifi.", "reviews", "downloads", "own.", "flgs"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
                 let known_owners = read_known_owners().unwrap_or_else(|_| HashSet::new());
-                repo.for_every_non_local_dependency_dir(|pkg_id, path| {
+                repo.for_every_non_local_dependency_dir(|pkg| {
+                    let pkg_id = pkg.package_id();
                     let pkg_name = pkg_id.name().as_str();
                     let pkg_version = pkg_id.version().to_string();
+                    let pkg_root_path = pkg.root();
 
-                    let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
+                    let digest = crev_lib::get_dir_digest(&pkg_root_path, &ignore_list)?;
                     let result = db.verify_package_digest(&digest, &trust_set);
 
                     if result.is_verified() && args.skip_verified {
@@ -621,11 +624,15 @@ fn run_command(command: opts::Command) -> Result<()> {
                         &colored_count_color,
                     )?;
                     print!(
-                        "/{}",
+                        "/{} ",
                         total_owners_count
                             .map(|c| c.to_string())
                             .unwrap_or_else(|| "?".into())
                     );
+                    term.print(
+                        format_args!(" {:4}", if pkg.has_custom_build() { "CB" } else { "" }),
+                        ::term::color::YELLOW,
+                    )?;
                     println!(" {:<20} {:<15}", pkg_name, pkg_version);
 
                     Ok(())
