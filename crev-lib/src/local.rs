@@ -89,6 +89,7 @@ impl Local {
     pub fn auto_create() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.root_path)?;
+        fs::create_dir_all(&repo.cache_remotes_path())?;
 
         let config_path = repo.user_config_path();
         if config_path.exists() {
@@ -415,7 +416,7 @@ impl Local {
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
-        let user_id = user_config.get_current_userid()?;
+        let user_id = user_config.get_current_userid().ok();
 
         let mut something_was_fetched = true;
         while something_was_fetched {
@@ -427,7 +428,7 @@ impl Local {
                 } else {
                     already_fetched.insert(id.to_owned());
                 }
-                if user_id == id {
+                if user_id == Some(id) {
                     continue;
                 } else if let Some(url) = db.lookup_url(id) {
                     let url = url.url.to_string();
