@@ -282,10 +282,8 @@ impl Local {
 
     pub fn init_readme_using_this_repo_file(&self) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
-        let mut file = std::fs::File::create(proof_dir.join("README_USING_THIS_REPO.md"))?;
-        file.write_all(include_bytes!("../rc/doc/README_USING_THIS_REPO.md"))?;
-        file.flush()?;
-        self.proof_dir_git_add_path(&PathBuf::from("README_USING_THIS_REPO.md"))?;
+        std::fs::write(proof_dir.join("README.md"), &include_bytes!("../rc/doc/README.md")[..])?;
+        self.proof_dir_git_add_path(Path::new("README.md"))?;
         Ok(())
     }
 
