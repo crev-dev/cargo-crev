@@ -656,7 +656,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                 }
                 // TODO: move to crev-lib
                 opts::QueryId::All => {
-                    let local = crev_lib::Local::auto_open()?;
+                    let local = crev_lib::Local::auto_create_or_open()?;
                     let (db, _trust_set) = local.load_db(&default())?;
 
                     for id in &db.all_known_ids() {
@@ -723,15 +723,15 @@ fn run_command(command: opts::Command) -> Result<()> {
         }
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_trusted(params.into())?;
             }
             opts::Fetch::Url(params) => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_url(&params.url)?;
             }
             opts::Fetch::All => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_all()?;
             }
         },
