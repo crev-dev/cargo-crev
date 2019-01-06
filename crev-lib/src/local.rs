@@ -416,7 +416,7 @@ impl Local {
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
-        let user_id = user_config.get_current_userid().ok();
+        let user_id = user_config.get_current_userid_opt();
 
         let mut something_was_fetched = true;
         while something_was_fetched {
