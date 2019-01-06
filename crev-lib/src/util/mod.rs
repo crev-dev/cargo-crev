@@ -41,20 +41,26 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
 pub fn edit_file(path: &Path) -> Result<()> {
     let editor = get_editor_to_use()?;
 
-    let status = process::Command::new("/bin/sh")
-        .arg("-c")
-        .arg(format!(
+    let status = if cfg!(windows) {
+        let mut proc = process::Command::new(editor.clone());
+        proc.arg(path);
+        proc
+    } else if cfg!(unix) {
+        let mut proc = process::Command::new("/bin/sh");
+        proc.arg("-c").arg(format!(
             "{} {}",
             editor
                 .clone()
                 .into_string()
                 .map_err(|_| format_err!("$EDITOR or $VISUAL not a valid Unicode"))?,
             shell_escape::escape(path.display().to_string().into())
-        ))
-        .status()
-        .with_context(|_e| {
-            format_err!("Couldn't start the editor: {}", editor.to_string_lossy())
-        })?;
+        ));
+        proc
+    } else {
+        panic!("What platform are you running this on? Please submit a PR!");
+    }
+    .status()
+    .with_context(|_e| format_err!("Couldn't start the editor: {}", editor.to_string_lossy()))?;
 
     if !status.success() {
         bail!("Editor returned {}", status);
