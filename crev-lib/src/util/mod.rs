@@ -7,6 +7,7 @@ use crev_data::proof;
 use std::fmt::Write as FmtWrite;
 use std::{self, env, ffi, fs, io::Write, path::Path, process};
 use tempdir;
+use git2;
 
 pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};
 
@@ -15,14 +16,23 @@ pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
     author: "Dawid Ciężarkiewicz",
 };
 
+fn get_git_default_editor() -> Result<String> {
+    let cfg = git2::Config::open_default()?;
+    Ok(cfg.get_string("core.editor")?)
+}
+
 fn get_editor_to_use() -> Result<ffi::OsString> {
-    Ok(if let Some(v) = env::var_os("VISUAL") {
-        v
-    } else if let Some(v) = env::var_os("EDITOR") {
-        v
-    } else {
-        "vi".into()
-    })
+    Ok(
+        if let Some(v) = env::var_os("VISUAL") {
+            v
+        } else if let Some(v) = env::var_os("EDITOR") {
+            v
+        } else if let Ok(v) = get_git_default_editor() {
+            v.into()
+        }  else {
+            "vi".into()
+        }
+    )
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
