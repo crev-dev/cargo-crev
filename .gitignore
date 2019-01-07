@@ -1,3 +1,7 @@
 /target
 target/
 **/*.rs.bk
+
+# Intellij project files
+*.iml
+.idea
