@@ -3,7 +3,8 @@ members = [
 	"crev-common",
 	"crev-data",
 	"crev-lib",
-	"crev-bin",
+	# defunct
+	# "crev-bin",
 	"cargo-crev",
 	"recursive-digest",
 	"rblake2sum",
