@@ -3,6 +3,7 @@
 pub mod blake2b256;
 pub mod fs;
 pub mod serde;
+pub mod convert;
 
 pub use crate::blake2b256::Blake2b256;
 

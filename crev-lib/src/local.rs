@@ -2,8 +2,7 @@ use crate::ProofStore;
 use crate::{
     id::{self, LockedId, PassphraseFn},
     prelude::*,
-    proofdb::TrustSet,
-    util::self
+    util,
 };
 use crev_common;
 use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
@@ -114,6 +113,26 @@ impl Local {
 
     pub fn read_current_id(&self) -> Result<crev_data::Id> {
         Ok(self.load_user_config()?.get_current_userid()?.to_owned())
+    }
+
+    pub fn read_current_id_opt(&self) -> Result<Option<crev_data::Id>> {
+        Ok(self.load_user_config()?.get_current_userid_opt().cloned())
+    }
+
+    /// Calculate `for_id` that is used in a lot of operations
+    ///
+    /// * if `id_str` is given - convert to Id
+    /// * otherwise return current id
+    pub fn get_for_id_from_str_opt(&self, id_str: Option<&str>) -> Result<Option<Id>> {
+        id_str
+            .map(crev_data::id::Id::crevid_from_str)
+            .or_else(|| self.read_current_id_opt().inside_out())
+            .inside_out()
+    }
+
+    pub fn get_for_id_from_str(&self, id_str: Option<&str>) -> Result<Id> {
+        self.get_for_id_from_str_opt(id_str)?
+            .ok_or_else(|| format_err!("Id not specified and current id not set"))
     }
 
     pub fn save_current_id(&self, id: &Id) -> Result<()> {
@@ -283,7 +302,10 @@ impl Local {
 
     pub fn init_readme_using_this_repo_file(&self) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
-        std::fs::write(proof_dir.join("README.md"), &include_bytes!("../rc/doc/README.md")[..])?;
+        std::fs::write(
+            proof_dir.join("README.md"),
+            &include_bytes!("../rc/doc/README.md")[..],
+        )?;
         self.proof_dir_git_add_path(Path::new("README.md"))?;
         Ok(())
     }
@@ -545,21 +567,14 @@ impl Local {
         Ok(())
     }
 
-    pub fn load_db(
-        &self,
-        params: &crate::TrustDistanceParams,
-    ) -> Result<(crate::ProofDB, TrustSet)> {
-        let user_config = self.load_user_config()?;
+    /// Create a new proofdb, and populate it with local repo
+    /// and cache content.
+    pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
 
-        let trust_set = if let Some(id) = user_config.get_current_userid_opt() {
-            db.calculate_trust_set(id, &params)
-        } else {
-            TrustSet::default()
-        };
-        Ok((db, trust_set))
+        Ok(db)
     }
 
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {

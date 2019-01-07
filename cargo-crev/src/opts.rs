@@ -69,6 +69,9 @@ pub struct VerifyDeps {
 
     #[structopt(long = "skip-known-owners")]
     pub skip_known_owners: bool,
+
+    #[structopt(long = "for-id")]
+    pub for_id: Option<String>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -127,6 +130,9 @@ pub enum QueryId {
     Trusted {
         #[structopt(flatten)]
         trust_params: TrustParams,
+
+        #[structopt(long = "for-id")]
+        for_id: Option<String>,
     },
 }
 

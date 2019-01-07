@@ -9,9 +9,9 @@ use cargo::{
     core::{Package, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
+use crev_common::convert::OptionDeref;
 use crev_lib::ProofStore;
 use crev_lib::{self, local::Local};
-use default::default;
 use semver;
 use serde::Deserialize;
 use std::{
@@ -423,10 +423,9 @@ fn create_review_proof(
 
 fn find_reviews(
     crate_: &opts::CrateSelector,
-    trust_params: &crev_lib::TrustDistanceParams,
 ) -> Result<impl Iterator<Item = proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
-    let (db, _trust_set) = local.load_db(&trust_params)?;
+    let db = local.load_db()?;
     Ok(db.get_package_reviews_for_package(
         PROJECT_SOURCE_CRATES_IO,
         crate_.name.as_ref().map(|s| s.as_str()),
@@ -436,7 +435,7 @@ fn find_reviews(
 
 fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     // TODO: take trust params?
-    for review in find_reviews(crate_, &default())? {
+    for review in find_reviews(crate_)? {
         println!("{}", review);
     }
 
@@ -510,7 +509,18 @@ fn create_trust_proof(
     Ok(())
 }
 
-fn run_command(command: opts::Command) -> Result<()> {
+/// Result of `run_command`
+///
+/// This is to distinguish expeced non-success results,
+/// from errors: unexpected failures.
+enum CommandExitStatus {
+    // `verify deps` failed
+    VerificationFailed,
+    // Success, exit code 0
+    Successs,
+}
+
+fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
@@ -540,10 +550,18 @@ fn run_command(command: opts::Command) -> Result<()> {
             }
         },
         opts::Command::Verify(cmd) => match cmd {
+            // TODO: This is waaay too long; refactor
             opts::Verify::Deps(args) => {
                 let mut term = term::Term::new();
                 let local = crev_lib::Local::auto_create_or_open()?;
-                let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
+                let db = local.load_db()?;
+
+                let trust_set =
+                    if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
+                        db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+                    } else {
+                        crev_lib::proofdb::TrustSet::default()
+                    };
 
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_min_ignore_list();
@@ -560,6 +578,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
                 let known_owners = read_known_owners().unwrap_or_else(|_| HashSet::new());
+                let mut total_verification_successful = true;
                 repo.for_every_non_local_dependency_dir(|pkg| {
                     let pkg_id = pkg.package_id();
                     let pkg_name = pkg_id.name().as_str();
@@ -568,6 +587,10 @@ fn run_command(command: opts::Command) -> Result<()> {
 
                     let digest = crev_lib::get_dir_digest(&pkg_root_path, &ignore_list)?;
                     let result = db.verify_package_digest(&digest, &trust_set);
+
+                    if !result.is_verified() {
+                        total_verification_successful = false;
+                    }
 
                     if result.is_verified() && args.skip_verified {
                         return Ok(());
@@ -637,6 +660,12 @@ fn run_command(command: opts::Command) -> Result<()> {
 
                     Ok(())
                 })?;
+
+                return Ok(if total_verification_successful {
+                    CommandExitStatus::Successs
+                } else {
+                    CommandExitStatus::VerificationFailed
+                });
             }
         },
         opts::Command::Query(cmd) => match cmd {
@@ -650,9 +679,15 @@ fn run_command(command: opts::Command) -> Result<()> {
                     local.list_own_ids()?
                 }
                 // TODO: move to crev-lib
-                opts::QueryId::Trusted { trust_params } => {
+                opts::QueryId::Trusted {
+                    for_id,
+                    trust_params,
+                } => {
                     let local = crev_lib::Local::auto_open()?;
-                    let (db, trust_set) = local.load_db(&trust_params.into())?;
+                    let db = local.load_db()?;
+                    let for_id = local.get_for_id_from_str(for_id.as_deref())?;
+                    let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
+
                     for id in trust_set.trusted_ids() {
                         println!(
                             "{} {}",
@@ -664,7 +699,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                 // TODO: move to crev-lib
                 opts::QueryId::All => {
                     let local = crev_lib::Local::auto_create_or_open()?;
-                    let (db, _trust_set) = local.load_db(&default())?;
+                    let db = local.load_db()?;
 
                     for id in &db.all_known_ids() {
                         println!(
@@ -771,11 +806,18 @@ fn run_command(command: opts::Command) -> Result<()> {
         },
     }
 
-    Ok(())
+    Ok(CommandExitStatus::Successs)
 }
 
 fn main() {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
-    run_command(command).unwrap_or_else(|e| eprintln!("{}", e.display_causes_and_backtrace()));
+    match run_command(command) {
+        Ok(CommandExitStatus::Successs) => {}
+        Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
+        Err(e) => {
+            eprintln!("{}", e.display_causes_and_backtrace());
+            std::process::exit(-2)
+        }
+    }
 }
