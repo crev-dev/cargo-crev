@@ -477,11 +477,9 @@ impl Local {
         let dir = self.get_remote_git_cache_path(url);
 
         if dir.exists() {
-            eprint!("Fetching {}... ", url);
             let repo = git2::Repository::open(&dir)?;
             util::git::fetch_and_checkout_git_repo(&repo)?
         } else {
-            eprint!("Cloning {}... ", url);
             git2::Repository::clone(url, &dir)?;
         }
 
@@ -492,6 +490,7 @@ impl Local {
         let prev_pkg_review_count = db.unique_package_review_proof_count();
         let prev_trust_count = db.unique_trust_proof_count();
 
+        eprint!("Fetching {}... ", url);
         match self.fetch_remote_git(url) {
             Ok(dir) => {
                 db.import_from_iter(proofs_iter_for_path(dir));
