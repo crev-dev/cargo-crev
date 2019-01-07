@@ -149,6 +149,17 @@ impl ProofDB {
         default()
     }
 
+    pub fn unique_package_review_proof_count(&self) -> usize {
+        self.package_review_signatures_by_unique_package_review
+            .len()
+    }
+
+    pub fn unique_trust_proof_count(&self) -> usize {
+        self.trust_id_to_id
+            .iter()
+            .fold(0, |count, (_id, set)| count + set.len())
+    }
+
     fn add_code_review(&mut self, review: &review::Code) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);

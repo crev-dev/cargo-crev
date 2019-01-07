@@ -2,7 +2,7 @@ use crate::ProofStore;
 use crate::{
     id::{self, LockedId, PassphraseFn},
     prelude::*,
-    util,
+    util, ProofDB,
 };
 use crev_common;
 use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
@@ -389,7 +389,8 @@ impl Local {
     }
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
-        let _success = util::err_eprint_and_ignore(self.fetch_remote_git(url).compat());
+        let mut db = self.load_db()?;
+        self.fetch_proof_repo_import_and_print_counts(url, &mut db);
         Ok(())
     }
 
@@ -415,15 +416,8 @@ impl Local {
                 }
                 if user_id == id {
                     continue;
-                } else if let Some(url) = db.lookup_url(id) {
-                    let success =
-                        util::err_eprint_and_ignore(self.fetch_remote_git(&url.url).compat());
-                    if success {
-                        something_was_fetched = true;
-                        db.import_from_iter(proofs_iter_for_path(
-                            self.get_remote_git_cache_path(&url.url),
-                        ));
-                    }
+                } else if let Some(url) = db.lookup_url(id).cloned() {
+                    self.fetch_proof_repo_import_and_print_counts(&url.url, &mut db);
                 } else {
                     eprintln!("No URL for {}", id);
                 }
@@ -432,11 +426,12 @@ impl Local {
         Ok(())
     }
 
-    fn fetch_all_ids_recursively(&self, mut already_fetched_urls: HashSet<String>) -> Result<()> {
+    fn fetch_all_ids_recursively(
+        &self,
+        mut already_fetched_urls: HashSet<String>,
+        db: &mut ProofDB,
+    ) -> Result<()> {
         let mut already_fetched = HashSet::new();
-        let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
         let user_config = self.load_user_config()?;
         let user_id = user_config.get_current_userid_opt();
 
@@ -452,22 +447,15 @@ impl Local {
                 }
                 if user_id == Some(id) {
                     continue;
-                } else if let Some(url) = db.lookup_url(id) {
-                    let url = url.url.to_string();
+                } else if let Some(url) = db.lookup_url(id).cloned() {
+                    let url = url.url;
 
                     if already_fetched_urls.contains(&url) {
                         continue;
                     } else {
                         already_fetched_urls.insert(url.clone());
                     }
-
-                    let success = util::err_eprint_and_ignore(self.fetch_remote_git(&url).compat());
-                    if success {
-                        something_was_fetched = true;
-                        db.import_from_iter(proofs_iter_for_path(
-                            self.get_remote_git_cache_path(&url),
-                        ));
-                    }
+                    self.fetch_proof_repo_import_and_print_counts(&url, db);
                 } else {
                     eprintln!("No URL for {}", id);
                 }
@@ -482,23 +470,55 @@ impl Local {
         self.cache_remotes_path().join(digest.to_string())
     }
 
-    pub fn fetch_remote_git(&self, url: &str) -> Result<()> {
+    /// Fetch a git proof repository
+    ///
+    /// Returns url where it was cloned/fetched
+    pub fn fetch_remote_git(&self, url: &str) -> Result<PathBuf> {
         let dir = self.get_remote_git_cache_path(url);
 
         if dir.exists() {
-            eprintln!("Fetching {} to {}", url, dir.display());
-            let repo = git2::Repository::open(dir)?;
+            eprint!("Fetching {}... ", url);
+            let repo = git2::Repository::open(&dir)?;
             util::git::fetch_and_checkout_git_repo(&repo)?
         } else {
-            eprintln!("Cloning {} to {}", url, dir.display());
-            git2::Repository::clone(url, dir)?;
+            eprint!("Cloning {}... ", url);
+            git2::Repository::clone(url, &dir)?;
         }
 
-        Ok(())
+        Ok(dir)
+    }
+
+    pub fn fetch_proof_repo_import_and_print_counts(&self, url: &str, db: &mut ProofDB) {
+        let prev_pkg_review_count = db.unique_package_review_proof_count();
+        let prev_trust_count = db.unique_trust_proof_count();
+
+        match self.fetch_remote_git(url) {
+            Ok(dir) => {
+                db.import_from_iter(proofs_iter_for_path(dir));
+
+                eprint!("OK");
+
+                let new_pkg_review_count =
+                    db.unique_package_review_proof_count() - prev_pkg_review_count;
+                let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
+
+                if new_trust_count > 0 {
+                    eprint!("; {} new trust proofs", new_pkg_review_count);
+                }
+                if new_pkg_review_count > 0 {
+                    eprint!("; {} new package reviews", new_pkg_review_count);
+                }
+                eprintln!("");
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+            }
+        }
     }
 
     pub fn fetch_all(&self) -> Result<()> {
         let mut fetched_urls = HashSet::new();
+        let mut db = self.load_db()?;
         for entry in fs::read_dir(self.cache_remotes_path())? {
             let path = entry?.path();
             if !path.is_dir() {
@@ -524,8 +544,7 @@ impl Local {
             match url {
                 Ok(url) => {
                     fetched_urls.insert(url.clone());
-                    let _success =
-                        util::err_eprint_and_ignore(self.fetch_remote_git(&url).compat());
+                    self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
                 }
                 Err(e) => {
                     eprintln!("ERR: {} {}", path.display(), e);
@@ -533,7 +552,7 @@ impl Local {
             }
         }
 
-        self.fetch_all_ids_recursively(fetched_urls)?;
+        self.fetch_all_ids_recursively(fetched_urls, &mut db)?;
 
         Ok(())
     }

@@ -102,12 +102,12 @@ pub fn edit_proof_content_iteractively(content: &proof::Content) -> Result<proof
     }
 }
 
-pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> bool {
+pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> Option<O> {
     match res {
         Err(e) => {
             eprintln!("{}", e);
-            false
+            None
         }
-        Ok(_) => true,
+        Ok(o) => Some(o),
     }
 }
