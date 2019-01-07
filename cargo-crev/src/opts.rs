@@ -77,7 +77,17 @@ pub struct VerifyDeps {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Verify {
     /// Verify dependencies
-    #[structopt(name = "deps")]
+    #[structopt(
+        name = "deps",
+        after_help = r"This will show the following information:
+
+- Verification status: unknown, trusted or flagged
+- Number of reviews for the specific version and for all versions
+- Number of downloads for the specific version and for all versions
+- Number of owners and how many of them are known
+- Flags for specific types of packages (e.g. CB for custom build)
+- Name and version of the crate"
+    )]
     Deps(VerifyDeps),
 }
 
