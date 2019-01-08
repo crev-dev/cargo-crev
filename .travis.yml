@@ -12,4 +12,4 @@ rust:
 script:
   - cargo build --verbose
   - cargo test --verbose
-  - cargo fmt --all -- --check
+  - rustup component add rustfmt && cargo fmt --all -- --check
