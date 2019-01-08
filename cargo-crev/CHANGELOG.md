@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.3.0...HEAD)
+### Added
+- This `CHANGELOG.md` file.
+
 ### Changed
 - Windows cache folder changed from `%AppData%\Local\Dawid Ci,281,,380,arkiewicz\crev\`
 to `%AppData%\Local\crev`.
