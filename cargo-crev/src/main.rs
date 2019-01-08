@@ -317,6 +317,33 @@ fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<(
     Ok(())
 }
 
+/// Open a crate
+///
+/// * `independent` - the crate might not actually be a dependency
+fn crate_open(name: &str, version: Option<&str>, independent: bool) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+    let (pkg_dir, _) = repo.find_crate(name, version, independent)?;
+
+    let status = if cfg!(target_os = "windows") {
+        process::Command::new("start")
+    } else if cfg!(target_os = "macos") {
+        process::Command::new("open")
+    } else if cfg!(target_os = "linux") {
+        process::Command::new("xdg-open")
+    } else {
+        eprintln!("Unsupported platform. Please submit a PR!");
+        process::Command::new("xdg-open")
+    }
+    .arg(pkg_dir)
+    .status()?;
+
+    if !status.success() {
+        bail!("Shell returned {}", status);
+    }
+
+    Ok(())
+}
+
 /// Review a crate
 ///
 /// * `independent` - the crate might not actually be a dependency
@@ -716,6 +743,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
         opts::Command::Goto(args) => {
             goto_crate_src(&args.crate_, args.independent)?;
+        }
+        opts::Command::Open(args) => {
+            handle_goto_mode_command(&args, |c, v, i| crate_open(c, v, i))?;
         }
         opts::Command::Flag(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {

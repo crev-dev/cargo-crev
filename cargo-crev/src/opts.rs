@@ -305,6 +305,10 @@ pub enum Command {
     #[structopt(name = "goto")]
     Goto(ReviewOrGotoCommon),
 
+    /// Open source code of a crate
+    #[structopt(name = "open")]
+    Open(ReviewOrGotoCommon),
+
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
