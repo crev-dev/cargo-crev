@@ -2,14 +2,16 @@ use crate::VerificationStatus;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
-    proof::review::Rating,
-    proof::trust::TrustLevel,
-    proof::{self, review, Content, ContentCommon},
+    proof::{
+        self,
+        review::{self, Rating},
+        trust::TrustLevel,
+        Content, ContentCommon,
+    },
     Digest, Id, Url,
 };
 use default::default;
-use std::collections::BTreeMap;
-use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
+use std::collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// A `T` with a timestamp
 ///

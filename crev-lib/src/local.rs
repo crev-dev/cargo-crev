@@ -1,11 +1,14 @@
-use crate::ProofStore;
 use crate::{
     id::{self, LockedId, PassphraseFn},
     prelude::*,
-    util, ProofDB,
+    util, ProofDB, ProofStore,
 };
 use crev_common;
-use crev_data::{id::OwnId, proof, proof::trust::TrustLevel, Id, PubId, Url};
+use crev_data::{
+    id::OwnId,
+    proof::{self, trust::TrustLevel},
+    Id, PubId, Url,
+};
 use default::default;
 use directories::ProjectDirs;
 use failure::ResultExt;
@@ -13,8 +16,8 @@ use git2;
 use insideout::InsideOut;
 use resiter_dpc_tmp::*;
 use serde_yaml;
-use std::cell::RefCell;
 use std::{
+    cell::RefCell,
     collections::HashSet,
     ffi::OsString,
     fs,

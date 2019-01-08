@@ -1,10 +1,11 @@
 use crate::prelude::*;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::fs;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use serde::{de::DeserializeOwned, Serialize};
+use std::{
+    fs,
+    io::Read,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 pub struct Client {
     client: crates_io_api::SyncClient,

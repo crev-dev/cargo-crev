@@ -1,8 +1,9 @@
 use crev_lib::Colored;
-use std::fmt::Arguments;
-use std::io::{self, Write};
-use term::color::Color;
-use term::{self, StderrTerminal, StdoutTerminal};
+use std::{
+    fmt::Arguments,
+    io::{self, Write},
+};
+use term::{self, color::Color, StderrTerminal, StdoutTerminal};
 
 pub struct Term {
     pub stdout_is_tty: bool,

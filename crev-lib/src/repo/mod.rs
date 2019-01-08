@@ -1,11 +1,6 @@
-use crate::id::PassphraseFn;
-use crate::prelude::*;
-use crate::proofdb::TrustSet;
-use crate::ProofStore;
-use crate::{local::Local, util};
+use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
 use crev_common::convert::OptionDeref;
-use crev_data::proof;
-use crev_data::Digest;
+use crev_data::{proof, Digest};
 use git2;
 use serde_yaml;
 use std::{
