@@ -1,9 +1,11 @@
 use crev_recursive_digest::DigestError;
 use digest::Digest;
-use std::collections::HashSet;
-use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use tempdir::TempDir;
 
 #[test]

@@ -1,8 +1,6 @@
 use super::*;
 
-use crev_data::proof::trust::TrustLevel;
-use crev_data::Digest;
-use crev_data::OwnId;
+use crev_data::{proof::trust::TrustLevel, Digest, OwnId};
 use default::default;
 
 // Basic liftime of an `LockedId`:

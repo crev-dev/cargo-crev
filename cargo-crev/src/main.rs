@@ -4,14 +4,11 @@ extern crate structopt;
 use self::prelude::*;
 use ::term::color;
 use cargo::{
-    core::dependency::Dependency,
-    core::source::SourceMap,
-    core::{Package, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
-use crev_lib::ProofStore;
-use crev_lib::{self, local::Local};
+use crev_lib::{self, local::Local, ProofStore};
 use semver;
 use serde::Deserialize;
 use std::{
@@ -29,7 +26,7 @@ mod prelude;
 mod term;
 
 use crev_data::proof;
-use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
+use crev_lib::TrustOrDistrust::{self, *};
 
 struct Repo {
     manifest_path: PathBuf,

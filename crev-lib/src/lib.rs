@@ -14,8 +14,7 @@ pub mod repo;
 pub mod staging;
 pub mod util;
 
-use crate::prelude::*;
-use crate::proofdb::TrustSet;
+use crate::{prelude::*, proofdb::TrustSet};
 use crev_data::Digest;
 use std::{
     collections::HashSet,

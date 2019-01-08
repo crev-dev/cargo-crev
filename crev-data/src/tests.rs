@@ -1,8 +1,7 @@
-use crate::Url;
 use crate::{
     id::OwnId,
     proof::{self, Proof, Serialized},
-    Result,
+    Result, Url,
 };
 use std::path::PathBuf;
 
