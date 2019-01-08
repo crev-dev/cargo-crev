@@ -30,7 +30,7 @@ All of this neatly integrated with the `cargo` itself!
 * People download your reviews, you download reviews of others.
 * Build a web of trust veting whole Rust ecosystem.
 * Gain reputation and trust. Maybe even monetize it, by reving code for money.
-* Implement it in your company and/or team to stay ahead! 
+* Implement it in your company and/or team to stay ahead!
 * Never again get bitten by unreviewed and untrusted code.
 
 ## More info
@@ -44,6 +44,10 @@ for Rust/crates.io ecosystem.
 See it in action:
 
 [![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695?speed=3)
+
+## Changelog
+
+Changelog can be found here: https://github.com/dpc/crev/cargo-crev/CHANGELOG.md
 
 ## Getting started
 
