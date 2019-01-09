@@ -393,7 +393,14 @@ impl Local {
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
-        self.fetch_proof_repo_import_and_print_counts(url, &mut db);
+        if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
+            let mut db = ProofDB::new();
+            db.import_from_iter(proofs_iter_for_path(dir));
+            eprintln!("Found proofs from:");
+            for (id, count) in db.all_author_ids() {
+                println!("{:>8} {}", count, id);
+            }
+        }
         Ok(())
     }
 
@@ -489,14 +496,18 @@ impl Local {
         Ok(dir)
     }
 
-    pub fn fetch_proof_repo_import_and_print_counts(&self, url: &str, db: &mut ProofDB) {
+    pub fn fetch_proof_repo_import_and_print_counts(
+        &self,
+        url: &str,
+        db: &mut ProofDB,
+    ) -> Option<PathBuf> {
         let prev_pkg_review_count = db.unique_package_review_proof_count();
         let prev_trust_count = db.unique_trust_proof_count();
 
         eprint!("Fetching {}... ", url);
         match self.fetch_remote_git(url) {
             Ok(dir) => {
-                db.import_from_iter(proofs_iter_for_path(dir));
+                db.import_from_iter(proofs_iter_for_path(dir.clone()));
 
                 eprint!("OK");
 
@@ -511,9 +522,11 @@ impl Local {
                     eprint!("; {} new package reviews", new_pkg_review_count);
                 }
                 eprintln!("");
+                Some(dir)
             }
             Err(e) => {
                 eprintln!("Error: {}", e);
+                None
             }
         }
     }

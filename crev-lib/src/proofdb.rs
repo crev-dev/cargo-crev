@@ -290,6 +290,23 @@ impl ProofDB {
             .collect()
     }
 
+    /// Get all Ids that authored a proof (with total count)
+    pub fn all_author_ids(&self) -> BTreeMap<Id, usize> {
+        let mut res = BTreeMap::new();
+        for (id, set) in &self.trust_id_to_id {
+            *res.entry(id.to_owned()).or_default() += set.len();
+        }
+
+        for uniq_rev in self
+            .package_review_signatures_by_unique_package_review
+            .keys()
+        {
+            *res.entry(uniq_rev.from.clone()).or_default() += 1;
+        }
+
+        res
+    }
+
     pub fn get_package_reviews_by_digest<'a>(
         &'a self,
         digest: &Digest,
