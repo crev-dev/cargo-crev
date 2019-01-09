@@ -3,7 +3,11 @@ use std::{
     fmt::Arguments,
     io::{self, Write},
 };
-use term::{self, color, color::Color, StderrTerminal, StdoutTerminal};
+use term::{
+    self,
+    color::{self, Color},
+    StderrTerminal, StdoutTerminal,
+};
 
 pub fn verification_status_color(s: &VerificationStatus) -> Option<color::Color> {
     match s {
