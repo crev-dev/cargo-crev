@@ -1,4 +1,4 @@
 Checklist:
 
-* [ ] Make sure you're using `rustfmt`
+* [ ] `cargo +nightly fmt --all`
 * [ ] Modify `CHANGELOG.md` if applicable
