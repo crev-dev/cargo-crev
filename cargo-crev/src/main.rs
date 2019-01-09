@@ -493,7 +493,7 @@ where
             let name = env::var(GOTO_CRATE_NAME_ENV)
                 .map_err(|_| format_err!("crate name env var not found"))?;
             let version = env::var(GOTO_CRATE_VERSION_ENV)
-                .map_err(|_| format_err!("crate versoin env var not found"))?;
+                .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
             f(&name, Some(&version), true)?;
