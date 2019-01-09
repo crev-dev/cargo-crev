@@ -92,6 +92,31 @@ impl Repo {
         })
     }
 
+    fn update_source(&self) -> Result<()> {
+        let mut source = self.load_source()?;
+        source.update()?;
+        Ok(())
+    }
+
+    fn update_counts(&self) -> Result<()> {
+        let local = crev_lib::Local::auto_create_or_open()?;
+        let crates_io = crates_io::Client::new(&local)?;
+
+        self.for_every_non_local_dep_crate(|crate_| {
+            let _ = crates_io.get_downloads_count(&crate_.name(), &crate_.version().to_string());
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    fn load_source<'a>(&'a self) -> Result<Box<cargo::core::source::Source + 'a>> {
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source = map.load(&source_id)?;
+        Ok(source)
+    }
+
     /// Run `f` for every non-local dependency crate
     fn for_every_non_local_dep_crate(
         &self,
@@ -107,9 +132,7 @@ impl Repo {
             false, // no_default_features
             &specs,
         )?;
-        let source_id = SourceId::crates_io(&self.config)?;
-        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let mut source = map.load(&source_id)?;
+        let mut source = self.load_source()?;
 
         let pkgs = package_set.get_many(package_set.package_ids())?;
 
@@ -133,9 +156,7 @@ impl Repo {
         name: &str,
         version: Option<&str>,
     ) -> Result<Option<Package>> {
-        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let source_id = SourceId::crates_io(&self.config)?;
-        let mut source = map.load(&source_id)?;
+        let mut source = self.load_source()?;
         let mut summaries = vec![];
         let dependency_request =
             Dependency::parse_no_deprecated(name, version, source.source_id())?;
@@ -702,7 +723,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     let local = Local::auto_open()?;
                     local.list_own_ids()?
                 }
-                // TODO: move to crev-lib
                 opts::QueryId::Trusted {
                     for_id,
                     trust_params,
@@ -807,6 +827,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 local.fetch_all()?;
             }
         },
+        opts::Command::Update => {
+            let repo = Repo::auto_open_cwd()?;
+            repo.update_source()?;
+            repo.update_counts()?;
+        }
         opts::Command::Export(cmd) => match cmd {
             opts::Export::Id(params) => {
                 let local = Local::auto_open()?;
