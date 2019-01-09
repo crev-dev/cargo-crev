@@ -714,8 +714,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
                     for id in trust_set.trusted_ids() {
                         println!(
-                            "{} {}",
+                            "{} {:6} {}",
                             id,
+                            trust_set
+                                .get_effective_trust_level(id)
+                                .expect("Some trust level"),
                             db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
                         );
                     }
