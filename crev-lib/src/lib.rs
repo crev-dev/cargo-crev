@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate term;
 
 #[macro_use]
 extern crate failure;
@@ -81,24 +80,6 @@ impl VerificationStatus {
         match self {
             VerificationStatus::Verified(_) => true,
             _ => false,
-        }
-    }
-}
-
-/// Trait for stuff that has a coresponding color somewhere in the "UI"
-//
-// TODO: This has to find some better place than here.
-pub trait Colored {
-    fn color(&self) -> Option<term::color::Color>;
-}
-
-impl Colored for VerificationStatus {
-    fn color(&self) -> Option<term::color::Color> {
-        match *self {
-            VerificationStatus::Verified(_) => Some(term::color::GREEN),
-            VerificationStatus::Flagged => Some(term::color::YELLOW),
-            VerificationStatus::Dangerous => Some(term::color::RED),
-            _ => None,
         }
     }
 }

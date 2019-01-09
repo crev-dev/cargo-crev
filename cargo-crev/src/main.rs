@@ -2,7 +2,6 @@
 extern crate structopt;
 
 use self::prelude::*;
-use ::term::color;
 use cargo::{
     core::{dependency::Dependency, source::SourceMap, Package, SourceId},
     util::important_paths::find_root_manifest_for_wd,
@@ -13,7 +12,7 @@ use semver;
 use serde::Deserialize;
 use std::{
     collections::HashSet,
-    env, fmt,
+    env,
     io::BufRead,
     path::{Path, PathBuf},
     process,
@@ -71,26 +70,6 @@ impl VcsInfoJson {
     fn get_git_revision(&self) -> Option<String> {
         let VcsInfoJsonGit::Sha1(ref s) = self.git;
         Some(s.to_string())
-    }
-}
-
-/// TODO: Get rid of this
-#[derive(Debug)]
-struct KnownOwnersColored(usize);
-
-impl fmt::Display for KnownOwnersColored {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
-    }
-}
-
-impl crev_lib::Colored for KnownOwnersColored {
-    fn color(&self) -> Option<color::Color> {
-        if self.0 > 0 {
-            Some(color::GREEN)
-        } else {
-            None
-        }
     }
 }
 
@@ -671,7 +650,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     if args.verbose {
                         print!("{:43} ", digest);
                     }
-                    term.stdout(format_args!("{:8}", result), &result)?;
+                    term.print(
+                        format_args!("{:8}", result),
+                        term::verification_status_color(&result),
+                    )?;
                     print!(
                         " {:2} {:2} {:>8} {:>9}",
                         pkg_version_review_count,
@@ -679,15 +661,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         version_downloads,
                         total_downloads,
                     );
-                    let colored_count_color = KnownOwnersColored(known_owners_count.unwrap_or(0));
-                    term.stdout(
+                    term.print(
                         format_args!(
                             " {}",
                             &known_owners_count
                                 .map(|c| c.to_string())
                                 .unwrap_or_else(|| "?".into())
                         ),
-                        &colored_count_color,
+                        term::known_owners_count_color(known_owners_count.unwrap_or(0)),
                     )?;
                     print!(
                         "/{} ",

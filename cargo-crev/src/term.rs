@@ -1,15 +1,33 @@
-use crev_lib::Colored;
+use crev_lib::VerificationStatus;
 use std::{
     fmt::Arguments,
     io::{self, Write},
 };
-use term::{self, color::Color, StderrTerminal, StdoutTerminal};
+use term::{self, color, color::Color, StderrTerminal, StdoutTerminal};
+
+pub fn verification_status_color(s: &VerificationStatus) -> Option<color::Color> {
+    match s {
+        VerificationStatus::Verified(_) => Some(term::color::GREEN),
+        VerificationStatus::Flagged => Some(term::color::YELLOW),
+        VerificationStatus::Dangerous => Some(term::color::RED),
+        _ => None,
+    }
+}
+
+pub fn known_owners_count_color(count: usize) -> Option<color::Color> {
+    if count > 0 {
+        Some(color::GREEN)
+    } else {
+        None
+    }
+}
 
 pub struct Term {
     pub stdout_is_tty: bool,
     pub stderr_is_tty: bool,
     pub stdin_is_tty: bool,
     stdout: Option<Box<StdoutTerminal>>,
+    #[allow(unused)]
     stderr: Option<Box<StderrTerminal>>,
 }
 
@@ -36,6 +54,7 @@ where
 
     Ok(())
 }
+
 impl Term {
     pub fn new() -> Term {
         Term {
@@ -64,32 +83,19 @@ impl Term {
         Ok(())
     }
 
-    pub fn stdout<T>(&mut self, fmt: Arguments, t: &T) -> io::Result<()>
-    where
-        T: Colored,
-    {
-        if let Some(ref mut term) = self.stdout {
-            output_to(
-                fmt,
-                t.color(),
-                (&mut **term) as &mut term::Terminal<Output = _>,
-                self.stdout_is_tty,
-            )?;
-        }
-        Ok(())
-    }
-
     #[allow(unused)]
-    pub fn stderr<T>(&mut self, fmt: Arguments, t: &T) -> io::Result<()>
+    pub fn eprint<C>(&mut self, fmt: Arguments, color: C) -> io::Result<()>
     where
-        T: Colored,
+        C: Into<Option<Color>>,
     {
+        let color = color.into();
+
         if let Some(ref mut term) = self.stderr {
             output_to(
                 fmt,
-                t.color(),
+                color,
                 (&mut **term) as &mut term::Terminal<Output = _>,
-                self.stderr_is_tty,
+                self.stdout_is_tty,
             )?;
         }
         Ok(())
