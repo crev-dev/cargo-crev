@@ -605,7 +605,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_min_ignore_list();
-                let cratesio = crates_io::Client::new(&local)?;
+                let crates_io = crates_io::Client::new(&local)?;
 
                 if term.stderr_is_tty && term.stdout_is_tty {
                     if args.verbose {
@@ -619,13 +619,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
                 let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
                 let mut total_verification_successful = true;
-                repo.for_every_non_local_dep_crate(|pkg| {
-                    let pkg_id = pkg.package_id();
-                    let pkg_name = pkg_id.name().as_str();
-                    let pkg_version = pkg_id.version().to_string();
-                    let pkg_root_path = pkg.root();
+                repo.for_every_non_local_dep_crate(|crate_| {
+                    let crate_id = crate_.package_id();
+                    let crate_name = crate_id.name().as_str();
+                    let crate_version = crate_id.version().to_string();
+                    let crate_root = crate_.root();
 
-                    let digest = crev_lib::get_dir_digest(&pkg_root_path, &ignore_list)?;
+                    let digest = crev_lib::get_dir_digest(&crate_root, &ignore_list)?;
                     let result = db.verify_package_digest(&digest, &trust_set);
 
                     if !result.is_verified() {
@@ -636,20 +636,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         return Ok(());
                     }
 
-                    let pkg_review_count =
-                        db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(pkg_name), None);
+                    let pkg_review_count = db.get_package_review_count(
+                        PROJECT_SOURCE_CRATES_IO,
+                        Some(crate_name),
+                        None,
+                    );
                     let pkg_version_review_count = db.get_package_review_count(
                         PROJECT_SOURCE_CRATES_IO,
-                        Some(pkg_name),
-                        Some(&pkg_version),
+                        Some(crate_name),
+                        Some(&crate_version),
                     );
 
-                    let (version_downloads, total_downloads) = cratesio
-                        .get_downloads_count(&pkg_name, &pkg_version)
+                    let (version_downloads, total_downloads) = crates_io
+                        .get_downloads_count(&crate_name, &crate_version)
                         .map(|(a, b)| (a.to_string(), b.to_string()))
                         .unwrap_or_else(|_e| ("err".into(), "err".into()));
 
-                    let owners = cratesio.get_owners(&pkg_name).ok();
+                    let owners = crates_io.get_owners(&crate_name).ok();
                     let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
                         let total_owners_count = owners.len();
                         let known_owners_count = owners
@@ -693,10 +696,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .unwrap_or_else(|| "?".into())
                     );
                     term.print(
-                        format_args!(" {:4}", if pkg.has_custom_build() { "CB" } else { "" }),
+                        format_args!(" {:4}", if crate_.has_custom_build() { "CB" } else { "" }),
                         ::term::color::YELLOW,
                     )?;
-                    println!(" {:<20} {:<15}", pkg_name, pkg_version);
+                    println!(" {:<20} {:<15}", crate_name, crate_version);
 
                     Ok(())
                 })?;
