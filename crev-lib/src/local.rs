@@ -65,7 +65,7 @@ pub struct Local {
 impl Local {
     #[allow(clippy::new_ret_no_self)]
     fn new() -> Result<Self> {
-        let proj_dir = ProjectDirs::from("dev", "", "crev")
+        let proj_dir = ProjectDirs::from("", "", "crev")
             .expect("no valid home directory path could be retrieved from the operating system");
         let root_path = proj_dir.config_dir().into();
         let cache_path = proj_dir.cache_dir().into();
