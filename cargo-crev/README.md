@@ -74,18 +74,16 @@ path.
 
 
 
-If you wish to use latest release, try instead:
+If you wish to use latest release:
 
 ```
 cargo install cargo-crev
 ```
 
-and you're all set.
-
 ### Installing from github
 
 We try to release often, but new features are added at fast pace. If
-you want to the git version:
+you want to try the git version:
 
 ```
 cargo install --git https://github.com/dpc/crev/ cargo-crev
