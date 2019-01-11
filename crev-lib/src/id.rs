@@ -148,6 +148,7 @@ impl LockedId {
             for _ in 0..5 {
                 let passphrase = passphrase_callback()?;
                 let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
+                eprintln!("H{:?}", passphrase_hash);
                 let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
 
                 match siv.open(&seal_nonce, &[], &sealed_secret_key) {

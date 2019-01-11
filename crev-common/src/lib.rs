@@ -86,7 +86,9 @@ pub fn read_passphrase() -> io::Result<String> {
         return Ok(pass);
     }
     eprint!("Enter passphrase to unlock: ");
-    rpassword::read_password()
+    let pass = rpassword::read_password()?;
+    eprintln!("pass was: `{}`", pass);
+    Ok(pass)
 }
 
 pub fn read_new_passphrase() -> io::Result<String> {
