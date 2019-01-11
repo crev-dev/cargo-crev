@@ -58,6 +58,12 @@ impl Id {
 
         Ok(())
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Id::Crev { id } => id.clone(),
+        }
+    }
 }
 
 impl fmt::Display for Id {

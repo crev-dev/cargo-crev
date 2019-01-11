@@ -148,7 +148,9 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content))
+        // TODO: What about the merge conflicts, etc? https://github.com/dpc/crev/issues/153
+        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content, &[]));
+        unimplemented!();
     }
 
     pub fn package_verify(

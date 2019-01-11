@@ -4,6 +4,7 @@ use crate::{
     util, ProofDB, ProofStore,
 };
 use crev_common;
+use crev_common::serde::{as_base64, from_base64};
 use crev_data::{
     id::OwnId,
     proof::{self, trust::TrustLevel},
@@ -27,11 +28,33 @@ use std::{
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
+fn generete_salt() -> Vec<u8> {
+    crev_common::rand::random_vec(32)
+}
+
+/// Backfill the host salt
+///
+/// For people that have configs generated when
+/// `host_salt` was not a thing - generate some
+/// form of stable id
+///
+/// TODO: at some point this should no longer be neccessary
+fn backfill_salt() -> Vec<u8> {
+    crev_common::blake2b256sum(b"BACKFILLED_SUM")
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserConfig {
     pub version: i64,
     #[serde(rename = "current-id")]
     pub current_id: Option<Id>,
+    #[serde(
+        rename = "host-salt",
+        serialize_with = "as_base64",
+        deserialize_with = "from_base64",
+        default = "backfill_salt"
+    )]
+    host_salt: Vec<u8>,
 }
 
 impl Default for UserConfig {
@@ -39,6 +62,7 @@ impl Default for UserConfig {
         Self {
             version: CURRENT_USER_CONFIG_SERIALIZATION_VERSION,
             current_id: None,
+            host_salt: generete_salt(),
         }
     }
 }
@@ -60,6 +84,7 @@ pub struct Local {
     root_path: PathBuf,
     cache_path: PathBuf,
     cur_url: RefCell<Option<Url>>,
+    user_config: RefCell<Option<UserConfig>>,
 }
 
 impl Local {
@@ -73,6 +98,7 @@ impl Local {
             root_path,
             cache_path,
             cur_url: RefCell::new(None),
+            user_config: RefCell::new(None),
         })
     }
 
@@ -87,6 +113,7 @@ impl Local {
             bail!("User config not-initialized. Use `crev new id` to generate CrevID.");
         }
 
+        *repo.user_config.borrow_mut() = Some(repo.load_user_config()?);
         Ok(repo)
     }
 
@@ -101,6 +128,7 @@ impl Local {
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
+        *repo.user_config.borrow_mut() = Some(config);
         Ok(repo)
     }
 
@@ -207,6 +235,7 @@ impl Local {
 
         util::store_str_to_file(&path, &config_str)?;
 
+        *self.user_config.borrow_mut() = Some(config.clone());
         Ok(())
     }
 
@@ -346,8 +375,8 @@ impl Local {
     }
 
     // Get path relative to `get_proofs_dir_path` to store the `proof`
-    fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        crate::proof::rel_store_path(&proof.content)
+    fn get_proof_rel_store_path(&self, proof: &proof::Proof, host_salt: &[u8]) -> PathBuf {
+        crate::proof::rel_store_path(&proof.content, host_salt)
     }
 
     fn get_cur_url(&self) -> Result<Option<Url>> {
@@ -757,7 +786,15 @@ impl Local {
 
 impl ProofStore for Local {
     fn insert(&self, proof: &proof::Proof) -> Result<()> {
-        let rel_store_path = self.get_proof_rel_store_path(proof);
+        let rel_store_path = self.get_proof_rel_store_path(
+            proof,
+            &self
+                .user_config
+                .borrow()
+                .as_ref()
+                .expect("User config loaded")
+                .host_salt,
+        );
         let path = self.get_proofs_dir_path()?.join(&rel_store_path);
 
         fs::create_dir_all(path.parent().expect("Not a root dir"))?;
