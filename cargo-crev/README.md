@@ -76,20 +76,21 @@ path.
 
 ### Installing from crates.io
 
+
+
+If you wish to use latest release:
+
 ```
 cargo install cargo-crev
 ```
 
-and you're all set.
-
 ### Installing from github
 
-If you want to live on the edge, you can install `cargo-crev` directly from github, too:
+We try to release often, but new features are added at fast pace. If
+you want to try the git version:
 
 ```
-git clone https://github.com/dpc/crev
-cd crev
-cargo install -f --path cargo-crev
+cargo install --git https://github.com/dpc/crev/ cargo-crev
 ```
 
 ## Usage

@@ -1,11 +1,6 @@
-use crate::id::PassphraseFn;
-use crate::prelude::*;
-use crate::proofdb::TrustSet;
-use crate::ProofStore;
-use crate::{local::Local, util};
+use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
 use crev_common::convert::OptionDeref;
-use crev_data::proof;
-use crev_data::Digest;
+use crev_data::{proof, Digest};
 use git2;
 use serde_yaml;
 use std::{
@@ -153,7 +148,9 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content))
+        // TODO: What about the merge conflicts, etc? https://github.com/dpc/crev/issues/153
+        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content, &[]));
+        unimplemented!();
     }
 
     pub fn package_verify(

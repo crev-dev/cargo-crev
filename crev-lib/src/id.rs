@@ -21,6 +21,7 @@ pub struct PassConfig {
     iterations: u32,
     #[serde(rename = "memory-size")]
     memory_size: u32,
+    lanes: Option<u32>,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     salt: Vec<u8>,
 }
@@ -84,6 +85,7 @@ impl LockedId {
                 iterations: hasher_config.iterations(),
                 memory_size: hasher_config.memory_size(),
                 version: 0x13,
+                lanes: Some(hasher_config.lanes()),
                 variant: hasher_config.variant().as_str().to_string(),
             },
         })
@@ -119,7 +121,7 @@ impl LockedId {
         Ok(serde_yaml::from_str::<LockedId>(&yaml_s)?)
     }
 
-    pub fn to_unlocked(&self, passphrase_callback: PassphraseFn) -> Result<OwnId> {
+    pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
         let LockedId {
             ref version,
             ref url,
@@ -144,24 +146,23 @@ impl LockedId {
                 .configure_hash_len(64)
                 .opt_out_of_secret_key(true);
 
-            let mut secret_key = Vec::new();
-            for _ in 0..5 {
-                let passphrase = passphrase_callback()?;
-                let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
-                let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
-
-                match siv.open(&seal_nonce, &[], &sealed_secret_key) {
-                    Ok(k) => {
-                        secret_key = k;
-                        break;
-                    }
-                    Err(_) => eprintln!("Error: incorrect passphrase"),
-                }
+            if let Some(lanes) = pass.lanes {
+                hasher.configure_lanes(lanes);
+            } else {
+                eprintln!(
+                    "`lanes` not configured. Old bug. See: https://github.com/dpc/crev/issues/151"
+                );
+                eprintln!("Using `lanes: {}`", hasher.config().lanes());
             }
 
-            if secret_key.is_empty() {
-                return Err(format_err!("incorrect passphrase"));
-            }
+            let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
+            let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
+
+            let secret_key = siv
+                .open(&seal_nonce, &[], &sealed_secret_key)
+                .map_err(|_| format_err!("incorrect passphrase"))?;
+
+            assert!(!secret_key.is_empty());
 
             let result = OwnId::new(url.to_owned(), secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {

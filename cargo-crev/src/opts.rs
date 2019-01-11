@@ -305,6 +305,10 @@ pub enum Command {
     #[structopt(name = "goto")]
     Goto(ReviewOrGotoCommon),
 
+    /// Open source code of a crate
+    #[structopt(name = "open")]
+    Open(ReviewOrGotoCommon),
+
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
@@ -316,6 +320,10 @@ pub enum Command {
     /// Import an Id, ...
     #[structopt(name = "import")]
     Import(Import),
+
+    /// Update data from online sources (crates.io)
+    #[structopt(name = "update")]
+    Update,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

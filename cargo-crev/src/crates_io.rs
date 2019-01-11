@@ -1,10 +1,11 @@
 use crate::prelude::*;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::fs;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use serde::{de::DeserializeOwned, Serialize};
+use std::{
+    fs,
+    io::Read,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 pub struct Client {
     client: crates_io_api::SyncClient,
@@ -15,7 +16,7 @@ fn is_fresh(path: &Path) -> Result<bool> {
     let metadata = fs::metadata(path)?;
     let created = metadata.created().or_else(|_e| metadata.modified())?;
     let now = std::time::SystemTime::now();
-    Ok(((now - Duration::from_secs(60 * 60 * 24)) < created) && (created < now))
+    Ok(((now - Duration::from_secs(60 * 60 * 72)) < created) && (created < now))
 }
 
 trait Cacheable: Sized {

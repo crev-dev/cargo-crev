@@ -1,4 +1,3 @@
-
 use std::ops::Deref;
 
 pub trait OptionDeref<T: Deref> {
@@ -10,4 +9,3 @@ impl<T: Deref> OptionDeref<T> for Option<T> {
         self.as_ref().map(Deref::deref)
     }
 }
-

@@ -8,3 +8,8 @@ rust:
   - stable
   - beta
   - nightly
+
+script:
+  - cargo build --verbose
+  - cargo test --verbose
+  - rustup component add rustfmt && cargo fmt --all -- --check

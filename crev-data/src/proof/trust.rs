@@ -36,7 +36,7 @@ impl Default for TrustLevel {
 impl fmt::Display for TrustLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::TrustLevel::*;
-        f.write_str(match self {
+        f.pad(match self {
             Distrust => "distrust",
             None => "none",
             Low => "low",

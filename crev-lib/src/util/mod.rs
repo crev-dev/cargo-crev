@@ -4,8 +4,7 @@ use crate::prelude::*;
 use crev_common;
 use crev_data::proof;
 use git2;
-use std::fmt::Write as FmtWrite;
-use std::{self, env, ffi, fs, io::Write, path::Path, process};
+use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io::Write, path::Path, process};
 use tempdir;
 
 pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};

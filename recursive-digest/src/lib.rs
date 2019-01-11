@@ -1,10 +1,10 @@
 use blake2;
 use failure_derive::Fail;
-use std::io::BufRead;
 use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
     fs,
+    io::BufRead,
     path::{Component, Path, PathBuf},
 };
 

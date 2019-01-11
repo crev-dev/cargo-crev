@@ -2,14 +2,16 @@ use crate::VerificationStatus;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
-    proof::review::Rating,
-    proof::trust::TrustLevel,
-    proof::{self, review, Content, ContentCommon},
+    proof::{
+        self,
+        review::{self, Rating},
+        trust::TrustLevel,
+        Content, ContentCommon,
+    },
     Digest, Id, Url,
 };
 use default::default;
-use std::collections::BTreeMap;
-use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
+use std::collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// A `T` with a timestamp
 ///
@@ -286,6 +288,23 @@ impl ProofDB {
             .chain(self.url_by_id_secondary.keys())
             .cloned()
             .collect()
+    }
+
+    /// Get all Ids that authored a proof (with total count)
+    pub fn all_author_ids(&self) -> BTreeMap<Id, usize> {
+        let mut res = BTreeMap::new();
+        for (id, set) in &self.trust_id_to_id {
+            *res.entry(id.to_owned()).or_default() += set.len();
+        }
+
+        for uniq_rev in self
+            .package_review_signatures_by_unique_package_review
+            .keys()
+        {
+            *res.entry(uniq_rev.from.clone()).or_default() += 1;
+        }
+
+        res
     }
 
     pub fn get_package_reviews_by_digest<'a>(

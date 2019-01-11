@@ -1,9 +1,10 @@
 //! Bunch of code that is auxiliary and common for all `crev`
 
 pub mod blake2b256;
-pub mod fs;
-pub mod serde;
 pub mod convert;
+pub mod fs;
+pub mod rand;
+pub mod serde;
 
 pub use crate::blake2b256::Blake2b256;
 
@@ -13,10 +14,9 @@ use chrono;
 use blake2::{digest::FixedOutput, Digest};
 use rpassword;
 use rprompt;
-use std::io::{Read, Write};
 use std::{
     env,
-    io::{self, BufRead},
+    io::{self, BufRead, Read, Write},
     path::Path,
 };
 
