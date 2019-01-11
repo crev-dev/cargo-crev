@@ -802,15 +802,24 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
         opts::Command::Publish => {
             let local = Local::auto_open()?;
-            let mut status = local.run_git(vec!["commit".into(), "-a".into()])?;
+            let mut status = local.run_git(vec![
+                "commit".into(),
+                "-a".into(),
+                "-m".into(),
+                "auto-commit on `crev publish`".into(),
+            ])?;
+
             if status.code().unwrap_or(-1) == 0 {
-                status = local.run_git(vec!["push".into()])?;
+                status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+            }
+            if status.code().unwrap_or(-1) == 0 {
+                status = local.run_git(vec!["push".into(), "--force-with-lease".into()])?;
             }
             std::process::exit(status.code().unwrap_or(-159));
         }
         opts::Command::Pull => {
             let local = Local::auto_open()?;
-            let status = local.run_git(vec!["pull".into()])?;
+            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
             std::process::exit(status.code().unwrap_or(-159));
         }
         opts::Command::Fetch(cmd) => match cmd {
