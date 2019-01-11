@@ -247,7 +247,17 @@ impl Local {
 
     pub fn read_unlocked_id(&self, id: &Id, passphrase_callback: PassphraseFn) -> Result<OwnId> {
         let locked = self.read_locked_id(id)?;
-        locked.to_unlocked(passphrase_callback)
+        let mut i = 0;
+        loop {
+            let passphrase = passphrase_callback()?;
+            let res = locked.to_unlocked(&passphrase);
+            if let Ok(id) = res {
+                return Ok(id);
+            } else if i == 5 {
+                return res;
+            }
+            i += 1;
+        }
     }
 
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
