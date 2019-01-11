@@ -176,6 +176,11 @@ impl Local {
 
         let mut config = self.load_user_config()?;
         config.current_id = Some(id.clone());
+        // Change the old, backfilled `host_salt` the first time
+        // the id is being switched
+        if config.host_salt == backfill_salt() {
+            config.host_salt = generete_salt();
+        }
         self.store_user_config(&config)?;
 
         Ok(())
