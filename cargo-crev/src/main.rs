@@ -817,7 +817,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
             }
             if status.code().unwrap_or(-1) == 0 {
-                status = local.run_git(vec!["push".into(), "--force-with-lease".into()])?;
+                status = local.run_git(vec!["push".into()])?;
             }
             std::process::exit(status.code().unwrap_or(-159));
         }
