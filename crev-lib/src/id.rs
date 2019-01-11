@@ -149,7 +149,10 @@ impl LockedId {
             if let Some(lanes) = pass.lanes {
                 hasher.configure_lanes(lanes);
             } else {
-                eprintln!("`lanes` not configured. Old bug. See `https://github.com/dpc/crev/issues/151`.");
+                eprintln!(
+                    "`lanes` not configured. Old bug. See: https://github.com/dpc/crev/issues/151"
+                );
+                eprintln!("Using `lanes: {}`", hasher.config().lanes());
             }
 
             let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
