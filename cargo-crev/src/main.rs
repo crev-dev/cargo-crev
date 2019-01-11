@@ -802,12 +802,16 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
         opts::Command::Publish => {
             let local = Local::auto_open()?;
-            let mut status = local.run_git(vec![
-                "commit".into(),
-                "-a".into(),
-                "-m".into(),
-                "auto-commit on `crev publish`".into(),
-            ])?;
+            let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
+
+            if status.code().unwrap_or(-2) == 1 {
+                status = local.run_git(vec![
+                    "commit".into(),
+                    "-a".into(),
+                    "-m".into(),
+                    "auto-commit on `crev publish`".into(),
+                ])?;
+            }
 
             if status.code().unwrap_or(-1) == 0 {
                 status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
