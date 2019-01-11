@@ -21,6 +21,7 @@ pub struct PassConfig {
     iterations: u32,
     #[serde(rename = "memory-size")]
     memory_size: u32,
+    lanes: Option<u32>,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     salt: Vec<u8>,
 }
@@ -84,6 +85,7 @@ impl LockedId {
                 iterations: hasher_config.iterations(),
                 memory_size: hasher_config.memory_size(),
                 version: 0x13,
+                lanes: Some(hasher_config.lanes()),
                 variant: hasher_config.variant().as_str().to_string(),
             },
         })
@@ -143,6 +145,12 @@ impl LockedId {
                 .with_salt(&pass.salt)
                 .configure_hash_len(64)
                 .opt_out_of_secret_key(true);
+
+            if let Some(lanes) = pass.lanes {
+                hasher.configure_lanes(lanes);
+            } else {
+                eprintln!("`lanes` not configured. Old bug. See `https://github.com/dpc/crev/issues/151`.");
+            }
 
             let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
             let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
