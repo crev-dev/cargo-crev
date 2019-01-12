@@ -3,8 +3,10 @@ use crate::{
     prelude::*,
     util, ProofDB, ProofStore,
 };
-use crev_common;
-use crev_common::serde::{as_base64, from_base64};
+use crev_common::{
+    self,
+    serde::{as_base64, from_base64},
+};
 use crev_data::{
     id::OwnId,
     proof::{self, trust::TrustLevel},
