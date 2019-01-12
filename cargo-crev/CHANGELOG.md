@@ -24,10 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add new command: `update`
 
 ### Changed
-- Windows cache folder changed from `%AppData%\Local\Dawid Ci,281,,380,arkiewicz\crev\` to `%AppData%\Local\crev`.
-- Windows config folder changed from `%AppData%\Roaming\Dawid Ci,281,,380,arkiewicz\crev\` to `%AppData%\Roaming\crev`.
-- MacOS cache folder changed from `$HOME/Library/Caches/crev/` to `$HOME/Library/Caches/crev/`.
-- MacOS config folder changed from `$HOME/Library/Application Support/crev/` to `$HOME/Library/Preferences/dev.crev/`.
+- Windows cache folder changed from `%AppData%\Local\Dawid Ci,281,,380,arkiewicz\crev` to `%AppData%\Local\crev`.
+- Windows config folder changed from `%AppData%\Roaming\Dawid Ci,281,,380,arkiewicz\crev` to `%AppData%\Roaming\crev`.
+- MacOS config folder changed from `$HOME/Library/Application Support/crev` to `$HOME/Library/Preferences/crev`.
 - Better `verify deps` names and format
 - Better error messages in many areas
 - Use host-specific salt in paths of proof files, to prevent dealing with git conflicts when sharing Id between many machines
@@ -38,6 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `$EDITOR`/`$VISUAL` handling, especially on Windows
 - Save `lanes` in `LockedId`. Old Ids need to be fixed manually.
 
-## [0.3.0](https://github.com/dpc/crev/compare/cargo-crev-v0.2.0...v0.3.0) - 2018-12-28
+## 0.3.0 - 2018-12-28
 
 Changelog was not maintained for this and earlier releases
