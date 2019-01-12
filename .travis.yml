@@ -12,4 +12,4 @@ rust:
 script:
   - cargo build --verbose
   - cargo test --verbose
-  - rustup component add rustfmt && cargo fmt --all -- --check
+  - if [ "$TRAVIS_RUST_VERSION" == "stable" ]; rustup component add rustfmt && cargo fmt --all -- --check; fi
