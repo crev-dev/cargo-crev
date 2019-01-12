@@ -85,6 +85,7 @@ pub enum Verify {
 - Number of reviews for the specific version and for all versions
 - Number of downloads for the specific version and for all versions
 - Number of owners and how many of them are known
+- Lines of Rust code
 - Flags for specific types of packages (e.g. CB for custom build)
 - Name and version of the crate"
     )]

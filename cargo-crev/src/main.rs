@@ -23,6 +23,7 @@ mod crates_io;
 mod opts;
 mod prelude;
 mod term;
+mod tokei;
 
 use crev_data::proof;
 use crev_lib::TrustOrDistrust::{self, *};
@@ -612,8 +613,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^15} {:4} {:4}",
-                        "verifi.", "reviews", "downloads", "own.", "flgs"
+                        "{:8} {:8} {:^15} {:4} {:6} {:4}",
+                        "verifi.", "reviews", "downloads", "own.", "lines", "flgs"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
@@ -696,6 +697,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         total_owners_count
                             .map(|c| c.to_string())
                             .unwrap_or_else(|| "?".into())
+                    );
+                    print!(
+                        "{:>6} ",
+                        tokei::get_rust_line_count(crate_root)
+                            .ok()
+                            .map(|n| n.to_string())
+                            .unwrap_or_else(|| "err".into())
                     );
                     term.print(
                         format_args!(" {:4}", if crate_.has_custom_build() { "CB" } else { "" }),
