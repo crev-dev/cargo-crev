@@ -81,13 +81,15 @@ pub enum Verify {
         name = "deps",
         after_help = r"This will show the following information:
 
-- Verification status: unknown, trusted or flagged
-- Number of reviews for the specific version and for all versions
-- Number of downloads for the specific version and for all versions
-- Number of owners and how many of them are known
-- Lines of Rust code
-- Flags for specific types of packages (e.g. CB for custom build)
-- Name and version of the crate"
+- trust      - Effective trust level trusted reviewers or `none`, `flagged`
+- reviews    - Number of reviews for the specific version and for all versions
+- downloads  - Download counts from crates.io for the specific version and all versions
+- own.       - Owner counts from crates.io (known/all)
+- lines      - Lines of Rust code
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build
+- name       - Crate name
+- version    - Crate version"
     )]
     Deps(VerifyDeps),
 }

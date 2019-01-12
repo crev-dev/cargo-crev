@@ -614,7 +614,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     }
                     eprint!(
                         "{:8} {:8} {:^15} {:4} {:6} {:4}",
-                        "verifi.", "reviews", "downloads", "own.", "lines", "flgs"
+                        "trust", "reviews", "downloads", "own.", "lines", "flgs"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }

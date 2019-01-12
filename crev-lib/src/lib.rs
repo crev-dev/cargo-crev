@@ -70,7 +70,7 @@ impl TrustOrDistrust {
 #[derive(PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
     Verified(crev_data::proof::TrustLevel),
-    Unknown,
+    None,
     Flagged,
     Dangerous,
 }
@@ -88,7 +88,7 @@ impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             VerificationStatus::Verified(level) => f.pad(&level.to_string()),
-            VerificationStatus::Unknown => f.pad("unknown"),
+            VerificationStatus::None => f.pad("none"),
             VerificationStatus::Flagged => f.pad("flagged"),
             VerificationStatus::Dangerous => f.pad("danger"),
         }

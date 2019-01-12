@@ -364,7 +364,7 @@ impl ProofDB {
         } else if trust_count > 0 {
             VerificationStatus::Verified(trust_level)
         } else {
-            VerificationStatus::Unknown
+            VerificationStatus::None
         }
     }
 
