@@ -54,7 +54,7 @@ impl fmt::Display for LockedId {
 
 impl LockedId {
     pub fn from_own_id(own_id: &OwnId, passphrase: &str) -> Result<LockedId> {
-        use miscreant::aead::Algorithm;
+        use miscreant::aead::Aead;
         let mut hasher = Hasher::default();
 
         hasher
@@ -64,7 +64,7 @@ impl LockedId {
 
         let pwhash = hasher.with_password(passphrase).hash_raw()?;
 
-        let mut siv = miscreant::aead::Aes256Siv::new(pwhash.raw_hash_bytes());
+        let mut siv = miscreant::aead::Aes256SivAead::new(pwhash.raw_hash_bytes());
 
         let seal_nonce: Vec<u8> = rand::thread_rng()
             .sample_iter(&rand::distributions::Standard)
@@ -134,7 +134,7 @@ impl LockedId {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
                 bail!("Unsupported version: {}", *version);
             }
-            use miscreant::aead::Algorithm;
+            use miscreant::aead::Aead;
 
             let mut hasher = Hasher::default();
             hasher
@@ -156,7 +156,7 @@ impl LockedId {
             }
 
             let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
-            let mut siv = miscreant::aead::Aes256Siv::new(passphrase_hash.raw_hash_bytes());
+            let mut siv = miscreant::aead::Aes256SivAead::new(passphrase_hash.raw_hash_bytes());
 
             let secret_key = siv
                 .open(&seal_nonce, &[], &sealed_secret_key)

@@ -16,7 +16,6 @@ crev-common = { path = "../crev-common", version = "0.3" }
 blake2 = "0.8"
 chrono = "0.4"
 common_failures = "0.1"
-miscreant = "0.4.0-beta2"
 ed25519-dalek = "1.0.0-pre.0"
 failure = "0.1"
 serde = "1"
