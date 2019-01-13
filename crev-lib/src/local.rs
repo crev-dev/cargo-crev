@@ -602,6 +602,12 @@ impl Local {
     pub fn fetch_all(&self) -> Result<()> {
         let mut fetched_urls = HashSet::new();
         let mut db = self.load_db()?;
+
+        // Temporarily hardcode `dpc`'s proof-repo url
+        let dpc_url = "https://github.com/dpc/crev-proofs";
+        self.fetch_proof_repo_import_and_print_counts(dpc_url, &mut db);
+        fetched_urls.insert(dpc_url.to_owned());
+
         for entry in fs::read_dir(self.cache_remotes_path())? {
             let path = entry?.path();
             if !path.is_dir() {
@@ -626,8 +632,10 @@ impl Local {
 
             match url {
                 Ok(url) => {
-                    fetched_urls.insert(url.clone());
-                    self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
+                    if !fetched_urls.contains(&url) {
+                        fetched_urls.insert(url.clone());
+                        self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
+                    }
                 }
                 Err(e) => {
                     eprintln!("ERR: {} {}", path.display(), e);

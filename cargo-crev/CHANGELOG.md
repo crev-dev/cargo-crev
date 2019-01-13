@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display effecttive trust level on `query id trusted`
 - Avoid fetching things during normal work (helps offline use)
 - Add new command: `update`
+- Hardcode dpc's proof-repo url on `fetch url` to help bootstrap the ecosystem
 
 ### Changed
 - Windows cache folder changed from `%AppData%\Local\Dawid Ci,281,,380,arkiewicz\crev` to `%AppData%\Local\crev`.
