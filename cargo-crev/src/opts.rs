@@ -197,8 +197,8 @@ pub struct ReviewOrGotoCommon {
     pub crate_: CrateSelector,
 
     /// This crate is not neccesarily a dependency of the current cargo project
-    #[structopt(long = "independent")]
-    pub independent: bool,
+    #[structopt(long = "unrelated", short = "u")]
+    pub unrelated: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]

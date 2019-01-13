@@ -210,8 +210,8 @@ impl Repo {
         }
     }
 
-    fn find_crate(&self, name: &str, version: Option<&str>, independent: bool) -> Result<Package> {
-        if independent {
+    fn find_crate(&self, name: &str, version: Option<&str>, unrelated: bool) -> Result<Package> {
+        if unrelated {
             self.find_idependent_crate_dir(name, version)?
         } else {
             self.find_dependency(name, version)?
@@ -240,7 +240,7 @@ fn cargo_min_ignore_list() -> HashSet<PathBuf> {
 ///
 /// Set some `envs` to help other commands work
 /// from inside such a "review-shell".
-fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<()> {
+fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
@@ -249,7 +249,7 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
         .name
         .clone()
         .ok_or_else(|| format_err!("Crate name argument required"))?;
-    let crate_ = repo.find_crate(&name, selector.version.as_deref(), independent)?;
+    let crate_ = repo.find_crate(&name, selector.version.as_deref(), unrelated)?;
     let crate_dir = crate_.root();
     let crate_version = crate_.version();
 
@@ -308,9 +308,9 @@ fn edit_known_owners_list() -> Result<()> {
 }
 
 /// Wipe the crate source, then re-download it
-fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<()> {
+fn clean_crate(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let crate_ = repo.find_crate(name, version, independent)?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
 
     assert!(!crate_root.starts_with(std::env::current_dir()?));
@@ -318,16 +318,16 @@ fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<(
     if crate_root.is_dir() {
         std::fs::remove_dir_all(&crate_root)?;
     }
-    let _crate = repo.find_crate(name, version, independent)?;
+    let _crate = repo.find_crate(name, version, unrelated)?;
     Ok(())
 }
 
 /// Open a crate
 ///
-/// * `independent` - the crate might not actually be a dependency
-fn crate_open(name: &str, version: Option<&str>, independent: bool) -> Result<()> {
+/// * `unrelated` - the crate might not actually be a dependency
+fn crate_open(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let crate_ = repo.find_crate(name, version, independent)?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
 
     let crate_root = crate_.root();
 
@@ -353,16 +353,16 @@ fn crate_open(name: &str, version: Option<&str>, independent: bool) -> Result<()
 
 /// Review a crate
 ///
-/// * `independent` - the crate might not actually be a dependency
+/// * `unrelated` - the crate might not actually be a dependency
 fn create_review_proof(
     name: &str,
     version: Option<&str>,
-    independent: bool,
+    unrelated: bool,
     trust: TrustOrDistrust,
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let crate_ = repo.find_crate(name, version, independent)?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
     let crate_version = crate_.version();
 
@@ -384,7 +384,7 @@ fn create_review_proof(
     // shells, we move all the entries in a dir, instead of the whole
     // dir. this is not a perfect solution, but better than nothing.
     crev_common::fs::move_dir_content(&crate_root, &reviewed_pkg_dir)?;
-    let crate_second = repo.find_crate(name, version, independent)?;
+    let crate_second = repo.find_crate(name, version, unrelated)?;
     let crate_root_second = crate_second.root();
     let crate_version_second = crate_second.version();
 
@@ -506,7 +506,7 @@ where
             .clone()
             .ok_or_else(|| format_err!("Crate name required"))?;
 
-        f(&name, args.crate_.version.as_deref(), args.independent)?;
+        f(&name, args.crate_.version.as_deref(), args.unrelated)?;
     }
     Ok(())
 }
@@ -773,7 +773,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             })?;
         }
         opts::Command::Goto(args) => {
-            goto_crate_src(&args.crate_, args.independent)?;
+            goto_crate_src(&args.crate_, args.unrelated)?;
         }
         opts::Command::Open(args) => {
             handle_goto_mode_command(&args, |c, v, i| crate_open(c, v, i))?;

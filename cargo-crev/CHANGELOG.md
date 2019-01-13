@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use host-specific salt in paths of proof files, to prevent dealing with git conflicts when sharing Id between many machines
 - Make newer reviews overwrite older ones (for the same package and version)
 - Change `push`, `pull`, `publish` to be more ID-sharing (between hosts) friendly
+- `--independent` was renamed to `--unrelated` and has a short version `-u` now
 
 ### Fixed
 - `$EDITOR`/`$VISUAL` handling, especially on Windows
