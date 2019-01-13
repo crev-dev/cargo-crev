@@ -47,7 +47,7 @@ See it in action:
 
 ## Changelog
 
-Changelog can be found here: https://github.com/dpc/crev/cargo-crev/CHANGELOG.md
+Changelog can be found here: https://github.com/dpc/crev/blob/master/cargo-crev/CHANGELOG.md
 
 ## Getting started
 
