@@ -8,7 +8,8 @@ use cargo::{
 };
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local, ProofStore};
-use semver;
+use insideout::InsideOutIter;
+use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
     collections::HashSet,
@@ -550,6 +551,47 @@ fn create_trust_proof(
     Ok(())
 }
 
+pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
+    if !entry.file_type().is_file() {
+        return false;
+    }
+    entry
+        .path()
+        .extension()
+        .map(|ext| ext.to_string_lossy().as_ref() == file_ext)
+        .unwrap_or(false)
+}
+
+fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
+    let walker = walkdir::WalkDir::new(dir).into_iter();
+    walker
+        .map(|entry| {
+            let entry = entry?;
+            if !is_file_with_ext(&entry, "rs") {
+                return Ok(None);
+            }
+            Ok(Some(entry.path().canonicalize()?))
+        })
+        .inside_out_iter()
+        .filter_map(|res| res)
+}
+
+fn get_geiger_count(path: &Path) -> Result<u64> {
+    let mut count = 0;
+    for metrics in iter_rs_files_in_dir(path)
+        .flat_map_ok(|path| geiger::find_unsafe_in_file(&path, geiger::IncludeTests::No))
+    {
+        let counters = metrics?.counters;
+        count += counters.functions.unsafe_
+            + counters.exprs.unsafe_
+            + counters.item_impls.unsafe_
+            + counters.item_traits.unsafe_
+            + counters.methods.unsafe_
+    }
+
+    Ok(count)
+}
+
 /// Result of `run_command`
 ///
 /// This is to distinguish expeced non-success results,
@@ -613,8 +655,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^15} {:4} {:6} {:4}",
-                        "trust", "reviews", "downloads", "own.", "lines", "flgs"
+                        "{:8} {:8} {:^15} {:4} {:6} {:6} {:4}",
+                        "trust", "reviews", "downloads", "own.", "lines", "geiger", "flgs"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
@@ -699,11 +741,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .unwrap_or_else(|| "?".into())
                     );
                     print!(
-                        "{:>6} ",
+                        "{:>6} {:>6} ",
                         tokei::get_rust_line_count(crate_root)
                             .ok()
                             .map(|n| n.to_string())
-                            .unwrap_or_else(|| "err".into())
+                            .unwrap_or_else(|| "err".into()),
+                        get_geiger_count(crate_root)
+                            .map(|n| n.to_string())
+                            .unwrap_or_else(|_| "err".into()),
                     );
                     term.print(
                         format_args!(" {:4}", if crate_.has_custom_build() { "CB" } else { "" }),
