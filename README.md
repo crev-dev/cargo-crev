@@ -23,7 +23,7 @@ you keep up with ever-changing ecosystem?
 
 `crev` allows building a personal web of trust in people and code.
 
-`crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typesquating, compromised package registries, or just plain poor quality.
+`crev` [is a][f] [tool][e] [we][d] [desperately][c] [need][b] [yesterday][a]. It protects against compromised dev accounts, intentional malicious code, typosquating, compromised package registries, or just plain poor quality.
 
 [a]: https://www.csoonline.com/article/3214624/security/malicious-code-in-the-node-js-npm-registry-shakes-open-source-trust-model.html
 
@@ -97,7 +97,7 @@ people to establish trust.
 
 *Proofs* are stored and published in personal repositories for other people to use.
 
-They can be also included in a relevant source code itself through submiting
+They can be also included in a relevant source code itself through submitting
 a PR to the original project.
 
 `crev` collects *Proofs* from different sources, and builds a personalized web of trust.
