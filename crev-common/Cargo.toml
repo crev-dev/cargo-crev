@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "crev-common"
-version = "0.3.0"
+version = "0.4.0"
 description = "Scalable, social, Code REView system that we desperately need - common code"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -21,3 +21,4 @@ rprompt = "1"
 rpassword = "2"
 serde = "1"
 serde_yaml = "0.8"
+rand = "0.5"

@@ -1,57 +1,85 @@
-use crev_lib::Colored;
-use std::fmt::Arguments;
-use std::io::{self, Write};
-use term::{self, StderrTerminal, StdoutTerminal};
+use crev_lib::VerificationStatus;
+use std::{
+    fmt::Arguments,
+    io::{self, Write},
+};
+use term::{
+    self,
+    color::{self, Color},
+    StderrTerminal, StdoutTerminal,
+};
+
+pub fn verification_status_color(s: &VerificationStatus) -> Option<color::Color> {
+    match s {
+        VerificationStatus::Verified(_) => Some(term::color::GREEN),
+        VerificationStatus::Flagged => Some(term::color::YELLOW),
+        VerificationStatus::Dangerous => Some(term::color::RED),
+        _ => None,
+    }
+}
+
+pub fn known_owners_count_color(count: usize) -> Option<color::Color> {
+    if count > 0 {
+        Some(color::GREEN)
+    } else {
+        None
+    }
+}
 
 pub struct Term {
     pub stdout_is_tty: bool,
     pub stderr_is_tty: bool,
+    pub stdin_is_tty: bool,
     stdout: Option<Box<StdoutTerminal>>,
+    #[allow(unused)]
     stderr: Option<Box<StderrTerminal>>,
 }
 
-fn output_to<T, O>(
+fn output_to<O>(
     args: std::fmt::Arguments,
-    t: &T,
+    color: Option<Color>,
     term: &mut dyn term::Terminal<Output = O>,
     is_tty: bool,
 ) -> io::Result<()>
 where
-    T: Colored,
     O: Write,
 {
     let use_color = is_tty && term.supports_color();
     if use_color {
-        if let Some(color) = t.color() {
+        if let Some(color) = color {
             term.fg(color)?
         }
     }
     term.get_mut().write_fmt(args)?;
 
-    if use_color {
+    if use_color && color.is_some() {
         term.reset()?;
     }
 
     Ok(())
 }
+
 impl Term {
     pub fn new() -> Term {
         Term {
             stdout: term::stdout(),
             stderr: term::stderr(),
+            stdin_is_tty: atty::is(atty::Stream::Stdin),
             stdout_is_tty: atty::is(atty::Stream::Stdout),
             stderr_is_tty: atty::is(atty::Stream::Stderr),
         }
     }
 
-    pub fn stdout<T>(&mut self, fmt: Arguments, t: &T) -> io::Result<()>
+    pub fn print<C>(&mut self, fmt: Arguments, color: C) -> io::Result<()>
     where
-        T: Colored,
+        C: Into<Option<Color>>,
     {
+        let color = color.into();
+
         if let Some(ref mut term) = self.stdout {
             output_to(
                 fmt,
-                t,
+                color,
                 (&mut **term) as &mut term::Terminal<Output = _>,
                 self.stdout_is_tty,
             )?;
@@ -60,51 +88,20 @@ impl Term {
     }
 
     #[allow(unused)]
-    pub fn stderr<T>(&mut self, fmt: Arguments, t: &T) -> io::Result<()>
+    pub fn eprint<C>(&mut self, fmt: Arguments, color: C) -> io::Result<()>
     where
-        T: Colored,
+        C: Into<Option<Color>>,
     {
+        let color = color.into();
+
         if let Some(ref mut term) = self.stderr {
             output_to(
                 fmt,
-                t,
+                color,
                 (&mut **term) as &mut term::Terminal<Output = _>,
-                self.stderr_is_tty,
+                self.stdout_is_tty,
             )?;
         }
         Ok(())
     }
-
-    /*
-        fn set_term_color(&self, t: &mut Box<term::StdoutTerminal>) -> Result<()> {
-            if !t.supports_color() {
-                return Ok(());
-            }
-
-            match *self {
-                VerificationStatus::Verified => {
-                    t.fg(term::color::GREEN)?;
-                },
-                VerificationStatus::Flagged => {
-                    t.fg(term::color::RED)?;
-                },
-                _ => {}
-            }
-            Ok(())
-        }
-
-        pub fn write_colored_to_stdout(&self) -> Result<()> {
-            match term::stdout() {
-                Some(ref mut t) => {
-                    self.set_term_color(t)?;
-                    write!(t, "{:8}", *self)?;
-                    t.reset()?;
-                }
-                None => {
-                    print!("{:8}", *self);
-                }
-            }
-            Ok(())
-        }
-    */
 }

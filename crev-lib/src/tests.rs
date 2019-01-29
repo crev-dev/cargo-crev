@@ -1,8 +1,6 @@
 use super::*;
 
-use crev_data::proof::trust::TrustLevel;
-use crev_data::Digest;
-use crev_data::OwnId;
+use crev_data::{proof::trust::TrustLevel, Digest, OwnId};
 use default::default;
 
 // Basic liftime of an `LockedId`:
@@ -15,17 +13,16 @@ use default::default;
 fn lock_and_unlock() -> Result<()> {
     let id = OwnId::generate_for_git_url("https://example.com/crev-proofs");
 
-    let id_relocked = id::LockedId::from_own_id(&id, "password")?
-        .to_unlocked(&|| Ok("password".to_string()))?;
+    let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);
 
     assert!(id::LockedId::from_own_id(&id, "password")?
-        .to_unlocked(&|| Ok("wrongpassword".to_string()))
+        .to_unlocked("wrongpassword")
         .is_err());
 
     let id_stored = serde_yaml::to_string(&id::LockedId::from_own_id(&id, "pass")?)?;
-    let id_restored: OwnId = serde_yaml::from_str::<id::LockedId>(&id_stored)?
-        .to_unlocked(&|| Ok("pass".to_string()))?;
+    let id_restored: OwnId =
+        serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
 
     println!("{}", id_stored);
 
@@ -51,15 +48,19 @@ fn proofdb_distance() -> Result<()> {
     };
 
     let a_to_b = a
+        .as_pubid()
         .create_trust_proof(vec![b.as_pubid().to_owned()], TrustLevel::High)?
         .sign_by(&a)?;
     let b_to_c = b
+        .as_pubid()
         .create_trust_proof(vec![c.as_pubid().to_owned()], TrustLevel::Medium)?
         .sign_by(&b)?;
     let c_to_d = c
+        .as_pubid()
         .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Low)?
         .sign_by(&c)?;
     let d_to_e = d
+        .as_pubid()
         .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
         .sign_by(&d)?;
 
@@ -80,6 +81,7 @@ fn proofdb_distance() -> Result<()> {
     assert!(!trust_set.contains(e.as_ref()));
 
     let b_to_d = b
+        .as_pubid()
         .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Medium)?
         .sign_by(&b)?;
 
@@ -119,6 +121,7 @@ fn overwritting_reviews() -> Result<()> {
     };
 
     let proof1 = a
+        .as_pubid()
         .create_package_review_proof(package.clone(), default(), "a".into())?
         .sign_by(&a)?;
     // it's lame, but oh well... ; we need to make sure there's a time delay between
@@ -126,6 +129,7 @@ fn overwritting_reviews() -> Result<()> {
     #[allow(deprecated)]
     std::thread::sleep_ms(1);
     let proof2 = a
+        .as_pubid()
         .create_package_review_proof(package.clone(), default(), "b".into())?
         .sign_by(&a)?;
 
@@ -185,18 +189,22 @@ fn proofdb_distrust() -> Result<()> {
     };
 
     let a_to_bc = a
+        .as_pubid()
         .create_trust_proof(
             vec![b.as_pubid().to_owned(), c.as_pubid().to_owned()],
             TrustLevel::High,
         )?
         .sign_by(&a)?;
     let b_to_d = b
+        .as_pubid()
         .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Low)?
         .sign_by(&b)?;
     let d_to_c = d
+        .as_pubid()
         .create_trust_proof(vec![c.as_pubid().to_owned()], TrustLevel::Distrust)?
         .sign_by(&d)?;
     let c_to_e = c
+        .as_pubid()
         .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
         .sign_by(&c)?;
 
@@ -217,6 +225,7 @@ fn proofdb_distrust() -> Result<()> {
     assert!(!trust_set.contains(e.as_ref()));
 
     let e_to_d = e
+        .as_pubid()
         .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Distrust)?
         .sign_by(&e)?;
 

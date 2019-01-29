@@ -8,3 +8,8 @@ rust:
   - stable
   - beta
   - nightly
+
+script:
+  - if [ "$TRAVIS_RUST_VERSION" == "stable" ] ; then rustup component add rustfmt && cargo fmt --all -- --check; fi
+  - cargo build --verbose
+  - cargo test --verbose

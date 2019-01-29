@@ -1,32 +1,32 @@
 pub mod git;
 
 use crate::prelude::*;
-use app_dirs;
 use crev_common;
 use crev_data::proof;
-use std::fmt::Write as FmtWrite;
-use std::{self, env, ffi, fs, io::Write, path::Path, process};
+use git2;
+use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io::Write, path::Path, process};
 use tempdir;
 
 pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};
 
-pub const APP_INFO: app_dirs::AppInfo = app_dirs::AppInfo {
-    name: "crev",
-    author: "Dawid Ciężarkiewicz",
-};
+fn get_git_default_editor() -> Result<String> {
+    let cfg = git2::Config::open_default()?;
+    Ok(cfg.get_string("core.editor")?)
+}
 
-fn get_editor_to_use() -> ffi::OsString {
-    if let Some(v) = env::var_os("VISUAL") {
-        return v;
+fn get_editor_to_use() -> Result<ffi::OsString> {
+    Ok(if let Some(v) = env::var_os("VISUAL") {
+        v
     } else if let Some(v) = env::var_os("EDITOR") {
-        return v;
+        v
+    } else if let Ok(v) = get_git_default_editor() {
+        v.into()
     } else {
-        return "vi".into();
-    }
+        "vi".into()
+    })
 }
 
 fn edit_text_iteractively(text: &str) -> Result<String> {
-    let editor = get_editor_to_use();
     let dir = tempdir::TempDir::new("crev")?;
     let file_path = dir.path().join("crev.review");
     let mut file = fs::File::create(&file_path)?;
@@ -34,18 +34,34 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
     file.flush()?;
     drop(file);
 
-    let status = process::Command::new(editor).arg(&file_path).status()?;
-
-    if !status.success() {
-        bail!("Editor returned {}", status);
-    }
+    edit_file(&file_path)?;
 
     Ok(read_file_to_string(&file_path)?)
 }
 
 pub fn edit_file(path: &Path) -> Result<()> {
-    let editor = get_editor_to_use();
-    let status = process::Command::new(editor).arg(&path).status()?;
+    let editor = get_editor_to_use()?;
+
+    let status = if cfg!(windows) {
+        let mut proc = process::Command::new(editor.clone());
+        proc.arg(path);
+        proc
+    } else if cfg!(unix) {
+        let mut proc = process::Command::new("/bin/sh");
+        proc.arg("-c").arg(format!(
+            "{} {}",
+            editor
+                .clone()
+                .into_string()
+                .map_err(|_| format_err!("$EDITOR or $VISUAL not a valid Unicode"))?,
+            shell_escape::escape(path.display().to_string().into())
+        ));
+        proc
+    } else {
+        panic!("What platform are you running this on? Please submit a PR!");
+    }
+    .status()
+    .with_context(|_e| format_err!("Couldn't start the editor: {}", editor.to_string_lossy()))?;
 
     if !status.success() {
         bail!("Editor returned {}", status);
@@ -85,12 +101,12 @@ pub fn edit_proof_content_iteractively(content: &proof::Content) -> Result<proof
     }
 }
 
-pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> bool {
+pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> Option<O> {
     match res {
         Err(e) => {
             eprintln!("{}", e);
-            false
+            None
         }
-        Ok(_) => true,
+        Ok(o) => Some(o),
     }
 }

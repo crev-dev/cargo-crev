@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate term;
 
 #[macro_use]
 extern crate failure;
@@ -14,8 +13,7 @@ pub mod repo;
 pub mod staging;
 pub mod util;
 
-use crate::prelude::*;
-use crate::proofdb::TrustSet;
+use crate::{prelude::*, proofdb::TrustSet};
 use crev_data::Digest;
 use std::{
     collections::HashSet,
@@ -38,6 +36,15 @@ pub trait ProofStore {
 pub enum TrustOrDistrust {
     Trust,
     Distrust,
+}
+
+impl fmt::Display for TrustOrDistrust {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TrustOrDistrust::Trust => f.write_str("trust"),
+            TrustOrDistrust::Distrust => f.write_str("distrust"),
+        }
+    }
 }
 
 impl TrustOrDistrust {
@@ -63,7 +70,7 @@ impl TrustOrDistrust {
 #[derive(PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
     Verified(crev_data::proof::TrustLevel),
-    Unknown,
+    None,
     Flagged,
     Dangerous,
 }
@@ -77,29 +84,11 @@ impl VerificationStatus {
     }
 }
 
-/// Trait for stuff that has a coresponding color somewhere in the "UI"
-//
-// TODO: This has to find some better place than here.
-pub trait Colored {
-    fn color(&self) -> Option<term::color::Color>;
-}
-
-impl Colored for VerificationStatus {
-    fn color(&self) -> Option<term::color::Color> {
-        match *self {
-            VerificationStatus::Verified(_) => Some(term::color::GREEN),
-            VerificationStatus::Flagged => Some(term::color::YELLOW),
-            VerificationStatus::Dangerous => Some(term::color::RED),
-            _ => None,
-        }
-    }
-}
-
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             VerificationStatus::Verified(level) => f.pad(&level.to_string()),
-            VerificationStatus::Unknown => f.pad("unknown"),
+            VerificationStatus::None => f.pad("none"),
             VerificationStatus::Flagged => f.pad("flagged"),
             VerificationStatus::Dangerous => f.pad("danger"),
         }

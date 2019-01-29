@@ -1,8 +1,9 @@
-use crate::proof;
-use crate::{Result, Url};
+use crate::{proof, Result, Url};
 use blake2;
-use crev_common;
-use crev_common::serde::{as_base64, from_base64};
+use crev_common::{
+    self,
+    serde::{as_base64, from_base64},
+};
 use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
 use std::fmt;
@@ -57,6 +58,12 @@ impl Id {
 
         Ok(())
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Id::Crev { id } => id.clone(),
+        }
+    }
 }
 
 impl fmt::Display for Id {
@@ -93,23 +100,14 @@ impl PubId {
             url,
         })
     }
-}
 
-/// A `PubId` with the corresponding secret key
-#[derive(Debug)]
-pub struct OwnId {
-    pub id: PubId,
-    pub keypair: ed25519_dalek::Keypair,
-}
-
-impl OwnId {
     pub fn create_trust_proof(
         &self,
         ids: Vec<PubId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Trust> {
         Ok(proof::TrustBuilder::default()
-            .from(self.id.clone())
+            .from(self.clone())
             .trust(trust_level)
             .ids(ids)
             .build()
@@ -123,13 +121,20 @@ impl OwnId {
         comment: String,
     ) -> Result<proof::review::Package> {
         Ok(proof::review::PackageBuilder::default()
-            .from(self.id.clone())
+            .from(self.clone())
             .package(package)
             .review(review)
             .comment(comment)
             .build()
             .map_err(|e| format_err!("{}", e))?)
     }
+}
+
+/// A `PubId` with the corresponding secret key
+#[derive(Debug)]
+pub struct OwnId {
+    pub id: PubId,
+    pub keypair: ed25519_dalek::Keypair,
 }
 
 impl AsRef<Id> for OwnId {

@@ -1,9 +1,6 @@
-use crate::prelude::*;
-use crate::ProofStore;
-use crate::{local::Local, util};
-use crate::id::PassphraseFn;
-use crev_data::proof;
-use crev_data::Digest;
+use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
+use crev_common::convert::OptionDeref;
+use crev_data::{proof, Digest};
 use git2;
 use serde_yaml;
 use std::{
@@ -151,20 +148,32 @@ impl Repo {
     }
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content))
+        // TODO: What about the merge conflicts, etc? https://github.com/dpc/crev/issues/153
+        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content, &[]));
+        unimplemented!();
     }
 
-    pub fn package_verify(&mut self, allow_dirty: bool) -> Result<crate::VerificationStatus> {
+    pub fn package_verify(
+        &mut self,
+        local: &Local,
+        allow_dirty: bool,
+        for_id: Option<String>,
+        params: &crate::TrustDistanceParams,
+    ) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
         }
 
-        let local = Local::auto_open()?;
-        let params = Default::default();
-        let (db, trusted_set) = local.load_db(&params)?;
+        let db = local.load_db()?;
+
+        let trust_set = if let Some(id) = local.get_for_id_from_str_opt(for_id.as_deref())? {
+            db.calculate_trust_set(&id, &params)
+        } else {
+            TrustSet::default()
+        };
         let ignore_list = HashSet::new();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        Ok(db.verify_package_digest(&digest, &trusted_set))
+        Ok(db.verify_package_digest(&digest, &trust_set))
     }
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
@@ -223,7 +232,11 @@ impl Repo {
         bail!("Couldn't identify revision info");
     }
 
-    pub fn trust_package(&mut self, passphrase_callback: PassphraseFn, allow_dirty: bool) -> Result<()> {
+    pub fn trust_package(
+        &mut self,
+        passphrase_callback: PassphraseFn,
+        allow_dirty: bool,
+    ) -> Result<()> {
         if !self.staging()?.is_empty() {
             bail!("Can't review with uncommitted staged files.");
         }

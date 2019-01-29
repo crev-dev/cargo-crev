@@ -1,5 +1,4 @@
-use digest;
-use digest::VariableOutput;
+use digest::{self, VariableOutput};
 
 #[derive(Debug, Clone)]
 pub struct Blake2b256(blake2::VarBlake2b);

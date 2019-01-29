@@ -2,14 +2,16 @@ use crate::VerificationStatus;
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
-    proof::review::Rating,
-    proof::trust::TrustLevel,
-    proof::{self, review, Content, ContentCommon},
+    proof::{
+        self,
+        review::{self, Rating},
+        trust::TrustLevel,
+        Content, ContentCommon,
+    },
     Digest, Id, Url,
 };
 use default::default;
-use std::collections::BTreeMap;
-use std::collections::{hash_map, BTreeSet, HashMap, HashSet};
+use std::collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// A `T` with a timestamp
 ///
@@ -149,6 +151,17 @@ impl ProofDB {
         default()
     }
 
+    pub fn unique_package_review_proof_count(&self) -> usize {
+        self.package_review_signatures_by_unique_package_review
+            .len()
+    }
+
+    pub fn unique_trust_proof_count(&self) -> usize {
+        self.trust_id_to_id
+            .iter()
+            .fold(0, |count, (_id, set)| count + set.len())
+    }
+
     fn add_code_review(&mut self, review: &review::Code) {
         let from = &review.from;
         self.record_url_from_from_field(&review.date_utc(), &from);
@@ -277,6 +290,23 @@ impl ProofDB {
             .collect()
     }
 
+    /// Get all Ids that authored a proof (with total count)
+    pub fn all_author_ids(&self) -> BTreeMap<Id, usize> {
+        let mut res = BTreeMap::new();
+        for (id, set) in &self.trust_id_to_id {
+            *res.entry(id.to_owned()).or_default() += set.len();
+        }
+
+        for uniq_rev in self
+            .package_review_signatures_by_unique_package_review
+            .keys()
+        {
+            *res.entry(uniq_rev.from.clone()).or_default() += 1;
+        }
+
+        res
+    }
+
     pub fn get_package_reviews_by_digest<'a>(
         &'a self,
         digest: &Digest,
@@ -334,7 +364,7 @@ impl ProofDB {
         } else if trust_count > 0 {
             VerificationStatus::Verified(trust_level)
         } else {
-            VerificationStatus::Unknown
+            VerificationStatus::None
         }
     }
 

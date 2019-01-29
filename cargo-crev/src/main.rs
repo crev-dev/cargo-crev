@@ -2,21 +2,18 @@
 extern crate structopt;
 
 use self::prelude::*;
-use ::term::color;
 use cargo::{
-    core::dependency::Dependency,
-    core::source::SourceMap,
-    core::{package_id::PackageId, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
-use crev_lib::ProofStore;
-use crev_lib::{self, local::Local};
-use default::default;
+use crev_common::convert::OptionDeref;
+use crev_lib::{self, local::Local, ProofStore};
 use semver;
 use serde::Deserialize;
 use std::{
     collections::HashSet,
-    env, fmt,
+    env,
+    io::BufRead,
     path::{Path, PathBuf},
     process,
 };
@@ -26,14 +23,10 @@ mod crates_io;
 mod opts;
 mod prelude;
 mod term;
+mod tokei;
 
 use crev_data::proof;
-use crev_lib::{TrustOrDistrust, TrustOrDistrust::*};
-
-struct Repo {
-    manifest_path: PathBuf,
-    config: cargo::util::config::Config,
-}
+use crev_lib::TrustOrDistrust::{self, *};
 
 /// Name of ENV with original location `crev goto` was called from
 const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
@@ -48,6 +41,7 @@ const KNOWN_CARGO_OWNERS_FILE: &str = "known_cargo_owners.txt";
 /// Constant we use for `source` in the review proof
 const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 
+/// The file added to crates containing vcs revision
 const VCS_INFO_JSON_FILE: &str = ".cargo_vcs_info.json";
 
 /// Data from `.cargo_vcs_info.json`
@@ -79,23 +73,11 @@ impl VcsInfoJson {
         Some(s.to_string())
     }
 }
-#[derive(Debug)]
-struct KnownOwnersColored(usize);
 
-impl fmt::Display for KnownOwnersColored {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
-    }
-}
-
-impl crev_lib::Colored for KnownOwnersColored {
-    fn color(&self) -> Option<color::Color> {
-        if self.0 > 0 {
-            Some(color::GREEN)
-        } else {
-            None
-        }
-    }
+/// A handle to the current Rust project
+struct Repo {
+    manifest_path: PathBuf,
+    config: cargo::util::config::Config,
 }
 
 impl Repo {
@@ -111,9 +93,35 @@ impl Repo {
         })
     }
 
-    fn for_every_non_local_dependency_dir(
+    fn update_source(&self) -> Result<()> {
+        let mut source = self.load_source()?;
+        source.update()?;
+        Ok(())
+    }
+
+    fn update_counts(&self) -> Result<()> {
+        let local = crev_lib::Local::auto_create_or_open()?;
+        let crates_io = crates_io::Client::new(&local)?;
+
+        self.for_every_non_local_dep_crate(|crate_| {
+            let _ = crates_io.get_downloads_count(&crate_.name(), &crate_.version().to_string());
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    fn load_source<'a>(&'a self) -> Result<Box<cargo::core::source::Source + 'a>> {
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source = map.load(&source_id)?;
+        Ok(source)
+    }
+
+    /// Run `f` for every non-local dependency crate
+    fn for_every_non_local_dep_crate(
         &self,
-        mut f: impl FnMut(&PackageId, &Path) -> Result<()>,
+        mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
@@ -125,9 +133,7 @@ impl Repo {
             false, // no_default_features
             &specs,
         )?;
-        let source_id = SourceId::crates_io(&self.config)?;
-        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let mut source = map.load(&source_id)?;
+        let mut source = self.load_source()?;
 
         let pkgs = package_set.get_many(package_set.package_ids())?;
 
@@ -140,7 +146,7 @@ impl Repo {
                 source.download(pkg.package_id())?;
             }
 
-            f(&pkg.package_id(), &pkg.root())?;
+            f(&pkg)?;
         }
 
         Ok(())
@@ -150,10 +156,8 @@ impl Repo {
         &self,
         name: &str,
         version: Option<&str>,
-    ) -> Result<Option<(PathBuf, semver::Version)>> {
-        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let source_id = SourceId::crates_io(&self.config)?;
-        let mut source = map.load(&source_id)?;
+    ) -> Result<Option<Package>> {
+        let mut source = self.load_source()?;
         let mut summaries = vec![];
         let dependency_request =
             Dependency::parse_no_deprecated(name, version, source.source_id())?;
@@ -182,23 +186,19 @@ impl Repo {
             &self.config,
         )?;
         let pkg_id = summary.package_id();
-        let pkg = package_set.get_one(pkg_id)?;
 
-        Ok(Some((pkg.root().to_owned(), pkg_id.version().to_owned())))
+        Ok(Some(package_set.get_one(pkg_id)?.to_owned()))
     }
 
-    fn find_dependency_dir(
-        &self,
-        name: &str,
-        version: Option<&str>,
-    ) -> Result<Option<(PathBuf, semver::Version)>> {
+    fn find_dependency(&self, name: &str, version: Option<&str>) -> Result<Option<Package>> {
         let mut ret = vec![];
 
-        self.for_every_non_local_dependency_dir(|pkg_id, path| {
+        self.for_every_non_local_dep_crate(|pkg| {
+            let pkg_id = pkg.package_id();
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(&pkg_id.version().to_string()))
             {
-                ret.push((path.to_owned(), pkg_id.version().to_owned()));
+                ret.push(pkg.to_owned());
             }
             Ok(())
         })?;
@@ -210,21 +210,17 @@ impl Repo {
         }
     }
 
-    fn find_crate(
-        &self,
-        name: &str,
-        version: Option<&str>,
-        independent: bool,
-    ) -> Result<(PathBuf, semver::Version)> {
-        if independent {
+    fn find_crate(&self, name: &str, version: Option<&str>, unrelated: bool) -> Result<Package> {
+        if unrelated {
             self.find_idependent_crate_dir(name, version)?
         } else {
-            self.find_dependency_dir(name, version)?
+            self.find_dependency(name, version)?
         }
         .ok_or_else(|| format_err!("Could not find requested crate"))
     }
 }
 
+/// Ignore things that are commonly added during the review (eg. by RLS)
 fn cargo_full_ignore_list() -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
@@ -233,13 +229,18 @@ fn cargo_full_ignore_list() -> HashSet<PathBuf> {
     ignore_list
 }
 
+/// Ignore only the marker added by `cargo` after fully downloading and extracting crate
 fn cargo_min_ignore_list() -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list
 }
 
-fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<()> {
+/// `cd` into crate source code and start shell
+///
+/// Set some `envs` to help other commands work
+/// from inside such a "review-shell".
+fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
@@ -248,17 +249,18 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
         .name
         .clone()
         .ok_or_else(|| format_err!("Crate name argument required"))?;
-    let (pkg_dir, crate_version) =
-        repo.find_crate(&name, selector.version.as_deref(), independent)?;
+    let crate_ = repo.find_crate(&name, selector.version.as_deref(), unrelated)?;
+    let crate_dir = crate_.root();
+    let crate_version = crate_.version();
 
     let shell = env::var_os("SHELL").ok_or_else(|| format_err!("$SHELL not set"))?;
     let cwd = env::current_dir()?;
 
-    eprintln!("Opening shell in: {}", pkg_dir.display());
+    eprintln!("Opening shell in: {}", crate_dir.display());
     eprintln!("Use `exit` or Ctrl-D to return to the original project.",);
     eprintln!("Use `review` and `flag` without any arguments to review this crate.");
     let status = process::Command::new(shell)
-        .current_dir(pkg_dir)
+        .current_dir(crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
         .env(GOTO_CRATE_NAME_ENV, name)
         .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string())
@@ -271,7 +273,7 @@ fn goto_crate_src(selector: &opts::CrateSelector, independent: bool) -> Result<(
     Ok(())
 }
 
-fn ensure_known_owners_exists(local: &crev_lib::Local) -> Result<()> {
+fn ensure_known_owners_list_exists(local: &crev_lib::Local) -> Result<()> {
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
     if !path.exists() {
         crev_common::store_str_to_file(&path, include_str!("known_cargo_owners_defaults.txt"))?;
@@ -281,7 +283,7 @@ fn ensure_known_owners_exists(local: &crev_lib::Local) -> Result<()> {
     Ok(())
 }
 
-fn read_known_owners() -> Result<HashSet<String>> {
+fn read_known_owners_list() -> Result<HashSet<String>> {
     let local = Local::auto_create_or_open()?;
     let content = if let Some(path) = local.get_proofs_dir_path_opt()? {
         let path = path.join(KNOWN_CARGO_OWNERS_FILE);
@@ -297,40 +299,74 @@ fn read_known_owners() -> Result<HashSet<String>> {
         .collect())
 }
 
-fn edit_known_owners() -> Result<()> {
+fn edit_known_owners_list() -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
-    ensure_known_owners_exists(&local)?;
+    ensure_known_owners_list_exists(&local)?;
     crev_lib::util::edit_file(&path)?;
     Ok(())
 }
 
-fn clean_crate(name: &str, version: Option<&str>, independent: bool) -> Result<()> {
+/// Wipe the crate source, then re-download it
+fn clean_crate(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let (pkg_dir, _crate_version) = repo.find_crate(name, version, independent)?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let crate_root = crate_.root();
 
-    assert!(!pkg_dir.starts_with(std::env::current_dir()?));
+    assert!(!crate_root.starts_with(std::env::current_dir()?));
 
-    if pkg_dir.is_dir() {
-        std::fs::remove_dir_all(&pkg_dir)?;
+    if crate_root.is_dir() {
+        std::fs::remove_dir_all(&crate_root)?;
     }
-    let (_pkg_dir, _crate_version) = repo.find_crate(name, version, independent)?;
+    let _crate = repo.find_crate(name, version, unrelated)?;
+    Ok(())
+}
+
+/// Open a crate
+///
+/// * `unrelated` - the crate might not actually be a dependency
+fn crate_open(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
+
+    let crate_root = crate_.root();
+
+    let status = if cfg!(target_os = "windows") {
+        process::Command::new("start")
+    } else if cfg!(target_os = "macos") {
+        process::Command::new("open")
+    } else if cfg!(target_os = "linux") {
+        process::Command::new("xdg-open")
+    } else {
+        eprintln!("Unsupported platform. Please submit a PR!");
+        process::Command::new("xdg-open")
+    }
+    .arg(crate_root)
+    .status()?;
+
+    if !status.success() {
+        bail!("Shell returned {}", status);
+    }
+
     Ok(())
 }
 
 /// Review a crate
 ///
-/// * `independent` - the crate might not actually be a dependency
-fn review_crate(
+/// * `unrelated` - the crate might not actually be a dependency
+fn create_review_proof(
     name: &str,
     version: Option<&str>,
-    independent: bool,
+    unrelated: bool,
     trust: TrustOrDistrust,
+    proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
-    let (pkg_dir, crate_version) = repo.find_crate(name, version, independent)?;
+    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let crate_root = crate_.root();
+    let crate_version = crate_.version();
 
-    assert!(!pkg_dir.starts_with(std::env::current_dir()?));
+    assert!(!crate_root.starts_with(std::env::current_dir()?));
     let local = Local::auto_open()?;
 
     // to protect from creating a digest from a crate in unclean state
@@ -338,7 +374,7 @@ fn review_crate(
     // check if the digest was the same
     // BUG: TODO: https://users.rust-lang.org/t/append-an-additional-extension/23586
     let reviewed_pkg_dir: PathBuf =
-        crev_common::fs::append_to_path(pkg_dir.clone(), ".crev.reviewed");
+        crev_common::fs::append_to_path(crate_root.to_owned(), ".crev.reviewed");
     if reviewed_pkg_dir.is_dir() {
         std::fs::remove_dir_all(&reviewed_pkg_dir)?;
     }
@@ -347,12 +383,16 @@ fn review_crate(
     // having the cwd pulled from under them and confusing their
     // shells, we move all the entries in a dir, instead of the whole
     // dir. this is not a perfect solution, but better than nothing.
-    crev_common::fs::move_dir_content(&pkg_dir, &reviewed_pkg_dir)?;
-    let (pkg_dir_second, crate_version_second) = repo.find_crate(name, version, independent)?;
-    assert_eq!(pkg_dir, pkg_dir_second);
+    crev_common::fs::move_dir_content(&crate_root, &reviewed_pkg_dir)?;
+    let crate_second = repo.find_crate(name, version, unrelated)?;
+    let crate_root_second = crate_second.root();
+    let crate_version_second = crate_second.version();
+
+    assert_eq!(crate_root, crate_root_second);
     assert_eq!(crate_version, crate_version_second);
 
-    let digest_clean = crev_lib::get_recursive_digest_for_dir(&pkg_dir, &cargo_min_ignore_list())?;
+    let digest_clean =
+        crev_lib::get_recursive_digest_for_dir(&crate_root, &cargo_min_ignore_list())?;
     let digest_reviewed =
         crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_full_ignore_list())?;
 
@@ -361,13 +401,13 @@ fn review_crate(
             "The digest of the reviewed and freshly downloaded crate were different; {} != {}; {} != {}",
             digest_clean,
             digest_reviewed,
-            pkg_dir.display(),
+            crate_root.display(),
             reviewed_pkg_dir.display(),
         );
     }
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
-    let vcs = VcsInfoJson::read_from_crate_dir(&pkg_dir)?;
+    let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
     let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
     let review = proof::review::PackageBuilder::default()
@@ -390,18 +430,39 @@ fn review_crate(
 
     let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
 
+    if proof_create_opt.print_unsigned {
+        print!("{}", review);
+    }
+
     let proof = review.sign_by(&id)?;
 
-    local.insert(&proof)?;
+    if proof_create_opt.print_signed {
+        print!("{}", proof);
+    }
+
+    if !proof_create_opt.no_store {
+        local.insert(&proof)?;
+
+        if !proof_create_opt.no_commit {
+            let commit_msg = format!(
+                "Add review for {crate} v{version}",
+                crate = name,
+                version = crate_version
+            );
+            local
+                .proof_dir_commit(&commit_msg)
+                .with_context(|_| format_err!("Could not not automatically commit"))?;
+        }
+    }
+
     Ok(())
 }
 
 fn find_reviews(
     crate_: &opts::CrateSelector,
-    trust_params: &crev_lib::TrustDistanceParams,
 ) -> Result<impl Iterator<Item = proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
-    let (db, _trust_set) = local.load_db(&trust_params)?;
+    let db = local.load_db()?;
     Ok(db.get_package_reviews_for_package(
         PROJECT_SOURCE_CRATES_IO,
         crate_.name.as_ref().map(|s| s.as_str()),
@@ -410,15 +471,19 @@ fn find_reviews(
 }
 
 fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
-    // TODO: take trust params?
-    for review in find_reviews(crate_, &default())? {
+    for review in find_reviews(crate_)? {
         println!("{}", review);
     }
 
     Ok(())
 }
 
-fn handle_goto_mode_command<F>(args: &opts::ReviewOrGoto, f: F) -> Result<()>
+/// Handle the `goto mode` commands
+///
+/// After jumping to a crate with `goto`, the crate is selected
+/// already, and commands like `review` must not be given any arguments
+/// like that.
+fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
 where
     F: FnOnce(&str, Option<&str>, bool) -> Result<()>,
 {
@@ -429,7 +494,7 @@ where
             let name = env::var(GOTO_CRATE_NAME_ENV)
                 .map_err(|_| format_err!("crate name env var not found"))?;
             let version = env::var(GOTO_CRATE_VERSION_ENV)
-                .map_err(|_| format_err!("crate versoin env var not found"))?;
+                .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
             f(&name, Some(&version), true)?;
@@ -441,12 +506,62 @@ where
             .clone()
             .ok_or_else(|| format_err!("Crate name required"))?;
 
-        f(&name, args.crate_.version.as_deref(), args.independent)?;
+        f(&name, args.crate_.version.as_deref(), args.unrelated)?;
     }
     Ok(())
 }
 
-fn run_command(command: opts::Command) -> Result<()> {
+fn create_trust_proof(
+    ids: Vec<String>,
+    trust_or_distrust: TrustOrDistrust,
+    proof_create_opt: &opts::CommonProofCreate,
+) -> Result<()> {
+    let local = Local::auto_open()?;
+
+    let own_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+
+    let trust = local.build_trust_proof(own_id.as_pubid(), ids.clone(), trust_or_distrust)?;
+
+    if proof_create_opt.print_unsigned {
+        print!("{}", trust);
+    }
+
+    let proof = trust.sign_by(&own_id)?;
+
+    if proof_create_opt.print_signed {
+        print!("{}", proof);
+    }
+
+    if !proof_create_opt.no_store {
+        local.insert(&proof)?;
+
+        if !proof_create_opt.no_commit {
+            let commit_msg = format!(
+                "Add {t_or_d} for {ids}",
+                t_or_d = trust_or_distrust,
+                ids = ids.join(", ")
+            );
+            local
+                .proof_dir_commit(&commit_msg)
+                .with_context(|_| format_err!("Could not not automatically commit"))?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Result of `run_command`
+///
+/// This is to distinguish expeced non-success results,
+/// from errors: unexpected failures.
+enum CommandExitStatus {
+    // `verify deps` failed
+    VerificationFailed,
+    // Success, exit code 0
+    Successs,
+}
+
+fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
         opts::Command::New(cmd) => match cmd {
             opts::New::Id(args) => {
@@ -456,7 +571,7 @@ fn run_command(command: opts::Command) -> Result<()> {
                     eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
                 }
                 let local = crev_lib::Local::auto_open()?;
-                let _ = ensure_known_owners_exists(&local);
+                let _ = ensure_known_owners_list_exists(&local);
                 res?;
             }
         },
@@ -472,55 +587,73 @@ fn run_command(command: opts::Command) -> Result<()> {
                 local.edit_readme()?;
             }
             opts::Edit::Known => {
-                edit_known_owners()?;
+                edit_known_owners_list()?;
             }
         },
         opts::Command::Verify(cmd) => match cmd {
+            // TODO: This is waaay too long; refactor
             opts::Verify::Deps(args) => {
                 let mut term = term::Term::new();
                 let local = crev_lib::Local::auto_create_or_open()?;
-                let (db, trust_set) = local.load_db(&args.trust_params.clone().into())?;
+                let db = local.load_db()?;
+
+                let trust_set =
+                    if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
+                        db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+                    } else {
+                        crev_lib::proofdb::TrustSet::default()
+                    };
 
                 let repo = Repo::auto_open_cwd()?;
                 let ignore_list = cargo_min_ignore_list();
-                let cratesio = crates_io::Client::new(&local)?;
+                let crates_io = crates_io::Client::new(&local)?;
 
                 if term.stderr_is_tty && term.stdout_is_tty {
                     if args.verbose {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^13} {:6}",
-                        "verifi.", "reviews", "downloads", "owners"
+                        "{:8} {:8} {:^15} {:4} {:6} {:4}",
+                        "trust", "reviews", "downloads", "own.", "lines", "flgs"
                     );
                     eprintln!(" {:<19} {:<15}", "crate", "version");
                 }
-                let known_owners = read_known_owners().unwrap_or_else(|_| HashSet::new());
-                repo.for_every_non_local_dependency_dir(|pkg_id, path| {
-                    let pkg_name = pkg_id.name().as_str();
-                    let pkg_version = pkg_id.version().to_string();
+                let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
+                let mut total_verification_successful = true;
+                repo.for_every_non_local_dep_crate(|crate_| {
+                    let crate_id = crate_.package_id();
+                    let crate_name = crate_id.name().as_str();
+                    let crate_version = crate_id.version().to_string();
+                    let crate_root = crate_.root();
 
-                    let digest = crev_lib::get_dir_digest(&path, &ignore_list)?;
+                    let digest = crev_lib::get_dir_digest(&crate_root, &ignore_list)?;
                     let result = db.verify_package_digest(&digest, &trust_set);
+
+                    if !result.is_verified() {
+                        total_verification_successful = false;
+                    }
 
                     if result.is_verified() && args.skip_verified {
                         return Ok(());
                     }
 
-                    let pkg_review_count =
-                        db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(pkg_name), None);
+                    let pkg_review_count = db.get_package_review_count(
+                        PROJECT_SOURCE_CRATES_IO,
+                        Some(crate_name),
+                        None,
+                    );
                     let pkg_version_review_count = db.get_package_review_count(
                         PROJECT_SOURCE_CRATES_IO,
-                        Some(pkg_name),
-                        Some(&pkg_version),
+                        Some(crate_name),
+                        Some(&crate_version),
                     );
 
-                    let (version_downloads, total_downloads) = cratesio
-                        .get_downloads_count(&pkg_name, &pkg_version)
+                    let (version_downloads, total_downloads) = crates_io
+                        .get_downloads_count(&crate_name, &crate_version)
                         .map(|(a, b)| (a.to_string(), b.to_string()))
                         .unwrap_or_else(|_e| ("err".into(), "err".into()));
 
-                    let owners = cratesio.get_owners(&pkg_name).ok();
+                    let owners = crates_io.get_owners(&crate_name).ok();
                     let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
                         let total_owners_count = owners.len();
                         let known_owners_count = owners
@@ -539,7 +672,10 @@ fn run_command(command: opts::Command) -> Result<()> {
                     if args.verbose {
                         print!("{:43} ", digest);
                     }
-                    term.stdout(format_args!("{:8}", result), &result)?;
+                    term.print(
+                        format_args!("{:8}", result),
+                        term::verification_status_color(&result),
+                    )?;
                     print!(
                         " {:2} {:2} {:>8} {:>9}",
                         pkg_version_review_count,
@@ -547,26 +683,42 @@ fn run_command(command: opts::Command) -> Result<()> {
                         version_downloads,
                         total_downloads,
                     );
-                    let colored_count_color = KnownOwnersColored(known_owners_count.unwrap_or(0));
-                    term.stdout(
+                    term.print(
                         format_args!(
                             " {}",
                             &known_owners_count
                                 .map(|c| c.to_string())
                                 .unwrap_or_else(|| "?".into())
                         ),
-                        &colored_count_color,
+                        term::known_owners_count_color(known_owners_count.unwrap_or(0)),
                     )?;
                     print!(
-                        "/{}",
+                        "/{} ",
                         total_owners_count
                             .map(|c| c.to_string())
                             .unwrap_or_else(|| "?".into())
                     );
-                    println!(" {:<20} {:<15}", pkg_name, pkg_version);
+                    print!(
+                        "{:>6} ",
+                        tokei::get_rust_line_count(crate_root)
+                            .ok()
+                            .map(|n| n.to_string())
+                            .unwrap_or_else(|| "err".into())
+                    );
+                    term.print(
+                        format_args!(" {:4}", if crate_.has_custom_build() { "CB" } else { "" }),
+                        ::term::color::YELLOW,
+                    )?;
+                    println!(" {:<20} {:<15}", crate_name, crate_version);
 
                     Ok(())
                 })?;
+
+                return Ok(if total_verification_successful {
+                    CommandExitStatus::Successs
+                } else {
+                    CommandExitStatus::VerificationFailed
+                });
             }
         },
         opts::Command::Query(cmd) => match cmd {
@@ -579,22 +731,30 @@ fn run_command(command: opts::Command) -> Result<()> {
                     let local = Local::auto_open()?;
                     local.list_own_ids()?
                 }
-                // TODO: move to crev-lib
-                opts::QueryId::Trusted { trust_params } => {
+                opts::QueryId::Trusted {
+                    for_id,
+                    trust_params,
+                } => {
                     let local = crev_lib::Local::auto_open()?;
-                    let (db, trust_set) = local.load_db(&trust_params.into())?;
+                    let db = local.load_db()?;
+                    let for_id = local.get_for_id_from_str(for_id.as_deref())?;
+                    let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
+
                     for id in trust_set.trusted_ids() {
                         println!(
-                            "{} {}",
+                            "{} {:6} {}",
                             id,
+                            trust_set
+                                .get_effective_trust_level(id)
+                                .expect("Some trust level"),
                             db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
                         );
                     }
                 }
                 // TODO: move to crev-lib
                 opts::QueryId::All => {
-                    let local = crev_lib::Local::auto_open()?;
-                    let (db, _trust_set) = local.load_db(&default())?;
+                    let local = crev_lib::Local::auto_create_or_open()?;
+                    let db = local.load_db()?;
 
                     for id in &db.all_known_ids() {
                         println!(
@@ -608,42 +768,39 @@ fn run_command(command: opts::Command) -> Result<()> {
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
         },
         opts::Command::Review(args) => {
-            handle_goto_mode_command(&args, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Trust)
+            handle_goto_mode_command(&args.common, |c, v, i| {
+                create_review_proof(c, v, i, TrustOrDistrust::Trust, &args.common_proof_create)
             })?;
         }
         opts::Command::Goto(args) => {
-            goto_crate_src(&args.crate_, args.independent)?;
+            goto_crate_src(&args.crate_, args.unrelated)?;
+        }
+        opts::Command::Open(args) => {
+            handle_goto_mode_command(&args, |c, v, i| crate_open(c, v, i))?;
         }
         opts::Command::Flag(args) => {
-            handle_goto_mode_command(&args, |c, v, i| {
-                review_crate(c, v, i, TrustOrDistrust::Distrust)
+            handle_goto_mode_command(&args.common, |c, v, i| {
+                create_review_proof(
+                    c,
+                    v,
+                    i,
+                    TrustOrDistrust::Distrust,
+                    &args.common_proof_create,
+                )
             })?;
         }
         opts::Command::Clean(args) => {
             handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
         }
         opts::Command::Trust(args) => {
-            let local = Local::auto_open()?;
-            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Trust)?;
+            create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
         }
         opts::Command::Distrust(args) => {
-            let local = Local::auto_open()?;
-            local.build_trust_proof(args.pub_ids, &crev_common::read_passphrase, Distrust)?;
+            create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
         }
         opts::Command::Git(git) => {
             let local = Local::auto_open()?;
             let status = local.run_git(git.args)?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Diff => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["diff".into(), "HEAD".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Commit => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["commit".into(), "-a".into()])?;
             std::process::exit(status.code().unwrap_or(-159));
         }
         opts::Command::Push => {
@@ -653,7 +810,20 @@ fn run_command(command: opts::Command) -> Result<()> {
         }
         opts::Command::Publish => {
             let local = Local::auto_open()?;
-            let mut status = local.run_git(vec!["commit".into(), "-a".into()])?;
+            let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
+
+            if status.code().unwrap_or(-2) == 1 {
+                status = local.run_git(vec![
+                    "commit".into(),
+                    "-a".into(),
+                    "-m".into(),
+                    "auto-commit on `crev publish`".into(),
+                ])?;
+            }
+
+            if status.code().unwrap_or(-1) == 0 {
+                status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+            }
             if status.code().unwrap_or(-1) == 0 {
                 status = local.run_git(vec!["push".into()])?;
             }
@@ -661,30 +831,69 @@ fn run_command(command: opts::Command) -> Result<()> {
         }
         opts::Command::Pull => {
             let local = Local::auto_open()?;
-            let status = local.run_git(vec!["pull".into()])?;
+            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
             std::process::exit(status.code().unwrap_or(-159));
         }
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_trusted(params.into())?;
             }
             opts::Fetch::Url(params) => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_url(&params.url)?;
             }
             opts::Fetch::All => {
-                let local = Local::auto_open()?;
+                let local = Local::auto_create_or_open()?;
                 local.fetch_all()?;
+            }
+        },
+        opts::Command::Update => {
+            let repo = Repo::auto_open_cwd()?;
+            repo.update_source()?;
+            repo.update_counts()?;
+        }
+        opts::Command::Export(cmd) => match cmd {
+            opts::Export::Id(params) => {
+                let local = Local::auto_open()?;
+                println!("{}", local.export_locked_id(params.id)?);
+            }
+        },
+        opts::Command::Import(cmd) => match cmd {
+            opts::Import::Id => {
+                let local = Local::auto_create_or_open()?;
+                let term = term::Term::new();
+                if term.stdin_is_tty {
+                    eprintln!("Paste in the text and press Ctrl+D.")
+                }
+                let mut s = vec![];
+
+                std::io::stdin().lock().read_until(0, &mut s)?;
+                let id = local.import_locked_id(&String::from_utf8(s)?)?;
+                // Note: It's unclear how much of this should be done by
+                // the library
+                local.save_current_id(&id.id)?;
+
+                let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
+                if !proof_dir_path.exists() {
+                    local.clone_proof_dir_from_git(&id.url.url, false)?;
+                }
             }
         },
     }
 
-    Ok(())
+    Ok(CommandExitStatus::Successs)
 }
 
 fn main() {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
-    run_command(command).unwrap_or_else(|e| eprintln!("Error: {}", e));
+    match run_command(command) {
+        Ok(CommandExitStatus::Successs) => {}
+        Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
+        Err(e) => {
+            eprintln!("{}", e.display_causes_and_backtrace());
+            std::process::exit(-2)
+        }
+    }
 }

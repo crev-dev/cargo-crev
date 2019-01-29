@@ -69,12 +69,28 @@ pub struct VerifyDeps {
 
     #[structopt(long = "skip-known-owners")]
     pub skip_known_owners: bool,
+
+    #[structopt(long = "for-id")]
+    pub for_id: Option<String>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Verify {
     /// Verify dependencies
-    #[structopt(name = "deps")]
+    #[structopt(
+        name = "deps",
+        after_help = r"This will show the following information:
+
+- trust      - Effective trust level trusted reviewers or `none`, `flagged`
+- reviews    - Number of reviews for the specific version and for all versions
+- downloads  - Download counts from crates.io for the specific version and all versions
+- own.       - Owner counts from crates.io (known/all)
+- lines      - Lines of Rust code
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build
+- name       - Crate name
+- version    - Crate version"
+    )]
     Deps(VerifyDeps),
 }
 
@@ -82,6 +98,9 @@ pub enum Verify {
 pub struct Trust {
     /// Public IDs to create Trust Proof for
     pub pub_ids: Vec<String>,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -124,6 +143,9 @@ pub enum QueryId {
     Trusted {
         #[structopt(flatten)]
         trust_params: TrustParams,
+
+        #[structopt(long = "for-id")]
+        for_id: Option<String>,
     },
 }
 
@@ -170,15 +192,59 @@ pub struct Git {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ReviewOrGoto {
+pub struct ReviewOrGotoCommon {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
 
     /// This crate is not neccesarily a dependency of the current cargo project
-    #[structopt(long = "independent")]
-    pub independent: bool,
+    #[structopt(long = "unrelated", short = "u")]
+    pub unrelated: bool,
 }
 
+#[derive(Debug, StructOpt, Clone)]
+pub struct CommonProofCreate {
+    /// Don't auto-commit local Proof Repository
+    #[structopt(long = "no-commit")]
+    pub no_commit: bool,
+
+    /// Print unsigned proof content on stdout
+    #[structopt(long = "print-unsigned")]
+    pub print_unsigned: bool,
+
+    /// Print signed proof content on stdout
+    #[structopt(long = "print-signed")]
+    pub print_signed: bool,
+
+    /// Print signed proof content on stdout
+    #[structopt(long = "no-store")]
+    pub no_store: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Review {
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct ExportId {
+    pub id: Option<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Export {
+    #[structopt(name = "id")]
+    Id(ExportId),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Import {
+    #[structopt(name = "id")]
+    Id,
+}
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Create an Id, ...
@@ -199,11 +265,11 @@ pub enum Command {
 
     /// Review a crate
     #[structopt(name = "review")]
-    Review(ReviewOrGoto),
+    Review(Review),
 
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
-    Flag(ReviewOrGoto),
+    Flag(Review),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]
@@ -226,14 +292,6 @@ pub enum Command {
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     Git(Git),
 
-    /// See changes in the local proof repository (alias to `git diff`)
-    #[structopt(name = "diff")]
-    Diff,
-
-    /// Commit changes to the local proof repository (alias to `git commit -a`)
-    #[structopt(name = "commit")]
-    Commit,
-
     /// Push local changes to the public proof repository (alias to `git push HEAD`)
     #[structopt(name = "push")]
     Push,
@@ -248,11 +306,27 @@ pub enum Command {
 
     /// Start a shell in source directory of a crate under review
     #[structopt(name = "goto")]
-    Goto(ReviewOrGoto),
+    Goto(ReviewOrGotoCommon),
+
+    /// Open source code of a crate
+    #[structopt(name = "open")]
+    Open(ReviewOrGotoCommon),
 
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]
-    Clean(ReviewOrGoto),
+    Clean(ReviewOrGotoCommon),
+
+    /// Export an id, ...
+    #[structopt(name = "export")]
+    Export(Export),
+
+    /// Import an Id, ...
+    #[structopt(name = "import")]
+    Import(Import),
+
+    /// Update data from online sources (crates.io)
+    #[structopt(name = "update")]
+    Update,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`
