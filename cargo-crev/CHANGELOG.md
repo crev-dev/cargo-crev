@@ -4,13 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.4.0...HEAD)
+## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.5.0...HEAD)
+
+## [0.5.0](https://github.com/dpc/crev/compare/cargo-crev-v0.4.0...cargo-crev-v0.5.0) - 2019-03-06
 ### Added
 
 - `unsafe` counts via `geiger` crate
 
 ## [0.4.0](https://github.com/dpc/crev/compare/cargo-crev-v0.3.0...cargo-crev-v0.4.0) - 2019-01-12
 ### Added
+
 - This `CHANGELOG.md` file.
 - `LICENSE` files
 - Ability to work without an Id for most commands.
@@ -28,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `update` command.
 
 ### Changed
+
 - Windows cache folder changed from `%AppData%\Local\Dawid Ci,281,,380,arkiewicz\crev` to `%AppData%\Local\crev`.
 - Windows config folder changed from `%AppData%\Roaming\Dawid Ci,281,,380,arkiewicz\crev` to `%AppData%\Roaming\crev`.
 - MacOS config folder changed from `$HOME/Library/Application Support/crev` to `$HOME/Library/Preferences/crev`.
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardcode dpc's proof-repo url on `fetch all` to help bootstrap the ecosystem.
 
 ### Fixed
+
 - Fix `$EDITOR`/`$VISUAL` handling, especially on Windows
 - Save `lanes` in `LockedId`. Old Ids need to be fixed manually.
 
