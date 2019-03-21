@@ -51,8 +51,7 @@ impl Id {
 
                 let sig_bytes = crev_common::base64_decode(sig_str)?;
                 let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
-
-                pubkey.verify::<blake2::Blake2b>(content, &signature)?;
+                pubkey.verify_with_digest::<blake2::Blake2b>(&content, &signature)?;
             }
         }
 
@@ -153,7 +152,7 @@ impl OwnId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
-        let calculated_pub_key: PublicKey = PublicKey::from_secret::<blake2::Blake2b>(&sec_key);
+        let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {
             id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
@@ -166,7 +165,7 @@ impl OwnId {
 
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         self.keypair
-            .sign::<blake2::Blake2b>(&msg)
+            .sign_with_digest::<blake2::Blake2b>(msg)
             .to_bytes()
             .to_vec()
     }
@@ -185,7 +184,7 @@ impl OwnId {
 
     pub fn generate(url: Url) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair = ed25519_dalek::Keypair::generate::<blake2::Blake2b, _>(&mut csprng);
+        let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
         Self {
             id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,

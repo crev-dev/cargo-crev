@@ -16,7 +16,7 @@ crev-common = { path = "../crev-common", version = "0.5" }
 blake2 = "0.8"
 chrono = "0.4"
 common_failures = "0.1"
-ed25519-dalek = "1.0.0-pre.0"
+ed25519-dalek = { git = "https://github.com/dpc/ed25519-dalek", branch = "custom-digest-2" }
 failure = "0.1"
 serde = "1"
 serde_derive = "1"
