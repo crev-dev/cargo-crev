@@ -4,7 +4,7 @@ use crev_common::{
     self,
     serde::{as_base64, from_base64},
 };
-use ed25519_dalek::{self, PublicKey, SecretKey};
+use crev_ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
 use std::fmt;
 
@@ -47,10 +47,10 @@ impl Id {
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<()> {
         match self {
             Id::Crev { id } => {
-                let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)?;
+                let pubkey = crev_ed25519_dalek::PublicKey::from_bytes(&id)?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)?;
-                let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
+                let signature = crev_ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
                 pubkey.verify_with_digest::<blake2::Blake2b>(&content, &signature)?;
             }
         }
@@ -133,7 +133,7 @@ impl PubId {
 #[derive(Debug)]
 pub struct OwnId {
     pub id: PubId,
-    pub keypair: ed25519_dalek::Keypair,
+    pub keypair: crev_ed25519_dalek::Keypair,
 }
 
 impl AsRef<Id> for OwnId {
@@ -156,7 +156,7 @@ impl OwnId {
 
         Ok(Self {
             id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
-            keypair: ed25519_dalek::Keypair {
+            keypair: crev_ed25519_dalek::Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
             },
@@ -184,7 +184,7 @@ impl OwnId {
 
     pub fn generate(url: Url) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
+        let keypair = crev_ed25519_dalek::Keypair::generate(&mut csprng);
         Self {
             id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,
