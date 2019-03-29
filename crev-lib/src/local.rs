@@ -45,6 +45,14 @@ fn backfill_salt() -> Vec<u8> {
     crev_common::blake2b256sum(b"BACKFILLED_SUM")
 }
 
+fn is_none_or_empty(s: &Option<String>) -> bool {
+    if let Some(s) = s {
+        s.is_empty()
+    } else {
+        true
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserConfig {
     pub version: i64,
@@ -57,6 +65,13 @@ pub struct UserConfig {
         default = "backfill_salt"
     )]
     host_salt: Vec<u8>,
+
+    #[serde(
+        rename = "open-cmd",
+        skip_serializing_if = "is_none_or_empty",
+        default = "Option::default"
+    )]
+    pub open_cmd: Option<String>,
 }
 
 impl Default for UserConfig {
@@ -65,6 +80,7 @@ impl Default for UserConfig {
             version: CURRENT_USER_CONFIG_SERIALIZATION_VERSION,
             current_id: None,
             host_salt: generete_salt(),
+            open_cmd: None,
         }
     }
 }
@@ -76,6 +92,22 @@ impl UserConfig {
     }
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
+    }
+
+    pub fn edit_iteractively(&self) -> Result<Self> {
+        let mut text = serde_yaml::to_string(self)?;
+        loop {
+            text = util::edit_text_iteractively(&text)?;
+            match serde_yaml::from_str(&text) {
+                Err(e) => {
+                    eprintln!("There was an error parsing content: {}", e);
+                    if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {
+                        bail!("User canceled");
+                    }
+                }
+                Ok(s) => return Ok(s),
+            }
+        }
     }
 }
 
@@ -674,6 +706,13 @@ impl Local {
     pub fn edit_readme(&self) -> Result<()> {
         util::edit_file(&self.get_proofs_dir_path()?.join("README.md"))?;
         self.proof_dir_git_add_path(&PathBuf::from("README.md"))?;
+        Ok(())
+    }
+
+    pub fn edit_user_config(&self) -> Result<()> {
+        let config = self.load_user_config()?;
+        let config = config.edit_iteractively()?;
+        self.store_user_config(&config)?;
         Ok(())
     }
 

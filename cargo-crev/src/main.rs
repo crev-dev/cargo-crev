@@ -323,27 +323,39 @@ fn clean_crate(name: &str, version: Option<&str>, unrelated: bool) -> Result<()>
     Ok(())
 }
 
+fn get_open_cmd(local: &Local) -> Result<String> {
+    let config = local
+        .load_user_config()
+        .with_context(|_err| "Can't open user config")?;
+    if let Some(cmd) = config.open_cmd {
+        return Ok(cmd);
+    }
+
+    Ok(if cfg!(target_os = "windows") {
+        "start"
+    } else if cfg!(target_os = "macos") {
+        "open"
+    } else if cfg!(target_os = "linux") {
+        "xdg-open"
+    } else {
+        eprintln!("Unsupported platform. Please submit a PR!");
+        "xdg-open"
+    }
+    .into())
+}
+
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
 fn crate_open(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
+    let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
 
     let crate_root = crate_.root();
 
-    let status = if cfg!(target_os = "windows") {
-        process::Command::new("start")
-    } else if cfg!(target_os = "macos") {
-        process::Command::new("open")
-    } else if cfg!(target_os = "linux") {
-        process::Command::new("xdg-open")
-    } else {
-        eprintln!("Unsupported platform. Please submit a PR!");
-        process::Command::new("xdg-open")
-    }
-    .arg(crate_root)
-    .status()?;
+    let open_cmd = get_open_cmd(&local)?;
+    let status = crev_lib::util::run_with_shell_cmd(open_cmd.into(), crate_root)?;
 
     if !status.success() {
         bail!("Shell returned {}", status);
@@ -627,6 +639,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Edit::Readme => {
                 let local = crev_lib::Local::auto_open()?;
                 local.edit_readme()?;
+            }
+            opts::Edit::Config => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                local.edit_user_config()?;
             }
             opts::Edit::Known => {
                 edit_known_owners_list()?;

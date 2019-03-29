@@ -179,6 +179,10 @@ pub enum Edit {
     #[structopt(name = "readme")]
     Readme,
 
+    /// Edit your user config
+    #[structopt(name = "config")]
+    Config,
+
     /// Edit your KNOWN_CRATE_OWNERS.md file
     #[structopt(name = "known")]
     Known,

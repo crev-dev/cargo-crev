@@ -4,6 +4,7 @@ use crate::prelude::*;
 use crev_common;
 use crev_data::proof;
 use git2;
+use std::ffi::OsString;
 use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io::Write, path::Path, process};
 use tempdir;
 
@@ -26,7 +27,7 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
     })
 }
 
-fn edit_text_iteractively(text: &str) -> Result<String> {
+pub fn edit_text_iteractively(text: &str) -> Result<String> {
     let dir = tempdir::TempDir::new("crev")?;
     let file_path = dir.path().join("crev.review");
     let mut file = fs::File::create(&file_path)?;
@@ -39,21 +40,19 @@ fn edit_text_iteractively(text: &str) -> Result<String> {
     Ok(read_file_to_string(&file_path)?)
 }
 
-pub fn edit_file(path: &Path) -> Result<()> {
-    let editor = get_editor_to_use()?;
-
-    let status = if cfg!(windows) {
-        let mut proc = process::Command::new(editor.clone());
+pub fn run_with_shell_cmd(cmd: OsString, path: &Path) -> Result<std::process::ExitStatus> {
+    Ok(if cfg!(windows) {
+        let mut proc = process::Command::new(cmd.clone());
         proc.arg(path);
         proc
     } else if cfg!(unix) {
         let mut proc = process::Command::new("/bin/sh");
         proc.arg("-c").arg(format!(
             "{} {}",
-            editor
-                .clone()
-                .into_string()
-                .map_err(|_| format_err!("$EDITOR or $VISUAL not a valid Unicode"))?,
+            cmd.clone().into_string().map_err(|_| format_err!(
+                "command not a valid Unicode: {}",
+                cmd.to_string_lossy()
+            ))?,
             shell_escape::escape(path.display().to_string().into())
         ));
         proc
@@ -61,7 +60,13 @@ pub fn edit_file(path: &Path) -> Result<()> {
         panic!("What platform are you running this on? Please submit a PR!");
     }
     .status()
-    .with_context(|_e| format_err!("Couldn't start the editor: {}", editor.to_string_lossy()))?;
+    .with_context(|_e| format_err!("Couldn't start the command: {}", cmd.to_string_lossy()))?)
+}
+
+pub fn edit_file(path: &Path) -> Result<()> {
+    let editor = get_editor_to_use()?;
+
+    let status = run_with_shell_cmd(editor, path)?;
 
     if !status.success() {
         bail!("Editor returned {}", status);
