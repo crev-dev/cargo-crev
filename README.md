@@ -10,7 +10,7 @@
 
 
 
-# `crev` -  Code REView tool that we desperately need
+# `crev` -  Code REView system that we desperately need
 
 You're ultimately responsible for vetting your dependencies.
 
