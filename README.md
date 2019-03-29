@@ -49,7 +49,7 @@ Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Status
 
-* [Rust integration](https://github.com/dpc/crev/tree/master/cargo-crev) - working
+* [Rust integration (cargo-crev)](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
 * other languages/ecosystems - in plans
 
 
