@@ -206,6 +206,20 @@ pub struct ReviewOrGotoCommon {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Open {
+    /// Shell command to execute with crate directory as an argument. Eg. "code --wait -n" for VSCode
+    #[structopt(long = "cmd")]
+    pub cmd: Option<String>,
+
+    /// Save the `--cmd` argument to be used a default in the future
+    #[structopt(long = "cmd-save")]
+    pub cmd_save: bool,
+
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct CommonProofCreate {
     /// Don't auto-commit local Proof Repository
     #[structopt(long = "no-commit")]
@@ -314,7 +328,7 @@ pub enum Command {
 
     /// Open source code of a crate
     #[structopt(name = "open")]
-    Open(ReviewOrGotoCommon),
+    Open(Open),
 
     /// Clean a crate source code (eg. after review)
     #[structopt(name = "clean")]

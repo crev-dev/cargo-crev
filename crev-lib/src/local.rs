@@ -716,6 +716,13 @@ impl Local {
         Ok(())
     }
 
+    pub fn store_config_open_cmd(&self, cmd: String) -> Result<()> {
+        let mut config = self.load_user_config()?;
+        config.open_cmd = Some(cmd);
+        self.store_user_config(&config)?;
+        Ok(())
+    }
+
     /// Create a new proofdb, and populate it with local repo
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {

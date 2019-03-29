@@ -347,14 +347,31 @@ fn get_open_cmd(local: &Local) -> Result<String> {
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-fn crate_open(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
+fn crate_open(
+    name: &str,
+    version: Option<&str>,
+    unrelated: bool,
+    cmd: Option<String>,
+    cmd_save: bool,
+) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
 
     let crate_root = crate_.root();
 
-    let open_cmd = get_open_cmd(&local)?;
+    if cmd_save && cmd.is_none() {
+        bail!("Can't save cmd without specifing it");
+    }
+
+    let open_cmd = if let Some(cmd) = cmd {
+        if cmd_save {
+            local.store_config_open_cmd(cmd.clone())?;
+        }
+        cmd
+    } else {
+        get_open_cmd(&local)?
+    };
     let status = crev_lib::util::run_with_shell_cmd(open_cmd.into(), crate_root)?;
 
     if !status.success() {
@@ -837,7 +854,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             goto_crate_src(&args.crate_, args.unrelated)?;
         }
         opts::Command::Open(args) => {
-            handle_goto_mode_command(&args, |c, v, i| crate_open(c, v, i))?;
+            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
+                crate_open(c, v, i, args.cmd, args.cmd_save)
+            })?;
         }
         opts::Command::Flag(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
