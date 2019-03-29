@@ -105,14 +105,14 @@ cargo crev fetch all                                    # fetch proofs from all 
 cargo crev verify                                       # verify your depedencies
 cargo crev query id all                                 # show all known ids
 cargo crev query review                                 # show all reviews
-cargo crev query review <package>                       # show all reviews of a package
+cargo crev query review <crate>                         # show all reviews of a crate
 cargo crev trust <id>                                   # trust someone
 
 # for Vim/CLI-heavy users
 cargo crev goto <crate>                                 # jump/cd to crate to review it
 
 # for IDE users
-cargo crev open safemem --cmd "code --wait -n" --cmd-save # open crate in VSCode and use VSCode by default in the future
+cargo crev open <crate> --cmd "code --wait -n" --cmd-save # open crate in VSCode and use VSCode by default in the future
 
 cargo crev review                                       # review a crate (after goto)
 cargo crev review <crate>                               # review a dependency
