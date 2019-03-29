@@ -49,12 +49,9 @@ Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
 ## Status
 
-Still early, but there's a team already, a lot of working code and ironed-out ideas.
+* [Rust integration](https://github.com/dpc/crev/tree/master/cargo-crev) - working
+* other languages/ecosystems - in plans
 
-The current focus is on a first concrete implementation of Crev:
-[`cargo-crev`](https://github.com/dpc/crev/tree/master/cargo-crev) -
-a tool for reviewing Rust language crates published on [crates.io](https://crates.io).
-It is available in an alpha version.
 
 See it in action:
 
