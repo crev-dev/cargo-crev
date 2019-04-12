@@ -152,7 +152,8 @@ impl OwnId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
-        let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
+        let calculated_pub_key: PublicKey =
+            PublicKey::from_secret_with_digest::<blake2::Blake2b>(&sec_key);
 
         Ok(Self {
             id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
