@@ -3,6 +3,7 @@
 use crate::Url;
 use chrono::{self, prelude::*};
 use crev_common;
+use std::io::BufRead;
 use std::{default, fmt, fs, io, mem, path::Path};
 
 pub mod package_info;
@@ -256,7 +257,9 @@ impl Serialized {
         })
     }
 
-    pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
+    pub fn parse(reader: impl io::Read) -> Result<Vec<Self>> {
+        let reader = std::io::BufReader::new(reader);
+
         #[derive(PartialEq, Eq)]
         enum Stage {
             None,
@@ -364,7 +367,7 @@ impl Proof {
         Self::parse(io::BufReader::new(file))
     }
 
-    pub fn parse(reader: impl io::BufRead) -> Result<Vec<Self>> {
+    pub fn parse(reader: impl io::Read) -> Result<Vec<Self>> {
         let mut v = vec![];
         for serialized in Serialized::parse(reader)?.into_iter() {
             v.push(serialized.to_parsed()?)

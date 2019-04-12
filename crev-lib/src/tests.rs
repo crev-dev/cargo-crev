@@ -2,6 +2,7 @@ use super::*;
 
 use crev_data::{proof::trust::TrustLevel, Digest, OwnId};
 use default::default;
+use std::str::FromStr;
 
 // Basic liftime of an `LockedId`:
 //
@@ -30,6 +31,65 @@ fn lock_and_unlock() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn use_id_generated_by_previous_versions() -> Result<()> {
+    let yaml = r#"
+---
+version: -1
+url: "https://github.com/dpc/crev-proofs-test"
+public-key: V4HcWyFSKZPSnLJWFAiGkm0nuue4USDnNAdibRvX4gQ
+sealed-secret-key: Jcpm8spOQjpsQ97Wpnh0iXfWiBFYOVy4r-7G6EV4wE7tXCiemg4_m1qcTS2md0cq
+seal-nonce: eub5pGojkzN57H62I4EesgYgoECJT1vcnkm2VukSZws
+pass:
+  version: 19
+  variant: argon2id
+  iterations: 192
+  memory-size: 4096
+  salt: EKf-mqQyKBEsPrWu2kpaiMPQDpdnPuCULNv6OVwHk1Y
+"#;
+
+    let locked = id::LockedId::from_str(yaml)?;
+    let unlocked = locked.to_unlocked("a")?;
+
+    let _trust_proof = unlocked
+        .as_pubid()
+        .create_trust_proof(vec![unlocked.as_pubid().to_owned()], TrustLevel::High)?
+        .sign_by(&unlocked)?;
+
+    Ok(())
+}
+
+#[test]
+fn validate_proof_generated_by_previous_version() -> Result<()> {
+    let yaml = r#"
+-----BEGIN CREV PACKAGE REVIEW-----
+version: -1
+date: "2018-12-18T23:10:21.111854021-08:00"
+from:
+  id-type: crev
+  id: 8iUv_SPgsAQ4paabLfs1D9tIptMnuSRZ344_M-6m9RE
+  url: "https://github.com/dpc/crev-proofs"
+package:
+  source: "https://crates.io"
+  name: log
+  version: 0.4.6
+  digest: BhDmOOjfESqs8i3z9qsQANH8A39eKklgQKuVtrwN-Tw
+review:
+  thoroughness: low
+  understanding: medium
+  rating: positive
+-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----
+LXHRP2Spd2jzaXe5CXCTwb4mu_epLtgdfxy717RSPVyUmfVxoOICg49AfKQzhpWH5bWLvFAzVuXtJnJ0klI3Dw
+-----END CREV PACKAGE REVIEW-----
+"#;
+
+    let proofs = crev_data::proof::Proof::parse(yaml.as_bytes())?;
+    assert_eq!(proofs.len(), 1);
+
+    proofs[0].verify()?;
+
+    Ok(())
+}
 // Exact distance of flooding the web of trust graph is configurable,
 // with the edges distance corresponding to the trust level.
 #[test]

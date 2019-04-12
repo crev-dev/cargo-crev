@@ -19,6 +19,7 @@ use git2;
 use insideout::InsideOut;
 use resiter_dpc_tmp::*;
 use serde_yaml;
+use std::str::FromStr;
 use std::{
     cell::RefCell,
     collections::HashSet,

@@ -135,7 +135,7 @@ dependencies = [
  "backtrace-sys 0.1.28 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.51 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-demangle 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-demangle 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -612,7 +612,7 @@ dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.5.0",
- "crev-ed25519-dalek 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crev-ed25519-dalek 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive_builder 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -624,7 +624,7 @@ dependencies = [
 
 [[package]]
 name = "crev-ed25519-dalek"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2193,7 +2193,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -3054,7 +3054,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crates_io_api 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "62011c96a05912750efe012d7c3881bebd1d4d43b644dcab452090f07291db21"
 "checksum crc 1.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d663548de7f5cca343f1e0a48d14dcfb0e9eb4e079ec58883b7251539fa10aeb"
 "checksum crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
-"checksum crev-ed25519-dalek 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "109238bcccadabd591f5e83b1d07a6e0eecf03df636a9aedc0e7d1cb0ffcdecc"
+"checksum crev-ed25519-dalek 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "5d4a32993fcdeeb5d5c4fdbfe32b2cee59f674f4470d69df5259933378c1ceed"
 "checksum crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0f0ed1a4de2235cabda8558ff5840bffb97fcb64c97827f354a451307df5f72b"
 "checksum crossbeam-deque 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f739f8c5363aca78cfb059edf753d8f0d36908c348f3d8d1503f03d8b75d9cf3"
 "checksum crossbeam-deque 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b18cd2e169ad86297e6bc0ad9aa679aee9daa4f19e8163860faf7c164e4f5a71"
@@ -3216,7 +3216,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum resiter-dpc-tmp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a2c81d4b1bbb13bf36e1ccb32731a78354a75ef618b6508a00182d0cc42d9ef1"
 "checksum rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d37473170aedbe66ffa3ad3726939ba677d83c646ad4fd99e5b4bc38712f45ec"
 "checksum rprompt 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1601f32bc5858aae3cbfa1c645c96c4d820cc5c16be0194f089560c00b6eb625"
-"checksum rustc-demangle 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "adacaae16d02b6ec37fdc7acfcddf365978de76d1983d3ee22afc260e1ca9619"
+"checksum rustc-demangle 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "ccc78bfd5acd7bf3e89cffcf899e5cb1a52d6fafa8dec2739ad70c9577a57288"
 "checksum rustc-workspace-hack 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc71d2faa173b74b232dedc235e3ee1696581bb132fc116fa3626d6151a1a8fb"
 "checksum rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 "checksum rustfix 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b96ea6eeae40f488397ccc9e1c0da19d720b23c75972bc63eaa6852b84d161e2"

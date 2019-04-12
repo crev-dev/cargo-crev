@@ -5,11 +5,7 @@ use crev_data::id::{OwnId, PubId};
 use miscreant;
 use rand::{self, Rng};
 use serde_yaml;
-use std::{
-    self, fmt,
-    io::{Read, Write},
-    path::Path,
-};
+use std::{self, fmt, io::Write, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a Fn() -> std::io::Result<String>;
@@ -49,6 +45,14 @@ impl fmt::Display for LockedId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // https://github.com/dtolnay/serde-yaml/issues/103
         f.write_str(&serde_yaml::to_string(self).map_err(|_| fmt::Error)?)
+    }
+}
+
+impl std::str::FromStr for LockedId {
+    type Err = serde_yaml::Error;
+
+    fn from_str(yaml_str: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(serde_yaml::from_str::<LockedId>(&yaml_str)?)
     }
 }
 
@@ -110,15 +114,9 @@ impl LockedId {
     }
 
     pub fn read_from_yaml_file(path: &Path) -> Result<Self> {
-        let mut file = std::fs::File::open(path)?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        let file = std::fs::File::open(path)?;
 
-        Ok(serde_yaml::from_str::<LockedId>(&content)?)
-    }
-
-    pub fn from_str(yaml_s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str::<LockedId>(&yaml_s)?)
+        Ok(serde_yaml::from_reader(&file)?)
     }
 
     pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
