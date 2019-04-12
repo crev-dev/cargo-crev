@@ -34,6 +34,9 @@ pub struct Package {
     pub package: proof::PackageInfo,
     #[builder(default = "Default::default()")]
     pub review: super::Review,
+    #[builder(default = "Default::default()")]
+    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
+    pub advisory: Option<Advisory>,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
@@ -119,5 +122,72 @@ impl fmt::Display for Package {
 impl fmt::Display for PackageDraft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum AdvisoryRange {
+    All,
+    Major,
+    Minor,
+    Patch,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdvisoryRangeParseError(());
+
+impl fmt::Display for AdvisoryRangeParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Could not parse an incorrect advisory range value")
+    }
+}
+
+impl Default for AdvisoryRange {
+    fn default() -> Self {
+        AdvisoryRange::All
+    }
+}
+
+impl std::str::FromStr for AdvisoryRange {
+    type Err = AdvisoryRangeParseError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(match s {
+            "all" => AdvisoryRange::All,
+            "major" => AdvisoryRange::Major,
+            "minor" => AdvisoryRange::Minor,
+            "patch" => AdvisoryRange::Patch,
+            _ => return Err(AdvisoryRangeParseError(())),
+        })
+    }
+}
+
+/// Optional advisory
+///
+/// Advisory means a general important fix was included in this
+/// release, and all previous releases were potentially affected.
+/// We don't play with exact ranges.
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Advisory {
+    affected: AdvisoryRange,
+    critical: bool,
+}
+
+impl From<AdvisoryRange> for Advisory {
+    fn from(r: AdvisoryRange) -> Self {
+        Advisory {
+            affected: r,
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for Advisory {
+    fn default() -> Self {
+        Self {
+            affected: AdvisoryRange::default(),
+            critical: false,
+        }
     }
 }

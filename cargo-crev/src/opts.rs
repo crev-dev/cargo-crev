@@ -245,6 +245,9 @@ pub struct Review {
 
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
+
+    #[structopt(long = "advisory")]
+    pub advisory: Option<crev_data::proof::review::package::AdvisoryRange>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -263,6 +266,7 @@ pub enum Import {
     #[structopt(name = "id")]
     Id,
 }
+
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Create an Id, ...
