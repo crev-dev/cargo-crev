@@ -79,8 +79,16 @@ impl proof::ContentCommon for Package {
         &self.date
     }
 
+    fn set_date(&mut self, date: &chrono::DateTime<FixedOffset>) {
+        self.date = date.clone();
+    }
+
     fn author(&self) -> &crate::PubId {
         &self.from
+    }
+
+    fn set_author(&mut self, id: &crate::PubId) {
+        self.from = id.clone();
     }
 
     fn draft_title(&self) -> String {

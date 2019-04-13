@@ -15,9 +15,14 @@ pub use self::{package_info::*, revision::*, trust::*};
 
 use crate::Result;
 
+pub type Date = chrono::DateTime<FixedOffset>;
+
 pub trait ContentCommon {
-    fn date(&self) -> &chrono::DateTime<FixedOffset>;
+    fn date(&self) -> &Date;
+    fn set_date(&mut self, date: &Date);
+
     fn author(&self) -> &crate::PubId;
+    fn set_author(&mut self, id: &crate::PubId);
 
     fn date_utc(&self) -> chrono::DateTime<Utc> {
         self.date().with_timezone(&Utc)
@@ -145,6 +150,7 @@ impl Content {
             }
         })
     }
+
     pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
         let body = self.to_string();
         let signature = id.sign(&body.as_bytes());
@@ -165,7 +171,7 @@ impl Content {
         }
     }
 
-    pub fn date(&self) -> &chrono::DateTime<FixedOffset> {
+    pub fn date(&self) -> &Date {
         use self::Content::*;
         match self {
             Trust(trust) => trust.date(),
@@ -180,6 +186,24 @@ impl Content {
             Trust(trust) => trust.author_id(),
             Code(review) => review.author_id(),
             Package(review) => review.author_id(),
+        }
+    }
+
+    pub fn set_author(&mut self, id: &crate::PubId) {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.set_author(id),
+            Code(review) => review.set_author(id),
+            Package(review) => review.set_author(id),
+        }
+    }
+
+    pub fn set_date(&mut self, date: &Date) {
+        use self::Content::*;
+        match self {
+            Trust(trust) => trust.set_date(date),
+            Code(review) => review.set_date(date),
+            Package(review) => review.set_date(date),
         }
     }
 

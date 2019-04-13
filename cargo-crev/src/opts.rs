@@ -233,7 +233,7 @@ pub struct CommonProofCreate {
     #[structopt(long = "print-signed")]
     pub print_signed: bool,
 
-    /// Print signed proof content on stdout
+    /// Don't store the proof
     #[structopt(long = "no-store")]
     pub no_store: bool,
 }
@@ -263,8 +263,25 @@ pub enum Export {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Import {
+    /// Import an Id
     #[structopt(name = "id")]
     Id,
+
+    /// Import proofs: resign proofs using current id
+    ///
+    /// Useful for mass-import of proofs signed by another ID
+    #[structopt(name = "proof")]
+    Proof(ImportProof),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct ImportProof {
+    /// Reset proof date to current date
+    #[structopt(long = "reset-date")]
+    pub reset_date: bool,
+
+    #[structopt(flatten)]
+    pub common: CommonProofCreate,
 }
 
 #[derive(Debug, StructOpt, Clone)]

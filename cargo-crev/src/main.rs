@@ -465,11 +465,25 @@ fn create_review_proof(
 
     let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
 
-    if proof_create_opt.print_unsigned {
-        print!("{}", review);
-    }
-
     let proof = review.sign_by(&id)?;
+
+    let commit_msg = format!(
+        "Add review for {crate} v{version}",
+        crate = name,
+        version = crate_version
+    );
+    maybe_store(&local, &proof, &commit_msg, proof_create_opt)
+}
+
+fn maybe_store(
+    local: &Local,
+    proof: &crev_data::proof::Proof,
+    commit_msg: &str,
+    proof_create_opt: &opts::CommonProofCreate,
+) -> Result<()> {
+    if proof_create_opt.print_unsigned {
+        print!("{}", proof.body);
+    }
 
     if proof_create_opt.print_signed {
         print!("{}", proof);
@@ -479,11 +493,6 @@ fn create_review_proof(
         local.insert(&proof)?;
 
         if !proof_create_opt.no_commit {
-            let commit_msg = format!(
-                "Add review for {crate} v{version}",
-                crate = name,
-                version = crate_version
-            );
             local
                 .proof_dir_commit(&commit_msg)
                 .with_context(|_| format_err!("Could not not automatically commit"))?;
@@ -557,30 +566,14 @@ fn create_trust_proof(
 
     let trust = local.build_trust_proof(own_id.as_pubid(), ids.clone(), trust_or_distrust)?;
 
-    if proof_create_opt.print_unsigned {
-        print!("{}", trust);
-    }
-
     let proof = trust.sign_by(&own_id)?;
+    let commit_msg = format!(
+        "Add {t_or_d} for {ids}",
+        t_or_d = trust_or_distrust,
+        ids = ids.join(", ")
+    );
 
-    if proof_create_opt.print_signed {
-        print!("{}", proof);
-    }
-
-    if !proof_create_opt.no_store {
-        local.insert(&proof)?;
-
-        if !proof_create_opt.no_commit {
-            let commit_msg = format!(
-                "Add {t_or_d} for {ids}",
-                t_or_d = trust_or_distrust,
-                ids = ids.join(", ")
-            );
-            local
-                .proof_dir_commit(&commit_msg)
-                .with_context(|_| format_err!("Could not not automatically commit"))?;
-        }
-    }
+    maybe_store(&local, &proof, &commit_msg, proof_create_opt)?;
 
     Ok(())
 }
@@ -955,13 +948,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Import(cmd) => match cmd {
             opts::Import::Id => {
                 let local = Local::auto_create_or_open()?;
-                let term = term::Term::new();
-                if term.stdin_is_tty {
-                    eprintln!("Paste in the text and press Ctrl+D.")
-                }
-                let mut s = vec![];
-
-                std::io::stdin().lock().read_until(0, &mut s)?;
+                let s = load_stdin_with_prompt()?;
                 let id = local.import_locked_id(&String::from_utf8(s)?)?;
                 // Note: It's unclear how much of this should be done by
                 // the library
@@ -972,10 +959,40 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     local.clone_proof_dir_from_git(&id.url.url, false)?;
                 }
             }
+            opts::Import::Proof(args) => {
+                let local = Local::auto_create_or_open()?;
+                let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+
+                let s = load_stdin_with_prompt()?;
+                let proofs = crev_data::proof::Proof::parse(s.as_slice())?;
+                let commit_msg = "Import proofs";
+
+                for proof in proofs {
+                    let mut content = proof.content;
+                    if args.reset_date {
+                        content.set_date(&crev_common::now());
+                    }
+                    content.set_author(&id.as_pubid());
+                    let proof = content.sign_by(&id)?;
+                    maybe_store(&local, &proof, &commit_msg, &args.common)?;
+                }
+            }
         },
     }
 
     Ok(CommandExitStatus::Successs)
+}
+
+fn load_stdin_with_prompt() -> Result<Vec<u8>> {
+    let term = term::Term::new();
+
+    if term.stdin_is_tty {
+        eprintln!("Paste in the text and press Ctrl+D.")
+    }
+    let mut s = vec![];
+
+    std::io::stdin().lock().read_until(0, &mut s)?;
+    Ok(s)
 }
 
 fn main() {

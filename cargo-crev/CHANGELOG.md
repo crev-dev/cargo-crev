@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `cargo crev edit config` allows interactive user config edition
 - `open-cmd` in user config for customizing `cargo crev open` command
+- `cargo crev import proof` for mass-import of proofs
 
 ## [0.5.0](https://github.com/dpc/crev/compare/cargo-crev-v0.4.0...cargo-crev-v0.5.0) - 2019-03-06
 ### Added
