@@ -1,10 +1,9 @@
 use crate::{proof, Result, Url};
-use blake2;
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
 };
-use crev_ed25519_dalek::{self, PublicKey, SecretKey};
+use ed25519_dalek::{self, PublicKey, SecretKey};
 use rand::OsRng;
 use std::fmt;
 
@@ -47,11 +46,11 @@ impl Id {
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<()> {
         match self {
             Id::Crev { id } => {
-                let pubkey = crev_ed25519_dalek::PublicKey::from_bytes(&id)?;
+                let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)?;
-                let signature = crev_ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
-                pubkey.verify_with_digest::<blake2::Blake2b>(&content, &signature)?;
+                let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
+                pubkey.verify(&content, &signature)?;
             }
         }
 
@@ -133,7 +132,7 @@ impl PubId {
 #[derive(Debug)]
 pub struct OwnId {
     pub id: PubId,
-    pub keypair: crev_ed25519_dalek::Keypair,
+    pub keypair: ed25519_dalek::Keypair,
 }
 
 impl AsRef<Id> for OwnId {
@@ -152,12 +151,11 @@ impl OwnId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
-        let calculated_pub_key: PublicKey =
-            PublicKey::from_secret_with_digest::<blake2::Blake2b>(&sec_key);
+        let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {
             id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
-            keypair: crev_ed25519_dalek::Keypair {
+            keypair: ed25519_dalek::Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
             },
@@ -165,10 +163,7 @@ impl OwnId {
     }
 
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
-        self.keypair
-            .sign_with_digest::<blake2::Blake2b>(msg)
-            .to_bytes()
-            .to_vec()
+        self.keypair.sign(msg).to_bytes().to_vec()
     }
 
     pub fn type_as_string(&self) -> String {
@@ -185,8 +180,7 @@ impl OwnId {
 
     pub fn generate(url: Url) -> Self {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair =
-            crev_ed25519_dalek::Keypair::generate_with_digest::<_, blake2::Blake2b>(&mut csprng);
+        let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
         Self {
             id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,

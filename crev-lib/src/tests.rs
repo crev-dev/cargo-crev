@@ -37,15 +37,16 @@ fn use_id_generated_by_previous_versions() -> Result<()> {
 ---
 version: -1
 url: "https://github.com/dpc/crev-proofs-test"
-public-key: V4HcWyFSKZPSnLJWFAiGkm0nuue4USDnNAdibRvX4gQ
-sealed-secret-key: Jcpm8spOQjpsQ97Wpnh0iXfWiBFYOVy4r-7G6EV4wE7tXCiemg4_m1qcTS2md0cq
-seal-nonce: eub5pGojkzN57H62I4EesgYgoECJT1vcnkm2VukSZws
+public-key: mScrJLNL5NV4DH9mSPsqcvU8wu0P_W6bvXhjViZP4aE
+sealed-secret-key: ukQvCTnTX6LmnUaBkoB4IGhIvnMxSNb5T8HoEn6DbFnI1IWzMqsGhkzxVzzc-zDs
+seal-nonce: gUu4izYVvDgZjHFGpcunWmNV3nTgmswvSZsCr3lKboQ
 pass:
   version: 19
   variant: argon2id
   iterations: 192
   memory-size: 4096
-  salt: EKf-mqQyKBEsPrWu2kpaiMPQDpdnPuCULNv6OVwHk1Y
+  lanes: 8
+  salt: 9jeCQhM2dMZErCErRQ_RmZ08X68xpta1tIhTbCHOTs0
 "#;
 
     let locked = id::LockedId::from_str(yaml)?;
@@ -64,22 +65,23 @@ fn validate_proof_generated_by_previous_version() -> Result<()> {
     let yaml = r#"
 -----BEGIN CREV PACKAGE REVIEW-----
 version: -1
-date: "2018-12-18T23:10:21.111854021-08:00"
+date: "2019-04-13T00:04:16.625524407-07:00"
 from:
   id-type: crev
-  id: 8iUv_SPgsAQ4paabLfs1D9tIptMnuSRZ344_M-6m9RE
-  url: "https://github.com/dpc/crev-proofs"
+  id: mScrJLNL5NV4DH9mSPsqcvU8wu0P_W6bvXhjViZP4aE
+  url: "https://github.com/dpc/crev-proofs-test"
 package:
   source: "https://crates.io"
-  name: log
-  version: 0.4.6
-  digest: BhDmOOjfESqs8i3z9qsQANH8A39eKklgQKuVtrwN-Tw
+  name: hex
+  version: 0.3.2
+  digest: 6FtxZesHD7pnSlbpp--CF_MPAnJATZI4ZR-Vdwb6Fes
 review:
-  thoroughness: low
+  thoroughness: none
   understanding: medium
   rating: positive
+comment: THIS IS JUST FOR TEST
 -----BEGIN CREV PACKAGE REVIEW SIGNATURE-----
-LXHRP2Spd2jzaXe5CXCTwb4mu_epLtgdfxy717RSPVyUmfVxoOICg49AfKQzhpWH5bWLvFAzVuXtJnJ0klI3Dw
+NtGu3z1Jtnj6wx8INBrVujcOPz61BiGmJS-UoAOe0XQutatFsEbgAcAo7rBvZz4Q-ccNXIFZtKnXhBDMjVm0Aw
 -----END CREV PACKAGE REVIEW-----
 "#;
 
