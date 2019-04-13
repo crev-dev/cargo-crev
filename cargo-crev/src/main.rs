@@ -388,7 +388,6 @@ fn create_review_proof(
     name: &str,
     version: Option<&str>,
     unrelated: bool,
-    advisory_range: Option<crev_data::proof::review::package::AdvisoryRange>,
     trust: TrustOrDistrust,
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
@@ -441,7 +440,7 @@ fn create_review_proof(
     let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
     let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
-    let mut review = proof::review::PackageBuilder::default()
+    let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
         .package(proof::PackageInfo {
             id: None,
@@ -458,10 +457,6 @@ fn create_review_proof(
         .review(trust.to_review())
         .build()
         .map_err(|e| format_err!("{}", e))?;
-
-    if let Some(range) = advisory_range {
-        review.advisory = Some(range.into())
-    }
 
     let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
 
@@ -845,14 +840,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    args.advisory.clone(),
-                    TrustOrDistrust::Trust,
-                    &args.common_proof_create,
-                )
+                create_review_proof(c, v, i, TrustOrDistrust::Trust, &args.common_proof_create)
             })?;
         }
         opts::Command::Goto(args) => {
@@ -869,7 +857,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
-                    None,
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
                 )
