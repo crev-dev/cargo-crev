@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.5.0...HEAD)
+### Changed
+
+- BREAKING: Switch cryptography to standard Ed25519/RFC8032. This will render existing
+  IDs and artificates invalid. We're sorry for that. Please recreate your IDs, and use
+  `cargo crev import proof` to recreate your reviews.
+
 ### Added
 
 - `cargo crev edit config` allows interactive user config edition
