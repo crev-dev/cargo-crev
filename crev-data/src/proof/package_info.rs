@@ -1,6 +1,7 @@
 use crate::proof;
 
 use crev_common::serde::{as_base64, from_base64};
+use semver::Version;
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
 pub struct PackageInfo {
@@ -8,7 +9,7 @@ pub struct PackageInfo {
     pub id: Option<crate::id::PubId>,
     pub source: String,
     pub name: String,
-    pub version: String,
+    pub version: Version,
 
     #[serde(skip_serializing_if = "proof::equals_default", default)]
     pub revision: String,

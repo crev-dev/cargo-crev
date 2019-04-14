@@ -4,6 +4,7 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
+use semver::Version;
 use serde_yaml;
 use std::{default::Default, fmt};
 
@@ -55,6 +56,8 @@ impl Package {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PackageDraft {
     review: super::Review,
+    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
+    pub advisory: Option<Advisory>,
     #[serde(default = "Default::default")]
     comment: String,
 }
@@ -63,6 +66,7 @@ impl From<Package> for PackageDraft {
     fn from(package: Package) -> Self {
         PackageDraft {
             review: package.review,
+            advisory: package.advisory,
             comment: package.comment,
         }
     }
@@ -113,6 +117,23 @@ impl Package {
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
         proof::Content::from(self).sign_by(id)
     }
+
+    pub fn is_advisory_for(&self, version: &Version) -> bool {
+        if self.package.version <= *version {
+            false
+        } else if let Some(ref advisory) = self.advisory {
+            match advisory.affected {
+                AdvisoryRange::All => true,
+                AdvisoryRange::Major => self.package.version.major == version.major,
+                AdvisoryRange::Minor => {
+                    self.package.version.major == version.major
+                        && self.package.version.minor == version.minor
+                }
+            }
+        } else {
+            false
+        }
+    }
 }
 
 impl PackageDraft {
@@ -134,11 +155,11 @@ impl fmt::Display for PackageDraft {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum AdvisoryRange {
     All,
     Major,
     Minor,
-    Patch,
 }
 
 #[derive(Debug, Clone)]
@@ -164,7 +185,6 @@ impl std::str::FromStr for AdvisoryRange {
             "all" => AdvisoryRange::All,
             "major" => AdvisoryRange::Major,
             "minor" => AdvisoryRange::Minor,
-            "patch" => AdvisoryRange::Patch,
             _ => return Err(AdvisoryRangeParseError(())),
         })
     }

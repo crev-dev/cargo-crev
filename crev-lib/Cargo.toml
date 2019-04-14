@@ -34,6 +34,7 @@ rprompt = "1"
 default = "0.1"
 insideout = "0.2"
 shell-escape = "0.1"
+semver = "0.9"
 
 [dependencies.argonautica]
 features = ["serde"]

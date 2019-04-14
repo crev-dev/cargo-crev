@@ -3,6 +3,7 @@ use crate::{
     proof::{self, Proof, Serialized},
     Result, Url,
 };
+use semver::Version;
 use std::path::PathBuf;
 
 #[test]
@@ -79,7 +80,7 @@ pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
         id: None,
         source: "SOURCE_ID".to_owned(),
         name: "name".into(),
-        version: "version".into(),
+        version: Version::parse("1.0.0").unwrap(),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
         revision: "".into(),

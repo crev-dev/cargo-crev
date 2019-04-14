@@ -105,7 +105,7 @@ impl Repo {
         let crates_io = crates_io::Client::new(&local)?;
 
         self.for_every_non_local_dep_crate(|crate_| {
-            let _ = crates_io.get_downloads_count(&crate_.name(), &crate_.version().to_string());
+            let _ = crates_io.get_downloads_count(&crate_.name(), &crate_.version());
             Ok(())
         })?;
 
@@ -156,19 +156,18 @@ impl Repo {
     fn find_idependent_crate_dir(
         &self,
         name: &str,
-        version: Option<&str>,
+        version: Option<&Version>,
     ) -> Result<Option<Package>> {
         let mut source = self.load_source()?;
         let mut summaries = vec![];
+        let version_str = version.map(ToString::to_string);
         let dependency_request =
-            Dependency::parse_no_deprecated(name, version, source.source_id())?;
+            Dependency::parse_no_deprecated(name, version_str.as_deref(), source.source_id())?;
         source.query(&dependency_request, &mut |summary| {
             summaries.push(summary.clone())
         })?;
         let summary = if let Some(version) = version {
-            summaries
-                .iter()
-                .find(|s| s.version().to_string() == version)
+            summaries.iter().find(|s| s.version() == version)
         } else {
             summaries.iter().max_by_key(|s| s.version())
         };
@@ -191,13 +190,13 @@ impl Repo {
         Ok(Some(package_set.get_one(pkg_id)?.to_owned()))
     }
 
-    fn find_dependency(&self, name: &str, version: Option<&str>) -> Result<Option<Package>> {
+    fn find_dependency(&self, name: &str, version: Option<&Version>) -> Result<Option<Package>> {
         let mut ret = vec![];
 
         self.for_every_non_local_dep_crate(|pkg| {
             let pkg_id = pkg.package_id();
             if name == pkg_id.name().as_str()
-                && (version.is_none() || version == Some(&pkg_id.version().to_string()))
+                && (version.is_none() || version == Some(&pkg_id.version()))
             {
                 ret.push(pkg.to_owned());
             }
@@ -211,7 +210,12 @@ impl Repo {
         }
     }
 
-    fn find_crate(&self, name: &str, version: Option<&str>, unrelated: bool) -> Result<Package> {
+    fn find_crate(
+        &self,
+        name: &str,
+        version: Option<&Version>,
+        unrelated: bool,
+    ) -> Result<Package> {
         if unrelated {
             self.find_idependent_crate_dir(name, version)?
         } else {
@@ -250,7 +254,7 @@ fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()>
         .name
         .clone()
         .ok_or_else(|| format_err!("Crate name argument required"))?;
-    let crate_ = repo.find_crate(&name, selector.version.as_deref(), unrelated)?;
+    let crate_ = repo.find_crate(&name, selector.version.as_ref(), unrelated)?;
     let crate_dir = crate_.root();
     let crate_version = crate_.version();
 
@@ -294,9 +298,9 @@ fn read_known_owners_list() -> Result<HashSet<String>> {
     };
     Ok(content
         .lines()
-        .map(|s| s.trim())
+        .map(str::trim)
         .filter(|s| !s.starts_with('#'))
-        .map(|s| s.to_string())
+        .map(ToString::to_string)
         .collect())
 }
 
@@ -309,7 +313,7 @@ fn edit_known_owners_list() -> Result<()> {
 }
 
 /// Wipe the crate source, then re-download it
-fn clean_crate(name: &str, version: Option<&str>, unrelated: bool) -> Result<()> {
+fn clean_crate(name: &str, version: Option<&Version>, unrelated: bool) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
@@ -349,7 +353,7 @@ fn get_open_cmd(local: &Local) -> Result<String> {
 /// * `unrelated` - the crate might not actually be a dependency
 fn crate_open(
     name: &str,
-    version: Option<&str>,
+    version: Option<&Version>,
     unrelated: bool,
     cmd: Option<String>,
     cmd_save: bool,
@@ -386,7 +390,7 @@ fn crate_open(
 /// * `unrelated` - the crate might not actually be a dependency
 fn create_review_proof(
     name: &str,
-    version: Option<&str>,
+    version: Option<&Version>,
     unrelated: bool,
     advisory_range: Option<crev_data::proof::review::package::AdvisoryRange>,
     trust: TrustOrDistrust,
@@ -447,7 +451,7 @@ fn create_review_proof(
             id: None,
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
             name: name.to_owned(),
-            version: crate_version.to_string(),
+            version: crate_version.to_owned(),
             digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
             revision: vcs
@@ -455,7 +459,11 @@ fn create_review_proof(
                 .unwrap_or_else(|| "".into()),
             revision_type: proof::default_revision_type(),
         })
-        .review(trust.to_review())
+        .review(if advisory_range.is_some() {
+            crev_data::Review::new_none()
+        } else {
+            trust.to_review()
+        })
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
@@ -509,8 +517,8 @@ fn find_reviews(
     let db = local.load_db()?;
     Ok(db.get_package_reviews_for_package(
         PROJECT_SOURCE_CRATES_IO,
-        crate_.name.as_ref().map(|s| s.as_str()),
-        crate_.version.as_ref().map(|s| s.as_str()),
+        crate_.name.as_ref().map(String::as_str),
+        crate_.version.as_ref(),
     ))
 }
 
@@ -522,6 +530,28 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
+fn find_advisories(
+    crate_: &opts::CrateSelector,
+) -> Result<impl Iterator<Item = (Version, proof::review::Package)>> {
+    let local = crev_lib::Local::auto_open()?;
+    let db = local.load_db()?;
+
+    Ok(db
+        .get_advisories(
+            PROJECT_SOURCE_CRATES_IO,
+            crate_.name.as_ref().map(String::as_str),
+            crate_.version.as_ref(),
+        )
+        .into_iter())
+}
+
+fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
+    for (_, review) in find_advisories(crate_)? {
+        println!("{}", review);
+    }
+
+    Ok(())
+}
 /// Handle the `goto mode` commands
 ///
 /// After jumping to a crate with `goto`, the crate is selected
@@ -529,7 +559,7 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
 /// like that.
 fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
 where
-    F: FnOnce(&str, Option<&str>, bool) -> Result<()>,
+    F: FnOnce(&str, Option<&Version>, bool) -> Result<()>,
 {
     if let Some(org_dir) = env::var_os(GOTO_ORIGINAL_DIR_ENV) {
         if args.crate_.name.is_some() {
@@ -541,7 +571,7 @@ where
                 .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
-            f(&name, Some(&version), true)?;
+            f(&name, Some(&Version::parse(&version)?), true)?;
         }
     } else {
         let name = args
@@ -550,7 +580,7 @@ where
             .clone()
             .ok_or_else(|| format_err!("Crate name required"))?;
 
-        f(&name, args.crate_.version.as_deref(), args.unrelated)?;
+        f(&name, args.crate_.version.as_ref(), args.unrelated)?;
     }
     Ok(())
 }
@@ -686,17 +716,24 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^15} {:4} {:6} {:6} {:4}",
-                        "trust", "reviews", "downloads", "own.", "lines", "geiger", "flgs"
+                        "{:8} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
+                        "trust",
+                        "reviews",
+                        "downloads",
+                        "own.",
+                        "advisr",
+                        "lines",
+                        "geiger",
+                        "flgs"
                     );
-                    eprintln!(" {:<19} {:<15}", "crate", "version");
+                    eprintln!(" {:<20} {:<15}", "crate", "version");
                 }
                 let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
                 let mut total_verification_successful = true;
                 repo.for_every_non_local_dep_crate(|crate_| {
                     let crate_id = crate_.package_id();
                     let crate_name = crate_id.name().as_str();
-                    let crate_version = crate_id.version().to_string();
+                    let crate_version = crate_id.version();
                     let crate_root = crate_.root();
 
                     let digest = crev_lib::get_dir_digest(&crate_root, &ignore_list)?;
@@ -771,8 +808,38 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .map(|c| c.to_string())
                             .unwrap_or_else(|| "?".into())
                     );
+
+                    let advisories = db.get_advisories_for_version(
+                        PROJECT_SOURCE_CRATES_IO,
+                        crate_name,
+                        crate_version,
+                    );
+                    let trusted_advisories = advisories
+                        .iter()
+                        .filter(|(_version, package_review)| {
+                            trust_set.contains_trusted(&package_review.from.id)
+                        })
+                        .count();
+
+                    term.print(
+                        format_args!("{:4}", trusted_advisories),
+                        if trusted_advisories > 0 {
+                            Some(::term::color::RED)
+                        } else {
+                            None
+                        },
+                    )?;
+                    print!("/");
+                    term.print(
+                        format_args!("{:<2}", advisories.len()),
+                        if advisories.is_empty() {
+                            None
+                        } else {
+                            Some(::term::color::YELLOW)
+                        },
+                    )?;
                     print!(
-                        "{:>6} {:>6} ",
+                        "{:>6} {:>7}",
                         tokei::get_rust_line_count(crate_root)
                             .ok()
                             .map(|n| n.to_string())
@@ -842,6 +909,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             },
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
+            opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {

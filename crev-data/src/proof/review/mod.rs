@@ -58,4 +58,11 @@ impl Review {
             rating: Rating::Negative,
         }
     }
+    pub fn new_none() -> Self {
+        Review {
+            thoroughness: Level::None,
+            understanding: Level::None,
+            rating: Rating::Positive,
+        }
+    }
 }

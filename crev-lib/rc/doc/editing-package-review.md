@@ -44,6 +44,12 @@ your other work, etc.
     * `neutral` - secure but with flaws
     * `negative` - severe flaws and not ok for production usage
     * `dangerous` - unsafe to use; severe flaws and/or possibly malicious
+* `advisory` - Advisories mark package versions containing an important fix
+    * `affected` - Which versions are potentially affected
+        * `all` - all previous version
+        * `major` - all previous version within the same major release
+        * `minor` - all previous version within the same minor release
+    * `critical` - This advisory is very important
 * `comment` - human-readable information about this review
               (eg. why it was done, how, and `rating` explanation)
 

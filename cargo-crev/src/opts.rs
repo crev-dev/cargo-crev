@@ -1,9 +1,10 @@
+use semver::Version;
 use std::ffi::OsString;
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct CrateSelector {
     pub name: Option<String>,
-    pub version: Option<String>,
+    pub version: Option<Version>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -85,6 +86,7 @@ pub enum Verify {
 - reviews    - Number of reviews for the specific version and for all versions
 - downloads  - Download counts from crates.io for the specific version and all versions
 - own.       - Owner counts from crates.io (known/all)
+- advisr.    - Number of aplicable advisories (important upgrades) repored (trusted/all)
 - lines      - Lines of Rust code
 - flgs       - Flags for specific types of packages
   - CB         - Custom Build
@@ -156,6 +158,12 @@ pub struct QueryReview {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct QueryAdvisory {
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Query {
     /// Query Ids
     #[structopt(name = "id")]
@@ -164,6 +172,10 @@ pub enum Query {
     /// Query reviews
     #[structopt(name = "review")]
     Review(QueryReview),
+
+    /// Query applicable advisories
+    #[structopt(name = "advisory")]
+    Advisory(QueryAdvisory),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -246,7 +258,12 @@ pub struct Review {
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
 
-    #[structopt(long = "advisory")]
+    /// This release contains advisory (important fix)
+    #[structopt(
+        long = "advisory",
+        // TODO: https://github.com/TeXitoi/structopt/issues/123
+        // default_value = "proof::review::package::AdvisoryRange::Major"
+    )]
     pub advisory: Option<crev_data::proof::review::package::AdvisoryRange>,
 }
 

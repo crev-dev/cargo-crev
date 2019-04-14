@@ -44,11 +44,11 @@ impl Cacheable for crates_io_api::Owners {
     }
 }
 
-fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &str) -> (u64, u64) {
+fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &Version) -> (u64, u64) {
     (
         resp.versions
             .iter()
-            .find(|v| v.num == version)
+            .find(|v| v.num == version.to_string())
             .map(|v| v.downloads)
             .unwrap_or(0),
         resp.crate_data.downloads,
@@ -61,7 +61,7 @@ impl Client {
         fs::create_dir_all(&cache_dir)?;
         Ok(Self {
             client: crates_io_api::SyncClient::new(),
-            cache_dir: cache_dir,
+            cache_dir,
         })
     }
 
@@ -116,9 +116,9 @@ impl Client {
         }
     }
 
-    pub fn get_downloads_count(&self, crate_: &str, version: &str) -> Result<(u64, u64)> {
+    pub fn get_downloads_count(&self, crate_: &str, version: &Version) -> Result<(u64, u64)> {
         Ok(get_downloads_stats(
-            &self.get::<crates_io_api::CrateResponse>(crate_, version)?,
+            &self.get::<crates_io_api::CrateResponse>(crate_, &version.to_string())?,
             version,
         ))
     }
