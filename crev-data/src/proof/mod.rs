@@ -47,21 +47,21 @@ pub enum ProofType {
 }
 
 impl ProofType {
-    fn begin_block(&self) -> &'static str {
+    fn begin_block(self) -> &'static str {
         match self {
             ProofType::Code => review::Code::BEGIN_BLOCK,
             ProofType::Package => review::Package::BEGIN_BLOCK,
             ProofType::Trust => Trust::BEGIN_BLOCK,
         }
     }
-    fn begin_signature(&self) -> &'static str {
+    fn begin_signature(self) -> &'static str {
         match self {
             ProofType::Code => review::Code::BEGIN_SIGNATURE,
             ProofType::Package => review::Package::BEGIN_SIGNATURE,
             ProofType::Trust => Trust::BEGIN_SIGNATURE,
         }
     }
-    fn end_block(&self) -> &'static str {
+    fn end_block(self) -> &'static str {
         match self {
             ProofType::Code => review::Code::END_BLOCK,
             ProofType::Package => review::Package::END_BLOCK,
@@ -140,13 +140,13 @@ impl Content {
     pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
         Ok(match original_proof {
             Content::Code(code) => {
-                Content::Code(code.apply_draft(review::CodeDraft::parse(&s)?.into()))
+                Content::Code(code.apply_draft(review::CodeDraft::parse(&s)?))
             }
             Content::Package(package) => {
-                Content::Package(package.apply_draft(review::PackageDraft::parse(&s)?.into()))
+                Content::Package(package.apply_draft(review::PackageDraft::parse(&s)?))
             }
             Content::Trust(trust) => {
-                Content::Trust(trust.apply_draft(TrustDraft::parse(&s)?.into()))
+                Content::Trust(trust.apply_draft(TrustDraft::parse(&s)?))
             }
         })
     }
@@ -156,7 +156,7 @@ impl Content {
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
             digest: crev_common::blake2b256sum(&body.as_bytes()),
-            body: body,
+            body,
             signature: crev_common::base64_encode(&signature),
             content: self.clone(),
         })

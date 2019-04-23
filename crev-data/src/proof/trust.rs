@@ -130,7 +130,7 @@ impl proof::ContentCommon for Trust {
     }
 
     fn set_date(&mut self, date: &chrono::DateTime<FixedOffset>) {
-        self.date = date.clone();
+        self.date = *date;
     }
 
     fn author(&self) -> &crate::PubId {
