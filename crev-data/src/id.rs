@@ -4,7 +4,7 @@ use crev_common::{
     serde::{as_base64, from_base64},
 };
 use ed25519_dalek::{self, PublicKey, SecretKey};
-use rand::OsRng;
+use rand::rngs::OsRng;
 use std::fmt;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
