@@ -87,8 +87,8 @@ pub(crate) struct Serialized {
 #[derive(Debug, Clone)]
 pub enum Content {
     Trust(Trust),
-    Package(review::Package),
-    Code(review::Code),
+    Package(Box<review::Package>),
+    Code(Box<review::Code>),
 }
 
 impl fmt::Display for Content {
@@ -104,13 +104,13 @@ impl fmt::Display for Content {
 
 impl From<review::Code> for Content {
     fn from(review: review::Code) -> Self {
-        Content::Code(review)
+        Content::Code(Box::new(review))
     }
 }
 
 impl From<review::Package> for Content {
     fn from(review: review::Package) -> Self {
-        Content::Package(review)
+        Content::Package(Box::new(review))
     }
 }
 
@@ -129,24 +129,25 @@ impl Content {
             Package(review) => review.draft_title(),
         }
     }
+
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
-            ProofType::Code => Content::Code(review::Code::parse(&s)?),
-            ProofType::Package => Content::Package(review::Package::parse(&s)?),
-            ProofType::Trust => Content::Trust(Trust::parse(&s)?),
+            ProofType::Code => review::Code::parse(&s)?.into(),
+            ProofType::Package => review::Package::parse(&s)?.into(),
+            ProofType::Trust => Trust::parse(&s)?.into(),
         })
     }
 
     pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
         Ok(match original_proof {
             Content::Code(code) => {
-                Content::Code(code.apply_draft(review::CodeDraft::parse(&s)?))
+                code.apply_draft(review::CodeDraft::parse(&s)?).into()
             }
             Content::Package(package) => {
-                Content::Package(package.apply_draft(review::PackageDraft::parse(&s)?))
+                package.apply_draft(review::PackageDraft::parse(&s)?).into()
             }
             Content::Trust(trust) => {
-                Content::Trust(trust.apply_draft(TrustDraft::parse(&s)?))
+                trust.apply_draft(TrustDraft::parse(&s)?).into()
             }
         })
     }
@@ -219,9 +220,9 @@ impl Content {
     pub fn to_draft_string(&self) -> String {
         use self::Content::*;
         match self.clone() {
-            Trust(trust) => format!("{}", TrustDraft::from(trust)),
-            Code(review) => format!("{}", review::CodeDraft::from(review)),
-            Package(review) => format!("{}", review::PackageDraft::from(review)),
+            Trust(trust) => TrustDraft::from(trust).to_string(),
+            Code(review) => review::CodeDraft::from(*review).to_string(),
+            Package(review) => review::PackageDraft::from(*review).to_string(),
         }
     }
 }
@@ -274,9 +275,9 @@ impl Serialized {
             signature: self.signature.clone(),
             digest: crev_common::blake2b256sum(&self.body.as_bytes()),
             content: match self.type_ {
-                ProofType::Code => Content::Code(review::Code::parse(&self.body)?),
-                ProofType::Package => Content::Package(review::Package::parse(&self.body)?),
-                ProofType::Trust => Content::Trust(Trust::parse(&self.body)?),
+                ProofType::Code => review::Code::parse(&self.body)?.into(),
+                ProofType::Package => review::Package::parse(&self.body)?.into(),
+                ProofType::Trust => Trust::parse(&self.body)?.into(),
             },
         })
     }
