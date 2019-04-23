@@ -390,15 +390,13 @@ impl Local {
         if path.exists() {
             if let Some(line) = std::io::BufReader::new(std::fs::File::open(&path)?)
                 .lines()
-                .into_iter()
-                .filter(|line| {
+                .find(|line| {
                     if let Ok(ref line) = line {
                         line.trim() != ""
                     } else {
                         true
                     }
                 })
-                .next()
             {
                 if line?.contains(README_MARKER_V0) {
                     return Ok(());

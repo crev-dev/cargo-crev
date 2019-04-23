@@ -292,7 +292,7 @@ impl ProofDB {
             .insert_into_or_update_to_more_recent(
                 self.package_review_signatures_by_package_digest
                     .entry(review.package.digest.to_owned())
-                    .or_insert_with(|| default())
+                    .or_insert_with(default)
                     .entry(unique.clone()),
             );
 
@@ -439,7 +439,7 @@ impl ProofDB {
             .map(|review| (review.from.id.clone(), review))
             .collect();
         // Faster somehow maybe?
-        let reviews_by: HashSet<Id, _> = reviews.keys().map(|s| s.to_owned()).collect();
+        let reviews_by: HashSet<Id, _> = reviews.keys().cloned().collect();
         let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
         let matching_reviewers = trusted_ids.intersection(&reviews_by);
         let mut trust_count = 0;
@@ -594,9 +594,7 @@ impl ProofDB {
                 );
 
                 if candidate_effective_trust < TrustLevel::None {
-                    // can this even happen?
-                    debug_assert!(false);
-                    continue;
+                    unreachable!("this should not happen: candidate_effective_trust < TrustLevel::None");
                 }
 
                 if visited.record_trusted_id(
