@@ -19,10 +19,10 @@ derive_builder = "0.7"
 digest = "0.8"
 directories = "1.0.2"
 failure = "0.1"
-git2 = "0.7"
+git2 = "0.8"
 hex = "0.3"
 miscreant = { version = "0.4", features = ["soft-aes"] }
-rand = "0.5"
+rand = "0.6"
 serde = "1"
 serde_cbor = "0.9"
 serde_derive = "1"
@@ -38,7 +38,7 @@ semver = "0.9"
 
 [dependencies.argonautica]
 features = ["serde"]
-version = "0.1"
+version = "0.2"
 
 [dependencies.crev-common]
 path = "../crev-common"

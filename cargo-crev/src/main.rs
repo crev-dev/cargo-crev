@@ -115,7 +115,8 @@ impl Repo {
     fn load_source<'a>(&'a self) -> Result<Box<cargo::core::source::Source + 'a>> {
         let source_id = SourceId::crates_io(&self.config)?;
         let map = cargo::sources::SourceConfigMap::new(&self.config)?;
-        let source = map.load(&source_id)?;
+        let yanked_whitelist = HashSet::new();
+        let source = map.load(source_id, &yanked_whitelist)?;
         Ok(source)
     }
 

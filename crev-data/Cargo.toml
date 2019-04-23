@@ -22,10 +22,10 @@ serde = "1"
 serde_derive = "1"
 serde_yaml = "0.8"
 hex = "0.3"
-rand = "0.5.5"
+rand = "0.6"
 derive_builder = "0.7"
 semver = { version = "0.9", features = [ "serde" ] }
 
 [dependencies.argonautica]
 features = ["serde"]
-version = "0.1"
+version = "0.2"
