@@ -28,4 +28,4 @@ semver = { version = "0.9", features = [ "serde" ] }
 
 [dependencies.argonautica]
 features = ["serde"]
-version = "0.1"
+version = "0.2"

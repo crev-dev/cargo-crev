@@ -12,7 +12,7 @@ repository = "https://github.com/dpc/crev/tree/master/rblake2sum"
 readme = "README.md"
 
 [dependencies]
-base64 = "0.9.0"
+base64 = "0.10"
 hex = "0.3"
 crev-recursive-digest = { path = "../recursive-digest", version = "0.2.1" }
 structopt = "0.2"
