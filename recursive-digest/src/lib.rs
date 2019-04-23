@@ -66,10 +66,9 @@ impl From<walkdir::Error> for DigestError {
     }
 }
 
-impl<Digest, OutputSize> RecursiveDigest<Digest>
+impl<Digest> RecursiveDigest<Digest>
 where
-    Digest: digest::Digest<OutputSize = OutputSize> + digest::FixedOutput,
-    OutputSize: generic_array::ArrayLength<u8>,
+    Digest: digest::Digest + digest::FixedOutput,
 {
     fn new<I>(root_path: PathBuf, rel_paths: I) -> Self
     where
