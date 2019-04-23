@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.5.0...cargo-crev-v0.6.0) - 2019-04-13
+## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.6.0...HEAD) 
+### Added
+
+* Advisories (https://github.com/dpc/crev/wiki/Advisories)
+    * `cargo crev review --advisory major [name [version]]`
+    * `cargo crev query advisory [name [version]]` 
+
+## [0.6.0](https://github.com/dpc/crev/compare/cargo-crev-v0.5.0...cargo-crev-v0.6.0) - 2019-04-13
 ### Changed
 
 - BREAKING: Switch cryptography to standard Ed25519/RFC8032. This will render existing
