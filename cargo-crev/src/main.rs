@@ -267,6 +267,7 @@ fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()>
     eprintln!("Use `review` and `flag` without any arguments to review this crate.");
     let status = process::Command::new(shell)
         .current_dir(crate_dir)
+        .env("PWD", crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
         .env(GOTO_CRATE_NAME_ENV, name)
         .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string())
