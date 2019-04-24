@@ -623,6 +623,7 @@ impl ProofDB {
 }
 
 /// Details of a one Id that is
+#[derive(Debug)]
 struct TrustedIdDetails {
     distance: u64,
     // effective, global trust from the root of the WoT
@@ -630,7 +631,7 @@ struct TrustedIdDetails {
     referers: HashMap<Id, TrustLevel>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TrustSet {
     trusted: HashMap<Id, TrustedIdDetails>,
     distrusted: HashMap<Id, HashSet<Id>>,

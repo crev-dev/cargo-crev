@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct Digest(Vec<u8>);
 
 impl Digest {
