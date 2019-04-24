@@ -3,8 +3,12 @@
 use crate::Url;
 use chrono::{self, prelude::*};
 use crev_common;
-use std::io::BufRead;
-use std::{default, fmt, fs, io, mem, path::Path};
+use std::{
+    default, fmt, fs,
+    io::{self, BufRead},
+    mem,
+    path::Path,
+};
 
 pub mod package_info;
 pub mod review;
@@ -140,15 +144,11 @@ impl Content {
 
     pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
         Ok(match original_proof {
-            Content::Code(code) => {
-                code.apply_draft(review::CodeDraft::parse(&s)?).into()
-            }
+            Content::Code(code) => code.apply_draft(review::CodeDraft::parse(&s)?).into(),
             Content::Package(package) => {
                 package.apply_draft(review::PackageDraft::parse(&s)?).into()
             }
-            Content::Trust(trust) => {
-                trust.apply_draft(TrustDraft::parse(&s)?).into()
-            }
+            Content::Trust(trust) => trust.apply_draft(TrustDraft::parse(&s)?).into(),
         })
     }
 

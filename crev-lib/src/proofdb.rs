@@ -594,7 +594,9 @@ impl ProofDB {
                 );
 
                 if candidate_effective_trust < TrustLevel::None {
-                    unreachable!("this should not happen: candidate_effective_trust < TrustLevel::None");
+                    unreachable!(
+                        "this should not happen: candidate_effective_trust < TrustLevel::None"
+                    );
                 }
 
                 if visited.record_trusted_id(

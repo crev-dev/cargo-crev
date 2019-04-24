@@ -19,7 +19,6 @@ use git2;
 use insideout::InsideOut;
 use resiter_dpc_tmp::*;
 use serde_yaml;
-use std::str::FromStr;
 use std::{
     cell::RefCell,
     collections::HashSet,
@@ -27,6 +26,7 @@ use std::{
     fs,
     io::{BufRead, Write},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
