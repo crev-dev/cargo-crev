@@ -252,7 +252,7 @@ fn exec_into(mut command: process::Command) -> Result<()> {
 
 #[cfg(target_family = "windows")]
 // TODO: Is this the way to do it in Windows?
-fn exec_into(cmd: process::Command) -> Result<()> {
+fn exec_into(mut command: process::Command) -> Result<()> {
     let status = command.status()?;
     if !status.success() {
         bail!("Shell returned {}", status);
