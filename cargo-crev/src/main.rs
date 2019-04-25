@@ -242,6 +242,24 @@ fn cargo_min_ignore_list() -> HashSet<PathBuf> {
     ignore_list
 }
 
+#[cfg(target_family = "unix")]
+// on Unix we use `exec` so that stuff like Ctrl-C works
+// we don't care about destructors at this point
+fn exec_into(mut command: process::Command) -> Result<()> {
+    use std::os::unix::process::CommandExt;
+    bail!(command.exec());
+}
+
+#[cfg(target_family = "windows")]
+// TODO: Is this the way to do it in Windows?
+fn exec_into(cmd: process::Command) -> Result<()> {
+    let status = command.status()?;
+    if !status.success() {
+        bail!("Shell returned {}", status);
+    }
+    Ok(())
+}
+
 /// `cd` into crate source code and start shell
 ///
 /// Set some `envs` to help other commands work
@@ -273,19 +291,7 @@ fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()>
         .env(GOTO_CRATE_NAME_ENV, name)
         .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string());
 
-    if cfg!(unix) {
-        // on Unix we use `exec` so that stuff like Ctrl-C works
-        // we don't care about destructors at this point
-        use std::os::unix::process::CommandExt;
-        Err(command.exec())?;
-    } else {
-        let status = command.status()?;
-        if !status.success() {
-            bail!("Shell returned {}", status);
-        }
-    };
-
-    Ok(())
+    exec_into(command)
 }
 
 fn ensure_known_owners_list_exists(local: &crev_lib::Local) -> Result<()> {
