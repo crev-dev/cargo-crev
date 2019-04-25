@@ -29,7 +29,7 @@ pub struct Package {
         serialize_with = "as_rfc3339_fixed",
         deserialize_with = "from_rfc3339_fixed"
     )]
-    pub date: chrono::DateTime<FixedOffset>,
+    pub date: crate::proof::Date,
     pub from: crate::PubId,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,

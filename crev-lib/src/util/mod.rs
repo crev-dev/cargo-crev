@@ -90,8 +90,17 @@ pub fn get_documentation_for(content: &proof::Content) -> &'static str {
     }
 }
 
-pub fn edit_proof_content_iteractively(content: &proof::Content) -> Result<proof::Content> {
+pub fn edit_proof_content_iteractively(
+    content: &proof::Content,
+    previous_date: Option<proof::Date>,
+) -> Result<proof::Content> {
     let mut text = String::new();
+    if let Some(date) = previous_date {
+        text.write_str(&format!(
+            "# Overwriting existing proof created on {}\n",
+            date.to_rfc3339()
+        ))?;
+    }
 
     text.write_str(&format!("# {}\n", content.draft_title()))?;
     text.write_str(&content.to_draft_string())?;

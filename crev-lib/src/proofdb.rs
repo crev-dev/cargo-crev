@@ -368,6 +368,17 @@ impl ProofDB {
         proofs.into_iter()
     }
 
+    pub fn get_package_review_by_author(
+        &self,
+        source: &str,
+        name: &str,
+        version: &Version,
+        id: &Id,
+    ) -> Option<proof::review::Package> {
+        self.get_package_reviews_for_package(source, Some(name), Some(version))
+            .find(|pkg_review| pkg_review.from.id == *id)
+    }
+
     fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: TrustLevel) {
         TimestampedTrustLevel { value: trust, date }.insert_into_or_update_to_more_recent(
             self.trust_id_to_id

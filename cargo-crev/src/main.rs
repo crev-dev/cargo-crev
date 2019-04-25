@@ -399,6 +399,7 @@ fn create_review_proof(
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
+
     let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
     let crate_version = crate_.version();
@@ -447,33 +448,51 @@ fn create_review_proof(
     let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
     let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
-    let mut review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
-        .package(proof::PackageInfo {
-            id: None,
-            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: name.to_owned(),
-            version: crate_version.to_owned(),
-            digest: digest_clean.into_vec(),
-            digest_type: proof::default_digest_type(),
-            revision: vcs
-                .and_then(|vcs| vcs.get_git_revision())
-                .unwrap_or_else(|| "".into()),
-            revision_type: proof::default_revision_type(),
-        })
-        .review(if advisory_range.is_some() {
-            crev_data::Review::new_none()
-        } else {
-            trust.to_review()
-        })
-        .build()
-        .map_err(|e| format_err!("{}", e))?;
+    let db = local.load_db()?;
 
-    if let Some(range) = advisory_range {
-        review.advisory = Some(range.into())
-    }
+    let (previous_date, review) = if let Some(mut previous_review) =
+        db.get_package_review_by_author(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id.id)
+    {
+        previous_review.from = id.id.to_owned();
+        let previous_date = previous_review.date;
+        previous_review.date = crev_common::now();
 
-    let review = crev_lib::util::edit_proof_content_iteractively(&review.into())?;
+        if previous_review.advisory.is_none() {
+            if let Some(range) = advisory_range {
+                previous_review.advisory = Some(range.into())
+            }
+        }
+        (Some(previous_date), previous_review)
+    } else {
+        let mut review = proof::review::PackageBuilder::default()
+            .from(id.id.to_owned())
+            .package(proof::PackageInfo {
+                id: None,
+                source: PROJECT_SOURCE_CRATES_IO.to_owned(),
+                name: name.to_owned(),
+                version: crate_version.to_owned(),
+                digest: digest_clean.into_vec(),
+                digest_type: proof::default_digest_type(),
+                revision: vcs
+                    .and_then(|vcs| vcs.get_git_revision())
+                    .unwrap_or_else(|| "".into()),
+                revision_type: proof::default_revision_type(),
+            })
+            .review(if advisory_range.is_some() {
+                crev_data::Review::new_none()
+            } else {
+                trust.to_review()
+            })
+            .build()
+            .map_err(|e| format_err!("{}", e))?;
+
+        if let Some(range) = advisory_range {
+            review.advisory = Some(range.into())
+        }
+        (None, review)
+    };
+
+    let review = crev_lib::util::edit_proof_content_iteractively(&review.into(), previous_date)?;
 
     let proof = review.sign_by(&id)?;
 
