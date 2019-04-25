@@ -62,7 +62,7 @@ impl Review {
         Review {
             thoroughness: Level::None,
             understanding: Level::None,
-            rating: Rating::Positive,
+            rating: Rating::Neutral,
         }
     }
 }
