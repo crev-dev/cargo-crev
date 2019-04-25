@@ -265,17 +265,25 @@ fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()>
     eprintln!("Opening shell in: {}", crate_dir.display());
     eprintln!("Use `exit` or Ctrl-D to return to the original project.",);
     eprintln!("Use `review` and `flag` without any arguments to review this crate.");
-    let status = process::Command::new(shell)
+    let mut command = process::Command::new(shell);
+    command
         .current_dir(crate_dir)
         .env("PWD", crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
         .env(GOTO_CRATE_NAME_ENV, name)
-        .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string())
-        .status()?;
+        .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string());
 
-    if !status.success() {
-        bail!("Shell returned {}", status);
-    }
+    if cfg!(unix) {
+        // on Unix we use `exec` so that stuff like Ctrl-C works
+        // we don't care about destructors at this point
+        use std::os::unix::process::CommandExt;
+        Err(command.exec())?;
+    } else {
+        let status = command.status()?;
+        if !status.success() {
+            bail!("Shell returned {}", status);
+        }
+    };
 
     Ok(())
 }
