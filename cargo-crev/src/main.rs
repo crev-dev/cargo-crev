@@ -11,6 +11,7 @@ use crev_lib::{self, local::Local, ProofStore};
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
+use std::default::Default;
 use std::{
     collections::HashSet,
     env,
@@ -408,7 +409,7 @@ fn create_review_proof(
     name: &str,
     version: Option<&Version>,
     unrelated: bool,
-    advisory_range: Option<crev_data::proof::review::package::AdvisoryRange>,
+    advise_common: Option<opts::AdviseCommon>,
     trust: TrustOrDistrust,
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
@@ -472,8 +473,10 @@ fn create_review_proof(
         previous_review.date = crev_common::now();
 
         if previous_review.advisory.is_none() {
-            if let Some(range) = advisory_range {
-                previous_review.advisory = Some(range.into())
+            if let Some(advise_common) = advise_common {
+                let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
+                advisory.critical = advise_common.critical;
+                previous_review.advisory = Some(advisory);
             }
         }
         (Some(previous_date), previous_review)
@@ -492,7 +495,7 @@ fn create_review_proof(
                     .unwrap_or_else(|| "".into()),
                 revision_type: proof::default_revision_type(),
             })
-            .review(if advisory_range.is_some() {
+            .review(if advise_common.is_some() {
                 crev_data::Review::new_none()
             } else {
                 trust.to_review()
@@ -500,8 +503,10 @@ fn create_review_proof(
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        if let Some(range) = advisory_range {
-            review.advisory = Some(range.into())
+        if let Some(advise_common) = advise_common {
+            let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
+            advisory.critical = advise_common.critical;
+            review.advisory = Some(advisory);
         }
         (None, review)
     };
@@ -952,7 +957,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
-                    args.advisory.clone(),
+                    if args.advisory {
+                        Some(opts::AdviseCommon::default())
+                    } else {
+                        None
+                    },
                     TrustOrDistrust::Trust,
                     &args.common_proof_create,
                 )
@@ -972,7 +981,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
-                    None,
+                    if args.advisory {
+                        Some(opts::AdviseCommon::default())
+                    } else {
+                        None
+                    },
+                    TrustOrDistrust::Distrust,
+                    &args.common_proof_create,
+                )
+            })?;
+        }
+        opts::Command::Advise(args) => {
+            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
+                create_review_proof(
+                    c,
+                    v,
+                    i,
+                    Some(args.advise_common),
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
                 )

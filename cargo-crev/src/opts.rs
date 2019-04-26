@@ -258,13 +258,34 @@ pub struct Review {
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
 
+    #[structopt(long = "advisory")]
+    pub advisory: bool,
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
+pub struct AdviseCommon {
     /// This release contains advisory (important fix)
     #[structopt(
-        long = "advisory",
-        // TODO: https://github.com/TeXitoi/structopt/issues/123
+        long = "affected",
         // default_value = "proof::review::package::AdvisoryRange::Major"
+        default_value = "major"
     )]
-    pub advisory: Option<crev_data::proof::review::package::AdvisoryRange>,
+    pub affected: crev_data::proof::review::package::AdvisoryRange,
+
+    #[structopt(long = "critical")]
+    pub critical: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Advise {
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+
+    #[structopt(flatten)]
+    pub advise_common: AdviseCommon,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -326,6 +347,10 @@ pub enum Command {
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
     Flag(Review),
+
+    /// Create advisory urging to upgrade to given package version
+    #[structopt(name = "advise")]
+    Advise(Advise),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]

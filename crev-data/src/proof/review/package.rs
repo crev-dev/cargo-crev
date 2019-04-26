@@ -48,6 +48,7 @@ impl Package {
         let mut copy = self.clone();
         copy.review = draft.review;
         copy.comment = draft.comment;
+        copy.advisory = draft.advisory;
         copy
     }
 }
@@ -198,8 +199,8 @@ impl std::str::FromStr for AdvisoryRange {
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Advisory {
-    affected: AdvisoryRange,
-    critical: bool,
+    pub affected: AdvisoryRange,
+    pub critical: bool,
 }
 
 impl From<AdvisoryRange> for Advisory {
