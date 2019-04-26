@@ -798,10 +798,15 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         Some(&crate_version),
                     );
 
-                    let (version_downloads, total_downloads) = crates_io
+                    let (
+                        version_downloads_str,
+                        total_downloads_str,
+                        version_downloads,
+                        total_downloads,
+                    ) = crates_io
                         .get_downloads_count(&crate_name, &crate_version)
-                        .map(|(a, b)| (a.to_string(), b.to_string()))
-                        .unwrap_or_else(|_e| ("err".into(), "err".into()));
+                        .map(|(a, b)| (a.to_string(), b.to_string(), a, b))
+                        .unwrap_or_else(|_e| ("err".into(), "err".into(), 0, 0));
 
                     let owners = crates_io.get_owners(&crate_name).ok();
                     let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
@@ -826,13 +831,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         format_args!("{:8}", result),
                         term::verification_status_color(&result),
                     )?;
-                    print!(
-                        " {:2} {:2} {:>8} {:>9}",
-                        pkg_version_review_count,
-                        pkg_review_count,
-                        version_downloads,
-                        total_downloads,
-                    );
+                    print!(" {:2} {:2}", pkg_version_review_count, pkg_review_count,);
+                    term.print(
+                        format_args!(" {:>8}", version_downloads_str),
+                        if version_downloads < 1000 {
+                            Some(::term::color::YELLOW)
+                        } else {
+                            None
+                        },
+                    )?;
+                    term.print(
+                        format_args!(" {:>9}", total_downloads_str),
+                        if total_downloads < 10000 {
+                            Some(::term::color::YELLOW)
+                        } else {
+                            None
+                        },
+                    )?;
                     term.print(
                         format_args!(
                             " {}",
