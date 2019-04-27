@@ -11,9 +11,9 @@ use crev_lib::{self, local::Local, ProofStore};
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
-use std::default::Default;
 use std::{
     collections::HashSet,
+    default::Default,
     env,
     io::BufRead,
     path::{Path, PathBuf},
@@ -182,11 +182,8 @@ impl Repo {
 
         let mut source_map = SourceMap::new();
         source_map.insert(source);
-        let package_set = cargo::core::PackageSet::new(
-            &[summary.package_id()],
-            source_map,
-            &self.config,
-        )?;
+        let package_set =
+            cargo::core::PackageSet::new(&[summary.package_id()], source_map, &self.config)?;
         let pkg_id = summary.package_id();
 
         Ok(Some(package_set.get_one(pkg_id)?.to_owned()))
