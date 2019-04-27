@@ -183,7 +183,7 @@ impl Repo {
         let mut source_map = SourceMap::new();
         source_map.insert(source);
         let package_set = cargo::core::PackageSet::new(
-            &[summary.package_id().clone()],
+            &[summary.package_id()],
             source_map,
             &self.config,
         )?;
