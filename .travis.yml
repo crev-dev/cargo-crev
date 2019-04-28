@@ -11,7 +11,10 @@ rust:
 
 script:
   - if [ "$TRAVIS_RUST_VERSION" == "stable" ] ; then
-      rustup component add rustfmt clippy && cargo fmt --all -- --check && cargo clippy;
+      rustup component add rustfmt clippy &&
+      cargo fmt --all -- --check &&
+      cargo clippy --all-targets -- --deny clippy::all ||
+      exit 1;
     fi
   - cargo build --verbose
   - cargo test --verbose
