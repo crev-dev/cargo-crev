@@ -932,7 +932,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     eprintln!();
                 }
 
-                for ((name, version), _digest) in &unclean_digests {
+                for (name, version) in unclean_digests.keys() {
                     term.eprint(
                         format_args!("Unclean crate {} {}\n", name, version),
                         ::term::color::RED,
