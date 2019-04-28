@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "crev-lib"
-version = "0.6.0"
+version = "0.7.0"
 description = "Scalable, social, Code REView system that we desperately need - core library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -42,11 +42,11 @@ version = "0.2"
 
 [dependencies.crev-common]
 path = "../crev-common"
-version = "0.6"
+version = "0.7"
 
 [dependencies.crev-data]
 path = "../crev-data"
-version = "0.6"
+version = "0.7"
 
 [dependencies.crev-recursive-digest]
 path = "../recursive-digest"
