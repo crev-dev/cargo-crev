@@ -25,7 +25,6 @@ miscreant = { version = "0.4", features = ["soft-aes"] }
 rand = "0.6"
 serde = "1"
 serde_cbor = "0.9"
-serde_derive = "1"
 serde_yaml = "0.8"
 tempdir = "0.3"
 walkdir = "2"
