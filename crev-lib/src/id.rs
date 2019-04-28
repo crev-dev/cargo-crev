@@ -2,8 +2,10 @@ use crate::prelude::*;
 use argonautica::{self, Hasher};
 use crev_common::serde::{as_base64, from_base64};
 use crev_data::id::{OwnId, PubId};
+use failure::{bail, format_err};
 use miscreant;
 use rand::{self, Rng};
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{self, fmt, io::Write, path::Path};
 

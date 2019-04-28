@@ -1,9 +1,3 @@
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate failure;
-
 pub mod id;
 pub mod local;
 pub(crate) mod prelude;
@@ -15,6 +9,7 @@ pub mod util;
 
 use crate::{prelude::*, proofdb::TrustSet};
 use crev_data::Digest;
+use failure::format_err;
 use std::{
     collections::HashSet,
     fmt,

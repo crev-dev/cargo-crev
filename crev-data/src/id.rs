@@ -3,8 +3,11 @@ use crev_common::{
     self,
     serde::{as_base64, from_base64},
 };
+use derive_builder::Builder;
 use ed25519_dalek::{self, PublicKey, SecretKey};
+use failure::format_err;
 use rand::rngs::OsRng;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

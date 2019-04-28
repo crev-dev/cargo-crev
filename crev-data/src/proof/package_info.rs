@@ -1,7 +1,9 @@
 use crate::proof;
 
 use crev_common::serde::{as_base64, from_base64};
+use derive_builder::Builder;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
 pub struct PackageInfo {

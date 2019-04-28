@@ -14,10 +14,11 @@ use crev_data::{
 };
 use default::default;
 use directories::ProjectDirs;
-use failure::ResultExt;
+use failure::{bail, format_err, ResultExt};
 use git2;
 use insideout::InsideOut;
 use resiter::*;
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{
     cell::RefCell,

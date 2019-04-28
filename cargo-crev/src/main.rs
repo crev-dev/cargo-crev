@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate structopt;
-
 use self::prelude::*;
 use cargo::{
     core::{dependency::Dependency, source::SourceMap, Package, SourceId},
@@ -11,9 +8,8 @@ use crev_lib::{self, local::Local, ProofStore};
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
-use std::collections::BTreeMap;
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     default::Default,
     env,
     io::BufRead,
