@@ -14,8 +14,7 @@ readme = "README.md"
 [dependencies]
 base64 = "0.10"
 blake2 = "0.8"
-hex = "0.3"
-crev-recursive-digest = { path = "../recursive-digest", version = "0.2" }
-structopt = "0.2"
 common_failures = "0.1"
-failure = "0.1"
+crev-recursive-digest = { path = "../recursive-digest", version = "0.2" }
+hex = "0.3"
+structopt = "0.2"
