@@ -11,6 +11,7 @@ use crev_lib::{self, local::Local, ProofStore};
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::{
     collections::HashSet,
     default::Default,
@@ -697,6 +698,22 @@ enum CommandExitStatus {
     Successs,
 }
 
+fn is_digest_clean(
+    db: &crev_lib::ProofDB,
+    name: &str,
+    version: &Version,
+    digest: &crev_data::Digest,
+) -> bool {
+    let mut at_least_one = false;
+    !db.get_package_reviews_for_package(PROJECT_SOURCE_CRATES_IO, Some(name), Some(version))
+        .map(|review| {
+            at_least_one = true;
+            review
+        })
+        .all(|review| review.package.digest != digest.as_slice())
+        || !at_least_one
+}
+
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
         opts::Command::New(cmd) => match cmd {
@@ -765,6 +782,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     );
                     eprintln!(" {:<20} {:<15}", "crate", "version");
                 }
+                let mut unclean_digests = BTreeMap::new();
                 let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
                 let mut total_verification_successful = true;
                 repo.for_every_non_local_dep_crate(|crate_| {
@@ -774,6 +792,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     let crate_root = crate_.root();
 
                     let digest = crev_lib::get_dir_digest(&crate_root, &ignore_list)?;
+
+                    if !is_digest_clean(&db, &crate_name, &crate_version, &digest) {
+                        unclean_digests.insert((crate_name, crate_version), digest.clone());
+                    }
+
                     let result = db.verify_package_digest(&digest, &trust_set);
 
                     if !result.is_verified() {
@@ -908,6 +931,21 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
                     Ok(())
                 })?;
+
+                if !unclean_digests.is_empty() {
+                    eprintln!();
+                }
+
+                for ((name, version), _digest) in &unclean_digests {
+                    term.eprint(
+                        format_args!("Unclean crate {} {}\n", name, version),
+                        ::term::color::RED,
+                    )?;
+                }
+
+                if !unclean_digests.is_empty() {
+                    bail!("Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source.");
+                }
 
                 return Ok(if total_verification_successful {
                     CommandExitStatus::Successs
