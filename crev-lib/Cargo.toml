@@ -12,41 +12,24 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "../README.md"
 
 [dependencies]
-blake2 = "0.8"
+argonautica = "0.2"
 chrono = "0.4"
 common_failures = "0.1"
-derive_builder = "0.7"
-digest = "0.8"
+crev-common = { path = "../crev-common", version = "0.7" }
+crev-data = { path = "../crev-data", version = "0.7" }
+crev-recursive-digest = { path = "../recursive-digest", version = "0.2.1" }
+default = "0.1"
 directories = "1.0.2"
 failure = "0.1"
 git2 = "0.8"
-hex = "0.3"
+insideout = "0.2"
 miscreant = { version = "0.4", features = ["soft-aes"] }
 rand = "0.6"
+resiter = "0.3"
+semver = "0.9"
 serde = "1"
 serde_cbor = "0.9"
 serde_yaml = "0.8"
+shell-escape = "0.1"
 tempdir = "0.3"
 walkdir = "2"
-resiter = "0.3"
-rprompt = "1"
-default = "0.1"
-insideout = "0.2"
-shell-escape = "0.1"
-semver = "0.9"
-
-[dependencies.argonautica]
-features = ["serde"]
-version = "0.2"
-
-[dependencies.crev-common]
-path = "../crev-common"
-version = "0.7"
-
-[dependencies.crev-data]
-path = "../crev-data"
-version = "0.7"
-
-[dependencies.crev-recursive-digest]
-path = "../recursive-digest"
-version = "0.2.1"
