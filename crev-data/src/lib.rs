@@ -2,15 +2,6 @@
 //! used by `crev`, without getting into details
 //! how actually `crev` works (where and how it manages data).
 
-#[macro_use]
-extern crate failure;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate derive_builder;
-
 use common_failures::prelude::*;
 
 pub mod digest;

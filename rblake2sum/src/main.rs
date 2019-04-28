@@ -1,5 +1,3 @@
-extern crate structopt;
-
 mod opts;
 
 use common_failures::prelude::*;

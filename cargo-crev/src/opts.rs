@@ -1,5 +1,6 @@
 use semver::Version;
 use std::ffi::OsString;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct CrateSelector {

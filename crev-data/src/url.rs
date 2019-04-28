@@ -1,3 +1,6 @@
+use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
+
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Url {
     pub url: String,

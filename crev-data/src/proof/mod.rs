@@ -3,6 +3,7 @@
 use crate::Url;
 use chrono::{self, prelude::*};
 use crev_common;
+use failure::bail;
 use std::{
     default, fmt, fs,
     io::{self, BufRead},

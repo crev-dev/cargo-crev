@@ -1,6 +1,8 @@
 use common_failures::prelude::*;
 use crev_common;
 use crev_data::proof;
+use failure::bail;
+use serde::{Deserialize, Serialize};
 use serde_cbor;
 use std::{
     collections::HashMap,

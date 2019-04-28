@@ -3,6 +3,7 @@ pub mod git;
 use crate::prelude::*;
 use crev_common;
 use crev_data::proof;
+use failure::{bail, format_err};
 use git2;
 use std::{
     self, env,

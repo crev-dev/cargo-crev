@@ -1,4 +1,6 @@
 use crate::Result;
+use failure::bail;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

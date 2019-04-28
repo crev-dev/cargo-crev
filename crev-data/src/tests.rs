@@ -3,6 +3,7 @@ use crate::{
     proof::{self, Proof, Serialized},
     Result, Url,
 };
+use failure::format_err;
 use semver::Version;
 use std::path::PathBuf;
 

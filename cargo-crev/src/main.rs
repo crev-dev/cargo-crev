@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate structopt;
-
 use self::prelude::*;
 use cargo::{
     core::{dependency::Dependency, source::SourceMap, Package, SourceId},

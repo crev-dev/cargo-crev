@@ -1,7 +1,9 @@
 use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
 use crev_common::convert::OptionDeref;
 use crev_data::{proof, Digest};
+use failure::{bail, format_err, Fail};
 use git2;
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{
     collections::HashSet,
