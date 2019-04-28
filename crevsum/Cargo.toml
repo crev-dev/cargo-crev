@@ -21,4 +21,4 @@ failure = "0.1"
 
 [dependencies.crev-common]
 path = "../crev-common"
-version = "0.6"
+version = "0.7"
