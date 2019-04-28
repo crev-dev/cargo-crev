@@ -167,7 +167,7 @@ fn test_exclude_include_path() -> Result<(), DigestError> {
         let file_sum = hasher.result().to_vec();
 
         let mut hasher = blake2::Blake2b::new();
-        hasher.input("bar".as_bytes());
+        hasher.input(b"bar");
         let dir_sum = hasher.result().to_vec();
 
         let mut hasher = blake2::Blake2b::new();

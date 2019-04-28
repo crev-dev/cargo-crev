@@ -11,9 +11,8 @@ use crev_lib::{self, local::Local, ProofStore};
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
-use std::collections::BTreeMap;
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     default::Default,
     env,
     io::BufRead,
@@ -936,7 +935,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     eprintln!();
                 }
 
-                for ((name, version), _digest) in &unclean_digests {
+                for (name, version) in unclean_digests.keys() {
                     term.eprint(
                         format_args!("Unclean crate {} {}\n", name, version),
                         ::term::color::RED,

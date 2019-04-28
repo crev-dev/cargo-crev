@@ -41,7 +41,7 @@ you keep up with ever-changing ecosystem?
 
 ## Vision
 
-We would like Crev to become a general, language and ecosystem agnostic 
+We would like Crev to become a general, language and ecosystem agnostic
 system for establishing trust in Open Source code. We would like to have
 frontends integrated with all major Open Source package managers and ecosystems.
 
@@ -108,11 +108,11 @@ This allows answering queries like:
 
 * Not many people can review all their dependencies, but if every user
   at least skimmed through a couple of them, and shared that information with
-  others, we would be in much better situation.
-* Trust is fundamentally about people and community, not automatic-scans,
+  others, we would be in a much better situation.
+* Trust is fundamentally about people and community, not automatic scans,
   arbitrary metrics, process or bureaucracy. People have to judge both: code
   (code coverage, testing, quality, etc.) and trustworthiness of other
-  people (whos reviews do you trust, and how much).
+  people (whose reviews do you trust, and how much).
 * Code review tool should be language and ecosystem agnostic. Code is code, and should be reviewed.
 * Trust should be spread between many people, so one compromised or malicious
   actor can't abuse the system.
