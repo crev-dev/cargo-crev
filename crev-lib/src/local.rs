@@ -17,7 +17,7 @@ use directories::ProjectDirs;
 use failure::ResultExt;
 use git2;
 use insideout::InsideOut;
-use resiter_dpc_tmp::*;
+use resiter::*;
 use serde_yaml;
 use std::{
     cell::RefCell,
