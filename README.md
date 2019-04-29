@@ -8,7 +8,10 @@
   <br>
 </p>
 
+## Status
 
+* [Rust integration (cargo-crev)](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
+* other languages/ecosystems - in plans
 
 # `crev` -  Code REView system that we desperately need
 
@@ -47,22 +50,16 @@ frontends integrated with all major Open Source package managers and ecosystems.
 
 Consider joining [crev gitter channel](https://gitter.im/dpc/crev). Thank you!
 
-## Status
-
-* [Rust integration (cargo-crev)](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
-* other languages/ecosystems - in plans
-
-
-See it in action:
-
-[![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695?speed=3)
-
-
 ## Overview
 
-Using `crev` you can generate cryptographically signed artifacts (*Proofs*). Proofs can share details of code reviews (whole releases, parts of the code), or specifying trust (or mistrust) into reviews of other people.
+Using `crev` you can generate cryptographically signed artifacts (*Proofs*).
+Proofs can contain:
 
-Example of *Package Review Proofs* that review a whole package (aka. library, crate, etc.):
+* results of code reviews
+* known advisories
+* overall recomendations and comments.
+
+Example of *Package Review Proof* that reviews a whole package (aka. library, crate, etc.):
 
 ```
 -----BEGIN CREV PACKAGE REVIEW-----
@@ -87,22 +84,7 @@ QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8
 -----END CREV PACKAGE REVIEW-----
 ```
 
-When useful, it is possible to review particular files (*Code Review Proof*).
-
-While your own reviews are very valuable, `crev` allows reviewing identities of other
-people to establish trust.
-
 *Proofs* are stored and published in personal repositories for other people to use.
-
-They can be also included in a relevant source code itself through submitting
-a PR to the original project.
-
-`crev` collects *Proofs* from different sources, and builds a personalized web of trust.
-This allows answering queries like:
-
-* Which of my dependencies don't have a sufficient (arbitrary) level of code review/trust?
-* What were the changes in a project X, since I last reviewed it?
-* and more!
 
 ## Fundamental ideas behind `crev`:
 
@@ -116,8 +98,6 @@ This allows answering queries like:
 * Code review tool should be language and ecosystem agnostic. Code is code, and should be reviewed.
 * Trust should be spread between many people, so one compromised or malicious
   actor can't abuse the system.
-* Code Review should be stored along the source code itself. Just like tests,
-  documentation, or even [design decisions](https://github.com/vitiral/artifact).
 * Web of Trust is personal and subjective: islands of Trust emerge spontaneously
   and overlap.
 
