@@ -14,13 +14,24 @@
 # `cargo-crev` - Cargo Code REView!
 
 
-`cargo-crev` is a tool helping Rust users review crates they use,
-and share it with the community. It works as a recomendation system,
-helps identify poor quality, protects against many attack
-vectors, and aims at driving the quality of Rust ecosystem even higher,
-by encouraging continous peer review culture.
+`cargo-crev` is a tool helping Rust users evalute quality and trustworthiness
+of dependencies they use.
 
-All of this neatly integrated with the `cargo` itself!
+`cargo-crev` helps analyze data like:
+
+* popularity,
+* line-count,
+* amount of `unsafe` statements,
+* number of owners and their reputation,
+* known advisories affecting it
+
+On top of that, it comes with distributed review and recomendation system,
+and protects against many attack vectors (source code checksums).
+
+The general goal is driving the quality of Rust ecosystem even higher,
+by helping indentify quality crates, and encouraging continous peer review culture.
+
+All of this is neatly integrated with the `cargo` itself!
 
 ## How it works
 
