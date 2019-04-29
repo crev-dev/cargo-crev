@@ -109,20 +109,25 @@ cargo install --git https://github.com/dpc/crev/ cargo-crev
 First **create an empty github repository with name: `crev-proofs`**.
 
 ```
+# Basics
+cargo crev --help                                       # Build in documentation
 cd <your-project>
-cargo crev new id --github-username <username>          # generate your id
+cargo crev verify                                       # verify your depedencies
+
+# Download proofs from other users
 cargo crev fetch url https://github.com/dpc/crev-proofs # fetch proofs from dpc
 cargo crev fetch all                                    # fetch proofs from all known ids
-cargo crev verify                                       # verify your depedencies
+
+# Advanced: creating your own cryptographic ID
+cargo crev new id --github-username <username>          # generate your id associated with public git repository
 cargo crev query id all                                 # show all known ids
 cargo crev query review                                 # show all reviews
 cargo crev query review <crate>                         # show all reviews of a crate
 cargo crev trust <id>                                   # trust someone
 
-# for Vim/CLI-heavy users
-cargo crev goto <crate>                                 # jump/cd to crate to review it
-
-# for IDE users
+# Advanced: reviewing crates by yourself
+cargo crev goto <crate>                                 # jump/cd to crate to review it (for CLI users)
+# or
 cargo crev open <crate> --cmd "code --wait -n" --cmd-save # open crate in VSCode and use VSCode by default in the future
 
 cargo crev review                                       # review a crate (after goto)
