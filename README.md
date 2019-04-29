@@ -8,12 +8,14 @@
   <br>
 </p>
 
+# `crev` -  Code REView system that we desperately need
+
 ## Status
 
 * [Rust integration (cargo-crev)](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
 * other languages/ecosystems - in plans
 
-# `crev` -  Code REView system that we desperately need
+## Introduction
 
 You're ultimately responsible for vetting your dependencies.
 
