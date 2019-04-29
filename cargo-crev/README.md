@@ -43,7 +43,7 @@ for Rust/crates.io ecosystem.
 
 See it in action:
 
-[![asciicast](https://asciinema.org/a/216695.png)](https://asciinema.org/a/216695?speed=3)
+![`cargo crev verify deps` output](https://i.imgur.com/wDQAKur.png)
 
 ## Changelog
 
