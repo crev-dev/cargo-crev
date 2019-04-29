@@ -25,8 +25,9 @@ of dependencies they use.
 * number of owners and their reputation,
 * known advisories affecting it
 
-On top of that, it comes with distributed review and recomendation system,
-and protects against many attack vectors (source code checksums).
+On top of that, it comes with an implementation of distributed
+Code REView and recomendation system (crev),
+and protects against many attack vectors.
 
 The general goal is driving the quality of Rust ecosystem even higher,
 by helping indentify quality crates, and encouraging continous peer review culture.
