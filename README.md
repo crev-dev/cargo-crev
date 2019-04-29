@@ -12,7 +12,7 @@
 
 ## Status
 
-* [cargo-crev: implementtation for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
+* [cargo-crev: implementation for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
 * other languages/ecosystems - in plans
 
 ## Introduction
