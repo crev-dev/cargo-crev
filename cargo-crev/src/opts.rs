@@ -199,6 +199,12 @@ pub struct QueryAdvisory {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct QueryDir {
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Query {
     /// Query Ids
     #[structopt(name = "id")]
@@ -211,6 +217,10 @@ pub enum Query {
     /// Query applicable advisories
     #[structopt(name = "advisory")]
     Advisory(QueryAdvisory),
+
+    /// Query source directory of a package
+    #[structopt(name = "dir")]
+    Dir(QueryDir),
 }
 
 #[derive(Debug, StructOpt, Clone)]

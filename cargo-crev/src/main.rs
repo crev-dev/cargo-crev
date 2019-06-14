@@ -579,6 +579,19 @@ fn find_advisories(
         .into_iter())
 }
 
+fn print_dir(crate_: &opts::CrateSelector, unrelated: bool) -> Result<()> {
+
+    let repo = Repo::auto_open_cwd()?;
+    let name = crate_
+        .name
+        .clone()
+        .ok_or_else(|| format_err!("Crate name argument required"))?;
+    let crate_ = repo.find_crate(&name, crate_.version.as_ref(), unrelated)?;
+    println!("{}", crate_.root().display());
+
+    Ok(())
+}
+
 fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
     for (_, review) in find_advisories(crate_)? {
         println!("{}", review);
@@ -996,6 +1009,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             },
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
+            opts::Query::Dir(args) => print_dir(&args.common.crate_, args.common.unrelated)?,
             opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
         },
         opts::Command::Review(args) => {
