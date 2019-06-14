@@ -1,6 +1,7 @@
 use semver::Version;
 use std::ffi::OsString;
 use structopt::StructOpt;
+use crev_data::Level;
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct CrateSelector {
@@ -47,6 +48,7 @@ pub struct TrustParams {
     pub low_cost: u64,
 }
 
+
 impl From<TrustParams> for crev_lib::TrustDistanceParams {
     fn from(params: TrustParams) -> Self {
         crev_lib::TrustDistanceParams {
@@ -58,6 +60,35 @@ impl From<TrustParams> for crev_lib::TrustDistanceParams {
     }
 }
 
+/// Verification Requirements
+#[derive(Debug, StructOpt, Clone)]
+pub struct VerificationRequirements {
+    /// Minimum trust level of the reviewers
+    #[structopt(long = "trust", default_value = "low")]
+    pub trust_level: crev_data::Level,
+    /// Number of reviews required
+    #[structopt(long = "redundancy", default_value = "1")]
+    pub redundancy: u64,
+    /// Required understanding
+    #[structopt(long = "understanding", default_value = "none")]
+    pub understanding: Level,
+    /// Required thoroughness
+    #[structopt(long = "thoroughness", default_value = "none")]
+    pub thoroughness: Level,
+}
+
+
+impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
+    fn from(req: VerificationRequirements) -> Self {
+        crev_lib::VerificationRequirements {
+            trust_level: req.trust_level,
+            redundancy: req.redundancy,
+            understanding: req.understanding,
+            thoroughness: req.thoroughness,
+        }
+    }
+}
+
 #[derive(Debug, StructOpt, Clone)]
 pub struct VerifyDeps {
     #[structopt(long = "verbose", short = "v")]
@@ -65,6 +96,9 @@ pub struct VerifyDeps {
 
     #[structopt(flatten)]
     pub trust_params: TrustParams,
+
+    #[structopt(flatten)]
+    pub requirements: VerificationRequirements,
 
     #[structopt(long = "skip-verified")]
     pub skip_verified: bool,

@@ -161,6 +161,7 @@ impl Repo {
         allow_dirty: bool,
         for_id: Option<String>,
         params: &crate::TrustDistanceParams,
+        requirements: &crate::VerificationRequirements,
     ) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
             bail!("Git repository is not in a clean state");
@@ -175,7 +176,7 @@ impl Repo {
         };
         let ignore_list = HashSet::new();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        Ok(db.verify_package_digest(&digest, &trust_set))
+        Ok(db.verify_package_digest(&digest, &trust_set, requirements))
     }
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {

@@ -1,4 +1,4 @@
-use crate::VerificationStatus;
+use crate::{VerificationStatus, VerificationRequirements};
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -444,6 +444,7 @@ impl ProofDB {
         &self,
         digest: &Digest,
         trust_set: &TrustSet,
+        requirements: &VerificationRequirements,
     ) -> VerificationStatus {
         let reviews: HashMap<Id, review::Package> = self
             .get_package_reviews_by_digest(digest)
@@ -454,22 +455,22 @@ impl ProofDB {
         let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
         let matching_reviewers = trusted_ids.intersection(&reviews_by);
         let mut trust_count = 0;
-        let mut trust_level = TrustLevel::None;
         let mut flagged_count = 0;
         let mut dangerous_count = 0;
         for matching_reviewer in matching_reviewers {
-            let rating = &reviews[matching_reviewer].review.rating;
-            if Rating::Neutral <= *rating {
-                trust_count += 1;
-                trust_level = std::cmp::max(
-                    trust_level,
-                    trust_set
-                        .get_effective_trust_level(matching_reviewer)
-                        .expect("Id should have been there"),
-                );
-            } else if *rating <= Rating::Dangerous {
+            let review = &reviews[matching_reviewer].review;
+            if Rating::Neutral <= review.rating &&
+                requirements.thoroughness <= review.thoroughness &&
+                requirements.understanding <= review.understanding {
+
+                if TrustLevel::from(requirements.trust_level) <= trust_set
+                    .get_effective_trust_level(matching_reviewer)
+                    .expect("Id should have been there") {
+                    trust_count += 1;
+                }
+            } else if review.rating <= Rating::Dangerous {
                 dangerous_count += 1;
-            } else if *rating < Rating::Neutral {
+            } else if review.rating < Rating::Neutral {
                 flagged_count += 1;
             }
         }
@@ -478,10 +479,10 @@ impl ProofDB {
             VerificationStatus::Dangerous
         } else if flagged_count > 0 {
             VerificationStatus::Flagged
-        } else if trust_count > 0 {
-            VerificationStatus::Verified(trust_level)
+        } else if trust_count >= requirements.redundancy {
+            VerificationStatus::Verified
         } else {
-            VerificationStatus::None
+            VerificationStatus::Insufficient
         }
     }
 

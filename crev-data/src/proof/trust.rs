@@ -7,6 +7,7 @@ use crev_common::{
 use derive_builder::Builder;
 use failure::bail;
 use serde::{Deserialize, Serialize};
+use crate::Level;
 use serde_yaml;
 use std::fmt;
 
@@ -46,6 +47,17 @@ impl fmt::Display for TrustLevel {
             Medium => "medium",
             High => "high",
         })
+    }
+}
+
+impl std::convert::From<Level> for TrustLevel {
+    fn from(l: Level) -> Self {
+        match l {
+            Level::None => TrustLevel::None,
+            Level::Low => TrustLevel::Low,
+            Level::Medium => TrustLevel::Medium,
+            Level::High => TrustLevel::High,
+        }
     }
 }
 

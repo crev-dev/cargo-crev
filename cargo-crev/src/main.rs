@@ -766,7 +766,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:8} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
+                        "{:5} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
                         "trust",
                         "reviews",
                         "downloads",
@@ -778,6 +778,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     );
                     eprintln!(" {:<20} {:<15}", "crate", "version");
                 }
+                let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
                 let mut unclean_digests = BTreeMap::new();
                 let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
                 let mut total_verification_successful = true;
@@ -793,7 +794,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         unclean_digests.insert((crate_name, crate_version), digest.clone());
                     }
 
-                    let result = db.verify_package_digest(&digest, &trust_set);
+                    let result = db.verify_package_digest(&digest, &trust_set, &requirements);
 
                     if !result.is_verified() {
                         total_verification_successful = false;
@@ -844,7 +845,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         print!("{:43} ", digest);
                     }
                     term.print(
-                        format_args!("{:8}", result),
+                        format_args!("{:5}", result),
                         term::verification_status_color(&result),
                     )?;
                     print!(" {:2} {:2}", pkg_version_review_count, pkg_review_count,);

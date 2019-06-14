@@ -59,13 +59,21 @@ impl TrustOrDistrust {
     }
 }
 
+/// Verification requirements
+pub struct VerificationRequirements {
+    pub trust_level: crev_data::Level,
+    pub understanding: crev_data::Level,
+    pub thoroughness: crev_data::Level,
+    pub redundancy: u64,
+}
+
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
 #[derive(PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
-    Verified(crev_data::proof::TrustLevel),
-    None,
+    Verified,
+    Insufficient,
     Flagged,
     Dangerous,
 }
@@ -73,7 +81,7 @@ pub enum VerificationStatus {
 impl VerificationStatus {
     pub fn is_verified(&self) -> bool {
         match self {
-            VerificationStatus::Verified(_) => true,
+            VerificationStatus::Verified => true,
             _ => false,
         }
     }
@@ -82,10 +90,10 @@ impl VerificationStatus {
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VerificationStatus::Verified(level) => f.pad(&level.to_string()),
-            VerificationStatus::None => f.pad("none"),
-            VerificationStatus::Flagged => f.pad("flagged"),
-            VerificationStatus::Dangerous => f.pad("danger"),
+            VerificationStatus::Verified => f.pad("pass"),
+            VerificationStatus::Insufficient => f.pad("none"),
+            VerificationStatus::Flagged => f.pad("flag"),
+            VerificationStatus::Dangerous => f.pad("warn"),
         }
     }
 }
@@ -95,6 +103,7 @@ pub fn dir_or_git_repo_verify<H1>(
     ignore_list: &HashSet<PathBuf, H1>,
     db: &ProofDB,
     trusted_set: &TrustSet,
+    requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus>
 where
     H1: std::hash::BuildHasher + std::default::Default,
@@ -108,7 +117,7 @@ where
         >(path, ignore_list)?)
     };
 
-    Ok(db.verify_package_digest(&digest, trusted_set))
+    Ok(db.verify_package_digest(&digest, trusted_set, requirements))
 }
 
 pub fn dir_verify<H1>(
@@ -116,6 +125,7 @@ pub fn dir_verify<H1>(
     ignore_list: &HashSet<PathBuf, H1>,
     db: &ProofDB,
     trusted_set: &TrustSet,
+    requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus>
 where
     H1: std::hash::BuildHasher + std::default::Default,
@@ -124,7 +134,7 @@ where
         crev_common::Blake2b256,
         H1,
     >(path, ignore_list)?);
-    Ok(db.verify_package_digest(&digest, trusted_set))
+    Ok(db.verify_package_digest(&digest, trusted_set, requirements))
 }
 
 pub fn get_dir_digest<H1>(path: &Path, ignore_list: &HashSet<PathBuf, H1>) -> Result<Digest>
