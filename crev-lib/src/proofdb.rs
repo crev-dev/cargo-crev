@@ -488,7 +488,7 @@ impl ProofDB {
         }
     }
 
-    pub fn find_highest_trusted_crate_version(
+    pub fn find_latest_trusted_version(
         &self,
         trust_set: &TrustSet,
         source: &str,

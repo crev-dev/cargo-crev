@@ -44,6 +44,35 @@ const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 /// The file added to crates containing vcs revision
 const VCS_INFO_JSON_FILE: &str = ".cargo_vcs_info.json";
 
+fn pad_left_manually(s: String, width: usize) -> String {
+    if s.len() <= width {
+        let padding = std::iter::repeat(" ")
+            .take(width - s.len())
+            .collect::<String>();
+        format!("{}{}", s, padding)
+    } else {
+        s
+    }
+}
+
+fn latest_trusted_version_string(
+    base_version: Version,
+    latest_trusted_version: Option<Version>,
+) -> String {
+    latest_trusted_version
+        .map(|latest_trusted_version| {
+            let ch = if base_version < latest_trusted_version {
+                "<"
+            } else if latest_trusted_version < base_version {
+                ">"
+            } else {
+                "="
+            };
+            format!("{}{}", ch, latest_trusted_version)
+        })
+        .unwrap_or_else(|| "".into())
+}
+
 /// Data from `.cargo_vcs_info.json`
 #[derive(Debug, Clone, Deserialize)]
 struct VcsInfoJson {
@@ -598,14 +627,14 @@ fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
         .src
         .clone()
         .or_else(|| {
-            db.find_highest_trusted_crate_version(
+            db.find_latest_trusted_version(
                 &trust_set,
                 PROJECT_SOURCE_CRATES_IO,
                 &name,
                 &requirements,
             )
         })
-        .ok_or_else(|| format_err!("No previous reviewed version found"))?;
+        .ok_or_else(|| format_err!("No previously reviewed version found"))?;
     let src_crate = repo.find_crate(&name, Some(&src_version), true)?;
 
     use std::process::Command;
@@ -833,7 +862,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         "geiger",
                         "flgs"
                     );
-                    eprintln!(" {:<20} {:<15}", "crate", "version");
+                    eprintln!(
+                        " {:<20} {:<15} {:<15}",
+                        "crate", "version", "latest trusted"
+                    );
                 }
                 let requirements =
                     crev_lib::VerificationRequirements::from(args.requirements.clone());
@@ -982,7 +1014,26 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         format_args!(" {:4}", if crate_.has_custom_build() { "CB" } else { "" }),
                         ::term::color::YELLOW,
                     )?;
-                    println!(" {:<20} {:<15}", crate_name, crate_version);
+                    print!(
+                        " {:<20} {:<15}",
+                        crate_name,
+                        pad_left_manually(crate_version.to_string(), 15)
+                    );
+
+                    let latest_trusted_version = db.find_latest_trusted_version(
+                        &trust_set,
+                        PROJECT_SOURCE_CRATES_IO,
+                        &crate_name,
+                        &requirements,
+                    );
+                    print!(
+                        " {:<15}",
+                        latest_trusted_version_string(
+                            crate_version.clone(),
+                            latest_trusted_version
+                        )
+                    );
+                    println!("");
 
                     Ok(())
                 })?;
