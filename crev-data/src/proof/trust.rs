@@ -1,13 +1,9 @@
-use crate::{id, proof, Result};
+use crate::{id, proof, Level, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use derive_builder::Builder;
-use failure::bail;
-use serde::{Deserialize, Serialize};
-use crate::Level;
 use serde_yaml;
 use std::fmt;
 

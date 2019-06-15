@@ -1,3 +1,4 @@
+use crev_data::Level;
 use semver::Version;
 use std::ffi::OsString;
 use structopt::StructOpt;
@@ -37,7 +38,7 @@ pub struct SwitchId {
 
 /// Parameters describing trust graph traversal
 #[derive(Debug, StructOpt, Clone)]
-pub struct TrustParams {
+pub struct TrustDistanceParams {
     #[structopt(long = "depth", default_value = "10")]
     pub depth: u64,
     #[structopt(long = "high-cost", default_value = "0")]
@@ -48,9 +49,8 @@ pub struct TrustParams {
     pub low_cost: u64,
 }
 
-
-impl From<TrustParams> for crev_lib::TrustDistanceParams {
-    fn from(params: TrustParams) -> Self {
+impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
+    fn from(params: TrustDistanceParams) -> Self {
         crev_lib::TrustDistanceParams {
             max_distance: params.depth,
             high_trust_distance: params.high_cost,
@@ -58,6 +58,30 @@ impl From<TrustParams> for crev_lib::TrustDistanceParams {
             low_trust_distance: params.low_cost,
         }
     }
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Diff {
+    /// Source version - defaults to the last reviewed one
+    #[structopt(long = "src")]
+    pub src: Option<Version>,
+
+    /// Destination version - defaults to the current one
+    #[structopt(long = "dst")]
+    pub dst: Option<Version>,
+
+    #[structopt(flatten)]
+    pub requirements: VerificationRequirements,
+
+    #[structopt(flatten)]
+    pub trust_params: TrustDistanceParams,
+
+    /// Crate name
+    pub name: String,
+
+    /// Arguments to the `diff` command
+    #[structopt(parse(from_os_str))]
+    pub args: Vec<OsString>,
 }
 
 /// Verification Requirements
@@ -77,7 +101,6 @@ pub struct VerificationRequirements {
     pub thoroughness: Level,
 }
 
-
 impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
     fn from(req: VerificationRequirements) -> Self {
         crev_lib::VerificationRequirements {
@@ -95,7 +118,7 @@ pub struct VerifyDeps {
     pub verbose: bool,
 
     #[structopt(flatten)]
-    pub trust_params: TrustParams,
+    pub trust_params: TrustDistanceParams,
 
     #[structopt(flatten)]
     pub requirements: VerificationRequirements,
@@ -150,7 +173,7 @@ pub struct FetchUrl {
 pub enum Fetch {
     #[structopt(name = "trusted")]
     /// Fetch updates from trusted Ids
-    Trusted(TrustParams),
+    Trusted(TrustDistanceParams),
 
     #[structopt(name = "url")]
     /// Fetch from a single public proof repository
@@ -179,7 +202,7 @@ pub enum QueryId {
     #[structopt(name = "trusted")]
     Trusted {
         #[structopt(flatten)]
-        trust_params: TrustParams,
+        trust_params: TrustDistanceParams,
 
         #[structopt(long = "for-id")]
         for_id: Option<String>,
@@ -247,7 +270,7 @@ pub enum Edit {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct Git {
-    /// Arguments to git command
+    /// Arguments to the `git` command
     #[structopt(parse(from_os_str))]
     pub args: Vec<OsString>,
 }
@@ -453,6 +476,11 @@ pub enum Command {
     /// Update data from online sources (crates.io)
     #[structopt(name = "update")]
     Update,
+
+    /// Diff between two versions of a package
+    #[structopt(name = "diff")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+    Diff(Diff),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

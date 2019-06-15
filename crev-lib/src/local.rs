@@ -280,7 +280,12 @@ impl Local {
         Ok(())
     }
 
-    pub fn get_current_userid(&self) -> Result<Option<Id>> {
+    pub fn get_current_userid(&self) -> Result<Id> {
+        self.get_current_userid_opt()?
+            .ok_or_else(|| format_err!("Current Id not set"))
+    }
+
+    pub fn get_current_userid_opt(&self) -> Result<Option<Id>> {
         let config = self.load_user_config()?;
         Ok(config.current_id)
     }
@@ -291,7 +296,7 @@ impl Local {
     }
 
     pub fn read_current_locked_id_opt(&self) -> Result<Option<LockedId>> {
-        self.get_current_userid()?
+        self.get_current_userid_opt()?
             .map(|current_id| self.read_locked_id(&current_id))
             .inside_out()
     }
@@ -305,7 +310,7 @@ impl Local {
         &self,
         passphrase_callback: PassphraseFn,
     ) -> Result<Option<OwnId>> {
-        self.get_current_userid()?
+        self.get_current_userid_opt()?
             .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
             .inside_out()
     }

@@ -1,4 +1,4 @@
-use crate::{VerificationStatus, VerificationRequirements};
+use crate::{VerificationRequirements, VerificationStatus};
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -459,13 +459,15 @@ impl ProofDB {
         let mut dangerous_count = 0;
         for matching_reviewer in matching_reviewers {
             let review = &reviews[matching_reviewer].review;
-            if Rating::Neutral <= review.rating &&
-                requirements.thoroughness <= review.thoroughness &&
-                requirements.understanding <= review.understanding {
-
-                if TrustLevel::from(requirements.trust_level) <= trust_set
-                    .get_effective_trust_level(matching_reviewer)
-                    .expect("Id should have been there") {
+            if Rating::Neutral <= review.rating
+                && requirements.thoroughness <= review.thoroughness
+                && requirements.understanding <= review.understanding
+            {
+                if TrustLevel::from(requirements.trust_level)
+                    <= trust_set
+                        .get_effective_trust_level(matching_reviewer)
+                        .expect("Id should have been there")
+                {
                     trust_count += 1;
                 }
             } else if review.rating <= Rating::Dangerous {
@@ -484,6 +486,32 @@ impl ProofDB {
         } else {
             VerificationStatus::Insufficient
         }
+    }
+
+    pub fn find_highest_trusted_crate_version(
+        &self,
+        trust_set: &TrustSet,
+        source: &str,
+        name: &str,
+        requirements: &crate::VerificationRequirements,
+    ) -> Option<Version> {
+        self.package_reviews_by_name
+            .get(&(source.into(), name.into()))
+            .map(|reviews| reviews.into_iter())
+            .into_iter()
+            .flatten()
+            .filter(|review| {
+                let signature = &self.package_review_signatures_by_unique_package_review[&review];
+                let review = &self.package_review_by_signature[&signature.value];
+                self.verify_package_digest(
+                    &Digest::from_vec(review.package.digest.clone()),
+                    trust_set,
+                    requirements,
+                )
+                .is_verified()
+            })
+            .max_by(|a, b| a.version.cmp(&b.version))
+            .map(|review| review.version.clone())
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {

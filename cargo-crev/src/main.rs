@@ -5,6 +5,7 @@ use cargo::{
 };
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local, ProofStore};
+use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
@@ -579,8 +580,47 @@ fn find_advisories(
         .into_iter())
 }
 
-fn print_dir(crate_: &opts::CrateSelector, unrelated: bool) -> Result<()> {
+fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
+    let repo = Repo::auto_open_cwd()?;
+    let name = &args.name;
 
+    let dst_version = &args.dst;
+    let dst_crate = repo.find_crate(&name, dst_version.as_ref(), true)?;
+
+    let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
+    let trust_distance_params = &args.trust_params.clone().into();
+
+    let local = crev_lib::Local::auto_create_or_open()?;
+    let current_id = local.get_current_userid()?;
+    let db = local.load_db()?;
+    let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
+    let src_version = args
+        .src
+        .clone()
+        .or_else(|| {
+            db.find_highest_trusted_crate_version(
+                &trust_set,
+                PROJECT_SOURCE_CRATES_IO,
+                &name,
+                &requirements,
+            )
+        })
+        .ok_or_else(|| format_err!("No previous reviewed version found"))?;
+    let src_crate = repo.find_crate(&name, Some(&src_version), true)?;
+
+    use std::process::Command;
+
+    let status = Command::new("diff")
+        .arg(src_crate.root())
+        .arg(dst_crate.root())
+        .args(&args.args)
+        .status()
+        .expect("failed to execute git");
+
+    Ok(status)
+}
+
+fn show_dir(crate_: &opts::CrateSelector, unrelated: bool) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let name = crate_
         .name
@@ -743,6 +783,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 local.switch_id(&args.id)?
             }
         },
+        opts::Command::Diff(args) => {
+            let status = run_diff(&args)?;
+            std::process::exit(status.code().unwrap_or(-159));
+        }
         opts::Command::Edit(cmd) => match cmd {
             opts::Edit::Readme => {
                 let local = crev_lib::Local::auto_open()?;
@@ -791,7 +835,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     );
                     eprintln!(" {:<20} {:<15}", "crate", "version");
                 }
-                let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
+                let requirements =
+                    crev_lib::VerificationRequirements::from(args.requirements.clone());
                 let mut unclean_digests = BTreeMap::new();
                 let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
                 let mut total_verification_successful = true;
@@ -1009,7 +1054,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             },
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
-            opts::Query::Dir(args) => print_dir(&args.common.crate_, args.common.unrelated)?,
+            opts::Query::Dir(args) => show_dir(&args.common.crate_, args.common.unrelated)?,
             opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
         },
         opts::Command::Review(args) => {
