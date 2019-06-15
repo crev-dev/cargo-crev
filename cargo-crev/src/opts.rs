@@ -2,7 +2,6 @@ use crev_data::Level;
 use semver::Version;
 use std::ffi::OsString;
 use structopt::StructOpt;
-use crev_data::Level;
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct CrateSelector {

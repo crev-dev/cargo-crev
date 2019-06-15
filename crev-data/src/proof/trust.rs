@@ -4,6 +4,9 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
+use derive_builder::Builder;
+use failure::bail;
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::fmt;
 

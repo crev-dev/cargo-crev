@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use failure::Fail;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
