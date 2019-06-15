@@ -62,9 +62,9 @@ fn latest_trusted_version_string(
     latest_trusted_version
         .map(|latest_trusted_version| {
             let ch = if base_version < latest_trusted_version {
-                "<"
+                "↑"
             } else if latest_trusted_version < base_version {
-                ">"
+                "↓"
             } else {
                 "="
             };
