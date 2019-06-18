@@ -327,6 +327,12 @@ pub struct Review {
 
     #[structopt(long = "advisory")]
     pub advisory: bool,
+
+    #[structopt(long = "skip-activity-check")]
+    pub skip_activity_check: bool,
+
+    #[structopt(long = "diff")]
+    pub diff: Option<Option<semver::Version>>,
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]

@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod id;
 pub mod local;
 pub(crate) mod prelude;
@@ -18,6 +19,7 @@ use std::{
 
 pub use self::local::Local;
 pub use crate::proofdb::{ProofDB, TrustDistanceParams};
+pub use activity::{ReviewActivity, ReviewMode};
 
 /// Trait representing a place that can keep proofs
 ///

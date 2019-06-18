@@ -1,3 +1,4 @@
+use crate::activity::ReviewActivity;
 use crate::{
     id::{self, LockedId, PassphraseFn},
     prelude::*,
@@ -259,6 +260,53 @@ impl Local {
 
     pub fn cache_remotes_path(&self) -> PathBuf {
         self.cache_path.join("remotes")
+    }
+
+    fn cache_activity_path(&self) -> PathBuf {
+        self.cache_path.join("activity")
+    }
+
+    fn cache_review_activity_path(
+        &self,
+        source: &str,
+        name: &str,
+        version: &semver::Version,
+    ) -> PathBuf {
+        self.cache_activity_path()
+            .join("review")
+            .join(source)
+            .join(name)
+            .join(version.to_string())
+            .with_extension("yaml")
+    }
+
+    pub fn record_review_activity(
+        &self,
+        source: &str,
+        name: &str,
+        version: &semver::Version,
+        activity: &ReviewActivity,
+    ) -> Result<()> {
+        let path = self.cache_review_activity_path(source, name, version);
+
+        crev_common::save_to_yaml_file(&path, activity)?;
+
+        Ok(())
+    }
+
+    pub fn read_review_activity(
+        &self,
+        source: &str,
+        name: &str,
+        version: &semver::Version,
+    ) -> Result<Option<ReviewActivity>> {
+        let path = self.cache_review_activity_path(source, name, version);
+
+        if path.exists() {
+            Ok(Some(crev_common::read_from_yaml_file(&path)?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn load_user_config(&self) -> Result<UserConfig> {

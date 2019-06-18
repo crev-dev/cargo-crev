@@ -4,7 +4,7 @@ use cargo::{
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
-use crev_lib::{self, local::Local, ProofStore};
+use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
@@ -240,9 +240,9 @@ impl Repo {
         &self,
         name: &str,
         version: Option<&Version>,
-        unrelated: bool,
+        unrelated: UnrelatedOrDependency,
     ) -> Result<Package> {
-        if unrelated {
+        if unrelated.is_unrelated() {
             self.find_idependent_crate_dir(name, version)?
         } else {
             self.find_dependency(name, version)?
@@ -289,7 +289,7 @@ fn exec_into(mut command: process::Command) -> Result<()> {
 ///
 /// Set some `envs` to help other commands work
 /// from inside such a "review-shell".
-fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()> {
+fn goto_crate_src(selector: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
@@ -301,6 +301,13 @@ fn goto_crate_src(selector: &opts::CrateSelector, unrelated: bool) -> Result<()>
     let crate_ = repo.find_crate(&name, selector.version.as_ref(), unrelated)?;
     let crate_dir = crate_.root();
     let crate_version = crate_.version();
+    let local = crev_lib::Local::auto_create_or_open()?;
+    local.record_review_activity(
+        PROJECT_SOURCE_CRATES_IO,
+        &crate_.name().to_string(),
+        crate_version,
+        &crev_lib::ReviewActivity::new_full(),
+    )?;
 
     let shell = env::var_os("SHELL").ok_or_else(|| format_err!("$SHELL not set"))?;
     let cwd = env::current_dir()?;
@@ -354,7 +361,11 @@ fn edit_known_owners_list() -> Result<()> {
 }
 
 /// Wipe the crate source, then re-download it
-fn clean_crate(name: &str, version: Option<&Version>, unrelated: bool) -> Result<()> {
+fn clean_crate(
+    name: &str,
+    version: Option<&Version>,
+    unrelated: UnrelatedOrDependency,
+) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
@@ -395,7 +406,7 @@ fn get_open_cmd(local: &Local) -> Result<String> {
 fn crate_open(
     name: &str,
     version: Option<&Version>,
-    unrelated: bool,
+    unrelated: UnrelatedOrDependency,
     cmd: Option<String>,
     cmd_save: bool,
 ) -> Result<()> {
@@ -417,6 +428,12 @@ fn crate_open(
     } else {
         get_open_cmd(&local)?
     };
+    local.record_review_activity(
+        PROJECT_SOURCE_CRATES_IO,
+        &crate_.name().to_string(),
+        &crate_.version(),
+        &crev_lib::ReviewActivity::new_full(),
+    )?;
     let status = crev_lib::util::run_with_shell_cmd(open_cmd.into(), crate_root)?;
 
     if !status.success() {
@@ -426,26 +443,116 @@ fn crate_open(
     Ok(())
 }
 
-/// Review a crate
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum UnrelatedOrDependency {
+    Unrelated,
+    Dependency,
+}
+
+impl UnrelatedOrDependency {
+    fn is_unrelated(self) -> bool {
+        self == UnrelatedOrDependency::Unrelated
+    }
+
+    fn from_unrelated_flag(u: bool) -> Self {
+        if u {
+            UnrelatedOrDependency::Unrelated
+        } else {
+            UnrelatedOrDependency::Dependency
+        }
+    }
+}
+
+/// Check `diff` command line argument against previous activity
 ///
-/// * `unrelated` - the crate might not actually be a dependency
-fn create_review_proof(
+/// Return `Option<Version>` indicating final ReviewMode settings to use.
+fn crate_review_activity_check(
+    local: &Local,
     name: &str,
-    version: Option<&Version>,
-    unrelated: bool,
-    advise_common: Option<opts::AdviseCommon>,
-    trust: TrustOrDistrust,
-    proof_create_opt: &opts::CommonProofCreate,
-) -> Result<()> {
-    let repo = Repo::auto_open_cwd()?;
+    version: &Version,
+    diff: &Option<Option<Version>>,
+    skip_activity_check: bool,
+) -> Result<Option<Version>> {
+    let activity =
+        local.read_review_activity(PROJECT_SOURCE_CRATES_IO, name, version)?;
 
-    let crate_ = repo.find_crate(name, version, unrelated)?;
-    let crate_root = crate_.root();
-    let crate_version = crate_.version();
+    let diff = match diff {
+        None => None,
+        Some(None) => Some(
+            activity
+                .clone()
+                .ok_or_else(|| {
+                    format_err!("No previous review activity to determine base version")
+                })?
+                .diff_base
+                .ok_or_else(|| {
+                    format_err!(
+                        "Last review activity record for {}:{} indcates full review. \
+                         Are you sure you want to use `--diff` flag? \
+                         Use `--skip-activity-check` to override.",
+                        name,
+                        version
+                    )
+                })?,
+        ),
+        Some(o) => o.clone(),
+    };
 
-    assert!(!crate_root.starts_with(std::env::current_dir()?));
-    let local = Local::auto_open()?;
+    if skip_activity_check {
+        return Ok(diff);
+    }
+    if let Some(activity) = activity {
+        match activity.to_review_mode() {
+            ReviewMode::Full => {
+                if diff.is_some() {
+                    bail!(
+                        "Last review activity record for {}:{} indcates full review. \
+                         Are you sure you want to use `--diff` flag? \
+                         Use `--skip-activity-check` to override.",
+                        name,
+                        version
+                    );
+                }
+            }
+            ReviewMode::Differential => {
+                if diff.is_some() {
+                    bail!(
+                        "Last review activity record for {}:{} indicates differential review. \
+                         Use `--diff` flag? Use `--skip-activity-check` to override.",
+                        name,
+                        version
+                    );
+                }
+            }
+        }
 
+        if activity.timestamp + time::Duration::days(2) < crev_common::now() {
+            bail!(
+                "Last review activity record for {}:{} is too old. \
+                 Re-review or use `--skip-activity-check` to override.",
+                name,
+                version
+            );
+        }
+    } else {
+        bail!(
+            "No review activity record for {}:{} found. \
+             Make sure you have reviewed the code in this version before creating review proof. \
+             Use `--skip-activity-check` to override.",
+            name,
+            version
+        );
+    }
+
+    Ok(diff)
+}
+
+fn check_package_clean_state(
+    repo: &Repo,
+    crate_root: &Path,
+    name: &str,
+    version: &Version,
+) -> Result<crev_data::Digest> {
     // to protect from creating a digest from a crate in unclean state
     // we move the old directory, download a fresh one and double
     // check if the digest was the same
@@ -461,12 +568,12 @@ fn create_review_proof(
     // shells, we move all the entries in a dir, instead of the whole
     // dir. this is not a perfect solution, but better than nothing.
     crev_common::fs::move_dir_content(&crate_root, &reviewed_pkg_dir)?;
-    let crate_second = repo.find_crate(name, version, unrelated)?;
+    let crate_second = repo.find_crate(name, Some(version), UnrelatedOrDependency::Unrelated)?;
     let crate_root_second = crate_second.root();
     let crate_version_second = crate_second.version();
 
     assert_eq!(crate_root, crate_root_second);
-    assert_eq!(crate_version, crate_version_second);
+    assert_eq!(version, crate_version_second);
 
     let digest_clean =
         crev_lib::get_recursive_digest_for_dir(&crate_root, &cargo_min_ignore_list())?;
@@ -484,14 +591,69 @@ fn create_review_proof(
     }
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
+    Ok(digest_clean)
+}
+
+/// Review a crate
+///
+/// * `unrelated` - the crate might not actually be a dependency
+fn create_review_proof(
+    name: &str,
+    version: Option<&Version>,
+    unrelated: UnrelatedOrDependency,
+    advise_common: Option<opts::AdviseCommon>,
+    trust: TrustOrDistrust,
+    proof_create_opt: &opts::CommonProofCreate,
+    diff_version: &Option<Option<Version>>,
+    skip_activity_check: bool,
+) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+
+    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let crate_root = crate_.root();
+    let effective_crate_version = crate_.version();
+
+    assert!(!crate_root.starts_with(std::env::current_dir()?));
+    let local = Local::auto_open()?;
+
+    let diff_base_version = crate_review_activity_check(
+        &local,
+        name,
+        &effective_crate_version,
+        &diff_version,
+        skip_activity_check,
+    )?;
+
+    let digest_clean =
+        check_package_clean_state(&repo, &crate_root, name, &effective_crate_version)?;
+
+    let diff_base = if let Some(diff_base_version) = diff_base_version {
+        Some(
+            crev_data::proof::review::package::DifferentialBaseBuilder::default()
+                .digest(
+                    check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?
+                        .into_vec(),
+                )
+                .version(diff_base_version)
+                .build()
+                .map_err(|e| format_err!("{}", e))?,
+        )
+    } else {
+        None
+    };
+
     let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
     let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
     let db = local.load_db()?;
 
-    let (previous_date, review) = if let Some(mut previous_review) =
-        db.get_package_review_by_author(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id.id)
-    {
+    let (previous_date, review) = if let Some(mut previous_review) = db
+        .get_package_review_by_author(
+            PROJECT_SOURCE_CRATES_IO,
+            name,
+            effective_crate_version,
+            &id.id.id,
+        ) {
         previous_review.from = id.id.to_owned();
         let previous_date = previous_review.date;
         previous_review.date = crev_common::now();
@@ -511,7 +673,7 @@ fn create_review_proof(
                 id: None,
                 source: PROJECT_SOURCE_CRATES_IO.to_owned(),
                 name: name.to_owned(),
-                version: crate_version.to_owned(),
+                version: effective_crate_version.to_owned(),
                 digest: digest_clean.into_vec(),
                 digest_type: proof::default_digest_type(),
                 revision: vcs
@@ -524,6 +686,7 @@ fn create_review_proof(
             } else {
                 trust.to_review()
             })
+            .diff_base(diff_base)
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
@@ -542,7 +705,7 @@ fn create_review_proof(
     let commit_msg = format!(
         "Add review for {crate} v{version}",
         crate = name,
-        version = crate_version
+        version = effective_crate_version
     );
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)
 }
@@ -614,7 +777,11 @@ fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     let name = &args.name;
 
     let dst_version = &args.dst;
-    let dst_crate = repo.find_crate(&name, dst_version.as_ref(), true)?;
+    let dst_crate = repo.find_crate(
+        &name,
+        dst_version.as_ref(),
+        UnrelatedOrDependency::Unrelated,
+    )?;
 
     let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
     let trust_distance_params = &args.trust_params.clone().into();
@@ -635,7 +802,14 @@ fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             )
         })
         .ok_or_else(|| format_err!("No previously reviewed version found"))?;
-    let src_crate = repo.find_crate(&name, Some(&src_version), true)?;
+    let src_crate = repo.find_crate(&name, Some(&src_version), UnrelatedOrDependency::Unrelated)?;
+
+    local.record_review_activity(
+        PROJECT_SOURCE_CRATES_IO,
+        &name,
+        &dst_crate.version(),
+        &crev_lib::ReviewActivity::new_diff(&src_version),
+    )?;
 
     use std::process::Command;
 
@@ -649,7 +823,7 @@ fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     Ok(status)
 }
 
-fn show_dir(crate_: &opts::CrateSelector, unrelated: bool) -> Result<()> {
+fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let name = crate_
         .name
@@ -675,7 +849,7 @@ fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
 /// like that.
 fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
 where
-    F: FnOnce(&str, Option<&Version>, bool) -> Result<()>,
+    F: FnOnce(&str, Option<&Version>, UnrelatedOrDependency) -> Result<()>,
 {
     if let Some(org_dir) = env::var_os(GOTO_ORIGINAL_DIR_ENV) {
         if args.crate_.name.is_some() {
@@ -687,7 +861,11 @@ where
                 .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
-            f(&name, Some(&Version::parse(&version)?), true)?;
+            f(
+                &name,
+                Some(&Version::parse(&version)?),
+                UnrelatedOrDependency::Unrelated,
+            )?;
         }
     } else {
         let name = args
@@ -696,7 +874,11 @@ where
             .clone()
             .ok_or_else(|| format_err!("Crate name required"))?;
 
-        f(&name, args.crate_.version.as_ref(), args.unrelated)?;
+        f(
+            &name,
+            args.crate_.version.as_ref(),
+            UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
+        )?;
     }
     Ok(())
 }
@@ -1105,7 +1287,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             },
             opts::Query::Review(args) => list_reviews(&args.crate_)?,
-            opts::Query::Dir(args) => show_dir(&args.common.crate_, args.common.unrelated)?,
+            opts::Query::Dir(args) => show_dir(
+                &args.common.crate_,
+                UnrelatedOrDependency::from_unrelated_flag(args.common.unrelated),
+            )?,
             opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
         },
         opts::Command::Review(args) => {
@@ -1121,11 +1306,16 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     },
                     TrustOrDistrust::Trust,
                     &args.common_proof_create,
+                    &args.diff,
+                    args.skip_activity_check,
                 )
             })?;
         }
         opts::Command::Goto(args) => {
-            goto_crate_src(&args.crate_, args.unrelated)?;
+            goto_crate_src(
+                &args.crate_,
+                UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
+            )?;
         }
         opts::Command::Open(args) => {
             handle_goto_mode_command(&args.common.clone(), |c, v, i| {
@@ -1145,6 +1335,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     },
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
+                    &args.diff,
+                    args.skip_activity_check,
                 )
             })?;
         }
@@ -1157,6 +1349,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     Some(args.advise_common),
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
+                    &None,
+                    true,
                 )
             })?;
         }

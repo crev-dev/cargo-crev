@@ -12,6 +12,7 @@ use blake2;
 use chrono;
 
 use blake2::{digest::FixedOutput, Digest};
+use failure::format_err;
 use rpassword;
 use rprompt;
 use std::{
@@ -113,6 +114,28 @@ pub fn read_file_to_string(path: &Path) -> io::Result<String> {
     file.read_to_string(&mut res)?;
 
     Ok(res)
+}
+
+pub fn save_to_yaml_file<T>(path: &Path, t: &T) -> common_failures::Result<()>
+where
+    T: ::serde::Serialize,
+{
+    std::fs::create_dir_all(
+        path.parent()
+            .ok_or_else(|| format_err!("Can't save to root path"))?,
+    )?;
+    let text = serde_yaml::to_string(t)?;
+    store_str_to_file(&path, &text)?;
+    Ok(())
+}
+
+pub fn read_from_yaml_file<T>(path: &Path) -> common_failures::Result<T>
+where
+    T: ::serde::de::DeserializeOwned,
+{
+    let text = read_file_to_string(path)?;
+
+    Ok(serde_yaml::from_str(&text)?)
 }
 
 pub fn store_str_to_file(path: &Path, s: &str) -> io::Result<()> {
