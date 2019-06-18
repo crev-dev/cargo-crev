@@ -2,7 +2,7 @@ use crate::{id, proof, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
-    serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed},
+    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
 use derive_builder::Builder;
 use semver::Version;
@@ -20,30 +20,6 @@ fn cur_version() -> i64 {
     CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION
 }
 
-/// Diferential package review details
-///
-#[derive(Clone, Debug, Serialize, Deserialize, Builder)]
-pub struct DifferentialBase {
-    pub version: Version,
-
-    #[serde(skip_serializing_if = "proof::equals_default", default)]
-    pub revision: String,
-    #[serde(
-        rename = "revision-type",
-        skip_serializing_if = "proof::equals_default_revision_type",
-        default = "proof::default_revision_type"
-    )]
-    pub revision_type: String,
-
-    #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
-    pub digest: Vec<u8>,
-    #[serde(
-        skip_serializing_if = "proof::equals_default_digest_type",
-        default = "proof::default_digest_type"
-    )]
-    pub digest_type: String,
-}
-
 /// Body of a Package Review Proof
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
@@ -59,11 +35,11 @@ pub struct Package {
     pub from: crate::PubId,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
+    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
+    #[serde(rename = "package-diff-base")]
+    pub diff_base: Option<proof::PackageInfo>,
     #[builder(default = "Default::default()")]
     pub review: super::Review,
-    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
-    #[serde(rename = "diff-base")]
-    pub diff_base: Option<DifferentialBase>,
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
     pub advisory: Option<Advisory>,

@@ -677,16 +677,16 @@ fn create_review_proof(
         let (digest, vcs) =
             check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?;
 
-        Some(
-            crev_data::proof::review::package::DifferentialBaseBuilder::default()
-                .version(diff_base_version.clone())
-                .digest(digest.into_vec())
-                .digest_type(proof::default_digest_type())
-                .revision(vcs_info_to_revision_string(vcs))
-                .revision_type(proof::default_revision_type())
-                .build()
-                .map_err(|e| format_err!("{}", e))?,
-        )
+        Some(proof::PackageInfo {
+            id: None,
+            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
+            name: name.to_owned(),
+            version: diff_base_version.to_owned(),
+            digest: digest.into_vec(),
+            digest_type: proof::default_digest_type(),
+            revision: vcs_info_to_revision_string(vcs),
+            revision_type: proof::default_revision_type(),
+        })
     } else {
         None
     };
