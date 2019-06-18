@@ -93,7 +93,8 @@ pub fn get_documentation_for(content: &proof::Content) -> &'static str {
 
 pub fn edit_proof_content_iteractively(
     content: &proof::Content,
-    previous_date: Option<proof::Date>,
+    previous_date: Option<&proof::Date>,
+    base_version: Option<&semver::Version>,
 ) -> Result<proof::Content> {
     let mut text = String::new();
     if let Some(date) = previous_date {
@@ -104,6 +105,9 @@ pub fn edit_proof_content_iteractively(
     }
 
     text.write_str(&format!("# {}\n", content.draft_title()))?;
+    if let Some(base_version) = base_version {
+        text.write_str(&format!("# Diff base version: {}\n", base_version))?;
+    }
     text.write_str(&content.to_draft_string())?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {

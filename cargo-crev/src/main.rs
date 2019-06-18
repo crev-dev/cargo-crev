@@ -79,6 +79,10 @@ struct VcsInfoJson {
     git: VcsInfoJsonGit,
 }
 
+fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
+    vcs.and_then(|vcs| vcs.get_git_revision())
+        .unwrap_or_else(|| "".into())
+}
 #[derive(Debug, Clone, Deserialize)]
 enum VcsInfoJsonGit {
     #[serde(rename = "sha1")]
@@ -473,8 +477,7 @@ fn crate_review_activity_check(
     diff: &Option<Option<Version>>,
     skip_activity_check: bool,
 ) -> Result<Option<Version>> {
-    let activity =
-        local.read_review_activity(PROJECT_SOURCE_CRATES_IO, name, version)?;
+    let activity = local.read_review_activity(PROJECT_SOURCE_CRATES_IO, name, version)?;
 
     let diff = match diff {
         None => None,
@@ -515,7 +518,7 @@ fn crate_review_activity_check(
                 }
             }
             ReviewMode::Differential => {
-                if diff.is_some() {
+                if !diff.is_some() {
                     bail!(
                         "Last review activity record for {}:{} indicates differential review. \
                          Use `--diff` flag? Use `--skip-activity-check` to override.",
@@ -552,7 +555,7 @@ fn check_package_clean_state(
     crate_root: &Path,
     name: &str,
     version: &Version,
-) -> Result<crev_data::Digest> {
+) -> Result<(crev_data::Digest, Option<VcsInfoJson>)> {
     // to protect from creating a digest from a crate in unclean state
     // we move the old directory, download a fresh one and double
     // check if the digest was the same
@@ -591,7 +594,43 @@ fn check_package_clean_state(
     }
     std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
-    Ok(digest_clean)
+    let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
+
+    Ok((digest_clean, vcs))
+}
+
+fn find_previous_review_data(
+    db: &crev_lib::ProofDB,
+    id: &crev_data::PubId,
+    name: &str,
+    crate_version: &Version,
+    diff_base_version: &Option<Version>,
+) -> Option<(
+    Option<crev_data::proof::Date>,
+    crev_data::proof::review::Review,
+    Option<crev_data::proof::review::package::Advisory>,
+    String,
+)> {
+    if let Some(previous_review) =
+        db.get_package_review_by_author(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id)
+    {
+        return Some((
+            Some(previous_review.date),
+            previous_review.review,
+            previous_review.advisory,
+            previous_review.comment,
+        ));
+    } else if let Some(diff_base_version) = diff_base_version {
+        if let Some(base_review) = db.get_package_review_by_author(
+            PROJECT_SOURCE_CRATES_IO,
+            name,
+            &diff_base_version,
+            &id.id,
+        ) {
+            return Some((None, base_review.review, None, base_review.comment));
+        }
+    }
+    None
 }
 
 /// Review a crate
@@ -624,17 +663,27 @@ fn create_review_proof(
         skip_activity_check,
     )?;
 
-    let digest_clean =
+    let (digest_clean, vcs) =
         check_package_clean_state(&repo, &crate_root, name, &effective_crate_version)?;
 
-    let diff_base = if let Some(diff_base_version) = diff_base_version {
+    let diff_base = if let Some(ref diff_base_version) = diff_base_version {
+        let crate_ = repo.find_crate(
+            name,
+            Some(diff_base_version),
+            UnrelatedOrDependency::Unrelated,
+        )?;
+        let crate_root = crate_.root();
+
+        let (digest, vcs) =
+            check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?;
+
         Some(
             crev_data::proof::review::package::DifferentialBaseBuilder::default()
-                .digest(
-                    check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?
-                        .into_vec(),
-                )
-                .version(diff_base_version)
+                .version(diff_base_version.clone())
+                .digest(digest.into_vec())
+                .digest_type(proof::default_digest_type())
+                .revision(vcs_info_to_revision_string(vcs))
+                .revision_type(proof::default_revision_type())
                 .build()
                 .map_err(|e| format_err!("{}", e))?,
         )
@@ -642,63 +691,60 @@ fn create_review_proof(
         None
     };
 
-    let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
     let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
     let db = local.load_db()?;
+    let mut review = proof::review::PackageBuilder::default()
+        .from(id.id.to_owned())
+        .package(proof::PackageInfo {
+            id: None,
+            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
+            name: name.to_owned(),
+            version: effective_crate_version.to_owned(),
+            digest: digest_clean.into_vec(),
+            digest_type: proof::default_digest_type(),
+            revision: vcs_info_to_revision_string(vcs),
+            revision_type: proof::default_revision_type(),
+        })
+        .review(if advise_common.is_some() {
+            crev_data::Review::new_none()
+        } else {
+            trust.to_review()
+        })
+        .diff_base(diff_base)
+        .build()
+        .map_err(|e| format_err!("{}", e))?;
 
-    let (previous_date, review) = if let Some(mut previous_review) = db
-        .get_package_review_by_author(
-            PROJECT_SOURCE_CRATES_IO,
+    let previous_date = if let Some((prev_date, prev_review, prev_advisory, prev_comment)) =
+        find_previous_review_data(
+            &db,
+            &id.id,
             name,
             effective_crate_version,
-            &id.id.id,
+            &diff_base_version,
         ) {
-        previous_review.from = id.id.to_owned();
-        let previous_date = previous_review.date;
-        previous_review.date = crev_common::now();
-
-        if previous_review.advisory.is_none() {
-            if let Some(advise_common) = advise_common {
-                let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
-                advisory.critical = advise_common.critical;
-                previous_review.advisory = Some(advisory);
-            }
+        review.review = prev_review;
+        review.comment = prev_comment;
+        if let Some(prev_advisory) = prev_advisory {
+            review.advisory = Some(prev_advisory);
         }
-        (Some(previous_date), previous_review)
+        prev_date
     } else {
-        let mut review = proof::review::PackageBuilder::default()
-            .from(id.id.to_owned())
-            .package(proof::PackageInfo {
-                id: None,
-                source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-                name: name.to_owned(),
-                version: effective_crate_version.to_owned(),
-                digest: digest_clean.into_vec(),
-                digest_type: proof::default_digest_type(),
-                revision: vcs
-                    .and_then(|vcs| vcs.get_git_revision())
-                    .unwrap_or_else(|| "".into()),
-                revision_type: proof::default_revision_type(),
-            })
-            .review(if advise_common.is_some() {
-                crev_data::Review::new_none()
-            } else {
-                trust.to_review()
-            })
-            .diff_base(diff_base)
-            .build()
-            .map_err(|e| format_err!("{}", e))?;
+        None
+    };
 
+    if review.advisory.is_none() {
         if let Some(advise_common) = advise_common {
             let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
             advisory.critical = advise_common.critical;
             review.advisory = Some(advisory);
         }
-        (None, review)
-    };
-
-    let review = crev_lib::util::edit_proof_content_iteractively(&review.into(), previous_date)?;
+    }
+    let review = crev_lib::util::edit_proof_content_iteractively(
+        &review.into(),
+        previous_date.as_ref(),
+        diff_base_version.as_ref(),
+    )?;
 
     let proof = review.sign_by(&id)?;
 
@@ -814,6 +860,8 @@ fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     use std::process::Command;
 
     let status = Command::new("diff")
+        .arg("-r")
+        .arg("-N")
         .arg(src_crate.root())
         .arg(dst_crate.root())
         .args(&args.args)

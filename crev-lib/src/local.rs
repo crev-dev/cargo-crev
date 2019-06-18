@@ -542,7 +542,11 @@ impl Local {
         )?;
 
         // TODO: Look up previous trust proof?
-        Ok(util::edit_proof_content_iteractively(&trust.into(), None)?)
+        Ok(util::edit_proof_content_iteractively(
+            &trust.into(),
+            None,
+            None,
+        )?)
     }
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
