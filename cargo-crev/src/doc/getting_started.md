@@ -51,7 +51,7 @@ When installed `cargo-crev` can be run like this:
 
 ```
 $ cargo crev
-cargo-crev-crev 0.7.0
+cargo-crev 0.8.0
 Dawid Ciężarkiewicz <dpc@dpc.pw>
 Scalable, social, Code REView system that we desperately need - Rust/cargo frontend
 

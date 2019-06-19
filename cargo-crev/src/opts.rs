@@ -501,7 +501,7 @@ pub enum MainCommand {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-#[structopt(name = "crev", about = "Distributed code review system")]
+#[structopt(about = "Distributed code review system")]
 pub struct Opts {
     #[structopt(subcommand)]
     pub command: MainCommand,
