@@ -1,11 +1,11 @@
 [workspace]
 members = [
+	"cargo-crev",
 	"crev-common",
 	"crev-data",
 	"crev-lib",
 	# defunct
 	# "crev-bin",
-	"cargo-crev",
 	"recursive-digest",
 	"rblake2sum",
 	"crevsum"

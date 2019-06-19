@@ -35,3 +35,11 @@ term = "0.5"
 tokei = "9"
 walkdir = "2"
 time = "*"
+
+[features]
+default = []
+
+documentation = []
+
+[package.metadata.docs.rs]
+all-features = true

@@ -139,16 +139,18 @@ pub enum Verify {
         name = "deps",
         after_help = r"This will show the following information:
 
-- trust      - Effective trust level trusted reviewers or `none`, `flagged`
-- reviews    - Number of reviews for the specific version and for all versions
+- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- reviews    - Number of reviews for the specific version and for all available versions (total)
 - downloads  - Download counts from crates.io for the specific version and all versions
 - own.       - Owner counts from crates.io (known/all)
-- advisr.    - Number of aplicable advisories (important upgrades) repored (trusted/all)
+- advisr.    - Number of aplicable advisories (important upgrades) repored (trusted sources/all)
 - lines      - Lines of Rust code
+- geiger     - Geiger score: number of `unsafe` lines
 - flgs       - Flags for specific types of packages
   - CB         - Custom Build
 - name       - Crate name
-- version    - Crate version"
+- version    - Crate version
+- latest_t   - Latest trusted version"
     )]
     Deps(VerifyDeps),
 }

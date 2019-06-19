@@ -1,3 +1,9 @@
+//! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
+//!
+//!
+#![cfg_attr(feature = "documentation", doc = "See [user documentation module](./doc/user/index.html).")]
+
+#![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
 use cargo::{
     core::{dependency::Dependency, source::SourceMap, Package, SourceId},
@@ -18,6 +24,10 @@ use std::{
     process,
 };
 use structopt::StructOpt;
+
+#[cfg(feature = "documentation")]
+/// Documentation
+pub mod doc;
 
 mod crates_io;
 mod opts;
@@ -1094,7 +1104,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     );
                     eprintln!(
                         " {:<20} {:<15} {:<15}",
-                        "crate", "version", "latest trusted"
+                        "crate", "version", "latest_t"
                     );
                 }
                 let requirements =
