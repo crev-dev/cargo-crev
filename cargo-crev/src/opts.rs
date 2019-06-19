@@ -444,6 +444,7 @@ pub enum Command {
     /// Run raw git commands in the local proof repository
     #[structopt(name = "git")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Git(Git),
 
     /// Push local changes to the public proof repository (alias to `git push HEAD`)
@@ -485,6 +486,7 @@ pub enum Command {
     /// Diff between two versions of a package
     #[structopt(name = "diff")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Diff(Diff),
 }
 
