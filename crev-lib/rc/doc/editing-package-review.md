@@ -19,9 +19,6 @@ your other work, etc.
 
 ## Data fields
 
-* `date` - proof timestamp
-* `from` - proof author
-* `package` - reviewed package
 * `review` - review details
   * `digest` - recursive digest of the whole project content
   * `thoroughness` - time and effort spent on the review

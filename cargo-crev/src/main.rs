@@ -1092,8 +1092,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         eprint!("{:43} ", "digest");
                     }
                     eprint!(
-                        "{:5} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
-                        "trust",
+                        "{:6} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
+                        "status",
                         "reviews",
                         "downloads",
                         "own.",
@@ -1175,7 +1175,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         print!("{:43} ", digest);
                     }
                     term.print(
-                        format_args!("{:5}", result),
+                        format_args!("{:6}", result),
                         term::verification_status_color(&result),
                     )?;
                     print!(" {:2} {:2}", pkg_version_review_count, pkg_review_count,);
@@ -1267,13 +1267,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         &requirements,
                     );
                     print!(
-                        " {:<15}",
+                        " {}",
                         latest_trusted_version_string(
                             crate_version.clone(),
                             latest_trusted_version
                         )
                     );
-                    println!("");
+                    println!();
 
                     Ok(())
                 })?;

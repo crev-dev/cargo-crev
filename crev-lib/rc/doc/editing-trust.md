@@ -19,17 +19,14 @@ your other work, etc.
 
 ## Data fields
 
-* `date` - proof timestamp
-* `from` - proof author
-* `ids` - objects of the trust relationship
 * `trust` - trust level; possible values:
   * `high` - "for most practically purposes, I trust this ID as much or more
              than myself" eg. "my dayjob ID", "known and reputatable expert",
              "employee within my team"
   * `medium` - typical, normal level of trust
   * `low` - "I have some reservations about trusting this entity"
-  * `none` - "I don't actually trust this entity"; use to overwrite trust from
-             a previously issued Trust Proof
+  * `none` - "I don't actually trust this entity"; use to revoke trust
+             (or distrust) from a previously issued Trust Proof
   * `distrust` - "I distrust this person and so should you"
 * `comment` - human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)
