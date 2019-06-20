@@ -240,16 +240,16 @@ comment: ""
 # https://gitter.im/dpc/crev discussion channel.
 ```
 
-Editing proof is modeled after editing a commit message through `git commit`.
+Editing the proof is modeled after editing a commit message through `git commit`.
 As you can see helpful documentation is available in the editor. Don't forget
 to read it at some point.
 
 When creating a *trust proof* you have to decide on the trust level,
-and and optionally add a comment about the nature of this trust relationship.
+and optionally add a comment about the nature of this trust relationship.
 
 ## Transitive effective trust
 
-When you are done, saved the proof and closed the editor, you should be able query
+When you are done, have saved the proof and closed the editor, you should be able query
 all the ids you trust.
 
 ```text
@@ -259,7 +259,7 @@ YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA low    https://github.com/oherrala/c
 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/dpc/crev-proofs-test
 ```
 
-That might be a little surprising. Not only you are trusting `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE`
+That might be a little surprising. Not only are you trusting `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE`
 which you have just signed the *trust proof* for, but also some other user.
 
 That's because [user `dpc` already trusted user `oherrala`](https://github.com/dpc/crev-proofs/blob/2d250e26bed95927a76551c7969cd108ebb1946c/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/trust/2019-04.proof.crev#L1). Trust in `crev` is transitive. If you trust user `a`, and user `b` trusts user `c`, you're implicitly trusting user `c`. That is what your personal *Web of Trust* really means in `crev`.
@@ -271,8 +271,8 @@ And we should use any help we can get.
 
 
 If it still makes you worry, just be aware that `cargo crev` provides a lot of ways to configure the effective trust calculation, including
-control over depth of the *Web of Trust* and redundancy level required. Also, the effective transitive trust level in `c` is always lower
-or equal to the direct trust level in `b`.
+control over depth of the *Web of Trust* and redundancy level required. Also, the effective transitive trust level of `c` is always lower
+or equal to the direct trust level of `b`.
 
 ## Fetching updates
 
@@ -312,7 +312,7 @@ At the moment of writting this `cargo crev` provides two methods of reviewing cr
 If you want to review a crate called `default`, you run:
 
 ```
-$ cargo crev goto review
+$ cargo crev goto default
 Opening shell in: /home/dpc/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
 Use `exit` or Ctrl-D to return to the original project.
 Use `review` and `flag` without any arguments to review this crate.
@@ -330,8 +330,8 @@ yourself too much or let the fear make you not review at all.
 
 When you are done with the actual review, it is time to actually create and sign the *review proof*.
 
-You either call `crev review` (or `crev flag` if results of your review were negative), or exit the
-temporary review-shell and use `crev review <cratename>`.
+You either call `cargo crev review` (or `cargo crev flag` if results of your review were negative), or exit the
+temporary review-shell and use `cargo crev review <cratename>`.
 
 ### Reviewing code using `cargo crev open`
 
@@ -456,7 +456,7 @@ Congratulations!
 
 ## Publishing your *proofs*
 
-Every time you crate a *proof* `crev` records it in a local copy of your *proof repository* associated with
+Every time you create a *proof* `crev` records it in a local copy of your *proof repository* associated with
 your current `CrevID`.
 
 You can access this repository using `cargo crev git` command.
@@ -487,10 +487,10 @@ You can also use these places to find more *proof repositories* of other people.
 
 ## Follow-up
 
-This short guide is meant to just get you started.
+This short guide is just meant to get you started.
 
-There's more functionality implemented in `cargo crev` already,
-and more will be continuously added in the future. Notably:
+There's already more functionality implemented in `cargo crev`,
+and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
 * Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
