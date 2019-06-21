@@ -31,11 +31,50 @@ with IDEs and text editors are possible, but not implemented at the moment.
 ## Installing
 
 `cargo-crev` is written in Rust, and until binaries for various operating systems are
-available, the recommended way to install is using `cargo install` command:
+available, the recommended way to install it is installing from source.
 
+## Dependencies
+
+Regrettably `cargo-crev` has requires a couple of non-Rust dependencies to compile:
+
+* `argonautica` crate requires LLVM to compile some C/C++ code,
+* OpenSSL is required for TLS support.
+
+Though these are popular and readily available, it's virtually impossible to cover installing
+them on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
+
+#### Unix
+
+The following should work on Ubuntu:
+
+```text
+# openssl
+sudo apt-get install openssl libssl-dev
+
+# argonautica build system
+sudo apt-get install clang llvm-dev libclang-dev
+```
+
+and should have matching command in the Unix-like OS of your choice.
+
+#### Windows
+
+On Windows, make sure you have
+[LLVM](http://releases.llvm.org/download.html) installed and added to your
+system path.
+
+### Compiling
+
+To compile and install `cargo-crev` use `cargo`:
 
 ```text
 cargo install cargo-crev
+```
+
+In case you'd like to try latest features from the master branch, try:
+
+```text
+cargo install --git https://github.com/dpc/crev/ cargo-crev
 ```
 
 If you need help installing Rust compiler & `cargo`, consider using [rustup.rs page](https://rustup.rs/)
@@ -155,9 +194,14 @@ Error: User config not-initialized. Use `crev new id` to generate CrevID.
 
 Oops. That's right. You can't sign an *proof* until you have your own identity.
 
+## Creating a `CrevID`
+
 To create a `CrevID` you'll first need an empty github repository to serve
 as your public *proof repository*. Go ahead, and create one on github, or whatever
 else your typically host your code. Customarily the repository should be called `crev-proofs`.
+
+Note: `cargo-crev` requires the master branch to already exist, so the repository you have created
+has to contains at least one existing commit.
 
 Then run `cargo crev new id` like this:
 
