@@ -35,6 +35,7 @@ term = "0.5"
 tokei = "9"
 walkdir = "2"
 time = "*"
+env_logger = { version = "*", default-features = false, features = ["termcolor", "atty", "humantime"]}
 
 [features]
 default = []
