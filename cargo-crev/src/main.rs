@@ -129,7 +129,7 @@ impl Repo {
         let cwd = env::current_dir()?;
         let manifest_path = find_root_manifest_for_wd(&cwd)?;
         let mut config = cargo::util::config::Config::default()?;
-        config.configure(0, None, &None, false, false, &None, &[])?;
+        config.configure(0, None, &None, /* frozen: */ false , /* locked: */ true, &None, &[])?;
         Ok(Repo {
             manifest_path,
             config,
