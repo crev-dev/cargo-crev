@@ -41,18 +41,19 @@ pub struct Review {
 
 impl Default for Review {
     fn default() -> Self {
+        Review::new_none()
+    }
+}
+
+impl Review {
+    pub fn new_positive() -> Self {
         Review {
             thoroughness: Level::Low,
             understanding: Level::Medium,
             rating: Rating::Positive,
         }
     }
-}
 
-impl Review {
-    pub fn new_positive() -> Self {
-        Default::default()
-    }
     pub fn new_negative() -> Self {
         Review {
             thoroughness: Level::Low,

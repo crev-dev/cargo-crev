@@ -168,6 +168,7 @@ impl Repo {
         mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        // take all the packages inside current workspace
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
