@@ -373,11 +373,14 @@ impl Local {
         let mut i = 0;
         loop {
             let passphrase = passphrase_callback()?;
-            let res = locked.to_unlocked(&passphrase);
-            if let Ok(id) = res {
-                return Ok(id);
-            } else if i == 5 {
-                return res;
+            match locked.to_unlocked(&passphrase) {
+                Ok(o) => return Ok(o),
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    if i == 5 {
+                        return Err(e);
+                    }
+                }
             }
             i += 1;
         }
