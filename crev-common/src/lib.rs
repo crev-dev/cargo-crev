@@ -10,6 +10,7 @@ pub use crate::blake2b256::Blake2b256;
 
 use blake2;
 use chrono;
+use failure::bail;
 
 use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
@@ -65,6 +66,15 @@ pub fn read_file_to_digest_input(
             break;
         }
         reader.consume(length);
+    }
+
+    Ok(())
+}
+
+pub fn try_again_or_cancel() -> common_failures::Result<()> {
+
+    if !yes_or_no_was_y("Try again (y/n) ")? {
+        bail!("Canceled by the user");
     }
 
     Ok(())

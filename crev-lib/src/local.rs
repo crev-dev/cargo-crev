@@ -104,9 +104,7 @@ impl UserConfig {
             match serde_yaml::from_str(&text) {
                 Err(e) => {
                     eprintln!("There was an error parsing content: {}", e);
-                    if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {
-                        bail!("User canceled");
-                    }
+                    crev_common::try_again_or_cancel()?;
                 }
                 Ok(s) => return Ok(s),
             }

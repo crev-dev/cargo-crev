@@ -35,7 +35,8 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
     })
 }
 
-pub fn edit_text_iteractively(text: &str) -> Result<String> {
+/// Retruns the edited string, and bool indicating if the file was ever written to/ (saved).
+fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
     let dir = tempdir::TempDir::new("crev")?;
     let file_path = dir.path().join("crev.review");
     let mut file = fs::File::create(&file_path)?;
@@ -43,9 +44,30 @@ pub fn edit_text_iteractively(text: &str) -> Result<String> {
     file.flush()?;
     drop(file);
 
+    let starting_ts = std::fs::metadata(&file_path)?.modified().unwrap_or_else(|_| std::time::SystemTime::now());
+
     edit_file(&file_path)?;
 
-    Ok(read_file_to_string(&file_path)?)
+    let modified_ts = std::fs::metadata(&file_path)?.modified().unwrap_or_else(|_| std::time::SystemTime::now());
+
+    Ok((read_file_to_string(&file_path)?, starting_ts != modified_ts))
+}
+
+pub fn edit_text_iteractively(text: &str) -> Result<String> {
+    Ok(edit_text_iteractively_raw(text)?.0)
+}
+
+pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
+    loop {
+        let (text, modified) = edit_text_iteractively_raw(text)?;
+        if !modified {
+            eprintln!("File not written to. Make sure to save it at least once to confirm the data.");
+            crev_common::try_again_or_cancel()?;
+            continue;
+        }
+
+        return Ok(text);
+    }
 }
 
 pub fn run_with_shell_cmd(cmd: OsString, path: &Path) -> Result<std::process::ExitStatus> {
@@ -114,13 +136,11 @@ pub fn edit_proof_content_iteractively(
         text.write_fmt(format_args!("# {}\n", line))?;
     }
     loop {
-        text = edit_text_iteractively(&text)?;
+        text = edit_text_iteractively_until_writen_to(&text)?;
         match proof::Content::parse_draft(content, &text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
-                if !crev_common::yes_or_no_was_y("Try again (y/n) ")? {
-                    bail!("User canceled");
-                }
+                crev_common::try_again_or_cancel()?;
             }
             Ok(content) => return Ok(content),
         }
