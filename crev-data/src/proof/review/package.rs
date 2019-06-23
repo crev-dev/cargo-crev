@@ -39,6 +39,7 @@ pub struct Package {
     #[serde(rename = "package-diff-base")]
     pub diff_base: Option<proof::PackageInfo>,
     #[builder(default = "Default::default()")]
+    #[serde(default = "Default::default")] // TODO: skip serializing if default in the future versions
     pub review: super::Review,
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
