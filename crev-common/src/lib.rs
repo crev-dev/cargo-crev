@@ -48,6 +48,14 @@ pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
     base64::encode_config(input, base64::URL_SAFE_NO_PAD)
 }
 
+pub fn is_equal_default<T : Default + PartialEq>(t: &T) -> bool {
+    *t == T::default()
+}
+
+pub fn is_vec_empty<T>(t: &Vec<T>) -> bool {
+    t.is_empty()
+}
+
 pub fn read_file_to_digest_input(
     path: &Path,
     input: &mut impl blake2::digest::Input,

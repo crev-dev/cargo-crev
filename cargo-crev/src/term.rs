@@ -13,8 +13,7 @@ pub fn verification_status_color(s: &VerificationStatus) -> Option<color::Color>
     match s {
         VerificationStatus::Verified => Some(term::color::GREEN),
         VerificationStatus::Insufficient => None,
-        VerificationStatus::Flagged => Some(term::color::YELLOW),
-        VerificationStatus::Dangerous => Some(term::color::RED),
+        VerificationStatus::Negative => Some(term::color::YELLOW),
     }
 }
 

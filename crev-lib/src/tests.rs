@@ -333,13 +333,13 @@ fn advisory_sanity() -> Result<()> {
         .from(id.id.to_owned())
         .package(package_info.clone())
         .comment("comment".into())
-        .advisory(Some(
+        .advisories(vec![
             proof::review::package::AdvisoryBuilder::default()
-                .affected(proof::review::package::AdvisoryRange::Major)
+                .range(proof::review::package::AdvisoryRange::Major)
                 .critical(false)
                 .build()
                 .unwrap(),
-        ))
+        ])
         .build()
         .unwrap();
 
@@ -377,13 +377,13 @@ fn advisory_sanity() -> Result<()> {
         .from(id.id.to_owned())
         .package(package_info)
         .comment("comment".into())
-        .advisory(Some(
+        .advisories(vec![
             proof::review::package::AdvisoryBuilder::default()
-                .affected(proof::review::package::AdvisoryRange::All)
+                .range(proof::review::package::AdvisoryRange::All)
                 .critical(false)
                 .build()
                 .unwrap(),
-        ))
+        ])
         .build()
         .unwrap();
 

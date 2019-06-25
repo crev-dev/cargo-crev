@@ -222,7 +222,7 @@ impl ProofDB {
                         .value]
                         .to_owned();
 
-                    if review.advisory.is_some() {
+                    if !review.advisories.is_empty() {
                         Some((review_version, review))
                     } else {
                         None
@@ -247,7 +247,7 @@ impl ProofDB {
                         .value]
                         .to_owned();
 
-                    if review.advisory.is_some() {
+                    if !review.advisories.is_empty() {
                         Some((review_version, review))
                     } else {
                         None
@@ -455,8 +455,7 @@ impl ProofDB {
         let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
         let matching_reviewers = trusted_ids.intersection(&reviews_by);
         let mut trust_count = 0;
-        let mut flagged_count = 0;
-        let mut dangerous_count = 0;
+        let mut negative_count = 0;
         for matching_reviewer in matching_reviewers {
             let review = &reviews[matching_reviewer].review;
             if Rating::Neutral <= review.rating
@@ -470,17 +469,13 @@ impl ProofDB {
                 {
                     trust_count += 1;
                 }
-            } else if review.rating <= Rating::Dangerous {
-                dangerous_count += 1;
-            } else if review.rating < Rating::Neutral {
-                flagged_count += 1;
+            } else if review.rating <= Rating::Negative {
+                negative_count += 1;
             }
         }
 
-        if dangerous_count > 0 {
-            VerificationStatus::Dangerous
-        } else if flagged_count > 0 {
-            VerificationStatus::Flagged
+        if negative_count > 0 {
+            VerificationStatus::Negative
         } else if trust_count >= requirements.redundancy {
             VerificationStatus::Verified
         } else {
@@ -688,6 +683,9 @@ impl TrustSet {
         self.trusted.contains_key(id)
     }
 
+    pub fn contains_distrusted(&self, id: &Id) -> bool {
+        self.distrusted.contains_key(id)
+    }
     /// Record that an Id is considered trusted
     ///
     /// Returns `true` if this actually added or changed the `subject` details,

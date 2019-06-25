@@ -76,8 +76,7 @@ pub struct VerificationRequirements {
 pub enum VerificationStatus {
     Verified,
     Insufficient,
-    Flagged,
-    Dangerous,
+    Negative,
 }
 
 impl VerificationStatus {
@@ -94,8 +93,7 @@ impl fmt::Display for VerificationStatus {
         match self {
             VerificationStatus::Verified => f.pad("pass"),
             VerificationStatus::Insufficient => f.pad("none"),
-            VerificationStatus::Flagged => f.pad("flag"),
-            VerificationStatus::Dangerous => f.pad("warn"),
+            VerificationStatus::Negative => f.pad("warn"),
         }
     }
 }

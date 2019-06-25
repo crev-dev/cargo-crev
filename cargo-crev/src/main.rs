@@ -619,7 +619,8 @@ fn find_previous_review_data(
 ) -> Option<(
     Option<crev_data::proof::Date>,
     crev_data::proof::review::Review,
-    Option<crev_data::proof::review::package::Advisory>,
+    Vec<crev_data::proof::review::package::Advisory>,
+    Vec<crev_data::proof::review::package::Issue>,
     String,
 )> {
     if let Some(previous_review) =
@@ -628,7 +629,8 @@ fn find_previous_review_data(
         return Some((
             Some(previous_review.date),
             previous_review.review,
-            previous_review.advisory,
+            previous_review.advisories,
+            previous_review.issues,
             previous_review.comment,
         ));
     } else if let Some(diff_base_version) = diff_base_version {
@@ -638,7 +640,7 @@ fn find_previous_review_data(
             &diff_base_version,
             &id.id,
         ) {
-            return Some((None, base_review.review, None, base_review.comment));
+            return Some((None, base_review.review, vec![], vec![], base_review.comment));
         }
     }
     None
@@ -726,7 +728,7 @@ fn create_review_proof(
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
-    let previous_date = if let Some((prev_date, prev_review, prev_advisory, prev_comment)) =
+    let previous_date = if let Some((prev_date, prev_review, prev_advisories, prev_issues, prev_comment)) =
         find_previous_review_data(
             &db,
             &id.id,
@@ -736,19 +738,18 @@ fn create_review_proof(
         ) {
         review.review = prev_review;
         review.comment = prev_comment;
-        if let Some(prev_advisory) = prev_advisory {
-            review.advisory = Some(prev_advisory);
-        }
+        review.advisories = prev_advisories;
+        review.issues = prev_issues;
         prev_date
     } else {
         None
     };
 
-    if review.advisory.is_none() {
+    if review.advisories.is_empty() {
         if let Some(advise_common) = advise_common {
             let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
             advisory.critical = advise_common.critical;
-            review.advisory = Some(advisory);
+            review.advisories = vec![advisory];
         }
     }
     let review = crev_lib::util::edit_proof_content_iteractively(
@@ -1098,7 +1099,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         "reviews",
                         "downloads",
                         "own.",
-                        "advisr",
+                        "issues",
                         "lines",
                         "geiger",
                         "flgs"
@@ -1212,12 +1213,18 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .unwrap_or_else(|| "?".into())
                     );
 
-                    let advisories = db.get_advisories_for_version(
+                    let all_advisories = db.get_advisories_for_version(
                         PROJECT_SOURCE_CRATES_IO,
                         crate_name,
                         crate_version,
                     );
-                    let trusted_advisories = advisories
+                    let valid_advisories = all_advisories
+                        .iter()
+                        .filter(|(_version, package_review)| {
+                            !trust_set.contains_distrusted(&package_review.from.id)
+                        })
+                        .count();
+                    let trusted_advisories = all_advisories
                         .iter()
                         .filter(|(_version, package_review)| {
                             trust_set.contains_trusted(&package_review.from.id)
@@ -1234,8 +1241,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     )?;
                     print!("/");
                     term.print(
-                        format_args!("{:<2}", advisories.len()),
-                        if advisories.is_empty() {
+                        format_args!("{:<2}", valid_advisories),
+                        if valid_advisories > 0 {
                             None
                         } else {
                             Some(::term::color::YELLOW)

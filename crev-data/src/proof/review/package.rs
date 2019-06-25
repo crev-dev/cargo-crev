@@ -9,6 +9,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{default::Default, fmt};
+use crev_common::{is_vec_empty, is_equal_default};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
@@ -39,11 +40,14 @@ pub struct Package {
     #[serde(rename = "package-diff-base")]
     pub diff_base: Option<proof::PackageInfo>,
     #[builder(default = "Default::default()")]
-    #[serde(default = "Default::default")] // TODO: skip serializing if default in the future versions
+    #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
     pub review: super::Review,
     #[builder(default = "Default::default()")]
-    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
-    pub advisory: Option<Advisory>,
+    #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
+    pub issues: Vec<Issue>,
+    #[builder(default = "Default::default()")]
+    #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
+    pub advisories: Vec<Advisory>,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
@@ -54,7 +58,8 @@ impl Package {
         let mut copy = self.clone();
         copy.review = draft.review;
         copy.comment = draft.comment;
-        copy.advisory = draft.advisory;
+        copy.advisories = draft.advisories;
+        copy.issues = draft.issues;
         copy
     }
 }
@@ -63,8 +68,10 @@ impl Package {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PackageDraft {
     review: super::Review,
-    #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
-    pub advisory: Option<Advisory>,
+    #[serde(default = "Default::default")]
+    pub advisories: Vec<Advisory>,
+    #[serde(default = "Default::default")]
+    pub issues: Vec<Issue>,
     #[serde(default = "Default::default")]
     comment: String,
 }
@@ -73,7 +80,8 @@ impl From<Package> for PackageDraft {
     fn from(package: Package) -> Self {
         PackageDraft {
             review: package.review,
-            advisory: package.advisory,
+            advisories: package.advisories,
+            issues: package.issues,
             comment: package.comment,
         }
     }
@@ -126,20 +134,23 @@ impl Package {
     }
 
     pub fn is_advisory_for(&self, version: &Version) -> bool {
-        if self.package.version <= *version {
-            false
-        } else if let Some(ref advisory) = self.advisory {
-            match advisory.affected {
-                AdvisoryRange::All => true,
-                AdvisoryRange::Major => self.package.version.major == version.major,
-                AdvisoryRange::Minor => {
-                    self.package.version.major == version.major
-                        && self.package.version.minor == version.minor
+        if *version < self.package.version {
+            for advisory in &self.advisories {
+                match advisory.range {
+                    AdvisoryRange::All => return true,
+                    AdvisoryRange::Major => if self.package.version.major == version.major {
+                        return true;
+                    },
+                    AdvisoryRange::Minor => {
+                        if self.package.version.major == version.major
+                            && self.package.version.minor == version.minor {
+                                return true;
+                            }
+                    }
                 }
             }
-        } else {
-            false
-        }
+        } 
+        false
     }
 }
 
@@ -197,7 +208,7 @@ impl std::str::FromStr for AdvisoryRange {
     }
 }
 
-/// Optional advisory
+/// Advisory to upgrade to the package version
 ///
 /// Advisory means a general important fix was included in this
 /// release, and all previous releases were potentially affected.
@@ -205,14 +216,16 @@ impl std::str::FromStr for AdvisoryRange {
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Advisory {
-    pub affected: AdvisoryRange,
+    pub ids: Vec<String>,
+    pub range: AdvisoryRange,
     pub critical: bool,
+    pub comment: String,
 }
 
 impl From<AdvisoryRange> for Advisory {
     fn from(r: AdvisoryRange) -> Self {
         Advisory {
-            affected: r,
+            range: r,
             ..Default::default()
         }
     }
@@ -221,8 +234,36 @@ impl From<AdvisoryRange> for Advisory {
 impl Default for Advisory {
     fn default() -> Self {
         Self {
-            affected: AdvisoryRange::default(),
+            ids: vec![],
+            range: AdvisoryRange::default(),
             critical: false,
+            comment: "".to_string(),
+        }
+    }
+}
+
+
+/// Issue with a package version
+///
+/// `Issue` is a kind of opposite of [`Advisory`]. It reports
+/// a problem with package in a given version. It leaves the
+/// question open if any previous and following versions might
+/// also be affected, but
+/// that
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Issue {
+    pub ids: Vec<String>,
+    pub critical: bool,
+    pub comment: String,
+}
+
+impl Default for Issue {
+    fn default() -> Self {
+        Self {
+            ids: vec![],
+            critical: false,
+            comment: "".to_string(),
         }
     }
 }
