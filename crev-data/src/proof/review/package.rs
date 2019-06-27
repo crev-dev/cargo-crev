@@ -4,12 +4,12 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
+use crev_common::{is_equal_default, is_vec_empty};
 use derive_builder::Builder;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{default::Default, fmt};
-use crev_common::{is_vec_empty, is_equal_default};
 
 const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
@@ -138,18 +138,21 @@ impl Package {
             for advisory in &self.advisories {
                 match advisory.range {
                     AdvisoryRange::All => return true,
-                    AdvisoryRange::Major => if self.package.version.major == version.major {
-                        return true;
-                    },
+                    AdvisoryRange::Major => {
+                        if self.package.version.major == version.major {
+                            return true;
+                        }
+                    }
                     AdvisoryRange::Minor => {
                         if self.package.version.major == version.major
-                            && self.package.version.minor == version.minor {
-                                return true;
-                            }
+                            && self.package.version.minor == version.minor
+                        {
+                            return true;
+                        }
                     }
                 }
             }
-        } 
+        }
         false
     }
 }
@@ -241,7 +244,6 @@ impl Default for Advisory {
         }
     }
 }
-
 
 /// Issue with a package version
 ///

@@ -44,11 +44,15 @@ fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
     file.flush()?;
     drop(file);
 
-    let starting_ts = std::fs::metadata(&file_path)?.modified().unwrap_or_else(|_| std::time::SystemTime::now());
+    let starting_ts = std::fs::metadata(&file_path)?
+        .modified()
+        .unwrap_or_else(|_| std::time::SystemTime::now());
 
     edit_file(&file_path)?;
 
-    let modified_ts = std::fs::metadata(&file_path)?.modified().unwrap_or_else(|_| std::time::SystemTime::now());
+    let modified_ts = std::fs::metadata(&file_path)?
+        .modified()
+        .unwrap_or_else(|_| std::time::SystemTime::now());
 
     Ok((read_file_to_string(&file_path)?, starting_ts != modified_ts))
 }
@@ -61,7 +65,9 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
     loop {
         let (text, modified) = edit_text_iteractively_raw(text)?;
         if !modified {
-            eprintln!("File not written to. Make sure to save it at least once to confirm the data.");
+            eprintln!(
+                "File not written to. Make sure to save it at least once to confirm the data."
+            );
             crev_common::try_again_or_cancel()?;
             continue;
         }

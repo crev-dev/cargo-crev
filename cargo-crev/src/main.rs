@@ -1,8 +1,10 @@
 //! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
 //!
 //!
-#![cfg_attr(feature = "documentation", doc = "See [user documentation module](./doc/user/index.html).")]
-
+#![cfg_attr(
+    feature = "documentation",
+    doc = "See [user documentation module](./doc/user/index.html)."
+)]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
 use cargo::{
@@ -129,7 +131,15 @@ impl Repo {
         let cwd = env::current_dir()?;
         let manifest_path = find_root_manifest_for_wd(&cwd)?;
         let mut config = cargo::util::config::Config::default()?;
-        config.configure(0, None, &None, /* frozen: */ false , /* locked: */ true, &None, &[])?;
+        config.configure(
+            0,
+            None,
+            &None,
+            /* frozen: */ false,
+            /* locked: */ true,
+            &None,
+            &[],
+        )?;
         Ok(Repo {
             manifest_path,
             config,
@@ -640,7 +650,13 @@ fn find_previous_review_data(
             &diff_base_version,
             &id.id,
         ) {
-            return Some((None, base_review.review, vec![], vec![], base_review.comment));
+            return Some((
+                None,
+                base_review.review,
+                vec![],
+                vec![],
+                base_review.comment,
+            ));
         }
     }
     None
@@ -728,22 +744,24 @@ fn create_review_proof(
         .build()
         .map_err(|e| format_err!("{}", e))?;
 
-    let previous_date = if let Some((prev_date, prev_review, prev_advisories, prev_issues, prev_comment)) =
-        find_previous_review_data(
-            &db,
-            &id.id,
-            name,
-            effective_crate_version,
-            &diff_base_version,
-        ) {
-        review.review = prev_review;
-        review.comment = prev_comment;
-        review.advisories = prev_advisories;
-        review.issues = prev_issues;
-        prev_date
-    } else {
-        None
-    };
+    let previous_date =
+        if let Some((prev_date, prev_review, prev_advisories, prev_issues, prev_comment)) =
+            find_previous_review_data(
+                &db,
+                &id.id,
+                name,
+                effective_crate_version,
+                &diff_base_version,
+            )
+        {
+            review.review = prev_review;
+            review.comment = prev_comment;
+            review.advisories = prev_advisories;
+            review.issues = prev_issues;
+            prev_date
+        } else {
+            None
+        };
 
     if review.advisories.is_empty() {
         if let Some(advise_common) = advise_common {
@@ -1104,10 +1122,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         "geiger",
                         "flgs"
                     );
-                    eprintln!(
-                        " {:<20} {:<15} {:<15}",
-                        "crate", "version", "latest_t"
-                    );
+                    eprintln!(" {:<20} {:<15} {:<15}", "crate", "version", "latest_t");
                 }
                 let requirements =
                     crev_lib::VerificationRequirements::from(args.requirements.clone());

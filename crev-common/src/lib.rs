@@ -48,7 +48,7 @@ pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
     base64::encode_config(input, base64::URL_SAFE_NO_PAD)
 }
 
-pub fn is_equal_default<T : Default + PartialEq>(t: &T) -> bool {
+pub fn is_equal_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == T::default()
 }
 
@@ -80,7 +80,6 @@ pub fn read_file_to_digest_input(
 }
 
 pub fn try_again_or_cancel() -> common_failures::Result<()> {
-
     if !yes_or_no_was_y("Try again (y/n) ")? {
         bail!("Canceled by the user");
     }
