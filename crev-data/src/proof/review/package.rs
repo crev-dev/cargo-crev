@@ -253,7 +253,7 @@ impl Default for Advisory {
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Issue {
-    pub ids: Vec<String>,
+    pub id: String,
     pub critical: bool,
     pub comment: String,
 }
@@ -261,7 +261,7 @@ pub struct Issue {
 impl Default for Issue {
     fn default() -> Self {
         Self {
-            ids: vec![],
+            id: "".into(),
             critical: false,
             comment: "".to_string(),
         }

@@ -86,9 +86,10 @@ pub struct Diff {
 /// Verification Requirements
 #[derive(Debug, StructOpt, Clone)]
 pub struct VerificationRequirements {
-    /// Minimum trust level of the reviewers
+    /// Minimum trust level of the reviewers for reviews
     #[structopt(long = "trust", default_value = "low")]
     pub trust_level: crev_data::Level,
+
     /// Number of reviews required
     #[structopt(long = "redundancy", default_value = "1")]
     pub redundancy: u64,

@@ -1,6 +1,7 @@
 use crate::{VerificationRequirements, VerificationStatus};
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
+    Level,
     self,
     proof::{
         self,
@@ -43,6 +44,7 @@ impl<T> Timestamped<T> {
     }
 }
 
+pub type Signature = String;
 type TimestampedUrl = Timestamped<Url>;
 type TimestampedTrustLevel = Timestamped<TrustLevel>;
 type TimestampedReview = Timestamped<review::Review>;
@@ -82,7 +84,7 @@ pub struct UniquePackageReview {
     version: Version,
 }
 
-type TimestampedSignature = Timestamped<String>;
+type TimestampedSignature = Timestamped<Signature>;
 
 impl From<review::Package> for UniquePackageReview {
     fn from(review: review::Package) -> Self {
@@ -106,6 +108,52 @@ where
         }
     }
 }
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+struct SourceSelector {
+    pub source: String,
+}
+
+impl SourceSelector {
+    fn new(source: String) -> Self {
+        Self {
+            source,
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+struct SourcePackageSelector {
+    pub source: String,
+    pub name: String,
+}
+
+impl SourcePackageSelector {
+    fn new(source: String, name: String) -> Self {
+        Self {
+            source,
+            name,
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+pub struct SourcePackageVersionSelector {
+    pub source: String,
+    pub name: String,
+    pub version: Version,
+}
+
+impl SourcePackageVersionSelector {
+    fn new(source: String, name: String, version: Version) -> Self {
+        Self {
+            source,
+            name,
+            version
+        }
+    }
+}
+
 /// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effcttive trust set, etc.
@@ -119,16 +167,16 @@ pub struct ProofDB {
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
-    package_review_by_signature: HashMap<String, review::Package>,
+    package_review_by_signature: HashMap<Signature, review::Package>,
 
     package_review_signatures_by_package_digest:
         HashMap<Vec<u8>, HashMap<UniquePackageReview, TimestampedSignature>>,
     package_review_signatures_by_unique_package_review:
         HashMap<UniquePackageReview, TimestampedSignature>,
 
-    package_reviews_by_source: BTreeMap<String, HashSet<UniquePackageReview>>,
-    package_reviews_by_name: BTreeMap<(String, String), HashSet<UniquePackageReview>>,
-    package_reviews_by_version: BTreeMap<(String, String, Version), HashSet<UniquePackageReview>>,
+    package_reviews_by_source: BTreeMap<SourceSelector, HashSet<UniquePackageReview>>,
+    package_reviews_by_name: BTreeMap<SourcePackageSelector, HashSet<UniquePackageReview>>,
+    package_reviews_by_version: BTreeMap<SourcePackageVersionSelector, HashSet<UniquePackageReview>>,
     // available_unique_package_reviews_by_version:
 }
 
@@ -146,6 +194,12 @@ impl Default for ProofDB {
             package_reviews_by_version: default(),
         }
     }
+}
+
+#[derive(Default, Debug)]
+pub struct IssueMarkers {
+    issues: HashSet<Signature>,
+    advisories: HashSet<Signature>,
 }
 
 impl ProofDB {
@@ -168,26 +222,94 @@ impl ProofDB {
         }
     }
 
+    pub fn get_issues_for_version(
+        &self,
+        source: &str,
+        name: &str,
+        queried_version: &Version,
+        trust_set: &TrustSet,
+        trust_level_required: Level,
+    ) -> HashMap<String, IssueMarkers> {
+
+        let mut issues : HashMap<String, IssueMarkers> = HashMap::new();
+
+
+        for (_selector, _review, signature, issue) in self.reviews_lte_version_iter(
+                source.to_owned(),
+                name.to_owned(),
+                queried_version.to_owned(),
+            ).filter(
+                |(_selector, uniq_pkg_review)| if let Some(effective) =  trust_set.get_effective_trust_level(&uniq_pkg_review.from) {
+                    effective >= TrustLevel::from(trust_level_required)
+                } else {
+                    false
+                }).flat_map(
+                move |(selector, uniq_pkg_review)| {
+                    let signature = &self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value;
+                    let review = &self.package_review_by_signature[signature];
+                    review.issues.iter().map(move |issue| (selector, review.to_owned(), signature.to_owned(), issue))
+                }) {
+                    issues.entry(issue.id.clone()).or_default().issues.insert(signature);
+                }
+
+            issues
+
+    }
+
+    pub fn reviews_gte_version_iter(
+        &self,
+        source: String,
+        name: String,
+        queried_version: Version,
+    ) -> impl Iterator<Item = (&SourcePackageVersionSelector, &UniquePackageReview)> {
+
+        self.package_reviews_by_version
+            .range(
+                SourcePackageVersionSelector {
+                    source: source.clone(),
+                    name: name.clone(),
+                    version: queried_version,
+                }..,
+            )
+            .take_while(move |(selector, _)| {
+                selector.source == source && selector.name == name
+            }).flat_map(|(selector, reviews)| {
+                reviews.iter().map(move |r| (selector, r))
+            })
+    }
+
+    pub fn reviews_lte_version_iter(
+        &self,
+        source: String,
+        name: String,
+        queried_version: Version,
+    ) -> impl Iterator<Item = (&SourcePackageVersionSelector, &UniquePackageReview)> {
+        self.package_reviews_by_version
+            .range(
+                ..=SourcePackageVersionSelector {
+                    source: source.clone(),
+                    name: name.clone(),
+                    version: queried_version,
+                },
+            )
+            .rev()
+            .take_while(move |(selector, _)| {
+                selector.source == source && selector.name == name
+            }).flat_map(|(selector, reviews)| {
+                reviews.iter().map(move |r| (selector, r))
+            })
+    }
+
     pub fn get_advisories_for_version(
         &self,
         source: &str,
         name: &str,
         queried_version: &Version,
     ) -> HashMap<Version, proof::review::Package> {
-        self.package_reviews_by_version
-            .range(
-                (
-                    source.to_owned(),
-                    name.to_owned(),
-                    queried_version.to_owned(),
-                )..,
-            )
-            .take_while(|((review_source, review_name, _), _)| {
-                review_source == source && review_name == name
-            })
-            .flat_map(|(review_version, uniq_pkg_reviews)| {
-                uniq_pkg_reviews.iter().filter_map(move |uniq_pkg_review| {
-                    let review_version = review_version.2.to_owned();
+        self.reviews_gte_version_iter(
+            source.to_owned(), name.to_owned(), queried_version.to_owned()
+        ).flat_map(|(selector, uniq_pkg_review)| {
+                    let review_version = selector.version.to_owned();
                     let review = self.package_review_by_signature[&self
                         .package_review_signatures_by_unique_package_review[uniq_pkg_review]
                         .value]
@@ -198,7 +320,6 @@ impl ProofDB {
                     } else {
                         None
                     }
-                })
             })
             .collect()
     }
@@ -209,14 +330,9 @@ impl ProofDB {
         name: &str,
     ) -> HashMap<Version, proof::review::Package> {
         let min_possible_version = Version::parse("0.0.0").unwrap();
-        self.package_reviews_by_version
-            .range((source.to_owned(), name.to_owned(), min_possible_version)..)
-            .take_while(|((review_source, review_name, _), _)| {
-                review_source == source && review_name == name
-            })
-            .flat_map(|(review_version, uniq_pkg_reviews)| {
-                uniq_pkg_reviews.iter().filter_map(move |uniq_pkg_review| {
-                    let review_version = review_version.2.to_owned();
+        self.reviews_gte_version_iter(source.to_owned(), name.to_owned(), min_possible_version)
+            .flat_map(|(selector, uniq_pkg_review)| {
+                    let review_version = selector.version.to_owned();
                     let review = self.package_review_by_signature[&self
                         .package_review_signatures_by_unique_package_review[uniq_pkg_review]
                         .value]
@@ -227,7 +343,6 @@ impl ProofDB {
                     } else {
                         None
                     }
-                })
             })
             .collect()
     }
@@ -238,10 +353,10 @@ impl ProofDB {
     ) -> HashMap<Version, proof::review::Package> {
         self.package_reviews_by_version
             .iter()
-            .filter(|((review_source, _, _), _)| review_source == source)
-            .flat_map(|(review_version, uniq_pkg_reviews)| {
+            .filter(|(selector, _)| selector.source == source)
+            .flat_map(|(selector, uniq_pkg_reviews)| {
                 uniq_pkg_reviews.iter().filter_map(move |uniq_pkg_review| {
-                    let review_version = review_version.2.to_owned();
+                    let review_version = selector.version.to_owned();
                     let review = self.package_review_by_signature[&self
                         .package_review_signatures_by_unique_package_review[uniq_pkg_review]
                         .value]
@@ -302,21 +417,21 @@ impl ProofDB {
         );
 
         self.package_reviews_by_source
-            .entry(review.package.source.to_owned())
+            .entry(SourceSelector::new(review.package.source.clone()))
             .or_default()
             .insert(unique.clone());
         self.package_reviews_by_name
-            .entry((
-                review.package.source.to_owned(),
-                review.package.name.to_owned(),
+            .entry(SourcePackageSelector::new(
+                review.package.source.clone(),
+                review.package.name.clone(),
             ))
             .or_default()
             .insert(unique.clone());
         self.package_reviews_by_version
-            .entry((
-                review.package.source.to_owned(),
-                review.package.name.to_owned(),
-                review.package.version.to_owned(),
+            .entry(SourcePackageVersionSelector::new(
+                review.package.source.clone(),
+                review.package.name.clone(),
+                review.package.version.clone(),
             ))
             .or_default()
             .insert(unique);
@@ -339,7 +454,7 @@ impl ProofDB {
         version: Option<&Version>,
     ) -> impl Iterator<Item = proof::review::Package> {
         let mut proofs: Vec<_> = match (name, version) {
-            (Some(name), Some(version)) => self.package_reviews_by_version.get(&(
+            (Some(name), Some(version)) => self.package_reviews_by_version.get(&SourcePackageVersionSelector::new(
                 source.to_owned(),
                 name.to_owned(),
                 version.to_owned(),
@@ -347,9 +462,9 @@ impl ProofDB {
 
             (Some(name), None) => self
                 .package_reviews_by_name
-                .get(&(source.to_owned(), name.to_owned())),
+                .get(&SourcePackageSelector::new(source.to_owned(), name.to_owned())),
 
-            (None, None) => self.package_reviews_by_source.get(source),
+            (None, None) => self.package_reviews_by_source.get(&SourceSelector::new(source.to_owned())),
 
             (None, Some(_)) => panic!("Wrong usage"),
         }
@@ -491,7 +606,7 @@ impl ProofDB {
         requirements: &crate::VerificationRequirements,
     ) -> Option<Version> {
         self.package_reviews_by_name
-            .get(&(source.into(), name.into()))
+            .get(&SourcePackageSelector::new(source.into(), name.into()))
             .map(|reviews| reviews.into_iter())
             .into_iter()
             .flatten()

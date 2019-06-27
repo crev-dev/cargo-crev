@@ -1213,27 +1213,25 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .unwrap_or_else(|| "?".into())
                     );
 
-                    let all_advisories = db.get_advisories_for_version(
+                    let issues_from_trusted = db.get_issues_for_version(
                         PROJECT_SOURCE_CRATES_IO,
                         crate_name,
                         crate_version,
+                        &trust_set,
+                        args.requirements.trust_level,
                     );
-                    let valid_advisories = all_advisories
-                        .iter()
-                        .filter(|(_version, package_review)| {
-                            !trust_set.contains_distrusted(&package_review.from.id)
-                        })
-                        .count();
-                    let trusted_advisories = all_advisories
-                        .iter()
-                        .filter(|(_version, package_review)| {
-                            trust_set.contains_trusted(&package_review.from.id)
-                        })
-                        .count();
+
+                    let issues_from_all = db.get_issues_for_version(
+                        PROJECT_SOURCE_CRATES_IO,
+                        crate_name,
+                        crate_version,
+                        &trust_set,
+                        crev_data::Level::None,
+                    );
 
                     term.print(
-                        format_args!("{:4}", trusted_advisories),
-                        if trusted_advisories > 0 {
+                        format_args!("{:4}", issues_from_trusted.len()),
+                        if issues_from_trusted.len() > 0 {
                             Some(::term::color::RED)
                         } else {
                             None
@@ -1241,8 +1239,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     )?;
                     print!("/");
                     term.print(
-                        format_args!("{:<2}", valid_advisories),
-                        if valid_advisories > 0 {
+                        format_args!("{:<2}", issues_from_all.len()),
+                        if issues_from_all.len() > 0 {
                             None
                         } else {
                             Some(::term::color::YELLOW)
