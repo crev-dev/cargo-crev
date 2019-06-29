@@ -225,10 +225,10 @@ impl ProofDB {
         trust_set: &TrustSet,
         trust_level_required: Level,
     ) -> HashMap<String, IssueMarkers> {
-        let mut issues: HashMap<String, IssueMarkers> = HashMap::new();
+        let mut issue_markers_by_id: HashMap<String, IssueMarkers> = HashMap::new();
 
         for (_selector, _review, signature, issue) in self
-            .reviews_lte_version_iter(
+            .pkg_reviews_lte_version_iter(
                 source.to_owned(),
                 name.to_owned(),
                 queried_version.to_owned(),
@@ -251,17 +251,64 @@ impl ProofDB {
                     .map(move |issue| (selector, review.to_owned(), signature.to_owned(), issue))
             })
         {
-            issues
+            issue_markers_by_id
                 .entry(issue.id.clone())
                 .or_default()
                 .issues
                 .insert(signature);
         }
 
-        issues
+        // let mut already_solved_issue_ids = HashSet::new();
+
+        for (review, signature, advisory) in self
+            .package_reviews_by_name.get(&SourcePackageSelector::new(
+                source.to_owned(),
+                name.to_owned(),
+            )).into_iter().flat_map(|pkg_reviews| pkg_reviews.iter())
+            .filter(|uniq_pkg_review| {
+                if let Some(effective) = trust_set.get_effective_trust_level(&uniq_pkg_review.from)
+                {
+                    effective >= TrustLevel::from(trust_level_required)
+                } else {
+                    false
+                }
+            })
+            .flat_map(move |uniq_pkg_review| {
+                let signature =
+                    &self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value;
+                let review = &self.package_review_by_signature[signature];
+                review
+                    .advisories
+                    .iter()
+                    .map(move |advisory| (review.to_owned(), signature.to_owned(), advisory))
+            })
+        {
+
+            if advisory.is_advisory_for_when_in_version(&queried_version, &review.package.version) {
+                for id in &advisory.ids {
+                    issue_markers_by_id
+                        .entry(id.clone())
+                        .or_default()
+                        .issues
+                        .insert(signature.clone());
+                }
+            }
+
+            for id in &advisory.ids {
+                if let Some(mut issue_marker) = issue_markers_by_id.get_mut(id) {
+                    let issues= std::mem::replace(&mut issue_marker.issues, HashSet::new());
+                    issue_marker.issues = issues.into_iter().filter(|signature| {
+                        let issue_review = self.package_review_by_signature.get(signature).expect("review for this signature");
+                        !advisory.is_advisory_for_when_in_version(&issue_review.package.version, &review.package.version)
+                    }).collect();
+                }
+            }
+        }
+
+        issue_markers_by_id.into_iter().filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty()).collect()
     }
 
-    pub fn reviews_gte_version_iter(
+    pub fn pkg_reviews_gte_version_iter(
         &self,
         source: String,
         name: String,
@@ -279,7 +326,7 @@ impl ProofDB {
             .flat_map(|(selector, reviews)| reviews.iter().map(move |r| (selector, r)))
     }
 
-    pub fn reviews_lte_version_iter(
+    pub fn pkg_reviews_lte_version_iter(
         &self,
         source: String,
         name: String,
@@ -304,7 +351,7 @@ impl ProofDB {
         name: &str,
         queried_version: &Version,
     ) -> HashMap<Version, proof::review::Package> {
-        self.reviews_gte_version_iter(
+        self.pkg_reviews_gte_version_iter(
             source.to_owned(),
             name.to_owned(),
             queried_version.to_owned(),
@@ -330,7 +377,7 @@ impl ProofDB {
         name: &str,
     ) -> HashMap<Version, proof::review::Package> {
         let min_possible_version = Version::parse("0.0.0").unwrap();
-        self.reviews_gte_version_iter(source.to_owned(), name.to_owned(), min_possible_version)
+        self.pkg_reviews_gte_version_iter(source.to_owned(), name.to_owned(), min_possible_version)
             .flat_map(|(selector, uniq_pkg_review)| {
                 let review_version = selector.version.to_owned();
                 let review = self.package_review_by_signature[&self

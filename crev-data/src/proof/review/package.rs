@@ -134,25 +134,11 @@ impl Package {
     }
 
     pub fn is_advisory_for(&self, version: &Version) -> bool {
-        if *version < self.package.version {
             for advisory in &self.advisories {
-                match advisory.range {
-                    AdvisoryRange::All => return true,
-                    AdvisoryRange::Major => {
-                        if self.package.version.major == version.major {
-                            return true;
-                        }
-                    }
-                    AdvisoryRange::Minor => {
-                        if self.package.version.major == version.major
-                            && self.package.version.minor == version.minor
-                        {
-                            return true;
-                        }
-                    }
+                if advisory.is_advisory_for_when_in_version(version, &self.package.version) {
+                    return true;
                 }
             }
-        }
         false
     }
 }
@@ -242,6 +228,29 @@ impl Default for Advisory {
             critical: false,
             comment: "".to_string(),
         }
+    }
+}
+
+impl Advisory {
+    pub fn is_advisory_for_when_in_version(&self, for_version: &Version, in_pkg_version: &Version) -> bool {
+        if for_version < in_pkg_version {
+                match self.range {
+                    AdvisoryRange::All => return true,
+                    AdvisoryRange::Major => {
+                        if in_pkg_version.major == for_version.major {
+                            return true;
+                        }
+                    }
+                    AdvisoryRange::Minor => {
+                        if in_pkg_version.major == for_version.major
+                            && in_pkg_version.minor == for_version.minor
+                        {
+                            return true;
+                        }
+                    }
+                }
+        }
+        false
     }
 }
 
