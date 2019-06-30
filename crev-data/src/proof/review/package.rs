@@ -6,6 +6,7 @@ use crev_common::{
 };
 use crev_common::{is_equal_default, is_vec_empty};
 use derive_builder::Builder;
+use typed_builder::TypedBuilder;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
@@ -203,13 +204,14 @@ impl std::str::FromStr for AdvisoryRange {
 /// Advisory means a general important fix was included in this
 /// release, and all previous releases were potentially affected.
 /// We don't play with exact ranges.
-#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+#[derive(Clone, TypedBuilder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Advisory {
     pub ids: Vec<String>,
     pub range: AdvisoryRange,
+    #[builder(default)]
     pub critical: bool,
-    #[builder(default = "Default::default()")]
+    #[builder(default)]
     pub comment: String,
 }
 

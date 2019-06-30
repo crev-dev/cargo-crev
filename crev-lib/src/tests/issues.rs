@@ -26,13 +26,13 @@ fn advisory_sanity() -> Result<()> {
         .from(id.id.to_owned())
         .package(package_info.clone())
         .comment("comment".into())
-        .advisories(vec![proof::review::package::AdvisoryBuilder::default()
+        .advisories(vec![proof::review::package::Advisory::builder()
             .range(proof::review::package::AdvisoryRange::Major)
             .critical(false)
             .ids(vec!["someid".into()])
-            .comment("comment".into())
+            .comment("comment".to_string())
             .build()
-            .unwrap()])
+            ])
         .build()
         .unwrap();
 
@@ -70,12 +70,12 @@ fn advisory_sanity() -> Result<()> {
         .from(id.id.to_owned())
         .package(package_info)
         .comment("comment".into())
-        .advisories(vec![proof::review::package::AdvisoryBuilder::default()
+        .advisories(vec![proof::review::package::Advisory::builder()
             .range(proof::review::package::AdvisoryRange::All)
             .ids(vec!["someid".into()])
             .critical(false)
             .build()
-            .unwrap()])
+            ])
         .build()
         .unwrap();
 
