@@ -1,12 +1,14 @@
 use super::*;
 
 use crev_data::{
-    proof::{self, trust::TrustLevel},
+    proof::{trust::TrustLevel},
     Digest, OwnId,
 };
 use default::default;
 use semver::Version;
 use std::str::FromStr;
+
+mod issues;
 
 // Basic liftime of an `LockedId`:
 //
@@ -57,9 +59,7 @@ pass:
     let unlocked = locked.to_unlocked("a")?;
 
     let _trust_proof = unlocked
-        .as_pubid()
-        .create_trust_proof(vec![unlocked.as_pubid().to_owned()], TrustLevel::High)?
-        .sign_by(&unlocked)?;
+        .create_signed_trust_proof(vec![unlocked.as_pubid()], TrustLevel::High)?;
 
     Ok(())
 }
@@ -114,22 +114,10 @@ fn proofdb_distance() -> Result<()> {
         max_distance: 111,
     };
 
-    let a_to_b = a
-        .as_pubid()
-        .create_trust_proof(vec![b.as_pubid().to_owned()], TrustLevel::High)?
-        .sign_by(&a)?;
-    let b_to_c = b
-        .as_pubid()
-        .create_trust_proof(vec![c.as_pubid().to_owned()], TrustLevel::Medium)?
-        .sign_by(&b)?;
-    let c_to_d = c
-        .as_pubid()
-        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Low)?
-        .sign_by(&c)?;
-    let d_to_e = d
-        .as_pubid()
-        .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
-        .sign_by(&d)?;
+    let a_to_b = a.create_signed_trust_proof(vec![b.as_pubid()], TrustLevel::High)? ;
+    let b_to_c = b.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Medium)?;
+    let c_to_d = c.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
+    let d_to_e = d.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 
@@ -148,9 +136,7 @@ fn proofdb_distance() -> Result<()> {
     assert!(!trust_set.contains(e.as_ref()));
 
     let b_to_d = b
-        .as_pubid()
-        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Medium)?
-        .sign_by(&b)?;
+        .create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
 
     trustdb.import_from_iter(vec![b_to_d].into_iter());
 
@@ -256,24 +242,16 @@ fn proofdb_distrust() -> Result<()> {
     };
 
     let a_to_bc = a
-        .as_pubid()
-        .create_trust_proof(
-            vec![b.as_pubid().to_owned(), c.as_pubid().to_owned()],
+        .create_signed_trust_proof(
+            vec![b.as_pubid(), c.as_pubid()],
             TrustLevel::High,
-        )?
-        .sign_by(&a)?;
+        )? ;
     let b_to_d = b
-        .as_pubid()
-        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Low)?
-        .sign_by(&b)?;
+        .create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)? ;
     let d_to_c = d
-        .as_pubid()
-        .create_trust_proof(vec![c.as_pubid().to_owned()], TrustLevel::Distrust)?
-        .sign_by(&d)?;
+        .create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Distrust)? ;
     let c_to_e = c
-        .as_pubid()
-        .create_trust_proof(vec![e.as_pubid().to_owned()], TrustLevel::High)?
-        .sign_by(&c)?;
+        .create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)? ;
 
     let mut trustdb = ProofDB::new();
 
@@ -291,10 +269,7 @@ fn proofdb_distrust() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let e_to_d = e
-        .as_pubid()
-        .create_trust_proof(vec![d.as_pubid().to_owned()], TrustLevel::Distrust)?
-        .sign_by(&e)?;
+    let e_to_d = e.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Distrust)?;
 
     trustdb.import_from_iter(vec![e_to_d].into_iter());
 
@@ -309,102 +284,6 @@ fn proofdb_distrust() -> Result<()> {
     assert!(!trust_set.contains(c.as_ref()));
     assert!(!trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
-
-    Ok(())
-}
-
-#[test]
-fn advisory_sanity() -> Result<()> {
-    let id = OwnId::generate_for_git_url("https://a");
-    const SOURCE: &str = "SOURCE_ID";
-    const NAME: &str = "NAME";
-
-    let package_info = proof::PackageInfo {
-        id: None,
-        source: "SOURCE_ID".to_owned(),
-        name: NAME.into(),
-        version: Version::parse("1.2.3").unwrap(),
-        digest: vec![0, 1, 2, 3],
-        digest_type: proof::default_digest_type(),
-        revision: "".into(),
-        revision_type: proof::default_revision_type(),
-    };
-    let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
-        .package(package_info.clone())
-        .comment("comment".into())
-        .advisories(vec![proof::review::package::AdvisoryBuilder::default()
-            .range(proof::review::package::AdvisoryRange::Major)
-            .critical(false)
-            .build()
-            .unwrap()])
-        .build()
-        .unwrap();
-
-    let proof = review.sign_by(&id)?;
-
-    let mut trustdb = ProofDB::new();
-    trustdb.import_from_iter(vec![proof].into_iter());
-
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.2").unwrap())
-            .len(),
-        1
-    );
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.3").unwrap())
-            .len(),
-        0
-    );
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
-            .len(),
-        0
-    );
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
-            .len(),
-        0
-    );
-
-    let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
-        .package(package_info)
-        .comment("comment".into())
-        .advisories(vec![proof::review::package::AdvisoryBuilder::default()
-            .range(proof::review::package::AdvisoryRange::All)
-            .critical(false)
-            .build()
-            .unwrap()])
-        .build()
-        .unwrap();
-
-    let proof = review.sign_by(&id)?;
-
-    trustdb.import_from_iter(vec![proof].into_iter());
-
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
-            .len(),
-        1
-    );
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
-            .len(),
-        0
-    );
-    assert_eq!(
-        trustdb
-            .get_advisories_for_version(SOURCE, NAME, &Version::parse("2.3.0").unwrap())
-            .len(),
-        0
-    );
 
     Ok(())
 }

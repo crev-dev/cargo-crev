@@ -192,8 +192,10 @@ impl Default for ProofDB {
 }
 
 #[derive(Default, Debug)]
-pub struct IssueMarkers {
+pub struct IssueReports {
+    /// Signatures of reviews that reported a given issue by `issues` field
     issues: HashSet<Signature>,
+    /// Signatures of review that reported a given issue by `advisories` field
     advisories: HashSet<Signature>,
 }
 
@@ -217,6 +219,14 @@ impl ProofDB {
         }
     }
 
+    /// Get all issues affecting a given package version
+    ///
+    /// Collect a map of Issue ID -> `IssueReports`, listing
+    /// all issues known to affect a given package version.
+    ///
+    /// These are calculated from `advisories` and `issues` fields
+    /// of the package reviews of reviewers intside a given `trust_set`
+    /// of at least given `trust_level_required`.
     pub fn get_issues_for_version(
         &self,
         source: &str,
@@ -224,9 +234,16 @@ impl ProofDB {
         queried_version: &Version,
         trust_set: &TrustSet,
         trust_level_required: Level,
-    ) -> HashMap<String, IssueMarkers> {
-        let mut issue_markers_by_id: HashMap<String, IssueMarkers> = HashMap::new();
+    ) -> HashMap<String, IssueReports> {
 
+        // This is one of the most complicated calculations in whole crev. I hate this code
+        // already, and I have barely put it together.
+
+        // Here we track all the reported isue by issue id
+        let mut issue_reports_by_id: HashMap<String, IssueReports> = HashMap::new();
+
+        // First we go through all the reports in previous versions with `issues` fields and collect these.
+        // Easy.
         for (_selector, _review, signature, issue) in self
             .pkg_reviews_lte_version_iter(
                 source.to_owned(),
@@ -251,15 +268,22 @@ impl ProofDB {
                     .map(move |issue| (selector, review.to_owned(), signature.to_owned(), issue))
             })
         {
-            issue_markers_by_id
+            issue_reports_by_id
                 .entry(issue.id.clone())
                 .or_default()
                 .issues
                 .insert(signature);
         }
 
-        // let mut already_solved_issue_ids = HashSet::new();
-
+        // Now the complicated part. We go through all the advisories for all the versions
+        // of given package.
+        //
+        // Advisories itself have two functions: first, they might have report an issue
+        // by advertising that a given version should be upgraded to a newer version.
+        //
+        // Second - they might cancel `issues` inside `issue_reports_by_id` because they
+        // advertise a fix that happened somewhere between the `issue` report and
+        // the current `queried_version`.
         for (review, signature, advisory) in self
             .package_reviews_by_name.get(&SourcePackageSelector::new(
                 source.to_owned(),
@@ -284,9 +308,10 @@ impl ProofDB {
             })
         {
 
+            // Add new issue reports created by the advisory
             if advisory.is_advisory_for_when_in_version(&queried_version, &review.package.version) {
                 for id in &advisory.ids {
-                    issue_markers_by_id
+                    issue_reports_by_id
                         .entry(id.clone())
                         .or_default()
                         .issues
@@ -294,8 +319,9 @@ impl ProofDB {
                 }
             }
 
+            // Remove the reports that are already fixed
             for id in &advisory.ids {
-                if let Some(mut issue_marker) = issue_markers_by_id.get_mut(id) {
+                if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
                     let issues= std::mem::replace(&mut issue_marker.issues, HashSet::new());
                     issue_marker.issues = issues.into_iter().filter(|signature| {
                         let issue_review = self.package_review_by_signature.get(signature).expect("review for this signature");
@@ -305,8 +331,9 @@ impl ProofDB {
             }
         }
 
-        issue_markers_by_id.into_iter().filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty()).collect()
+        issue_reports_by_id.into_iter().filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty()).collect()
     }
+
 
     pub fn pkg_reviews_gte_version_iter(
         &self,

@@ -534,7 +534,7 @@ impl Local {
         }
 
         let trust = from_id.create_trust_proof(
-            pub_ids,
+            &pub_ids,
             if trust_or_distrust.is_trust() {
                 TrustLevel::Medium
             } else {

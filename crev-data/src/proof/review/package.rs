@@ -38,6 +38,7 @@ pub struct Package {
     pub package: proof::PackageInfo,
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
     #[serde(rename = "package-diff-base")]
+    #[builder(default = "Default::default()")]
     pub diff_base: Option<proof::PackageInfo>,
     #[builder(default = "Default::default()")]
     #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
@@ -208,6 +209,7 @@ pub struct Advisory {
     pub ids: Vec<String>,
     pub range: AdvisoryRange,
     pub critical: bool,
+    #[builder(default = "Default::default()")]
     pub comment: String,
 }
 
@@ -266,6 +268,7 @@ impl Advisory {
 pub struct Issue {
     pub id: String,
     pub critical: bool,
+    #[builder(default = "Default::default()")]
     pub comment: String,
 }
 

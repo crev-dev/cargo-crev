@@ -102,18 +102,19 @@ impl PubId {
         })
     }
 
-    pub fn create_trust_proof(
+    pub fn create_trust_proof<'a>(
         &self,
-        ids: Vec<PubId>,
+        ids: impl IntoIterator<Item=&'a PubId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Trust> {
         Ok(proof::TrustBuilder::default()
             .from(self.clone())
             .trust(trust_level)
-            .ids(ids)
+            .ids(ids.into_iter().cloned().collect())
             .build()
             .map_err(|e| format_err!("{}", e))?)
     }
+
 
     pub fn create_package_review_proof(
         &self,
@@ -188,5 +189,13 @@ impl OwnId {
             id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,
         }
+    }
+
+    pub fn create_signed_trust_proof<'a>(
+        &self,
+        ids: impl IntoIterator<Item=&'a PubId>,
+        trust_level: proof::trust::TrustLevel,
+    ) -> Result<proof::Proof> {
+        self.id.create_trust_proof(ids, trust_level)?.sign_by(&self)
     }
 }
