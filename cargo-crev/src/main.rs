@@ -766,7 +766,7 @@ fn create_review_proof(
     if review.advisories.is_empty() {
         if let Some(advise_common) = advise_common {
             let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
-            advisory.critical = advise_common.critical;
+            advisory.severity = advise_common.severity;
             review.advisories = vec![advisory];
         }
     }

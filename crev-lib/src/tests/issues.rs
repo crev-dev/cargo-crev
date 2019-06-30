@@ -1,9 +1,6 @@
 use super::*;
 
-use crev_data::{
-    proof::{self},
-    OwnId,
-};
+use crev_data::{proof, OwnId};
 use semver::Version;
 
 #[test]
@@ -28,11 +25,9 @@ fn advisory_sanity() -> Result<()> {
         .comment("comment".into())
         .advisories(vec![proof::review::package::Advisory::builder()
             .range(proof::review::package::AdvisoryRange::Major)
-            .critical(false)
             .ids(vec!["someid".into()])
             .comment("comment".to_string())
-            .build()
-            ])
+            .build()])
         .build()
         .unwrap();
 
@@ -73,9 +68,7 @@ fn advisory_sanity() -> Result<()> {
         .advisories(vec![proof::review::package::Advisory::builder()
             .range(proof::review::package::AdvisoryRange::All)
             .ids(vec!["someid".into()])
-            .critical(false)
-            .build()
-            ])
+            .build()])
         .build()
         .unwrap();
 

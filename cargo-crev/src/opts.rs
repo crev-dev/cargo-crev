@@ -348,8 +348,8 @@ pub struct AdviseCommon {
     )]
     pub affected: crev_data::proof::review::package::AdvisoryRange,
 
-    #[structopt(long = "critical")]
-    pub critical: bool,
+    #[structopt(long = "severity")]
+    pub severity: Level,
 }
 
 #[derive(Debug, StructOpt, Clone)]

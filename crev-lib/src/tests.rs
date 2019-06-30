@@ -1,9 +1,6 @@
 use super::*;
 
-use crev_data::{
-    proof::{trust::TrustLevel},
-    Digest, OwnId,
-};
+use crev_data::{proof::trust::TrustLevel, Digest, OwnId};
 use default::default;
 use semver::Version;
 use std::str::FromStr;
@@ -58,8 +55,8 @@ pass:
     let locked = id::LockedId::from_str(yaml)?;
     let unlocked = locked.to_unlocked("a")?;
 
-    let _trust_proof = unlocked
-        .create_signed_trust_proof(vec![unlocked.as_pubid()], TrustLevel::High)?;
+    let _trust_proof =
+        unlocked.create_signed_trust_proof(vec![unlocked.as_pubid()], TrustLevel::High)?;
 
     Ok(())
 }
@@ -114,7 +111,7 @@ fn proofdb_distance() -> Result<()> {
         max_distance: 111,
     };
 
-    let a_to_b = a.create_signed_trust_proof(vec![b.as_pubid()], TrustLevel::High)? ;
+    let a_to_b = a.create_signed_trust_proof(vec![b.as_pubid()], TrustLevel::High)?;
     let b_to_c = b.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Medium)?;
     let c_to_d = c.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
     let d_to_e = d.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
@@ -135,8 +132,7 @@ fn proofdb_distance() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let b_to_d = b
-        .create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
 
     trustdb.import_from_iter(vec![b_to_d].into_iter());
 
@@ -241,17 +237,11 @@ fn proofdb_distrust() -> Result<()> {
         max_distance: 10000,
     };
 
-    let a_to_bc = a
-        .create_signed_trust_proof(
-            vec![b.as_pubid(), c.as_pubid()],
-            TrustLevel::High,
-        )? ;
-    let b_to_d = b
-        .create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)? ;
-    let d_to_c = d
-        .create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Distrust)? ;
-    let c_to_e = c
-        .create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)? ;
+    let a_to_bc =
+        a.create_signed_trust_proof(vec![b.as_pubid(), c.as_pubid()], TrustLevel::High)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
+    let d_to_c = d.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Distrust)?;
+    let c_to_e = c.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 

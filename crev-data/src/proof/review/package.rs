@@ -1,4 +1,4 @@
-use crate::{id, proof, Result};
+use crate::{id, proof, Level, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
@@ -6,11 +6,12 @@ use crev_common::{
 };
 use crev_common::{is_equal_default, is_vec_empty};
 use derive_builder::Builder;
-use typed_builder::TypedBuilder;
+use failure::bail;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{default::Default, fmt};
+use typed_builder::TypedBuilder;
 
 const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
 const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
@@ -128,7 +129,19 @@ impl super::Common for Package {
 
 impl Package {
     pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+        let s: Self = serde_yaml::from_str(&s)?;
+        s.validate_data()?;
+        Ok(s)
+    }
+
+    pub fn validate_data(&self) -> Result<()> {
+        for issue in &self.issues {
+            if issue.id.is_empty() {
+                bail!("Issues with an empty `id` field are not allowed");
+            }
+        }
+
+        Ok(())
     }
 
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
@@ -136,11 +149,11 @@ impl Package {
     }
 
     pub fn is_advisory_for(&self, version: &Version) -> bool {
-            for advisory in &self.advisories {
-                if advisory.is_advisory_for_when_in_version(version, &self.package.version) {
-                    return true;
-                }
+        for advisory in &self.advisories {
+            if advisory.is_advisory_for_when_in_version(version, &self.package.version) {
+                return true;
             }
+        }
         false
     }
 }
@@ -210,7 +223,7 @@ pub struct Advisory {
     pub ids: Vec<String>,
     pub range: AdvisoryRange,
     #[builder(default)]
-    pub critical: bool,
+    pub severity: Level,
     #[builder(default)]
     pub comment: String,
 }
@@ -229,30 +242,34 @@ impl Default for Advisory {
         Self {
             ids: vec![],
             range: AdvisoryRange::default(),
-            critical: false,
+            severity: Default::default(),
             comment: "".to_string(),
         }
     }
 }
 
 impl Advisory {
-    pub fn is_advisory_for_when_in_version(&self, for_version: &Version, in_pkg_version: &Version) -> bool {
+    pub fn is_advisory_for_when_in_version(
+        &self,
+        for_version: &Version,
+        in_pkg_version: &Version,
+    ) -> bool {
         if for_version < in_pkg_version {
-                match self.range {
-                    AdvisoryRange::All => return true,
-                    AdvisoryRange::Major => {
-                        if in_pkg_version.major == for_version.major {
-                            return true;
-                        }
-                    }
-                    AdvisoryRange::Minor => {
-                        if in_pkg_version.major == for_version.major
-                            && in_pkg_version.minor == for_version.minor
-                        {
-                            return true;
-                        }
+            match self.range {
+                AdvisoryRange::All => return true,
+                AdvisoryRange::Major => {
+                    if in_pkg_version.major == for_version.major {
+                        return true;
                     }
                 }
+                AdvisoryRange::Minor => {
+                    if in_pkg_version.major == for_version.major
+                        && in_pkg_version.minor == for_version.minor
+                    {
+                        return true;
+                    }
+                }
+            }
         }
         false
     }
@@ -265,21 +282,22 @@ impl Advisory {
 /// question open if any previous and following versions might
 /// also be affected, but
 /// that
-#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+#[derive(Clone, TypedBuilder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Issue {
     pub id: String,
-    pub critical: bool,
-    #[builder(default = "Default::default()")]
+    #[builder(default)]
+    pub severity: Level,
+    #[builder(default)]
     pub comment: String,
 }
 
-impl Default for Issue {
-    fn default() -> Self {
+impl Issue {
+    pub fn new(id: String) -> Self {
         Self {
-            id: "".into(),
-            critical: false,
-            comment: "".to_string(),
+            id,
+            severity: Default::default(),
+            comment: Default::default(),
         }
     }
 }

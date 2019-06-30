@@ -104,7 +104,7 @@ impl PubId {
 
     pub fn create_trust_proof<'a>(
         &self,
-        ids: impl IntoIterator<Item=&'a PubId>,
+        ids: impl IntoIterator<Item = &'a PubId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Trust> {
         Ok(proof::TrustBuilder::default()
@@ -114,7 +114,6 @@ impl PubId {
             .build()
             .map_err(|e| format_err!("{}", e))?)
     }
-
 
     pub fn create_package_review_proof(
         &self,
@@ -193,7 +192,7 @@ impl OwnId {
 
     pub fn create_signed_trust_proof<'a>(
         &self,
-        ids: impl IntoIterator<Item=&'a PubId>,
+        ids: impl IntoIterator<Item = &'a PubId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Proof> {
         self.id.create_trust_proof(ids, trust_level)?.sign_by(&self)

@@ -235,7 +235,6 @@ impl ProofDB {
         trust_set: &TrustSet,
         trust_level_required: Level,
     ) -> HashMap<String, IssueReports> {
-
         // This is one of the most complicated calculations in whole crev. I hate this code
         // already, and I have barely put it together.
 
@@ -285,10 +284,13 @@ impl ProofDB {
         // advertise a fix that happened somewhere between the `issue` report and
         // the current `queried_version`.
         for (review, signature, advisory) in self
-            .package_reviews_by_name.get(&SourcePackageSelector::new(
+            .package_reviews_by_name
+            .get(&SourcePackageSelector::new(
                 source.to_owned(),
                 name.to_owned(),
-            )).into_iter().flat_map(|pkg_reviews| pkg_reviews.iter())
+            ))
+            .into_iter()
+            .flat_map(|pkg_reviews| pkg_reviews.iter())
             .filter(|uniq_pkg_review| {
                 if let Some(effective) = trust_set.get_effective_trust_level(&uniq_pkg_review.from)
                 {
@@ -307,7 +309,6 @@ impl ProofDB {
                     .map(move |advisory| (review.to_owned(), signature.to_owned(), advisory))
             })
         {
-
             // Add new issue reports created by the advisory
             if advisory.is_advisory_for_when_in_version(&queried_version, &review.package.version) {
                 for id in &advisory.ids {
@@ -322,18 +323,29 @@ impl ProofDB {
             // Remove the reports that are already fixed
             for id in &advisory.ids {
                 if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
-                    let issues= std::mem::replace(&mut issue_marker.issues, HashSet::new());
-                    issue_marker.issues = issues.into_iter().filter(|signature| {
-                        let issue_review = self.package_review_by_signature.get(signature).expect("review for this signature");
-                        !advisory.is_advisory_for_when_in_version(&issue_review.package.version, &review.package.version)
-                    }).collect();
+                    let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
+                    issue_marker.issues = issues
+                        .into_iter()
+                        .filter(|signature| {
+                            let issue_review = self
+                                .package_review_by_signature
+                                .get(signature)
+                                .expect("review for this signature");
+                            !advisory.is_advisory_for_when_in_version(
+                                &issue_review.package.version,
+                                &review.package.version,
+                            )
+                        })
+                        .collect();
                 }
             }
         }
 
-        issue_reports_by_id.into_iter().filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty()).collect()
+        issue_reports_by_id
+            .into_iter()
+            .filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty())
+            .collect()
     }
-
 
     pub fn pkg_reviews_gte_version_iter(
         &self,
