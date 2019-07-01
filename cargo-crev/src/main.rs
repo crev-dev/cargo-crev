@@ -1233,7 +1233,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         crate_name,
                         crate_version,
                         &trust_set,
-                        args.requirements.trust_level,
+                        args.requirements.trust_level.into(),
                     );
 
                     let issues_from_all = db.get_issues_for_version(
@@ -1241,12 +1241,12 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         crate_name,
                         crate_version,
                         &trust_set,
-                        crev_data::Level::None,
+                        crev_data::Level::None.into(),
                     );
 
                     term.print(
                         format_args!("{:4}", issues_from_trusted.len()),
-                        if issues_from_trusted.len() > 0 {
+                        if !issues_from_trusted.is_empty() {
                             Some(::term::color::RED)
                         } else {
                             None
@@ -1255,7 +1255,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     print!("/");
                     term.print(
                         format_args!("{:<2}", issues_from_all.len()),
-                        if issues_from_all.len() > 0 {
+                        if !issues_from_all.is_empty() {
                             None
                         } else {
                             Some(::term::color::YELLOW)

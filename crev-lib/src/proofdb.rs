@@ -8,7 +8,7 @@ use crev_data::{
         trust::TrustLevel,
         Content, ContentCommon,
     },
-    Digest, Id, Level, Url,
+    Digest, Id, Url,
 };
 use default::default;
 use semver::Version;
@@ -233,7 +233,7 @@ impl ProofDB {
         name: &str,
         queried_version: &Version,
         trust_set: &TrustSet,
-        trust_level_required: Level,
+        trust_level_required: TrustLevel,
     ) -> HashMap<String, IssueReports> {
         // This is one of the most complicated calculations in whole crev. I hate this code
         // already, and I have barely put it together.
@@ -966,6 +966,15 @@ pub struct TrustDistanceParams {
 }
 
 impl TrustDistanceParams {
+    pub fn new_no_wot() -> Self {
+        Self {
+            max_distance: 0,
+            high_trust_distance: 1,
+            medium_trust_distance: 1,
+            low_trust_distance: 1,
+        }
+    }
+
     fn distance_by_level(&self, level: TrustLevel) -> Option<u64> {
         use crev_data::proof::trust::TrustLevel::*;
         Some(match level {
