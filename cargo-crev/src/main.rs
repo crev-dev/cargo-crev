@@ -669,6 +669,7 @@ fn create_review_proof(
     name: &str,
     version: Option<&Version>,
     unrelated: UnrelatedOrDependency,
+    report_common: Option<opts::ReportCommon>,
     advise_common: Option<opts::AdviseCommon>,
     trust: TrustOrDistrust,
     proof_create_opt: &opts::CommonProofCreate,
@@ -735,7 +736,7 @@ fn create_review_proof(
             revision: vcs_info_to_revision_string(vcs),
             revision_type: proof::default_revision_type(),
         })
-        .review(if advise_common.is_some() {
+        .review(if advise_common.is_some() || report_common.is_some() {
             crev_data::Review::new_none()
         } else {
             trust.to_review()
@@ -763,12 +764,15 @@ fn create_review_proof(
             None
         };
 
-    if review.advisories.is_empty() {
-        if let Some(advise_common) = advise_common {
-            let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
-            advisory.severity = advise_common.severity;
-            review.advisories = vec![advisory];
-        }
+    if let Some(advise_common) = advise_common {
+        let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
+        advisory.severity = advise_common.severity;
+        review.advisories.push(advisory);
+    }
+    if let Some(report_common) = report_common {
+        let mut report =  proof::review::package::Issue::new_with_severity("".into(), report_common.severity);
+        report.severity = report_common.severity;
+        review.issues.push(report);
     }
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review.into(),
@@ -1378,6 +1382,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    if args.issue {
+                        Some(opts::ReportCommon::default())
+                    } else {
+                        None
+                    },
                     if args.advisory {
                         Some(opts::AdviseCommon::default())
                     } else {
@@ -1407,6 +1416,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    if args.issue {
+                        Some(opts::ReportCommon::default())
+                    } else {
+                        None
+                    },
                     if args.advisory {
                         Some(opts::AdviseCommon::default())
                     } else {
@@ -1425,7 +1439,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    None,
                     Some(args.advise_common),
+                    TrustOrDistrust::Distrust,
+                    &args.common_proof_create,
+                    &None,
+                    true,
+                )
+            })?;
+        }
+        opts::Command::Report(args) => {
+            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
+                create_review_proof(
+                    c,
+                    v,
+                    i,
+                    Some(args.report_common),
+                    None,
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
                     &None,

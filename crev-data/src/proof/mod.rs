@@ -135,6 +135,16 @@ impl Content {
         }
     }
 
+    pub fn validate_data(&self) -> Result<()> {
+        use self::Content::*;
+        match self {
+            Package(review) => review.validate_data()?,
+            _ => {}
+        }
+
+        Ok(())
+    }
+
     pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
         Ok(match type_ {
             ProofType::Code => review::Code::parse(&s)?.into(),
@@ -144,13 +154,15 @@ impl Content {
     }
 
     pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
-        Ok(match original_proof {
+        let proof : Content = match original_proof {
             Content::Code(code) => code.apply_draft(review::CodeDraft::parse(&s)?).into(),
             Content::Package(package) => {
                 package.apply_draft(review::PackageDraft::parse(&s)?).into()
             }
             Content::Trust(trust) => trust.apply_draft(TrustDraft::parse(&s)?).into(),
-        })
+        };
+        proof.validate_data()?;
+        Ok(proof)
     }
 
     pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {

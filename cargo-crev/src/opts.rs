@@ -331,6 +331,9 @@ pub struct Review {
     #[structopt(long = "advisory")]
     pub advisory: bool,
 
+    #[structopt(long = "issue")]
+    pub issue: bool,
+
     #[structopt(long = "skip-activity-check")]
     pub skip_activity_check: bool,
 
@@ -362,6 +365,24 @@ pub struct Advise {
 
     #[structopt(flatten)]
     pub advise_common: AdviseCommon,
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
+pub struct ReportCommon {
+    #[structopt(long = "severity")]
+    pub severity: Level,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Report {
+    #[structopt(flatten)]
+    pub common: ReviewOrGotoCommon,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+
+    #[structopt(flatten)]
+    pub report_common: ReportCommon,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -423,6 +444,10 @@ pub enum Command {
     /// Flag a crate as buggy/low-quality/dangerous
     #[structopt(name = "flag")]
     Flag(Review),
+
+    /// Report that the crate is affected by a certain issue
+    #[structopt(name = "report")]
+    Report(Report),
 
     /// Create advisory urging to upgrade to given package version
     #[structopt(name = "advise")]

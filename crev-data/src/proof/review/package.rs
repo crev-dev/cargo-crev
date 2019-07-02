@@ -71,9 +71,9 @@ impl Package {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PackageDraft {
     review: super::Review,
-    #[serde(default = "Default::default")]
+    #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub advisories: Vec<Advisory>,
-    #[serde(default = "Default::default")]
+    #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub issues: Vec<Issue>,
     #[serde(default = "Default::default")]
     comment: String,
@@ -141,6 +141,17 @@ impl Package {
             }
         }
 
+        for advisory in &self.advisories {
+            if advisory.ids.is_empty() {
+                bail!("Advisories with no `id`s are not allowed");
+            }
+
+            for id in &advisory.ids {
+                if id.is_empty() {
+                    bail!("Advisories with an empty `id` field are not allowed");
+                }
+            }
+        }
         Ok(())
     }
 
@@ -297,6 +308,13 @@ impl Issue {
         Self {
             id,
             severity: Default::default(),
+            comment: Default::default(),
+        }
+    }
+    pub fn new_with_severity(id: String, severity: Level) -> Self {
+        Self {
+            id,
+            severity,
             comment: Default::default(),
         }
     }
