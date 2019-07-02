@@ -18,6 +18,7 @@ pub use crate::{
     level::Level,
     proof::review,
     proof::review::Review,
+    proof::review::Rating,
     proof::trust::TrustLevel,
     url::Url,
 };

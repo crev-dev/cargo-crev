@@ -13,6 +13,7 @@ use cargo::{
 };
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
+use crev_data::Rating;
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
@@ -773,6 +774,7 @@ fn create_review_proof(
         let mut report =  proof::review::package::Issue::new_with_severity("".into(), report_common.severity);
         report.severity = report_common.severity;
         review.issues.push(report);
+        review.review.rating = Rating::Negative;
     }
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review.into(),

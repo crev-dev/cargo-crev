@@ -18,6 +18,8 @@ pub mod trust;
 
 pub use self::{package_info::*, revision::*, trust::*};
 
+pub use review::*;
+
 use crate::Result;
 
 pub type Date = chrono::DateTime<FixedOffset>;
