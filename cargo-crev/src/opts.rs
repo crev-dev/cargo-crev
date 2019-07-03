@@ -351,7 +351,7 @@ pub struct AdviseCommon {
     )]
     pub affected: crev_data::proof::review::package::AdvisoryRange,
 
-    #[structopt(long = "severity")]
+    #[structopt(long = "severity", default_value = "medium")]
     pub severity: Level,
 }
 
@@ -369,7 +369,7 @@ pub struct Advise {
 
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct ReportCommon {
-    #[structopt(long = "severity")]
+    #[structopt(long = "severity", default_value = "medium")]
     pub severity: Level,
 }
 
