@@ -126,7 +126,7 @@ Let's take a look:
 
 ```text
 $ cargo crev verify deps
-status reviews     downloads    own. advisr lines  geiger flgs crate                version         latest_t       
+status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t       
 none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1           
 none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9           
 none    0  0  1045209   2648161 1/1    0/0    403       3      same-file            1.0.4           

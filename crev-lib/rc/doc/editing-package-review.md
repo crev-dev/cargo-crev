@@ -41,12 +41,19 @@ your other work, etc.
     * `neutral` - secure but with flaws
     * `negative` - severe flaws and not ok for production usage
     * `dangerous` - unsafe to use; severe flaws and/or possibly malicious
-* `advisory` - Advisories mark package versions containing an important fix
-    * `affected` - Which versions are potentially affected
-        * `all` - all previous version
-        * `major` - all previous version within the same major release
-        * `minor` - all previous version within the same minor release
-    * `critical` - This advisory is very important
+* `advisories` - advisories mark package versions containing an important fix (list)
+    * `ids` - list of IDs identifing the issue being fixed
+    * `range` - versions are potentially affected
+      * `all` - all previous version
+      * `major` - all previous version within the same major release version
+      * `minor` - all previous version within the same minor release version
+    * `severity`
+      * `high` - critical issue (often with security implications)
+      * `medium` - important
+      * `low` - low severity 
+* `issues` - issues report a problem in a release (list)
+    * `id` - an ID of an issue
+    * `severity` - same as in the `advisories` section
 * `comment` - human-readable information about this review
               (eg. why it was done, how, and `rating` explanation)
 
