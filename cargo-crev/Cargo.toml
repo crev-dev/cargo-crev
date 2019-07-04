@@ -32,7 +32,7 @@ serde = "1"
 serde_json = "1"
 structopt = "0.2.16"
 term = "0.5"
-tokei = "9"
+tokei = "10"
 walkdir = "2"
 time = "*"
 env_logger = { version = "*", default-features = false, features = ["termcolor", "atty", "humantime"]}
