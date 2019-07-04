@@ -1262,9 +1262,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     term.print(
                         format_args!("{:<2}", issues_from_all.len()),
                         if !issues_from_all.is_empty() {
-                            None
-                        } else {
                             Some(::term::color::YELLOW)
+                        } else {
+                            None
                         },
                     )?;
                     print!(
