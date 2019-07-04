@@ -17,7 +17,7 @@ path = "src/main.rs"
 
 [dependencies]
 atty = "0.2"
-cargo = "0.35"
+cargo = "0.37"
 common_failures = "0.1"
 crates_io_api = "0.4"
 crev-common = { path = "../crev-common", version = "0.7" }
