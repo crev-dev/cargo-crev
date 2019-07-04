@@ -144,7 +144,7 @@ pub enum Verify {
 - reviews    - Number of reviews for the specific version and for all available versions (total)
 - downloads  - Download counts from crates.io for the specific version and all versions
 - own.       - Owner counts from crates.io (known/all)
-- advisr.    - Number of aplicable advisories (important upgrades) repored (trusted sources/all)
+- issues     - Number of issues repored (from trusted sources/all)
 - lines      - Lines of Rust code
 - geiger     - Geiger score: number of `unsafe` lines
 - flgs       - Flags for specific types of packages
@@ -224,6 +224,19 @@ pub struct QueryAdvisory {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct QueryIssue {
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
+
+    #[structopt(flatten)]
+    pub trust_params: TrustDistanceParams,
+
+    /// Minimum trust level of the reviewers for reviews
+    #[structopt(long = "trust", default_value = "none")]
+    pub trust_level: crev_data::Level,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct QueryDir {
     #[structopt(flatten)]
     pub common: ReviewOrGotoCommon,
@@ -242,6 +255,10 @@ pub enum Query {
     /// Query applicable advisories
     #[structopt(name = "advisory")]
     Advisory(QueryAdvisory),
+
+    /// Query applicable issues
+    #[structopt(name = "issue")]
+    Issue(QueryIssue),
 
     /// Query source directory of a package
     #[structopt(name = "dir")]

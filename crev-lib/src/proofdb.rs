@@ -194,9 +194,9 @@ impl Default for ProofDB {
 #[derive(Default, Debug)]
 pub struct IssueReports {
     /// Signatures of reviews that reported a given issue by `issues` field
-    issues: HashSet<Signature>,
+    pub issues: HashSet<Signature>,
     /// Signatures of review that reported a given issue by `advisories` field
-    advisories: HashSet<Signature>,
+    pub advisories: HashSet<Signature>,
 }
 
 impl ProofDB {
@@ -219,6 +219,22 @@ impl ProofDB {
         }
     }
 
+    pub fn get_issues(
+        &self,
+        source: &str,
+        name: Option<&str>,
+        version: Option<&Version>,
+        trust_set: &TrustSet,
+        trust_level_required: TrustLevel,
+    ) -> HashMap<String, IssueReports> {
+        match (name, version) {
+            (Some(name), Some(version)) => self.get_issues_for_version(source, name, version, trust_set, trust_level_required),
+
+            (Some(_name), None) => unimplemented!(),
+            (None, None) => unimplemented!(),
+            (None, Some(_)) => panic!("Wrong usage"),
+        }
+    }
     /// Get all issues affecting a given package version
     ///
     /// Collect a map of Issue ID -> `IssueReports`, listing
@@ -631,6 +647,13 @@ impl ProofDB {
         }
 
         res
+    }
+
+    pub fn get_package_review_by_signature<'a>(
+        &'a self,
+        signature: &Signature,
+    ) -> Option<&'a review::Package> {
+        self.package_review_by_signature.get(signature)
     }
 
     pub fn get_package_reviews_by_digest<'a>(
