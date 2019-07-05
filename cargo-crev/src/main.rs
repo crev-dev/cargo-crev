@@ -12,13 +12,13 @@ use cargo::{
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
-use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use crev_data::Rating;
+use crev_data::TrustLevel;
+use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
-use crev_data::TrustLevel;
 use std::{
     collections::{BTreeMap, HashSet},
     default::Default,
@@ -772,7 +772,8 @@ fn create_review_proof(
         review.advisories.push(advisory);
     }
     if let Some(report_common) = report_common {
-        let mut report =  proof::review::package::Issue::new_with_severity("".into(), report_common.severity);
+        let mut report =
+            proof::review::package::Issue::new_with_severity("".into(), report_common.severity);
         report.severity = report_common.severity;
         review.issues.push(report);
         review.review.rating = Rating::Negative;
@@ -860,32 +861,33 @@ fn find_issues(
     trust_distance_params: &crev_lib::TrustDistanceParams,
     trust_level_required: TrustLevel,
 ) -> Result<impl Iterator<Item = (Version, proof::review::Package)>> {
-
     let local = crev_lib::Local::auto_open()?;
     let current_id = local.get_current_userid()?;
     let db = local.load_db()?;
     let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
 
-            let mut reviews : BTreeMap<Version, proof::review::Package> = BTreeMap::new();
+    let mut reviews: BTreeMap<Version, proof::review::Package> = BTreeMap::new();
 
-
-    for (_id, reports) in db
-        .get_issues(
-            PROJECT_SOURCE_CRATES_IO,
-            crate_.name.as_ref().map(String::as_str),
-            crate_.version.as_ref(),
-            &trust_set,
-            trust_level_required,
-        ) {
-            for sig in &reports.advisories {
-                let review = db.get_package_review_by_signature(sig).expect("review by sig exists");
-                reviews.insert(review.package.version.clone(), review.clone());
-            }
-            for sig in &reports.issues {
-                let review = db.get_package_review_by_signature(sig).expect("review by sig exists");
-                reviews.insert(review.package.version.clone(), review.clone());
-            }
+    for (_id, reports) in db.get_issues(
+        PROJECT_SOURCE_CRATES_IO,
+        crate_.name.as_ref().map(String::as_str),
+        crate_.version.as_ref(),
+        &trust_set,
+        trust_level_required,
+    ) {
+        for sig in &reports.advisories {
+            let review = db
+                .get_package_review_by_signature(sig)
+                .expect("review by sig exists");
+            reviews.insert(review.package.version.clone(), review.clone());
         }
+        for sig in &reports.issues {
+            let review = db
+                .get_package_review_by_signature(sig)
+                .expect("review by sig exists");
+            reviews.insert(review.package.version.clone(), review.clone());
+        }
+    }
 
     Ok(reviews.into_iter())
 }
@@ -965,7 +967,11 @@ fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
 
 fn list_issues(args: &opts::QueryIssue) -> Result<()> {
     let trust_distance_params = args.trust_params.clone().into();
-    for (_, review) in find_issues(&args.crate_, &trust_distance_params, args.trust_level.into())? {
+    for (_, review) in find_issues(
+        &args.crate_,
+        &trust_distance_params,
+        args.trust_level.into(),
+    )? {
         println!("{}", review);
     }
 

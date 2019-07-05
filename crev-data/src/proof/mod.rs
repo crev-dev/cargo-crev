@@ -156,7 +156,7 @@ impl Content {
     }
 
     pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
-        let proof : Content = match original_proof {
+        let proof: Content = match original_proof {
             Content::Code(code) => code.apply_draft(review::CodeDraft::parse(&s)?).into(),
             Content::Package(package) => {
                 package.apply_draft(review::PackageDraft::parse(&s)?).into()

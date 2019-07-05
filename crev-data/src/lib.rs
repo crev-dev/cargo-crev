@@ -17,8 +17,8 @@ pub use crate::{
     id::{Id, OwnId, PubId},
     level::Level,
     proof::review,
-    proof::review::Review,
     proof::review::Rating,
+    proof::review::Review,
     proof::trust::TrustLevel,
     url::Url,
 };

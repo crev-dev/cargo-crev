@@ -228,7 +228,9 @@ impl ProofDB {
         trust_level_required: TrustLevel,
     ) -> HashMap<String, IssueReports> {
         match (name, version) {
-            (Some(name), Some(version)) => self.get_issues_for_version(source, name, version, trust_set, trust_level_required),
+            (Some(name), Some(version)) => {
+                self.get_issues_for_version(source, name, version, trust_set, trust_level_required)
+            }
 
             (Some(_name), None) => unimplemented!(),
             (None, None) => unimplemented!(),
