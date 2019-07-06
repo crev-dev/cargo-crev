@@ -1,6 +1,9 @@
 language: rust
 cache: cargo
 
+env:
+  - CRATE_NAME: cargo-crev
+
 matrix:
   include:
     # OS compat
