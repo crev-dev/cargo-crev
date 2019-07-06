@@ -61,7 +61,7 @@ for:
           Copy-Item LICENSE-MIT "${NAME}/"
           Copy-Item LICENSE-MPL2 "${NAME}/"
           Copy-Item LICENSE-APACHE "${NAME}/"
-          Copy-Item README.md "${NAME}/"
+          Copy-Item cargo-crev/README.md "${NAME}/"
           7z a -ttar "${NAME}.tar" "${NAME}"
           7z a "${NAME}.tar.gz" "${NAME}.tar"
           (Get-FileHash "${NAME}.tar.gz").Hash | Out-File "${NAME}.tar.gz.sha256" -NoNewline
