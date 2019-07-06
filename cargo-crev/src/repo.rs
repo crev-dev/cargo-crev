@@ -1,29 +1,19 @@
 use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, package::PackageSet, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
-use crev_lib::{self, local::Local, ProofStore, ReviewMode};
+use crev_lib;
 use failure::format_err;
-use insideout::InsideOutIter;
-use resiter::FlatMap;
-use serde::Deserialize;
 use std::{
-    collections::{BTreeMap, HashSet},
-    default::Default,
+    collections::{HashSet},
     env,
-    io::BufRead,
-    path::{Path, PathBuf},
-    process,
+    path::{PathBuf},
 };
-use structopt::StructOpt;
 
 use crate::prelude::*;
-use crate::crates_io::{self, *};
-use crate::opts::{self, *};
+use crate::crates_io;
 use crate::unsorted_mess::*;
-use crev_data::proof;
-use crev_lib::TrustOrDistrust::{self, *};
 
 /// A handle to the current Rust project
 pub struct Repo {
@@ -62,7 +52,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn load_source<'a>(&'a self) -> Result<Box<cargo::core::source::Source + 'a>> {
+    pub fn load_source<'a>(&'a self) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
         let source_id = SourceId::crates_io(&self.config)?;
         let map = cargo::sources::SourceConfigMap::new(&self.config)?;
         let yanked_whitelist = HashSet::new();
@@ -103,6 +93,21 @@ impl Repo {
 
         Ok(())
     }
+
+    pub fn non_local_dep_crates(& self) -> Result<PackageSet> {
+        let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
+        let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
+            &workspace,
+            None,
+            &[],
+            true,  // all_features
+            false, // no_default_features
+            &specs,
+        )?;
+        Ok(package_set)
+    }
+
 
     pub fn find_idependent_crate_dir(
         &self,

@@ -1,33 +1,24 @@
 // Here are the things I can't let in main but that I don't
 // know yet where to put (or what they are)
 
-use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
-    util::important_paths::find_root_manifest_for_wd,
-};
-use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{HashSet},
     default::Default,
     env,
-    io::BufRead,
     path::{Path, PathBuf},
     process,
 };
 
-use structopt::StructOpt;
-
 use crate::prelude::*;
-use crate::crates_io::{self, *};
-use crate::opts::{self, *};
-use crate::repo::{self, *};
+use crate::opts;
+use crate::repo::*;
 use crev_data::proof;
-use crev_lib::TrustOrDistrust::{self, *};
+use crev_lib::TrustOrDistrust;
 
 /// Name of ENV with original location `crev goto` was called from
 pub const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
@@ -62,10 +53,12 @@ pub fn latest_trusted_version_string(
 ) -> String {
     latest_trusted_version
         .map(|latest_trusted_version| {
+            // there seems to be a big bug in termimad or crossterm in some cases
+            // with multibytes characters
             let ch = if base_version < latest_trusted_version {
-                "↑"
+                ">" //"↑"
             } else if latest_trusted_version < base_version {
-                "↓"
+                "<"// "↓"
             } else {
                 "="
             };

@@ -5,23 +5,11 @@
 
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
-use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
-    util::important_paths::find_root_manifest_for_wd,
-};
 use crev_common::convert::OptionDeref;
-use crev_lib::{self, local::Local, ProofStore, ReviewMode};
-use failure::format_err;
-use insideout::InsideOutIter;
-use resiter::FlatMap;
-use serde::Deserialize;
+use crev_lib::{self, local::Local};
 use std::{
-    collections::{BTreeMap, HashSet},
     default::Default,
-    env,
     io::BufRead,
-    path::{Path, PathBuf},
-    process,
 };
 use structopt::StructOpt;
 
@@ -34,11 +22,11 @@ mod opts;
 mod prelude;
 mod repo;
 mod unsorted_mess;
+mod table;
 mod term;
 mod tokei;
 mod verify_deps;
 
-use crev_data::proof;
 use crev_lib::TrustOrDistrust::{self, *};
 use crate::repo::Repo;
 use crate::unsorted_mess::*;

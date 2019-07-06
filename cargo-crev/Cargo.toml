@@ -35,6 +35,10 @@ term = "0.5"
 tokei = "9"
 walkdir = "2"
 time = "*"
+crossterm = "0.9.6"
+minimad = "0.4.1"
+termimad = "0.4.1"
+#termimad = { path = "../../termimad"}
 
 [features]
 default = []
