@@ -1,7 +1,10 @@
 #!/bin/bash
 
-name="$CRATE_NAME-$TRAVIS_TAG-$TARGET"
-mkdir "$name"
+set -x
+
+export CRATE_NAME=cargo-crev
+name="$TRAVIS_TAG-$TARGET"
+mkdir -p "$name"
 cp "target/$TARGET/release/$CRATE_NAME" "$name/"
 cp README.md LICENSE* "$name/"
 tar czvf "$name.tar.gz" "$name"
