@@ -26,7 +26,10 @@ pub struct Timestamped<T> {
 
 impl<T> Timestamped<T> {
     fn update_to_more_recent(&mut self, date: &chrono::DateTime<Utc>, value: T) {
-        if self.date < *date {
+        // in practice it doesn't matter, but in tests
+        // it's convenient to overwrite even if the time
+        // is exactly the same
+        if self.date <= *date {
             self.value = value;
         }
     }

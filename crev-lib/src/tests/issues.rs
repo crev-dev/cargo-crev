@@ -25,6 +25,7 @@ fn build_issue(id: impl Into<String>) -> Issue {
         .comment(iformat!("issue {id}"))
         .build()
 }
+
 fn build_proof_with_advisories(
     id: &OwnId,
     version: Version,
