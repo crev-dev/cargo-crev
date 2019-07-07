@@ -640,10 +640,10 @@ fn find_previous_review_data(
     {
         return Some((
             Some(previous_review.date),
-            previous_review.review,
-            previous_review.advisories,
-            previous_review.issues,
-            previous_review.comment,
+            previous_review.review.to_owned(),
+            previous_review.advisories.to_owned(),
+            previous_review.issues.to_owned(),
+            previous_review.comment.to_owned(),
         ));
     } else if let Some(diff_base_version) = diff_base_version {
         if let Some(base_review) = db.get_package_review_by_author(
@@ -654,10 +654,10 @@ fn find_previous_review_data(
         ) {
             return Some((
                 None,
-                base_review.review,
+                base_review.review.to_owned(),
                 vec![],
                 vec![],
-                base_review.comment,
+                base_review.comment.to_owned(),
             ));
         }
     }
@@ -823,14 +823,14 @@ fn maybe_store(
 
 fn find_reviews(
     crate_: &opts::CrateSelector,
-) -> Result<impl Iterator<Item = proof::review::Package>> {
+) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
     Ok(db.get_package_reviews_for_package(
         PROJECT_SOURCE_CRATES_IO,
         crate_.name.as_ref().map(String::as_str),
         crate_.version.as_ref(),
-    ))
+    ).cloned().collect())
 }
 
 fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
@@ -843,7 +843,7 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
 
 fn find_advisories(
     crate_: &opts::CrateSelector,
-) -> Result<impl Iterator<Item = (Version, proof::review::Package)>> {
+) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
 
@@ -853,7 +853,7 @@ fn find_advisories(
             crate_.name.as_ref().map(String::as_str),
             crate_.version.as_ref(),
         )
-        .into_iter())
+        .cloned().collect())
 }
 
 fn find_issues(
@@ -875,15 +875,15 @@ fn find_issues(
         &trust_set,
         trust_level_required,
     ) {
-        for sig in &reports.advisories {
+        for uniq_pkg_review in &reports.advisories {
             let review = db
-                .get_package_review_by_signature(sig)
-                .expect("review by sig exists");
+                .get_pkg_review_by_uniq_pkg_review(uniq_pkg_review)
+                .expect("review by uniq_pkg_review exists");
             reviews.insert(review.package.version.clone(), review.clone());
         }
-        for sig in &reports.issues {
+        for uniq_pkg_review in &reports.issues {
             let review = db
-                .get_package_review_by_signature(sig)
+                .get_pkg_review_by_uniq_pkg_review(uniq_pkg_review)
                 .expect("review by sig exists");
             reviews.insert(review.package.version.clone(), review.clone());
         }
@@ -958,7 +958,7 @@ fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> R
 }
 
 fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
-    for (_, review) in find_advisories(crate_)? {
+    for review in find_advisories(crate_)? {
         println!("{}", review);
     }
 

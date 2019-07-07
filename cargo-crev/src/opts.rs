@@ -355,6 +355,7 @@ pub struct Review {
     pub skip_activity_check: bool,
 
     #[structopt(long = "diff")]
+    #[allow(clippy::option_option)]
     pub diff: Option<Option<semver::Version>>,
 }
 

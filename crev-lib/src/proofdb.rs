@@ -97,6 +97,18 @@ impl From<review::Package> for UniquePackageReview {
             version: review.package.version,
         }
     }
+
+}
+
+impl From<&review::Package> for UniquePackageReview {
+    fn from(review: &review::Package) -> Self {
+        Self {
+            from: review.from.id.to_owned(),
+            source: review.package.source.to_owned(),
+            name: review.package.name.to_owned(),
+            version: review.package.version.to_owned(),
+        }
+    }
 }
 
 impl<Tz> From<(&DateTime<Tz>, String)> for TimestampedSignature
@@ -111,45 +123,8 @@ where
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-struct SourceSelector {
-    pub source: String,
-}
-
-impl SourceSelector {
-    fn new(source: String) -> Self {
-        Self { source }
-    }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-struct SourcePackageSelector {
-    pub source: String,
-    pub name: String,
-}
-
-impl SourcePackageSelector {
-    fn new(source: String, name: String) -> Self {
-        Self { source, name }
-    }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct SourcePackageVersionSelector {
-    pub source: String,
-    pub name: String,
-    pub version: Version,
-}
-
-impl SourcePackageVersionSelector {
-    fn new(source: String, name: String, version: Version) -> Self {
-        Self {
-            source,
-            name,
-            version,
-        }
-    }
-}
+pub type Source = String;
+pub type Name = String;
 
 /// In memory database tracking information from proofs
 ///
@@ -171,11 +146,7 @@ pub struct ProofDB {
     package_review_signatures_by_unique_package_review:
         HashMap<UniquePackageReview, TimestampedSignature>,
 
-    package_reviews_by_source: BTreeMap<SourceSelector, HashSet<UniquePackageReview>>,
-    package_reviews_by_name: BTreeMap<SourcePackageSelector, HashSet<UniquePackageReview>>,
-    package_reviews_by_version:
-        BTreeMap<SourcePackageVersionSelector, HashSet<UniquePackageReview>>,
-    // available_unique_package_reviews_by_version:
+    package_reviews: BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<UniquePackageReview>>>>,
 }
 
 impl Default for ProofDB {
@@ -187,9 +158,7 @@ impl Default for ProofDB {
             package_review_signatures_by_package_digest: default(),
             package_review_signatures_by_unique_package_review: default(),
             package_review_by_signature: default(),
-            package_reviews_by_source: default(),
-            package_reviews_by_name: default(),
-            package_reviews_by_version: default(),
+            package_reviews: default(),
         }
     }
 }
@@ -197,9 +166,9 @@ impl Default for ProofDB {
 #[derive(Default, Debug)]
 pub struct IssueReports {
     /// Signatures of reviews that reported a given issue by `issues` field
-    pub issues: HashSet<Signature>,
+    pub issues: HashSet<UniquePackageReview>,
     /// Signatures of review that reported a given issue by `advisories` field
-    pub advisories: HashSet<Signature>,
+    pub advisories: HashSet<UniquePackageReview>,
 }
 
 impl ProofDB {
@@ -207,17 +176,96 @@ impl ProofDB {
         default()
     }
 
-    pub fn get_advisories(
-        &self,
-        source: &str,
-        name: Option<&str>,
-        version: Option<&Version>,
-    ) -> HashMap<Version, proof::review::Package> {
-        match (name, version) {
-            (Some(name), Some(version)) => self.get_advisories_for_version(source, name, version),
+    pub fn get_pkg_reviews_for_source<'a, 'b>(
+        &'a self,
+        source: &'b str,
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
 
-            (Some(name), None) => self.get_advisories_for_package(source, name),
-            (None, None) => self.get_advisories_for_source(source),
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.iter())
+            .flat_map(move |(_, map)| map.iter())
+            .flat_map(|(_, v)| v)
+            .map(move |uniq_pkg_review| {
+                &self.package_review_by_signature[&self
+                    .package_review_signatures_by_unique_package_review[uniq_pkg_review]
+                    .value]
+            })
+    }
+
+    pub fn get_pkg_reviews_for_name<'a, 'b, 'c: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.get(name))
+            .flat_map(move |map| map.iter())
+            .flat_map(|(_, v)| v)
+        .map(move |uniq_pkg_review| {
+            &self.package_review_by_signature
+                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+        })
+    }
+
+    pub fn get_pkg_reviews_for_version<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.get(name))
+            .flat_map(move |map| map.get(version))
+            .flat_map(|v| v)
+        .map(move |uniq_pkg_review| {
+            &self.package_review_by_signature
+                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+        })
+    }
+
+    pub fn get_pkg_reviews_gte_version<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.get(name))
+            .flat_map(move |map| map.range(version..))
+            .flat_map(move |(_, v)| v)
+        .map(move |uniq_pkg_review| {
+            &self.package_review_by_signature
+                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+        })
+    }
+
+    pub fn get_pkg_reviews_lte_version<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.get(name))
+            .flat_map(move |map| map.range(..=version))
+            .flat_map(|(_, v)| v)
+        .map(move |uniq_pkg_review| {
+            &self.package_review_by_signature
+                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+        })
+    }
+
+    pub fn get_advisories<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: Option<&'c str>,
+        version: Option<&'d Version>,
+    ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
+        match (name, version) {
+            (Some(ref name), Some(ref version)) => Box::new(self.get_advisories_for_version(source, name, version)) as Box<Iterator<Item=_>>,
+
+            (Some(ref name), None) => Box::new(self.get_advisories_for_package(source, name)),
+            (None, None) => Box::new(self.get_advisories_for_source(source)),
             (None, Some(_)) => panic!("Wrong usage"),
         }
     }
@@ -240,6 +288,54 @@ impl ProofDB {
             (None, Some(_)) => panic!("Wrong usage"),
         }
     }
+
+
+    pub fn get_advisories_for_version<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.get_pkg_reviews_gte_version(
+            source,
+            name,
+            version,
+        )
+        .filter(move |review| review.is_advisory_for(&version))
+    }
+
+
+    pub fn get_advisories_for_package<'a, 'b, 'c: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.package_reviews.get(source).into_iter()
+            .flat_map(move |map| map.get(name))
+            .flat_map(move |map| map.iter())
+            .flat_map(|(_, v)| v)
+            .flat_map(move |uniq_pkg_review| {
+                let review = &self.package_review_by_signature[&self
+                    .package_review_signatures_by_unique_package_review[uniq_pkg_review]
+                    .value];
+
+                if !review.advisories.is_empty() {
+                    Some(review)
+                } else {
+                    None
+                }
+            })
+    }
+
+
+    pub fn get_advisories_for_source(
+        &self,
+        source: &str,
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.get_pkg_reviews_for_source(source)
+            .filter(|review| !review.advisories.is_empty())
+    }
+
     /// Get all issues affecting a given package version
     ///
     /// Collect a map of Issue ID -> `IssueReports`, listing
@@ -264,35 +360,31 @@ impl ProofDB {
 
         // First we go through all the reports in previous versions with `issues` fields and collect these.
         // Easy.
-        for (_selector, _review, signature, issue) in self
-            .pkg_reviews_lte_version_iter(
-                source.to_owned(),
-                name.to_owned(),
-                queried_version.to_owned(),
+        for (review, issue) in self
+            .get_pkg_reviews_lte_version(
+                source,
+                name,
+                queried_version,
             )
-            .filter(|(_selector, uniq_pkg_review)| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&uniq_pkg_review.from)
-                {
-                    effective >= TrustLevel::from(trust_level_required)
+            .filter(|review| {
+                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
+                    effective >= trust_level_required
                 } else {
                     false
                 }
             })
-            .flat_map(move |(selector, uniq_pkg_review)| {
-                let signature =
-                    &self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value;
-                let review = &self.package_review_by_signature[signature];
+            .flat_map(move |review| {
                 review
                     .issues
                     .iter()
-                    .map(move |issue| (selector, review.to_owned(), signature.to_owned(), issue))
+                    .map(move |issue| (review, issue))
             })
         {
             issue_reports_by_id
                 .entry(issue.id.clone())
                 .or_default()
                 .issues
-                .insert(signature);
+                .insert(UniquePackageReview::from(review));
         }
 
         // Now the complicated part. We go through all the advisories for all the versions
@@ -304,30 +396,20 @@ impl ProofDB {
         // Second - they might cancel `issues` inside `issue_reports_by_id` because they
         // advertise a fix that happened somewhere between the `issue` report and
         // the current `queried_version`.
-        for (review, signature, advisory) in self
-            .package_reviews_by_name
-            .get(&SourcePackageSelector::new(
-                source.to_owned(),
-                name.to_owned(),
-            ))
-            .into_iter()
-            .flat_map(|pkg_reviews| pkg_reviews.iter())
-            .filter(|uniq_pkg_review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&uniq_pkg_review.from)
-                {
-                    effective >= TrustLevel::from(trust_level_required)
+        for (review, advisory) in self
+            .get_pkg_reviews_for_name(source, name)
+            .filter(|review| {
+                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
+                    effective >= trust_level_required
                 } else {
                     false
                 }
             })
-            .flat_map(move |uniq_pkg_review| {
-                let signature =
-                    &self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value;
-                let review = &self.package_review_by_signature[signature];
+            .flat_map(move |review| {
                 review
                     .advisories
                     .iter()
-                    .map(move |advisory| (review.to_owned(), signature.to_owned(), advisory))
+                    .map(move |advisory| (review, advisory))
             })
         {
             // Add new issue reports created by the advisory
@@ -337,7 +419,7 @@ impl ProofDB {
                         .entry(id.clone())
                         .or_default()
                         .issues
-                        .insert(signature.clone());
+                        .insert(UniquePackageReview::from(review));
                 }
             }
 
@@ -347,11 +429,15 @@ impl ProofDB {
                     let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
                     issue_marker.issues = issues
                         .into_iter()
-                        .filter(|signature| {
+                        .filter(|uniq_pkg_review| {
+                            let signature = &self
+                                .package_review_signatures_by_unique_package_review
+                                .get(uniq_pkg_review)
+                                .expect("review for this signature").value;
                             let issue_review = self
                                 .package_review_by_signature
                                 .get(signature)
-                                .expect("review for this signature");
+                                .expect("review for this uniq_pkg_review");
                             !advisory.is_advisory_for_when_in_version(
                                 &issue_review.package.version,
                                 &review.package.version,
@@ -365,117 +451,6 @@ impl ProofDB {
         issue_reports_by_id
             .into_iter()
             .filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty())
-            .collect()
-    }
-
-    pub fn pkg_reviews_gte_version_iter(
-        &self,
-        source: String,
-        name: String,
-        queried_version: Version,
-    ) -> impl Iterator<Item = (&SourcePackageVersionSelector, &UniquePackageReview)> {
-        self.package_reviews_by_version
-            .range(
-                SourcePackageVersionSelector {
-                    source: source.clone(),
-                    name: name.clone(),
-                    version: queried_version,
-                }..,
-            )
-            .take_while(move |(selector, _)| selector.source == source && selector.name == name)
-            .flat_map(|(selector, reviews)| reviews.iter().map(move |r| (selector, r)))
-    }
-
-    pub fn pkg_reviews_lte_version_iter(
-        &self,
-        source: String,
-        name: String,
-        queried_version: Version,
-    ) -> impl Iterator<Item = (&SourcePackageVersionSelector, &UniquePackageReview)> {
-        self.package_reviews_by_version
-            .range(
-                ..=SourcePackageVersionSelector {
-                    source: source.clone(),
-                    name: name.clone(),
-                    version: queried_version,
-                },
-            )
-            .rev()
-            .take_while(move |(selector, _)| selector.source == source && selector.name == name)
-            .flat_map(|(selector, reviews)| reviews.iter().map(move |r| (selector, r)))
-    }
-
-    pub fn get_advisories_for_version(
-        &self,
-        source: &str,
-        name: &str,
-        queried_version: &Version,
-    ) -> HashMap<Version, proof::review::Package> {
-        self.pkg_reviews_gte_version_iter(
-            source.to_owned(),
-            name.to_owned(),
-            queried_version.to_owned(),
-        )
-        .flat_map(|(selector, uniq_pkg_review)| {
-            let review_version = selector.version.to_owned();
-            let review = self.package_review_by_signature
-                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
-                .to_owned();
-
-            if review.is_advisory_for(queried_version) {
-                Some((review_version, review))
-            } else {
-                None
-            }
-        })
-        .collect()
-    }
-
-    pub fn get_advisories_for_package(
-        &self,
-        source: &str,
-        name: &str,
-    ) -> HashMap<Version, proof::review::Package> {
-        let min_possible_version = Version::parse("0.0.0").unwrap();
-        self.pkg_reviews_gte_version_iter(source.to_owned(), name.to_owned(), min_possible_version)
-            .flat_map(|(selector, uniq_pkg_review)| {
-                let review_version = selector.version.to_owned();
-                let review = self.package_review_by_signature[&self
-                    .package_review_signatures_by_unique_package_review[uniq_pkg_review]
-                    .value]
-                    .to_owned();
-
-                if !review.advisories.is_empty() {
-                    Some((review_version, review))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub fn get_advisories_for_source(
-        &self,
-        source: &str,
-    ) -> HashMap<Version, proof::review::Package> {
-        self.package_reviews_by_version
-            .iter()
-            .filter(|(selector, _)| selector.source == source)
-            .flat_map(|(selector, uniq_pkg_reviews)| {
-                uniq_pkg_reviews.iter().filter_map(move |uniq_pkg_review| {
-                    let review_version = selector.version.to_owned();
-                    let review = self.package_review_by_signature[&self
-                        .package_review_signatures_by_unique_package_review[uniq_pkg_review]
-                        .value]
-                        .to_owned();
-
-                    if !review.advisories.is_empty() {
-                        Some((review_version, review))
-                    } else {
-                        None
-                    }
-                })
-            })
             .collect()
     }
 
@@ -523,23 +498,12 @@ impl ProofDB {
                 .entry(unique.clone()),
         );
 
-        self.package_reviews_by_source
-            .entry(SourceSelector::new(review.package.source.clone()))
+        self.package_reviews
+            .entry(review.package.source.clone())
             .or_default()
-            .insert(unique.clone());
-        self.package_reviews_by_name
-            .entry(SourcePackageSelector::new(
-                review.package.source.clone(),
-                review.package.name.clone(),
-            ))
+            .entry(review.package.name.clone())
             .or_default()
-            .insert(unique.clone());
-        self.package_reviews_by_version
-            .entry(SourcePackageVersionSelector::new(
-                review.package.source.clone(),
-                review.package.name.clone(),
-                review.package.version.clone(),
-            ))
+            .entry(review.package.version.clone())
             .or_default()
             .insert(unique);
     }
@@ -554,58 +518,46 @@ impl ProofDB {
             .count()
     }
 
-    pub fn get_package_reviews_for_package(
-        &self,
-        source: &str,
-        name: Option<&str>,
-        version: Option<&Version>,
-    ) -> impl Iterator<Item = proof::review::Package> {
-        let mut proofs: Vec<_> = match (name, version) {
-            (Some(name), Some(version)) => {
-                self.package_reviews_by_version
-                    .get(&SourcePackageVersionSelector::new(
-                        source.to_owned(),
-                        name.to_owned(),
-                        version.to_owned(),
-                    ))
-            }
-
-            (Some(name), None) => self
-                .package_reviews_by_name
-                .get(&SourcePackageSelector::new(
-                    source.to_owned(),
-                    name.to_owned(),
-                )),
-
-            (None, None) => self
-                .package_reviews_by_source
-                .get(&SourceSelector::new(source.to_owned())),
-
+    pub fn get_package_reviews_for_package<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: Option<&'c str>,
+        version: Option<&'d Version>,
+    ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
+        match (name, version) {
+            (Some(ref name), Some(ref version)) => Box::new(self.get_pkg_reviews_for_version(source, name, version)) as Box<dyn Iterator<Item=_>>,
+            (Some(ref name), None) => Box::new(self.get_pkg_reviews_for_name(source, name)),
+            (None, None) =>  Box::new(self.get_pkg_reviews_for_source(source)),
             (None, Some(_)) => panic!("Wrong usage"),
         }
-        .into_iter()
-        .flat_map(|s| s)
-        .map(|unique_package_review| {
-            self.package_review_by_signature[&self
-                .package_review_signatures_by_unique_package_review[unique_package_review]
-                .value]
-                .clone()
-        })
-        .collect();
+    }
+
+    pub fn get_package_reviews_for_package_sorted<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: Option<&'c str>,
+        version: Option<&'d Version>,
+    ) -> Vec<proof::review::Package> {
+        let mut proofs: Vec<_> = self.get_package_reviews_for_package(source, name, version).cloned().collect();
 
         proofs.sort_by(|a, b| a.date().cmp(&b.date()));
 
-        proofs.into_iter()
+        proofs
     }
 
-    pub fn get_package_review_by_author(
-        &self,
-        source: &str,
-        name: &str,
-        version: &Version,
+    pub fn get_pkg_review_by_uniq_pkg_review(&self, uniq: &UniquePackageReview) -> Option<&proof::review::Package> {
+        let signature = &self.package_review_signatures_by_unique_package_review.get(uniq)?.value;
+        self.package_review_by_signature.get(signature)
+    }
+
+    pub fn get_package_review_by_author<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
         id: &Id,
-    ) -> Option<proof::review::Package> {
-        self.get_package_reviews_for_package(source, Some(name), Some(version))
+    ) -> Option<&proof::review::Package> {
+        self.get_pkg_reviews_for_version(source, name, version)
             .find(|pkg_review| pkg_review.from.id == *id)
     }
 
@@ -656,7 +608,7 @@ impl ProofDB {
 
     pub fn get_package_review_by_signature<'a>(
         &'a self,
-        signature: &Signature,
+        signature: &str,
     ) -> Option<&'a review::Package> {
         self.package_review_by_signature.get(signature)
     }
@@ -727,14 +679,8 @@ impl ProofDB {
         name: &str,
         requirements: &crate::VerificationRequirements,
     ) -> Option<Version> {
-        self.package_reviews_by_name
-            .get(&SourcePackageSelector::new(source.into(), name.into()))
-            .map(|reviews| reviews.into_iter())
-            .into_iter()
-            .flatten()
+        self.get_pkg_reviews_for_name(source, name)
             .filter(|review| {
-                let signature = &self.package_review_signatures_by_unique_package_review[&review];
-                let review = &self.package_review_by_signature[&signature.value];
                 self.verify_package_digest(
                     &Digest::from_vec(review.package.digest.clone()),
                     trust_set,
@@ -742,8 +688,8 @@ impl ProofDB {
                 )
                 .is_verified()
             })
-            .max_by(|a, b| a.version.cmp(&b.version))
-            .map(|review| review.version.clone())
+            .max_by(|a, b| a.package.version.cmp(&b.package.version))
+            .map(|review| review.package.version.clone())
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {

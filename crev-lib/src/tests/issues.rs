@@ -81,27 +81,6 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
 fn advisories_sanity() -> Result<()> {
     let id = OwnId::generate_for_git_url("https://a");
 
-    /*
-        let package_info = proof::PackageInfo {
-            id: None,
-            source: "SOURCE_ID".to_owned(),
-            name: NAME.into(),
-            version: Version::parse("1.2.3").unwrap(),
-            digest: vec![0, 1, 2, 3],
-            digest_type: proof::default_digest_type(),
-            revision: "".into(),
-            revision_type: proof::default_revision_type(),
-        };
-        let review = proof::review::PackageBuilder::default()
-            .from(id.id.to_owned())
-            .package(package_info.clone())
-            .comment("comment".into())
-            .advisories()
-            .build()
-            .unwrap();
-        let proof = review.sign_by(&id)?;
-
-    */
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
@@ -114,38 +93,27 @@ fn advisories_sanity() -> Result<()> {
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.2").unwrap())
-            .len(),
+            .count(),
         1
     );
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.3").unwrap())
-            .len(),
+            .count(),
         0
     );
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
-            .len(),
+            .count(),
         0
     );
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
-            .len(),
+            .count(),
         0
     );
-    /*
-    let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
-        .package(package_info)
-        .comment("comment".into())
-        .advisories( vec![ build_advisory("someid", AdvisoryRange::All) ])
-        .build()
-        .unwrap();
-
-    let proof = review.sign_by(&id)?;
-    */
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
@@ -157,19 +125,19 @@ fn advisories_sanity() -> Result<()> {
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
-            .len(),
+            .count(),
         1
     );
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
-            .len(),
+            .count(),
         0
     );
     assert_eq!(
         trustdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("2.3.0").unwrap())
-            .len(),
+            .count(),
         0
     );
 

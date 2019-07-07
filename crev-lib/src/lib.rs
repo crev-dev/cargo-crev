@@ -1,3 +1,5 @@
+#![type_length_limit="10709970"]
+
 pub mod activity;
 pub mod id;
 pub mod local;

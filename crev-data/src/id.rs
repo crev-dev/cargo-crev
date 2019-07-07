@@ -87,6 +87,7 @@ impl PubId {
     pub fn new(id: Id, url: Url) -> Self {
         PubId { id, url }
     }
+    
     pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Self {
         PubId {
             id: Id::Crev { id: v },
