@@ -150,31 +150,6 @@ fn issues_sanity() -> Result<()> {
     let mut trustdb = ProofDB::new();
     let trust_set = trustdb.calculate_trust_set(id.as_ref(), &TrustDistanceParams::new_no_wot());
 
-    /*
-    const SOURCE: &str = "SOURCE_ID";
-    const NAME: &str = "NAME";
-
-    let package_info = proof::PackageInfo {
-        id: None,
-        source: "SOURCE_ID".to_owned(),
-        name: NAME.into(),
-        version: Version::parse("1.2.3").unwrap(),
-        digest: vec![0, 1, 2, 3],
-        digest_type: proof::default_digest_type(),
-        revision: "".into(),
-        revision_type: proof::default_revision_type(),
-    };
-    let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
-        .package(package_info.clone())
-        .comment("comment".into())
-        .advisories(vec![build_advisory("someid", AdvisoryRange::Major)])
-        .build()
-        .unwrap();
-
-    let proof = review.sign_by(&id)?;
-        */
-
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
@@ -184,7 +159,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("2.0.0").unwrap(),
@@ -197,7 +172,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("1.0.1").unwrap(),
@@ -216,7 +191,7 @@ fn issues_sanity() -> Result<()> {
     trustdb.import_from_iter(vec![proof].into_iter());
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("0.0.1").unwrap(),
@@ -228,7 +203,7 @@ fn issues_sanity() -> Result<()> {
     );
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("2.0.0").unwrap(),
@@ -241,7 +216,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("2.0.1").unwrap(),
@@ -261,7 +236,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.0.4").unwrap(),
@@ -274,7 +249,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.0.5").unwrap(),
@@ -287,7 +262,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.1.0").unwrap(),
@@ -307,7 +282,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.1.0").unwrap(),
@@ -319,7 +294,7 @@ fn issues_sanity() -> Result<()> {
     );
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("4.0.0").unwrap(),
@@ -331,7 +306,7 @@ fn issues_sanity() -> Result<()> {
     );
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.0.5").unwrap(),
@@ -344,7 +319,7 @@ fn issues_sanity() -> Result<()> {
 
     assert_eq!(
         trustdb
-            .get_issues_for_version(
+            .get_open_issues_for_version(
                 SOURCE,
                 NAME,
                 &Version::parse("3.0.7").unwrap(),

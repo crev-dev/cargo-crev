@@ -1,5 +1,5 @@
 /target
-target/
+target
 **/*.rs.bk
 
 # Intellij project files

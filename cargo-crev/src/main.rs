@@ -186,7 +186,7 @@ impl Repo {
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
             &[],
-            true, // all_features
+            true,  // all_features
             false, // no_default_features
             &specs,
         )?;
@@ -646,12 +646,9 @@ fn find_previous_review_data(
             previous_review.comment.to_owned(),
         ));
     } else if let Some(diff_base_version) = diff_base_version {
-        if let Some(base_review) = db.get_pkg_review(
-            PROJECT_SOURCE_CRATES_IO,
-            name,
-            &diff_base_version,
-            &id.id,
-        ) {
+        if let Some(base_review) =
+            db.get_pkg_review(PROJECT_SOURCE_CRATES_IO, name, &diff_base_version, &id.id)
+        {
             return Some((
                 None,
                 base_review.review.to_owned(),
@@ -821,16 +818,17 @@ fn maybe_store(
     Ok(())
 }
 
-fn find_reviews(
-    crate_: &opts::CrateSelector,
-) -> Result<Vec<proof::review::Package>> {
+fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
-    Ok(db.get_package_reviews_for_package(
-        PROJECT_SOURCE_CRATES_IO,
-        crate_.name.as_ref().map(String::as_str),
-        crate_.version.as_ref(),
-    ).cloned().collect())
+    Ok(db
+        .get_package_reviews_for_package(
+            PROJECT_SOURCE_CRATES_IO,
+            crate_.name.as_ref().map(String::as_str),
+            crate_.version.as_ref(),
+        )
+        .cloned()
+        .collect())
 }
 
 fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
@@ -841,9 +839,7 @@ fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
-fn find_advisories(
-    crate_: &opts::CrateSelector,
-) -> Result<Vec<proof::review::Package>> {
+fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
 
@@ -853,7 +849,8 @@ fn find_advisories(
             crate_.name.as_ref().map(String::as_str),
             crate_.version.as_ref(),
         )
-        .cloned().collect())
+        .cloned()
+        .collect())
 }
 
 fn find_issues(
@@ -868,7 +865,7 @@ fn find_issues(
 
     let mut reviews: BTreeMap<Version, proof::review::Package> = BTreeMap::new();
 
-    for (_id, reports) in db.get_issues(
+    for (_id, reports) in db.get_open_issues(
         PROJECT_SOURCE_CRATES_IO,
         crate_.name.as_ref().map(String::as_str),
         crate_.version.as_ref(),
@@ -1286,7 +1283,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             .unwrap_or_else(|| "?".into())
                     );
 
-                    let issues_from_trusted = db.get_issues_for_version(
+                    let issues_from_trusted = db.get_open_issues_for_version(
                         PROJECT_SOURCE_CRATES_IO,
                         crate_name,
                         crate_version,
@@ -1294,7 +1291,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         args.requirements.trust_level.into(),
                     );
 
-                    let issues_from_all = db.get_issues_for_version(
+                    let issues_from_all = db.get_open_issues_for_version(
                         PROJECT_SOURCE_CRATES_IO,
                         crate_name,
                         crate_version,
