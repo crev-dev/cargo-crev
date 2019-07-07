@@ -12,7 +12,7 @@ use crev_data::{
 };
 use default::default;
 use semver::Version;
-use std::collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// A `T` with a timestamp
 ///
@@ -25,23 +25,17 @@ pub struct Timestamped<T> {
 }
 
 impl<T> Timestamped<T> {
-    fn update_to_more_recent(&mut self, date: &chrono::DateTime<Utc>, value: T) {
+    // Return `trude` if value was updated
+    fn update_to_more_recent(&mut self, other: &Self)
+    where
+        T: Clone,
+    {
         // in practice it doesn't matter, but in tests
         // it's convenient to overwrite even if the time
         // is exactly the same
-        if self.date <= *date {
-            self.value = value;
-        }
-    }
-
-    fn insert_into_or_update_to_more_recent<K>(self, entry: hash_map::Entry<K, Timestamped<T>>) {
-        match entry {
-            hash_map::Entry::Occupied(mut entry) => entry
-                .get_mut()
-                .update_to_more_recent(&self.date, self.value),
-            hash_map::Entry::Vacant(entry) => {
-                entry.insert(self);
-            }
+        if self.date <= other.date {
+            self.date = other.date;
+            self.value = other.value.clone();
         }
     }
 }
@@ -138,12 +132,15 @@ pub struct ProofDB {
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
+    // all reviews are here
     package_review_by_signature: HashMap<Signature, review::Package>,
 
+    // we can get the to the review through the signature from these two
     package_review_signatures_by_package_digest:
         HashMap<Vec<u8>, HashMap<PkgReviewId, TimestampedSignature>>,
     package_review_signatures_by_pkg_review_id: HashMap<PkgReviewId, TimestampedSignature>,
 
+    // pkg_review_id by package information, nicely grouped
     package_reviews: BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgReviewId>>>>,
 }
 
@@ -185,8 +182,8 @@ impl ProofDB {
             .flat_map(move |(_, map)| map.iter())
             .flat_map(|(_, v)| v)
             .map(move |pkg_review_id| {
-                &self.package_review_by_signature
-                    [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
+                self.get_pkg_review_by_pkg_review_id(pkg_review_id)
+                    .expect("exists")
             })
     }
 
@@ -202,8 +199,8 @@ impl ProofDB {
             .flat_map(move |map| map.iter())
             .flat_map(|(_, v)| v)
             .map(move |pkg_review_id| {
-                &self.package_review_by_signature
-                    [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
+                self.get_pkg_review_by_pkg_review_id(pkg_review_id)
+                    .expect("exists")
             })
     }
 
@@ -220,8 +217,8 @@ impl ProofDB {
             .flat_map(move |map| map.get(version))
             .flat_map(|v| v)
             .map(move |pkg_review_id| {
-                &self.package_review_by_signature
-                    [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
+                self.get_pkg_review_by_pkg_review_id(pkg_review_id)
+                    .expect("exists")
             })
     }
 
@@ -238,8 +235,8 @@ impl ProofDB {
             .flat_map(move |map| map.range(version..))
             .flat_map(move |(_, v)| v)
             .map(move |pkg_review_id| {
-                &self.package_review_by_signature
-                    [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
+                self.get_pkg_review_by_pkg_review_id(pkg_review_id)
+                    .expect("exists")
             })
     }
 
@@ -256,8 +253,8 @@ impl ProofDB {
             .flat_map(move |map| map.range(..=version))
             .flat_map(|(_, v)| v)
             .map(move |pkg_review_id| {
-                &self.package_review_by_signature
-                    [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
+                self.get_pkg_review_by_pkg_review_id(pkg_review_id)
+                    .expect("exists")
             })
     }
 
@@ -700,22 +697,20 @@ impl ProofDB {
             .entry(signature.to_owned())
             .or_insert_with(|| review.to_owned());
 
-        let unique = PkgReviewId::from(review.clone());
+        let pkg_review_id = PkgReviewId::from(review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
 
-        timestamp_signature
-            .clone()
-            .insert_into_or_update_to_more_recent(
-                self.package_review_signatures_by_package_digest
-                    .entry(review.package.digest.to_owned())
-                    .or_insert_with(default)
-                    .entry(unique.clone()),
-            );
+        self.package_review_signatures_by_package_digest
+            .entry(review.package.digest.to_owned())
+            .or_default()
+            .entry(pkg_review_id.clone())
+            .and_modify(|s| s.update_to_more_recent(&timestamp_signature))
+            .or_insert_with(|| timestamp_signature.clone());
 
-        timestamp_signature.insert_into_or_update_to_more_recent(
-            self.package_review_signatures_by_pkg_review_id
-                .entry(unique.clone()),
-        );
+        self.package_review_signatures_by_pkg_review_id
+            .entry(pkg_review_id.clone())
+            .and_modify(|s| s.update_to_more_recent(&timestamp_signature))
+            .or_insert_with(|| timestamp_signature.clone());
 
         self.package_reviews
             .entry(review.package.source.clone())
@@ -724,7 +719,7 @@ impl ProofDB {
             .or_default()
             .entry(review.package.version.clone())
             .or_default()
-            .insert(unique);
+            .insert(pkg_review_id);
     }
 
     pub fn get_package_review_count(
@@ -771,12 +766,13 @@ impl ProofDB {
     }
 
     fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: TrustLevel) {
-        TimestampedTrustLevel { value: trust, date }.insert_into_or_update_to_more_recent(
-            self.trust_id_to_id
-                .entry(from.to_owned())
-                .or_insert_with(HashMap::new)
-                .entry(to.to_owned()),
-        );
+        let tl = TimestampedTrustLevel { value: trust, date };
+        self.trust_id_to_id
+            .entry(from.to_owned())
+            .or_insert_with(HashMap::new)
+            .entry(to.to_owned())
+            .and_modify(|e| e.update_to_more_recent(&tl))
+            .or_insert_with(|| tl);
     }
 
     fn add_trust(&mut self, trust: &proof::Trust) {
@@ -908,12 +904,17 @@ impl ProofDB {
     }
 
     fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId) {
-        TimestampedUrl {
+        let tu = TimestampedUrl {
             value: from.url.clone(),
             date: date.to_owned(),
-        }
-        .insert_into_or_update_to_more_recent(self.url_by_id.entry(from.id.clone()));
+        };
+
+        self.url_by_id
+            .entry(from.id.clone())
+            .and_modify(|e| e.update_to_more_recent(&tu))
+            .or_insert_with(|| tu);
     }
+
     fn add_proof(&mut self, proof: &proof::Proof) {
         proof
             .verify()
