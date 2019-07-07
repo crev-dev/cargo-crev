@@ -139,7 +139,6 @@ impl Repo {
             &None,
             /* frozen: */ false,
             /* locked: */ true,
-            /* offline */ false,
             &None,
             &[],
         )?;
@@ -185,6 +184,7 @@ impl Repo {
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
+            None,
             &[],
             true,  // all_features
             false, // no_default_features
