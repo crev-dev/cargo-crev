@@ -69,17 +69,17 @@ impl<'a, T: review::Common> From<&'a T> for TimestampedReview {
     }
 }
 
-/// Unique package review
+/// Unique package review id
 ///
 /// Since package review can be overwritten, it's useful
-/// to refer to a review by an unique combination of
+/// to refer to a review by an unique combination of:
 ///
 /// * author's ID
 /// * source
 /// * crate
 /// * version
 #[derive(Hash, Debug, Clone, PartialEq, Eq)]
-pub struct UniquePackageReview {
+pub struct PkgReviewId {
     from: Id,
     source: String,
     name: String,
@@ -88,9 +88,9 @@ pub struct UniquePackageReview {
 
 type TimestampedSignature = Timestamped<Signature>;
 
-impl From<review::Package> for UniquePackageReview {
+impl From<review::Package> for PkgReviewId {
     fn from(review: review::Package) -> Self {
-        Self {
+        PkgReviewId {
             from: review.from.id,
             source: review.package.source,
             name: review.package.name,
@@ -100,9 +100,9 @@ impl From<review::Package> for UniquePackageReview {
 
 }
 
-impl From<&review::Package> for UniquePackageReview {
+impl From<&review::Package> for PkgReviewId {
     fn from(review: &review::Package) -> Self {
-        Self {
+        PkgReviewId {
             from: review.from.id.to_owned(),
             source: review.package.source.to_owned(),
             name: review.package.name.to_owned(),
@@ -142,11 +142,11 @@ pub struct ProofDB {
     package_review_by_signature: HashMap<Signature, review::Package>,
 
     package_review_signatures_by_package_digest:
-        HashMap<Vec<u8>, HashMap<UniquePackageReview, TimestampedSignature>>,
-    package_review_signatures_by_unique_package_review:
-        HashMap<UniquePackageReview, TimestampedSignature>,
+        HashMap<Vec<u8>, HashMap<PkgReviewId, TimestampedSignature>>,
+    package_review_signatures_by_pkg_review_id:
+        HashMap<PkgReviewId, TimestampedSignature>,
 
-    package_reviews: BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<UniquePackageReview>>>>,
+    package_reviews: BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgReviewId>>>>,
 }
 
 impl Default for ProofDB {
@@ -156,7 +156,7 @@ impl Default for ProofDB {
             url_by_id: default(),
             url_by_id_secondary: default(),
             package_review_signatures_by_package_digest: default(),
-            package_review_signatures_by_unique_package_review: default(),
+            package_review_signatures_by_pkg_review_id: default(),
             package_review_by_signature: default(),
             package_reviews: default(),
         }
@@ -166,9 +166,9 @@ impl Default for ProofDB {
 #[derive(Default, Debug)]
 pub struct IssueReports {
     /// Signatures of reviews that reported a given issue by `issues` field
-    pub issues: HashSet<UniquePackageReview>,
+    pub issues: HashSet<PkgReviewId>,
     /// Signatures of review that reported a given issue by `advisories` field
-    pub advisories: HashSet<UniquePackageReview>,
+    pub advisories: HashSet<PkgReviewId>,
 }
 
 impl ProofDB {
@@ -185,9 +185,9 @@ impl ProofDB {
             .flat_map(move |map| map.iter())
             .flat_map(move |(_, map)| map.iter())
             .flat_map(|(_, v)| v)
-            .map(move |uniq_pkg_review| {
+            .map(move |pkg_review_id| {
                 &self.package_review_by_signature[&self
-                    .package_review_signatures_by_unique_package_review[uniq_pkg_review]
+                    .package_review_signatures_by_pkg_review_id[pkg_review_id]
                     .value]
             })
     }
@@ -201,9 +201,9 @@ impl ProofDB {
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.iter())
             .flat_map(|(_, v)| v)
-        .map(move |uniq_pkg_review| {
+        .map(move |pkg_review_id| {
             &self.package_review_by_signature
-                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+                [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
         })
     }
 
@@ -217,9 +217,9 @@ impl ProofDB {
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.get(version))
             .flat_map(|v| v)
-        .map(move |uniq_pkg_review| {
+        .map(move |pkg_review_id| {
             &self.package_review_by_signature
-                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+                [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
         })
     }
 
@@ -233,9 +233,9 @@ impl ProofDB {
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.range(version..))
             .flat_map(move |(_, v)| v)
-        .map(move |uniq_pkg_review| {
+        .map(move |pkg_review_id| {
             &self.package_review_by_signature
-                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+                [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
         })
     }
 
@@ -249,9 +249,9 @@ impl ProofDB {
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.range(..=version))
             .flat_map(|(_, v)| v)
-        .map(move |uniq_pkg_review| {
+        .map(move |pkg_review_id| {
             &self.package_review_by_signature
-                [&self.package_review_signatures_by_unique_package_review[uniq_pkg_review].value]
+                [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value]
         })
     }
 
@@ -314,9 +314,9 @@ impl ProofDB {
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.iter())
             .flat_map(|(_, v)| v)
-            .flat_map(move |uniq_pkg_review| {
+            .flat_map(move |pkg_review_id| {
                 let review = &self.package_review_by_signature[&self
-                    .package_review_signatures_by_unique_package_review[uniq_pkg_review]
+                    .package_review_signatures_by_pkg_review_id[pkg_review_id]
                     .value];
 
                 if !review.advisories.is_empty() {
@@ -384,7 +384,7 @@ impl ProofDB {
                 .entry(issue.id.clone())
                 .or_default()
                 .issues
-                .insert(UniquePackageReview::from(review));
+                .insert(PkgReviewId::from(review));
         }
 
         // Now the complicated part. We go through all the advisories for all the versions
@@ -419,7 +419,7 @@ impl ProofDB {
                         .entry(id.clone())
                         .or_default()
                         .issues
-                        .insert(UniquePackageReview::from(review));
+                        .insert(PkgReviewId::from(review));
                 }
             }
 
@@ -429,15 +429,15 @@ impl ProofDB {
                     let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
                     issue_marker.issues = issues
                         .into_iter()
-                        .filter(|uniq_pkg_review| {
+                        .filter(|pkg_review_id| {
                             let signature = &self
-                                .package_review_signatures_by_unique_package_review
-                                .get(uniq_pkg_review)
+                                .package_review_signatures_by_pkg_review_id
+                                .get(pkg_review_id)
                                 .expect("review for this signature").value;
                             let issue_review = self
                                 .package_review_by_signature
                                 .get(signature)
-                                .expect("review for this uniq_pkg_review");
+                                .expect("review for this pkg_review_id");
                             !advisory.is_advisory_for_when_in_version(
                                 &issue_review.package.version,
                                 &review.package.version,
@@ -455,7 +455,7 @@ impl ProofDB {
     }
 
     pub fn unique_package_review_proof_count(&self) -> usize {
-        self.package_review_signatures_by_unique_package_review
+        self.package_review_signatures_by_pkg_review_id
             .len()
     }
 
@@ -481,7 +481,7 @@ impl ProofDB {
             .entry(signature.to_owned())
             .or_insert_with(|| review.to_owned());
 
-        let unique = UniquePackageReview::from(review.clone());
+        let unique = PkgReviewId::from(review.clone());
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
 
         timestamp_signature
@@ -494,7 +494,7 @@ impl ProofDB {
             );
 
         timestamp_signature.insert_into_or_update_to_more_recent(
-            self.package_review_signatures_by_unique_package_review
+            self.package_review_signatures_by_pkg_review_id
                 .entry(unique.clone()),
         );
 
@@ -545,8 +545,8 @@ impl ProofDB {
         proofs
     }
 
-    pub fn get_pkg_review_by_uniq_pkg_review(&self, uniq: &UniquePackageReview) -> Option<&proof::review::Package> {
-        let signature = &self.package_review_signatures_by_unique_package_review.get(uniq)?.value;
+    pub fn get_pkg_review_by_pkg_review_id(&self, uniq: &PkgReviewId) -> Option<&proof::review::Package> {
+        let signature = &self.package_review_signatures_by_pkg_review_id.get(uniq)?.value;
         self.package_review_by_signature.get(signature)
     }
 
@@ -597,7 +597,7 @@ impl ProofDB {
         }
 
         for uniq_rev in self
-            .package_review_signatures_by_unique_package_review
+            .package_review_signatures_by_pkg_review_id
             .keys()
         {
             *res.entry(uniq_rev.from.clone()).or_default() += 1;

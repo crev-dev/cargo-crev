@@ -875,15 +875,15 @@ fn find_issues(
         &trust_set,
         trust_level_required,
     ) {
-        for uniq_pkg_review in &reports.advisories {
+        for pkg_review_id in &reports.advisories {
             let review = db
-                .get_pkg_review_by_uniq_pkg_review(uniq_pkg_review)
-                .expect("review by uniq_pkg_review exists");
+                .get_pkg_review_by_pkg_review_id(pkg_review_id)
+                .expect("review by pkg_review_id exists");
             reviews.insert(review.package.version.clone(), review.clone());
         }
-        for uniq_pkg_review in &reports.issues {
+        for pkg_review_id in &reports.issues {
             let review = db
-                .get_pkg_review_by_uniq_pkg_review(uniq_pkg_review)
+                .get_pkg_review_by_pkg_review_id(pkg_review_id)
                 .expect("review by sig exists");
             reviews.insert(review.package.version.clone(), review.clone());
         }
