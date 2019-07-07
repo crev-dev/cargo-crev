@@ -255,6 +255,23 @@ impl ProofDB {
         })
     }
 
+
+    pub fn get_pkg_review_by_pkg_review_id(&self, uniq: &PkgReviewId) -> Option<&proof::review::Package> {
+        let signature = &self.package_review_signatures_by_pkg_review_id.get(uniq)?.value;
+        self.package_review_by_signature.get(signature)
+    }
+
+    pub fn get_pkg_review<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        version: &'d Version,
+        id: &Id,
+    ) -> Option<&proof::review::Package> {
+        self.get_pkg_reviews_for_version(source, name, version)
+            .find(|pkg_review| pkg_review.from.id == *id)
+    }
+
     pub fn get_advisories<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
         source: &'b str,
@@ -543,22 +560,6 @@ impl ProofDB {
         proofs.sort_by(|a, b| a.date().cmp(&b.date()));
 
         proofs
-    }
-
-    pub fn get_pkg_review_by_pkg_review_id(&self, uniq: &PkgReviewId) -> Option<&proof::review::Package> {
-        let signature = &self.package_review_signatures_by_pkg_review_id.get(uniq)?.value;
-        self.package_review_by_signature.get(signature)
-    }
-
-    pub fn get_package_review_by_author<'a, 'b, 'c: 'a, 'd: 'a>(
-        &'a self,
-        source: &'b str,
-        name: &'c str,
-        version: &'d Version,
-        id: &Id,
-    ) -> Option<&proof::review::Package> {
-        self.get_pkg_reviews_for_version(source, name, version)
-            .find(|pkg_review| pkg_review.from.id == *id)
     }
 
     fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: TrustLevel) {

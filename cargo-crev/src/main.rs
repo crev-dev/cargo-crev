@@ -636,7 +636,7 @@ fn find_previous_review_data(
     String,
 )> {
     if let Some(previous_review) =
-        db.get_package_review_by_author(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id)
+        db.get_pkg_review(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id)
     {
         return Some((
             Some(previous_review.date),
@@ -646,7 +646,7 @@ fn find_previous_review_data(
             previous_review.comment.to_owned(),
         ));
     } else if let Some(diff_base_version) = diff_base_version {
-        if let Some(base_review) = db.get_package_review_by_author(
+        if let Some(base_review) = db.get_pkg_review(
             PROJECT_SOURCE_CRATES_IO,
             name,
             &diff_base_version,
