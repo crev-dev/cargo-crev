@@ -298,28 +298,33 @@ impl ProofDB {
         }
     }
 
-    pub fn get_open_issues(
-        &self,
-        source: &str,
-        name: Option<&str>,
-        version: Option<&Version>,
-        trust_set: &TrustSet,
+    pub fn get_pkg_reviews_with_issues_for<'a, 'b, 'c: 'a, 'd: 'a>(
+        &'a self,
+        source: &'b str,
+        name: Option<&'c str>,
+        version: Option<&'c Version>,
+        trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> HashMap<String, IssueReports> {
+    ) -> impl Iterator<Item = &proof::review::Package> {
         match (name, version) {
-            (Some(name), Some(version)) => self.get_open_issues_for_version(
+            (Some(name), Some(version)) => Box::new(self.get_pkg_reviews_with_issues_for_version(
                 source,
                 name,
                 version,
                 trust_set,
                 trust_level_required,
-            ),
-            (Some(name), None) => {
-                self.get_open_issues_for_name(source, name, trust_set, trust_level_required)
-            }
-            (None, None) => {
-                self.get_open_issues_for_source(source, trust_set, trust_level_required)
-            }
+            )) as Box<dyn Iterator<Item = _>>,
+            (Some(name), None) => Box::new(self.get_pkg_reviews_with_issues_for_name(
+                source,
+                name,
+                trust_set,
+                trust_level_required,
+            )),
+            (None, None) => Box::new(self.get_pkg_reviews_with_issues_for_source(
+                source,
+                trust_set,
+                trust_level_required,
+            )),
             (None, Some(_)) => panic!("Wrong usage"),
         }
     }
@@ -475,202 +480,61 @@ impl ProofDB {
             .collect()
     }
 
-    pub fn get_open_issues_for_name(
-        &self,
-        source: &str,
-        name: &str,
-        trust_set: &TrustSet,
+    pub fn get_pkg_reviews_with_issues_for_version<'a, 'b, 'c: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        queried_version: &'c Version,
+        trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> HashMap<String, IssueReports> {
-        // This is one of the most complicated calculations in whole crev. I hate this code
-        // already, and I have barely put it together.
-
-        // Here we track all the reported isue by issue id
-        let mut issue_reports_by_id: HashMap<String, IssueReports> = HashMap::new();
-
-        // First we go through all the reports in previous versions with `issues` fields and collect these.
-        // Easy.
-        for (review, issue) in self
-            .get_pkg_reviews_for_name(source, name)
-            .filter(|review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.get_pkg_reviews_with_issues_for_name(source, name, trust_set, trust_level_required)
+            .filter(move |review| {
+                !review.issues.is_empty()
+                    || review.advisories.iter().any(|advi| {
+                        advi.is_advisory_for_when_in_version(
+                            &queried_version,
+                            &review.package.version,
+                        )
+                    })
             })
-            .flat_map(move |review| review.issues.iter().map(move |issue| (review, issue)))
-        {
-            issue_reports_by_id
-                .entry(issue.id.clone())
-                .or_default()
-                .issues
-                .insert(PkgReviewId::from(review));
-        }
-
-        // Now the complicated part. We go through all the advisories for all the versions
-        // of given package.
-        //
-        // Advisories itself have two functions: first, they might have report an issue
-        // by advertising that a given version should be upgraded to a newer version.
-        //
-        // Second - they might cancel `issues` inside `issue_reports_by_id` because they
-        // advertise a fix that happened somewhere between the `issue` report and
-        // the current `queried_version`.
-        for (review, advisory) in self
-            .get_pkg_reviews_for_name(source, name)
-            .filter(|review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
-            })
-            .flat_map(move |review| {
-                review
-                    .advisories
-                    .iter()
-                    .map(move |advisory| (review, advisory))
-            })
-        {
-            // Add new issue reports created by the advisory
-            for id in &advisory.ids {
-                issue_reports_by_id
-                    .entry(id.clone())
-                    .or_default()
-                    .issues
-                    .insert(PkgReviewId::from(review));
-            }
-
-            // Remove the reports that are already fixed
-            for id in &advisory.ids {
-                if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
-                    let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
-                    issue_marker.issues = issues
-                        .into_iter()
-                        .filter(|pkg_review_id| {
-                            let signature = &self
-                                .package_review_signatures_by_pkg_review_id
-                                .get(pkg_review_id)
-                                .expect("review for this signature")
-                                .value;
-                            let issue_review = self
-                                .package_review_by_signature
-                                .get(signature)
-                                .expect("review for this pkg_review_id");
-                            !advisory.is_advisory_for_when_in_version(
-                                &issue_review.package.version,
-                                &review.package.version,
-                            )
-                        })
-                        .collect();
-                }
-            }
-        }
-
-        issue_reports_by_id
-            .into_iter()
-            .filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty())
-            .collect()
     }
 
-    pub fn get_open_issues_for_source(
-        &self,
-        source: &str,
-        trust_set: &TrustSet,
+    pub fn get_pkg_reviews_with_issues_for_name<'a, 'b, 'c: 'a>(
+        &'a self,
+        source: &'b str,
+        name: &'c str,
+        trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> HashMap<String, IssueReports> {
-        // This is one of the most complicated calculations in whole crev. I hate this code
-        // already, and I have barely put it together.
-
-        // Here we track all the reported isue by issue id
-        let mut issue_reports_by_id: HashMap<String, IssueReports> = HashMap::new();
-
-        // First we go through all the reports in previous versions with `issues` fields and collect these.
-        // Easy.
-        for (review, issue) in self
-            .get_pkg_reviews_for_source(source)
-            .filter(|review| {
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.get_pkg_reviews_for_name(source, name)
+            .filter(move |review| {
                 if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
                     effective >= trust_level_required
                 } else {
                     false
                 }
             })
-            .flat_map(move |review| review.issues.iter().map(move |issue| (review, issue)))
-        {
-            issue_reports_by_id
-                .entry(issue.id.clone())
-                .or_default()
-                .issues
-                .insert(PkgReviewId::from(review));
-        }
-
-        // Now the complicated part. We go through all the advisories for all the versions
-        // of given package.
-        //
-        // Advisories itself have two functions: first, they might have report an issue
-        // by advertising that a given version should be upgraded to a newer version.
-        //
-        // Second - they might cancel `issues` inside `issue_reports_by_id` because they
-        // advertise a fix that happened somewhere between the `issue` report and
-        // the current `queried_version`.
-        for (review, advisory) in self
-            .get_pkg_reviews_for_source(source)
-            .filter(|review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
-            })
-            .flat_map(move |review| {
-                review
-                    .advisories
-                    .iter()
-                    .map(move |advisory| (review, advisory))
-            })
-        {
-            // Add new issue reports created by the advisory
-            for id in &advisory.ids {
-                issue_reports_by_id
-                    .entry(id.clone())
-                    .or_default()
-                    .issues
-                    .insert(PkgReviewId::from(review));
-            }
-
-            // Remove the reports that are already fixed
-            for id in &advisory.ids {
-                if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
-                    let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
-                    issue_marker.issues = issues
-                        .into_iter()
-                        .filter(|pkg_review_id| {
-                            let signature = &self
-                                .package_review_signatures_by_pkg_review_id
-                                .get(pkg_review_id)
-                                .expect("review for this signature")
-                                .value;
-                            let issue_review = self
-                                .package_review_by_signature
-                                .get(signature)
-                                .expect("review for this pkg_review_id");
-                            !advisory.is_advisory_for_when_in_version(
-                                &issue_review.package.version,
-                                &review.package.version,
-                            )
-                        })
-                        .collect();
-                }
-            }
-        }
-
-        issue_reports_by_id
-            .into_iter()
-            .filter(|(_id, markers)| !markers.issues.is_empty() || !markers.advisories.is_empty())
-            .collect()
+            .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
     }
+
+    pub fn get_pkg_reviews_with_issues_for_source<'a, 'b, 'c: 'a>(
+        &'a self,
+        source: &'b str,
+        trust_set: &'c TrustSet,
+        trust_level_required: TrustLevel,
+    ) -> impl Iterator<Item = &proof::review::Package> {
+        self.get_pkg_reviews_for_source(source)
+            .filter(move |review| {
+                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
+                    effective >= trust_level_required
+                } else {
+                    false
+                }
+            })
+            .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
+    }
+
     pub fn unique_package_review_proof_count(&self) -> usize {
         self.package_review_signatures_by_pkg_review_id.len()
     }

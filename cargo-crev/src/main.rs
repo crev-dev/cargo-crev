@@ -13,7 +13,6 @@ use cargo::{
 };
 use crev_common::convert::OptionDeref;
 use crev_data::Rating;
-use crev_data::TrustLevel;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
@@ -853,42 +852,6 @@ fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Pa
         .collect())
 }
 
-fn find_issues(
-    crate_: &opts::CrateSelector,
-    trust_distance_params: &crev_lib::TrustDistanceParams,
-    trust_level_required: TrustLevel,
-) -> Result<impl Iterator<Item = (Version, proof::review::Package)>> {
-    let local = crev_lib::Local::auto_open()?;
-    let current_id = local.get_current_userid()?;
-    let db = local.load_db()?;
-    let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
-
-    let mut reviews: BTreeMap<Version, proof::review::Package> = BTreeMap::new();
-
-    for (_id, reports) in db.get_open_issues(
-        PROJECT_SOURCE_CRATES_IO,
-        crate_.name.as_ref().map(String::as_str),
-        crate_.version.as_ref(),
-        &trust_set,
-        trust_level_required,
-    ) {
-        for pkg_review_id in &reports.advisories {
-            let review = db
-                .get_pkg_review_by_pkg_review_id(pkg_review_id)
-                .expect("review by pkg_review_id exists");
-            reviews.insert(review.package.version.clone(), review.clone());
-        }
-        for pkg_review_id in &reports.issues {
-            let review = db
-                .get_pkg_review_by_pkg_review_id(pkg_review_id)
-                .expect("review by sig exists");
-            reviews.insert(review.package.version.clone(), review.clone());
-        }
-    }
-
-    Ok(reviews.into_iter())
-}
-
 fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     let repo = Repo::auto_open_cwd()?;
     let name = &args.name;
@@ -964,11 +927,19 @@ fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
 
 fn list_issues(args: &opts::QueryIssue) -> Result<()> {
     let trust_distance_params = args.trust_params.clone().into();
-    for (_, review) in find_issues(
-        &args.crate_,
-        &trust_distance_params,
+
+    let local = crev_lib::Local::auto_open()?;
+    let current_id = local.get_current_userid()?;
+    let db = local.load_db()?;
+    let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
+
+    for review in db.get_pkg_reviews_with_issues_for(
+        PROJECT_SOURCE_CRATES_IO,
+        args.crate_.name.as_ref().map(String::as_str),
+        args.crate_.version.as_ref(),
+        &trust_set,
         args.trust_level.into(),
-    )? {
+    ) {
         println!("{}", review);
     }
 
