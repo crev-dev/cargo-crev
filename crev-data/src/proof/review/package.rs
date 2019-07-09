@@ -187,12 +187,12 @@ impl fmt::Display for PackageDraft {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum VersionRange {
-    All,
-    Major,
     Minor,
+    Major,
+    All,
 }
 
 #[derive(Debug, Clone)]
@@ -223,6 +223,16 @@ impl std::str::FromStr for VersionRange {
     }
 }
 
+impl VersionRange {
+    fn all() -> Self {
+        VersionRange::All
+    }
+
+    fn is_all(&self) -> bool {
+        VersionRange::All == *self
+    }
+}
+
 /// Advisory to upgrade to the package version
 ///
 /// Advisory means a general important fix was included in this
@@ -236,7 +246,10 @@ pub struct Advisory {
     pub severity: Level,
 
     #[builder(default)]
-    #[serde(default = "Default::default")]
+    #[serde(
+        default = "VersionRange::all",
+        skip_serializing_if = "VersionRange::is_all"
+    )]
     pub range: VersionRange,
 
     #[builder(default)]
@@ -307,7 +320,10 @@ pub struct Issue {
     pub severity: Level,
 
     #[builder(default)]
-    #[serde(default = "Default::default")]
+    #[serde(
+        default = "VersionRange::all",
+        skip_serializing_if = "VersionRange::is_all"
+    )]
     pub range: VersionRange,
 
     #[builder(default)]
