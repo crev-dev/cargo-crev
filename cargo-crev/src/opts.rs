@@ -362,12 +362,8 @@ pub struct Review {
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct AdviseCommon {
     /// This release contains advisory (important fix)
-    #[structopt(
-        long = "affected",
-        // default_value = "proof::review::package::AdvisoryRange::Major"
-        default_value = "major"
-    )]
-    pub affected: crev_data::proof::review::package::AdvisoryRange,
+    #[structopt(long = "affected", default_value = "major")]
+    pub affected: crev_data::proof::review::package::VersionRange,
 
     #[structopt(long = "severity", default_value = "medium")]
     pub severity: Level,

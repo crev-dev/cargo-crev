@@ -1,6 +1,6 @@
 use super::*;
 
-use crev_data::review::{Advisory, AdvisoryRange, Issue};
+use crev_data::review::{Advisory, Issue, VersionRange};
 use crev_data::TrustLevel;
 use crev_data::{proof, OwnId};
 use ifmt::iformat;
@@ -9,7 +9,7 @@ use semver::Version;
 const SOURCE: &str = "SOURCE_ID";
 const NAME: &str = "name";
 
-fn build_advisory(id: impl Into<String>, range: AdvisoryRange) -> Advisory {
+fn build_advisory(id: impl Into<String>, range: VersionRange) -> Advisory {
     let id = id.into();
     Advisory::builder()
         .range(range)
@@ -84,7 +84,7 @@ fn advisories_sanity() -> Result<()> {
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
-        vec![build_advisory("someid", AdvisoryRange::Major)],
+        vec![build_advisory("someid", VersionRange::Major)],
     );
 
     let mut trustdb = ProofDB::new();
@@ -117,7 +117,7 @@ fn advisories_sanity() -> Result<()> {
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
-        vec![build_advisory("someid", AdvisoryRange::All)],
+        vec![build_advisory("someid", VersionRange::All)],
     );
 
     trustdb.import_from_iter(vec![proof].into_iter());
@@ -153,7 +153,7 @@ fn issues_sanity() -> Result<()> {
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("1.2.3").unwrap(),
-        vec![build_advisory("issueX", AdvisoryRange::Major)],
+        vec![build_advisory("issueX", VersionRange::Major)],
     );
     trustdb.import_from_iter(vec![proof].into_iter());
 
@@ -186,7 +186,7 @@ fn issues_sanity() -> Result<()> {
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("2.0.1").unwrap(),
-        vec![build_advisory("issueY", AdvisoryRange::All)],
+        vec![build_advisory("issueY", VersionRange::All)],
     );
     trustdb.import_from_iter(vec![proof].into_iter());
     assert_eq!(
@@ -276,7 +276,7 @@ fn issues_sanity() -> Result<()> {
     let proof = build_proof_with_advisories(
         &id,
         Version::parse("3.1.0").unwrap(),
-        vec![build_advisory("issueX", AdvisoryRange::Major)],
+        vec![build_advisory("issueX", VersionRange::Major)],
     );
     trustdb.import_from_iter(vec![proof].into_iter());
 

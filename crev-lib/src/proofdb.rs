@@ -8,7 +8,7 @@ use crev_data::{
         trust::TrustLevel,
         Content, ContentCommon,
     },
-    Digest, Id, Url,
+    Digest, Id, Level, Url,
 };
 use default::default;
 use semver::Version;
@@ -159,10 +159,11 @@ impl Default for ProofDB {
 }
 
 #[derive(Default, Debug)]
-pub struct IssueReports {
-    /// Signatures of reviews that reported a given issue by `issues` field
+pub struct IssueDetails {
+    pub severity: Level,
+    /// Reviews that reported a given issue by `issues` field
     pub issues: HashSet<PkgReviewId>,
-    /// Signatures of review that reported a given issue by `advisories` field
+    /// Reviews that reported a given issue by `advisories` field
     pub advisories: HashSet<PkgReviewId>,
 }
 
@@ -385,12 +386,12 @@ impl ProofDB {
         queried_version: &Version,
         trust_set: &TrustSet,
         trust_level_required: TrustLevel,
-    ) -> HashMap<String, IssueReports> {
+    ) -> HashMap<String, IssueDetails> {
         // This is one of the most complicated calculations in whole crev. I hate this code
         // already, and I have barely put it together.
 
         // Here we track all the reported isue by issue id
-        let mut issue_reports_by_id: HashMap<String, IssueReports> = HashMap::new();
+        let mut issue_reports_by_id: HashMap<String, IssueDetails> = HashMap::new();
 
         // First we go through all the reports in previous versions with `issues` fields and collect these.
         // Easy.
@@ -404,6 +405,12 @@ impl ProofDB {
                 }
             })
             .flat_map(move |review| review.issues.iter().map(move |issue| (review, issue)))
+            .filter(|(review, issue)| {
+                issue.is_for_version_when_reported_in_version(
+                    queried_version,
+                    &review.package.version,
+                )
+            })
         {
             issue_reports_by_id
                 .entry(issue.id.clone())
@@ -438,7 +445,9 @@ impl ProofDB {
             })
         {
             // Add new issue reports created by the advisory
-            if advisory.is_advisory_for_when_in_version(&queried_version, &review.package.version) {
+            if advisory
+                .is_for_version_when_reported_in_version(&queried_version, &review.package.version)
+            {
                 for id in &advisory.ids {
                     issue_reports_by_id
                         .entry(id.clone())
@@ -464,7 +473,7 @@ impl ProofDB {
                                 .package_review_by_signature
                                 .get(signature)
                                 .expect("review for this pkg_review_id");
-                            !advisory.is_advisory_for_when_in_version(
+                            !advisory.is_for_version_when_reported_in_version(
                                 &issue_review.package.version,
                                 &review.package.version,
                             )
@@ -492,7 +501,7 @@ impl ProofDB {
             .filter(move |review| {
                 !review.issues.is_empty()
                     || review.advisories.iter().any(|advi| {
-                        advi.is_advisory_for_when_in_version(
+                        advi.is_for_version_when_reported_in_version(
                             &queried_version,
                             &review.package.version,
                         )

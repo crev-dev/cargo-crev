@@ -161,7 +161,7 @@ impl Package {
 
     pub fn is_advisory_for(&self, version: &Version) -> bool {
         for advisory in &self.advisories {
-            if advisory.is_advisory_for_when_in_version(version, &self.package.version) {
+            if advisory.is_for_version_when_reported_in_version(version, &self.package.version) {
                 return true;
             }
         }
@@ -189,36 +189,36 @@ impl fmt::Display for PackageDraft {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum AdvisoryRange {
+pub enum VersionRange {
     All,
     Major,
     Minor,
 }
 
 #[derive(Debug, Clone)]
-pub struct AdvisoryRangeParseError(());
+pub struct VersionRangeParseError(());
 
-impl fmt::Display for AdvisoryRangeParseError {
+impl fmt::Display for VersionRangeParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Could not parse an incorrect advisory range value")
     }
 }
 
-impl Default for AdvisoryRange {
+impl Default for VersionRange {
     fn default() -> Self {
-        AdvisoryRange::All
+        VersionRange::All
     }
 }
 
-impl std::str::FromStr for AdvisoryRange {
-    type Err = AdvisoryRangeParseError;
+impl std::str::FromStr for VersionRange {
+    type Err = VersionRangeParseError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Ok(match s {
-            "all" => AdvisoryRange::All,
-            "major" => AdvisoryRange::Major,
-            "minor" => AdvisoryRange::Minor,
-            _ => return Err(AdvisoryRangeParseError(())),
+            "all" => VersionRange::All,
+            "major" => VersionRange::Major,
+            "minor" => VersionRange::Minor,
+            _ => return Err(VersionRangeParseError(())),
         })
     }
 }
@@ -232,15 +232,20 @@ impl std::str::FromStr for AdvisoryRange {
 #[serde(rename_all = "kebab-case")]
 pub struct Advisory {
     pub ids: Vec<String>,
-    pub range: AdvisoryRange,
     #[builder(default)]
     pub severity: Level,
+
     #[builder(default)]
+    #[serde(default = "Default::default")]
+    pub range: VersionRange,
+
+    #[builder(default)]
+    #[serde(default = "Default::default")]
     pub comment: String,
 }
 
-impl From<AdvisoryRange> for Advisory {
-    fn from(r: AdvisoryRange) -> Self {
+impl From<VersionRange> for Advisory {
+    fn from(r: VersionRange) -> Self {
         Advisory {
             range: r,
             ..Default::default()
@@ -252,7 +257,7 @@ impl Default for Advisory {
     fn default() -> Self {
         Self {
             ids: vec![],
-            range: AdvisoryRange::default(),
+            range: VersionRange::default(),
             severity: Default::default(),
             comment: "".to_string(),
         }
@@ -260,20 +265,20 @@ impl Default for Advisory {
 }
 
 impl Advisory {
-    pub fn is_advisory_for_when_in_version(
+    pub fn is_for_version_when_reported_in_version(
         &self,
         for_version: &Version,
         in_pkg_version: &Version,
     ) -> bool {
         if for_version < in_pkg_version {
             match self.range {
-                AdvisoryRange::All => return true,
-                AdvisoryRange::Major => {
+                VersionRange::All => return true,
+                VersionRange::Major => {
                     if in_pkg_version.major == for_version.major {
                         return true;
                     }
                 }
-                AdvisoryRange::Minor => {
+                VersionRange::Minor => {
                     if in_pkg_version.major == for_version.major
                         && in_pkg_version.minor == for_version.minor
                     {
@@ -291,15 +296,22 @@ impl Advisory {
 /// `Issue` is a kind of opposite of [`Advisory`]. It reports
 /// a problem with package in a given version. It leaves the
 /// question open if any previous and following versions might
-/// also be affected, but
-/// that
+/// also be affected, but will be considered open and affecting
+/// all following versions withing the `range` until an advisory
+/// is found for it, matching the id.
 #[derive(Clone, TypedBuilder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Issue {
     pub id: String,
     #[builder(default)]
     pub severity: Level,
+
     #[builder(default)]
+    #[serde(default = "Default::default")]
+    pub range: VersionRange,
+
+    #[builder(default)]
+    #[serde(default = "Default::default")]
     pub comment: String,
 }
 
@@ -307,6 +319,7 @@ impl Issue {
     pub fn new(id: String) -> Self {
         Self {
             id,
+            range: Default::default(),
             severity: Default::default(),
             comment: Default::default(),
         }
@@ -314,8 +327,33 @@ impl Issue {
     pub fn new_with_severity(id: String, severity: Level) -> Self {
         Self {
             id,
+            range: Default::default(),
             severity,
             comment: Default::default(),
         }
+    }
+    pub fn is_for_version_when_reported_in_version(
+        &self,
+        for_version: &Version,
+        in_pkg_version: &Version,
+    ) -> bool {
+        if for_version >= in_pkg_version {
+            match self.range {
+                VersionRange::All => return true,
+                VersionRange::Major => {
+                    if in_pkg_version.major == for_version.major {
+                        return true;
+                    }
+                }
+                VersionRange::Minor => {
+                    if in_pkg_version.major == for_version.major
+                        && in_pkg_version.minor == for_version.minor
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
     }
 }
