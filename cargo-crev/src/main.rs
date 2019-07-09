@@ -7,8 +7,9 @@
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
+use cargo::core::source::Source;
 use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, PackageId, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
@@ -173,6 +174,16 @@ impl Repo {
         Ok(source)
     }
 
+    fn load_source_with_whitelist<'a>(
+        &'a self,
+        yanked_whitelist: HashSet<PackageId>,
+    ) -> Result<Box<cargo::core::source::Source + 'a>> {
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source = map.load(source_id, &yanked_whitelist)?;
+        Ok(source)
+    }
+
     /// Run `f` for every non-local dependency crate
     fn for_every_non_local_dep_crate(
         &self,
@@ -213,7 +224,15 @@ impl Repo {
         name: &str,
         version: Option<&Version>,
     ) -> Result<Option<Package>> {
-        let mut source = self.load_source()?;
+        let mut source = if let Some(version) = version {
+            // special case - we need to whitelist the crate, in case it was yanked
+            let mut yanked_whitelist = HashSet::default();
+            let source_id = SourceId::crates_io(&self.config)?;
+            yanked_whitelist.insert(PackageId::new(name, version, source_id)?);
+            self.load_source_with_whitelist(yanked_whitelist)?
+        } else {
+            self.load_source()?
+        };
         let mut summaries = vec![];
         let version_str = version.map(ToString::to_string);
         let dependency_request =
@@ -223,6 +242,9 @@ impl Repo {
         })?;
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
+        // special case - if the crate was yanked, it's not in our `Cargo.yaml`
+        // so it's not possible to get it via normal means
+        // return Ok(Some(Box::new(&mut source).download_now(&self.config)?));
         } else {
             summaries.iter().max_by_key(|s| s.version())
         };
