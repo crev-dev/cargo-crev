@@ -20,7 +20,7 @@ impl Digest {
 }
 
 impl fmt::Display for Digest {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&crev_common::base64_encode(&self.0))
     }
 }
