@@ -4,6 +4,8 @@
 pub mod user {
     #[doc(include = "doc/getting_started.md")]
     pub mod getting_started {}
+    #[doc(include = "doc/organizations.md")]
+    pub mod organizations {}
     #[doc(include = "doc/advisories.md")]
     pub mod advisories {}
 }

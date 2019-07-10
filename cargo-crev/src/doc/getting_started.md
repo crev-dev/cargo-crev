@@ -355,7 +355,7 @@ At the moment of writting this `cargo crev` provides two methods of reviewing cr
 
 If you want to review a crate called `default`, you run:
 
-```
+```text
 $ cargo crev goto default
 Opening shell in: /home/dpc/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
 Use `exit` or Ctrl-D to return to the original project.
