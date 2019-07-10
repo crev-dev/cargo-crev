@@ -290,7 +290,7 @@ impl ProofDB {
         match (name, version) {
             (Some(ref name), Some(ref version)) => {
                 Box::new(self.get_advisories_for_version(source, name, version))
-                    as Box<Iterator<Item = _>>
+                    as Box<dyn Iterator<Item = _>>
             }
 
             (Some(ref name), None) => Box::new(self.get_advisories_for_package(source, name)),

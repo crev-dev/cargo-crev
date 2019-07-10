@@ -10,7 +10,7 @@ use serde_yaml;
 use std::{self, fmt, io::Write, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
-pub type PassphraseFn<'a> = &'a Fn() -> std::io::Result<String>;
+pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PassConfig {

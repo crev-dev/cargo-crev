@@ -237,7 +237,7 @@ impl Repo {
 
     pub fn trust_package(
         &mut self,
-        passphrase_callback: PassphraseFn,
+        passphrase_callback: PassphraseFn<'_>,
         allow_dirty: bool,
     ) -> Result<()> {
         if !self.staging()?.is_empty() {
@@ -268,7 +268,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn commit(&mut self, passphrase_callback: PassphraseFn, allow_dirty: bool) -> Result<()> {
+    pub fn commit(&mut self, passphrase_callback: PassphraseFn<'_>, allow_dirty: bool) -> Result<()> {
         if self.staging()?.is_empty() && !allow_dirty {
             bail!("No reviews to commit. Use `add` first or use `-a` for the whole package.");
         }

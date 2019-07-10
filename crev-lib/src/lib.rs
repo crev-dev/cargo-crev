@@ -38,7 +38,7 @@ pub enum TrustOrDistrust {
 }
 
 impl fmt::Display for TrustOrDistrust {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TrustOrDistrust::Trust => f.write_str("trust"),
             TrustOrDistrust::Distrust => f.write_str("distrust"),
