@@ -106,5 +106,4 @@ QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8
 ## Links
 
 * [Crev FAQ](https://github.com/dpc/crev/wiki/FAQ)
-* ["cargo-trust: Concept"](https://github.com/dpc/crev/wiki/cargo-trust:-Concept)
 
