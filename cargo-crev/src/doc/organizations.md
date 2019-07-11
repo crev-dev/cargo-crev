@@ -1,4 +1,4 @@
-# `cargo-crev` for organizations and businesses
+# Using in organizations and businesses
 
 `cargo-crev` is being developed with an explicit goal of supporting teams, groups,
 businesses and even very large organizations. It is our belief that companies developing software

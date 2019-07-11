@@ -2,7 +2,7 @@
 //!
 #![cfg_attr(
     feature = "documentation",
-    doc = "See [user documentation module](./doc/user/index.html)."
+    doc = "See [user documentation module](./doc/user/index.html) and [Getting Started Guide](./doc/user/getting_started/index.html) in particular."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;

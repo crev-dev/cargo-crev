@@ -1,4 +1,4 @@
-# `cargo-crev` - Getting Started Guide
+# Getting Started Guide
 
 ## Introduction
 
