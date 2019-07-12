@@ -4,7 +4,6 @@ use std::{
     collections::HashSet,
     default::Default,
     path::PathBuf,
-    time::{Instant, Duration},
 };
 
 use crate::prelude::*;
@@ -16,16 +15,6 @@ use crate::tokei;
 use crate::dep::dep::*;
 
 use crev_lib::{*, proofdb::*};
-
-#[derive(Debug, Default)]
-pub struct Durations {
-    pub digest: Duration,
-    pub loc: Duration,
-    pub latest_trusted: Duration,
-    pub issues: Duration,
-    pub total: Duration,
-
-}
 
 /// manages most analysis of a crate dependency.
 ///
@@ -41,7 +30,6 @@ pub struct DepComputer {
     requirements: crev_lib::VerificationRequirements,
     skip_verified: bool,
     skip_known_owners: bool,
-    pub durations: Durations,
 }
 
 impl DepComputer {
@@ -71,7 +59,6 @@ impl DepComputer {
             requirements,
             skip_verified,
             skip_known_owners,
-            durations: Default::default(),
         })
     }
 
@@ -79,7 +66,6 @@ impl DepComputer {
         &mut self,
         row: &mut DepRow,
     ) -> Result<Option<Dep>> {
-        let start = Instant::now();
 
         let crate_id = row.id;
         let name = crate_id.name().as_str().to_string();
@@ -87,16 +73,13 @@ impl DepComputer {
         let crate_root = &row.root;
         let digest = crev_lib::get_dir_digest(&crate_root, &self.ignore_list)?;
 
-        let start_digest = Instant::now();
         let unclean_digest = !is_digest_clean(
             &self.db, &name, &version, &digest
         );
         let result = self.db.verify_package_digest(&digest, &self.trust_set, &self.requirements);
         let verified = result.is_verified();
-        self.durations.digest += start_digest.elapsed();
 
         if verified && self.skip_verified {
-            self.durations.total += start.elapsed();
             return Ok(None);
         }
 
@@ -128,7 +111,6 @@ impl DepComputer {
                     .filter(|o| self.known_owners.contains(o.as_str()))
                     .count();
                 if known_owners_count > 0 && self.skip_known_owners {
-                    self.durations.total += start.elapsed();
                     return Ok(None);
                 }
                 Some(TrustCount{
@@ -139,7 +121,6 @@ impl DepComputer {
             Err(_) => None,
         };
 
-        let start_issues = Instant::now();
         let issues_from_trusted = self.db.get_open_issues_for_version(
             PROJECT_SOURCE_CRATES_IO,
             &name,
@@ -158,27 +139,15 @@ impl DepComputer {
             trusted: issues_from_trusted.len(),
             total: issues_from_all.len(),
         };
-        self.durations.issues += start_issues.elapsed();
 
-        let start_loc = Instant::now();
         let loc = tokei::get_rust_line_count(&row.root).ok();
-        self.durations.loc += start_loc.elapsed();
 
-        //let start_geiger = Instant::now();
-        // most of the time of verify deps is spent here
-        //let geiger_count = get_geiger_count(&row.root).ok();
-        //self.durations.geiger += start_geiger.elapsed();
-
-        let start_latest_trusted = Instant::now();
         let latest_trusted_version = self.db.find_latest_trusted_version(
             &self.trust_set,
             PROJECT_SOURCE_CRATES_IO,
             &name,
             &self.requirements,
         );
-        self.durations.latest_trusted += start_latest_trusted.elapsed();
-
-        self.durations.total += start.elapsed();
         Ok(Some(Dep {
             digest,
             name,

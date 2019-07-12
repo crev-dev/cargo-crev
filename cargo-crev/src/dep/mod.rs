@@ -32,7 +32,7 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
     table.rows
         .par_iter_mut()
         .for_each(|row| {
-            row.download_if_needed().unwrap(); // FIXME unwrap
+            row.download_if_needed().unwrap(); // FIXME unwrap. What to do exactly apart die ?
             row.count_geiger();
         });
 
@@ -46,8 +46,6 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
             nb_unclean_digests += 1;
         }
     }
-
-    println!("Durations: {:?}", computer.durations);
 
     if nb_unclean_digests > 0 {
         println!(
