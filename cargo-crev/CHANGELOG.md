@@ -4,12 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [UNRELEASED](https://github.com/dpc/crev/compare/cargo-crev-v0.7.0...master)  - UNRELEASED
+## [0.8.0](https://github.com/dpc/crev/compare/cargo-crev-v0.7.0...cargo-crev-v0.8.0) - 2019-07-11
 ### Changed
 
 * `verify deps` was renamed to just `verify`
+* Not saving the default draft is considered as canceling the operation.
+* Revamp *advisories* system and add 
 
-## [0.7.0](https://github.com/dpc/crev/compare/cargo-crev-v0.6.0...cargo-crev-v0.7.0)  - 2019-04-27
+### Added
+
+* Statically compiled release binaries
+* User Documentation, including Getting Started Guide
+* `query dir` command
+* Differential reviews with `diff` and `review --diff` commands
+* New options, particularily for `verify`
+
+## [0.7.0](https://github.com/dpc/crev/compare/cargo-crev-v0.6.0...cargo-crev-v0.7.0) - 2019-04-27
 ### Added
 
 * Advisories (https://github.com/dpc/crev/wiki/Advisories)
