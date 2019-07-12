@@ -610,6 +610,7 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
         .filter_map(|res| res)
 }
 
+// Note: this function is very slow
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
     let mut count = 0;
     for metrics in iter_rs_files_in_dir(path)

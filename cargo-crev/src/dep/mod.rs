@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 
 use crate::prelude::*;
 use crate::opts::*;
@@ -20,7 +21,6 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
     dbg!(args.interactive);
 
     let repo = Repo::auto_open_cwd()?;
-    let mut computer = DepComputer::new(&repo, &args)?;
     let mut term = term::Term::new();
 
     let package_set = repo.non_local_dep_crates()?;
@@ -28,6 +28,15 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
     if term.stderr_is_tty && term.stdout_is_tty {
         DepRow::term_print_header(&mut term, args.verbose);
     }
+
+    table.rows
+        .par_iter_mut()
+        .for_each(|row| {
+            row.download_if_needed().unwrap(); // FIXME unwrap
+            row.count_geiger();
+        });
+
+    let mut computer = DepComputer::new(&args)?;
 
     let mut nb_unclean_digests = 0;
     for row in table.rows.iter_mut() {
@@ -38,6 +47,8 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
         }
     }
 
+    println!("Durations: {:?}", computer.durations);
+
     if nb_unclean_digests > 0 {
         println!(
             "{} unclean package{} detected. Use `cargo crev clean <crate>` to wipe the local source.",
@@ -46,9 +57,8 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
         );
         for row in table.rows {
             if row.is_digest_unclean() {
-                let crate_id = row.pkg.package_id();
-                let name = crate_id.name().as_str();
-                let version = crate_id.version();
+                let name = row.id.name().as_str();
+                let version = row.id.version();
                 term.eprint(
                     format_args!("Unclean crate {} {}\n", name, version),
                     ::term::color::RED,

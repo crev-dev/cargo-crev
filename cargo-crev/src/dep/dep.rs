@@ -1,10 +1,14 @@
 use cargo::core::{
     package::{Package, PackageSet},
+    package_id::PackageId,
 };
 use semver::Version;
+use std::path::PathBuf;
 
 use crate::prelude::*;
 use crate::term::{self, *};
+use crate::repo::*;
+use crate::shared::*;
 
 use crev_data::*;
 use crev_lib::*;
@@ -33,7 +37,7 @@ pub struct TrustCount {
 pub struct Dep {
     pub digest: Digest,
     pub name: String,
-    pub version: Version, //VersionInfo,
+    pub version: Version,
     pub latest_trusted_version: Option<Version>,
     pub trust: VerificationStatus,
     pub reviews: CrateCounts,
@@ -41,14 +45,26 @@ pub struct Dep {
     pub owners: Option<TrustCount>,
     pub issues: TrustCount,
     pub loc: Option<usize>,
-    pub geiger_count: Option<u64>,
-    pub has_custom_build: bool,
+    pub has_custom_build: bool, // duplicate data, improve that
     pub unclean_digest: bool,
     pub verified: bool,
 }
 
+pub struct DepRow {
+    pub id: PackageId, // contains the name, version
+    pub root: PathBuf,
+    pub has_custom_build: bool,
+    pub geiger_count: Option<u64>,
+    pub computation_status: ComputationStatus,
+}
+
 impl Dep {
-    pub fn term_print(&self, term: &mut Term, verbose: bool) -> Result<()> {
+    pub fn term_print(
+        &self,
+        term: &mut Term,
+        geiger_count: Option<u64>,
+        verbose: bool,
+    ) -> Result<()> {
         if verbose {
             print!("{:43} ", self.digest);
         }
@@ -111,7 +127,7 @@ impl Dep {
             Some(loc) => print!(" {:>6}", loc),
             None => print!(" {:>6}", "err"),
         }
-        match self.geiger_count {
+        match geiger_count {
             Some(geiger_count) => print!(" {:>7}", geiger_count),
             None => print!(" {:>7}", "err"),
         }
@@ -137,20 +153,37 @@ impl Dep {
 
 }
 
-pub struct DepRow<'p> {
-    pub pkg: &'p Package,
-    //pub crate_id: PackageId, // contains the name, version
-    pub computation_status: ComputationStatus,
-    //pub dep: Option<Dep>,
-}
 
-impl<'p> DepRow<'p> {
-    pub fn from(pkg: &'p Package) -> Self {
+impl DepRow {
+    pub fn from(pkg: & Package) -> Self {
+        let id = pkg.package_id();
+        let root = pkg.root().to_path_buf();
+        let has_custom_build = pkg.has_custom_build();
         DepRow {
-            pkg,
+            id,
+            root,
+            has_custom_build,
+            geiger_count: None,
             computation_status: ComputationStatus::New,
-            //dep: None,
         }
+    }
+
+    pub fn download_if_needed(
+        &mut self,
+    ) -> Result<()> {
+        if !self.root.exists() {
+            let repo = Repo::auto_open_cwd()?;
+            let mut source = repo.load_source()?;
+            source.download(self.id)?;
+        }
+        Ok(())
+    }
+
+    pub fn count_geiger(
+        &mut self,
+    ) {
+        debug_assert!(self.root.exists());
+        self.geiger_count = get_geiger_count(&self.root).ok();
     }
 
     pub fn is_digest_unclean(&self) -> bool {
@@ -193,7 +226,7 @@ impl<'p> DepRow<'p> {
                 println!("skipped"); // TODO write the name
             }
             ComputationStatus::Ok{dep} => {
-                dep.term_print(term, verbose)?;
+                dep.term_print(term, self.geiger_count, verbose)?;
                 println!();
             }
         }
@@ -202,21 +235,16 @@ impl<'p> DepRow<'p> {
 }
 
 
-pub struct DepTable<'p> {
-    pub rows: Vec<DepRow<'p>>,
+pub struct DepTable {
+    pub rows: Vec<DepRow>,
 }
-impl<'p> DepTable<'p> {
-    pub fn new(package_set: &'p PackageSet<'_>) -> Result<DepTable<'p>> {
+impl DepTable {
+    pub fn new(package_set: &PackageSet<'_>) -> Result<DepTable> {
         let pkgs = package_set.get_many(package_set.package_ids())?;
         let rows = pkgs.iter()
             .filter(|pkg| pkg.summary().source_id().is_registry())
             .map(|pkg| DepRow::from(pkg))
             .collect();
-        //let rows = Vec::new();
-        //for pkg in pkgs {
-        //    if !pkg.summary().source_id().is_registry() {
-        //        continue;
-        //    }
         Ok(DepTable {
             rows,
         })

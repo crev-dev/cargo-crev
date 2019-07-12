@@ -36,6 +36,7 @@ tokei = "10"
 walkdir = "2"
 time = "*"
 env_logger = { version = "*", default-features = false, features = ["termcolor", "atty", "humantime"]}
+rayon = "1.1"
 
 [features]
 default = []
