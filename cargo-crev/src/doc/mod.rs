@@ -8,7 +8,7 @@
 /// or stale.
 ///
 /// Writting a high quality documentation is
-/// a lot of work. Please help us improve it! If you spot any
+/// a lot of work. Please help us! If you spot any
 /// mistakes or ways to improve it:
 ///
 /// 1. Open

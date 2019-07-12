@@ -30,14 +30,12 @@ trust: low
 -----END CREV TRUST-----
 ```
 
-Identity `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE` trusts identity `YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA` on trust level 
-Most importantly *trust proofs* include trust level information (`trust` field).
+Identity `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE` trusts identity `YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA`.
+Notably, *trust proofs* include trust level information (`trust` field).
 
-It's important to remember that WoT in `crev` is personal (subjective) and is calculated from all the available
-*trust proofs*.
+`cargo-crev` builds WoT from  from all the available *trust proofs*, and calculates a personal *trust set* from it.
 
-When calculating WoT, `crev` recursively traverses the graph from the root identity, using *trust proofs* as nodes.
-This makes *trust* transitive.
+When calculating the *trust set*, `crev` recursively traverses the graph from the given root identity. This makes *trust* transitive.
 
 The root identity is typically the current identity of the user,
 but can be specified arbitrarily with the `--for-id` argument.
@@ -59,8 +57,6 @@ More precisely: *effective trust level* of R for Y is equal to:
 Or in other words: for R to have a given *effective trust* for Y, there has to exist at least on path from R and Y,
 where every previous node directly trusts the next one at the level at least as high.
 
- 
-
 That's because any *effective trust level* can only be as high as the higest *effective trust level*
 
 ### Depth of the WoT
@@ -70,12 +66,10 @@ the root ID. The exact details how far from it it will reach can be controlled b
 line options:
 
 ```text
-OPTIONS:
-        --depth <depth>
-        --high-cost <high_cost>
-        --medium-cost <medium_cost>
-        --low-cost <low_cost>
-
+--depth <depth>
+--high-cost <high_cost>
+--medium-cost <medium_cost>
+--low-cost <low_cost>
 ```
 
 
@@ -100,8 +94,8 @@ by identities of a given trust level (or higher).
 The following options:
 
 ```text
-        --thoroughness <thoroughness>
-        --understanding <understanding>
+--thoroughness <thoroughness>
+--understanding <understanding>
 ```
 
 control filtering of the reviews by their qualities.
@@ -109,8 +103,8 @@ control filtering of the reviews by their qualities.
 
 Finally:
 
-```
-        --redundancy <redundancy>          Number of reviews required [default: 1]
+```text
+--redundancy <redundancy>          Number of reviews required [default: 1]
 ```
 
 control how many trusted reviews is required to consider each package as trustworthy.
