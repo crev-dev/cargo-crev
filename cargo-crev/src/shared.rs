@@ -34,35 +34,6 @@ pub const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 /// The file added to crates containing vcs revision
 pub const VCS_INFO_JSON_FILE: &str = ".cargo_vcs_info.json";
 
-pub fn pad_left_manually(s: String, width: usize) -> String {
-    if s.len() <= width {
-        let padding = std::iter::repeat(" ")
-            .take(width - s.len())
-            .collect::<String>();
-        format!("{}{}", s, padding)
-    } else {
-        s
-    }
-}
-
-pub fn latest_trusted_version_string(
-    base_version: Version,
-    latest_trusted_version: Option<Version>,
-) -> String {
-    latest_trusted_version
-        .map(|latest_trusted_version| {
-            let ch = if base_version < latest_trusted_version {
-                "↑"
-            } else if latest_trusted_version < base_version {
-                "↓"
-            } else {
-                "="
-            };
-            format!("{}{}", ch, latest_trusted_version)
-        })
-        .unwrap_or_else(|| "".into())
-}
-
 /// Data from `.cargo_vcs_info.json`
 #[derive(Debug, Clone, Deserialize)]
 pub struct VcsInfoJson {

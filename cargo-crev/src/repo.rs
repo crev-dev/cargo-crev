@@ -1,5 +1,5 @@
 use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, PackageId, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, PackageId, package::PackageSet, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
@@ -111,6 +111,20 @@ impl Repo {
         }
 
         Ok(())
+    }
+
+    pub fn non_local_dep_crates(& self) -> Result<PackageSet<'_>> {
+        let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
+        let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
+            &workspace,
+            None,
+            &[],
+            true,  // all_features
+            false, // no_default_features
+            &specs,
+        )?;
+        Ok(package_set)
     }
 
     pub fn find_idependent_crate_dir(

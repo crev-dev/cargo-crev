@@ -117,6 +117,9 @@ pub struct VerifyDeps {
     #[structopt(long = "verbose", short = "v")]
     pub verbose: bool,
 
+    #[structopt(long = "interactive", short = "i")]
+    pub interactive: bool,
+
     #[structopt(flatten)]
     pub trust_params: TrustDistanceParams,
 
