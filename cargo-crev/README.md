@@ -16,25 +16,16 @@
 
 # `cargo-crev` - Cargo Code REView!
 
+## Introduction
+
+[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
+distributed Code REView system.
+
+`cargo-crev` is a CLI implementation/frontend of Crev integrated with `cargo` and targeting
+Rust/crates.io ecosystem.
+
 `cargo-crev` is a tool helping Rust users evalute quality and trustworthiness
 of dependencies they use.
-
-`cargo-crev` helps analyze data like:
-
-* popularity,
-* line-count,
-* amount of `unsafe` statements,
-* number of owners and their reputation,
-* known advisories affecting it
-
-On top of that, it comes with an implementation of distributed
-Code REView and recomendation system (crev),
-that protects against many attack vectors.
-
-The general goal is driving the quality of Rust ecosystem even higher,
-by helping indentify quality crates, and encouraging continous peer review culture.
-
-All of this is neatly integrated with the `cargo` itself.
 
 ## How it works
 
@@ -46,16 +37,6 @@ All of this is neatly integrated with the `cargo` itself.
 * Gain reputation and trust. Maybe even monetize it, by reving code for money.
 * Implement it in your company and/or team to stay ahead!
 * Never again get bitten by unreviewed and untrusted code.
-
-## More info
-
-[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
-distributed Code REView system.
-
-`cargo-crev` is an implementation/frontend of Crev integrated with `cargo` and targeting
-Rust/crates.io ecosystem.
-
-
 
 ## Getting started
 
