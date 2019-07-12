@@ -18,7 +18,7 @@
 
 ## Status
 
-* [cargo-crev: crev for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
+* [cargo-crev: crev for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready; most of the actually useful things (like documentation) is available there
 * other languages/ecosystems - in plans
 
 ## Introduction
@@ -111,5 +111,5 @@ QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8
 
 ## Links
 
-* [cargo-crev](https://github.com/dpc/crev/tree/master/cargo-crev) - most of work and user documentation is available there
+* [cargo-crev](https://github.com/dpc/crev/tree/master/cargo-crev) - most of the actually useful things (like documentation) is available there
 * [Crev FAQ](https://github.com/dpc/crev/wiki/FAQ)
