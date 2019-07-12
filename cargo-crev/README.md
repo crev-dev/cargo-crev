@@ -16,7 +16,6 @@
 
 # `cargo-crev` - Cargo Code REView!
 
-
 `cargo-crev` is a tool helping Rust users evalute quality and trustworthiness
 of dependencies they use.
 
@@ -30,12 +29,12 @@ of dependencies they use.
 
 On top of that, it comes with an implementation of distributed
 Code REView and recomendation system (crev),
-and protects against many attack vectors.
+that protects against many attack vectors.
 
 The general goal is driving the quality of Rust ecosystem even higher,
 by helping indentify quality crates, and encouraging continous peer review culture.
 
-All of this is neatly integrated with the `cargo` itself!
+All of this is neatly integrated with the `cargo` itself.
 
 ## How it works
 
@@ -51,24 +50,22 @@ All of this is neatly integrated with the `cargo` itself!
 ## More info
 
 [Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
-social Code REView system.
+distributed Code REView system.
 
-`cargo-crev` is an implementation/frontend of Crev integrated with `cargo` and
-for Rust/crates.io ecosystem.
+`cargo-crev` is an implementation/frontend of Crev integrated with `cargo` and targeting
+Rust/crates.io ecosystem.
 
-See it in action:
 
-![`cargo crev verify` output](https://i.imgur.com/wDQAKur.png)
-
-## Changelog
-
-Changelog can be found here: https://github.com/dpc/crev/blob/master/cargo-crev/CHANGELOG.md
 
 ## Getting started
+
+Follow the [`cargo-crev` - Getting Started Guide](https://github.com/dpc/crev/blob/master/cargo-crev/src/doc/getting_started.md)
+(more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
 `cargo-crev` is a work in progress, but it should be usable at all times.
 Join [crev gitter channel](https://gitter.im/dpc/crev), get help,
 report problems and feedback. Thank you!
 
-Follow the [`cargo-crev` - Getting Started Guide](https://github.com/dpc/crev/blob/master/cargo-crev/src/doc/getting_started.md) for information about instaling and starting to use `cargo-crev`
-in your projects.
+## Changelog
+
+Changelog can be found here: https://github.com/dpc/crev/blob/master/cargo-crev/CHANGELOG.md

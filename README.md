@@ -8,6 +8,9 @@
   <a href="https://gitter.im/dpc/crev">
     <img src="https://img.shields.io/gitter/room/dpc/crev.svg?style=flat-square" alt="crev gitter channel">
   </a>
+  <a href="https://docs.rs/cargo-crev">
+    <img src="https://img.shields.io/badge/Documentation-docs.rs-informational.svg?style=flat-square" alt="Documentation on docs.rs">
+  </a>
   <br>
 </p>
 
@@ -15,7 +18,7 @@
 
 ## Status
 
-* [cargo-crev: implementation for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
+* [cargo-crev: crev for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
 * other languages/ecosystems - in plans
 
 ## Introduction
@@ -108,5 +111,5 @@ QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8
 
 ## Links
 
+* [cargo-crev](https://github.com/dpc/crev/tree/master/cargo-crev) - most of work and user documentation is available there
 * [Crev FAQ](https://github.com/dpc/crev/wiki/FAQ)
-
