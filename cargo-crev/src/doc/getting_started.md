@@ -33,9 +33,15 @@ with IDEs and text editors are possible, but not implemented at the moment.
 `cargo-crev` is written in Rust, and until binaries for various operating systems are
 available, the recommended way to install it is installing from source.
 
-## Dependencies
+### Using static binaries
 
-Regrettably `cargo-crev` has requires a couple of non-Rust dependencies to compile:
+Static binaries build by CI pipeline are available on [crev's releases](https://github.com/dpc/crev/releases) github page.
+
+### Building from source
+
+#### Dependencies
+
+Regrettably `cargo-crev` requires couple of non-Rust dependencies to compile:
 
 * `argonautica` crate requires LLVM to compile some C/C++ code,
 * OpenSSL is required for TLS support.
@@ -43,7 +49,7 @@ Regrettably `cargo-crev` has requires a couple of non-Rust dependencies to compi
 Though these are popular and readily available, it's virtually impossible to cover installing
 them on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
 
-#### Unix
+##### Unix
 
 The following should work on Ubuntu:
 
@@ -57,15 +63,15 @@ sudo apt-get install clang llvm-dev libclang-dev
 
 and should have matching command in the Unix-like OS of your choice.
 
-#### Windows
+##### Windows
 
 On Windows, make sure you have
 [LLVM](http://releases.llvm.org/download.html) installed and added to your
 system path.
 
-### Compiling
+#### Compiling
 
-To compile and install `cargo-crev` use `cargo`:
+To compile and install latest `cargo-crev` release use `cargo`:
 
 ```text
 cargo install cargo-crev

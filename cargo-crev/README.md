@@ -59,6 +59,8 @@ Rust/crates.io ecosystem.
 
 ## Getting started
 
+Static binaries are availble on [crev's releases](https://github.com/dpc/crev/releases) page.
+
 Follow the [`cargo-crev` - Getting Started Guide](https://github.com/dpc/crev/blob/master/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
