@@ -5,8 +5,11 @@
   <a href="https://crates.io/crates/cargo-crev">
       <img src="http://meritbadge.herokuapp.com/cargo-crev?style=flat-square" alt="crates.io">
   </a>
+  <a href="https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org">
+    <img src="https://img.shields.io/matrix/crev:matrix.org.svg?server_fqdn=matrix.org&style=flat-square" alt="crev matrix channel">
+  </a>
   <a href="https://gitter.im/dpc/crev">
-      <img src="https://img.shields.io/badge/GITTER-join%20chat-green.svg?style=flat-square" alt="Gitter Chat">
+    <img src="https://img.shields.io/gitter/room/dpc/crev.svg?style=flat-square" alt="crev gitter channel">
   </a>
   <br>
 </p>
