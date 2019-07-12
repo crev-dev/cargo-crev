@@ -39,11 +39,16 @@ pub struct SwitchId {
 #[derive(Debug, StructOpt, Clone)]
 pub struct TrustDistanceParams {
     #[structopt(long = "depth", default_value = "10")]
+    /// Maximum allowed distance from the root identity when traversing trust graph
     pub depth: u64,
+
+    /// Cost of traversing trust graph edge of high trust level
     #[structopt(long = "high-cost", default_value = "0")]
     pub high_cost: u64,
+    /// Cost of traversing trust graph edge of medium trust level
     #[structopt(long = "medium-cost", default_value = "1")]
     pub medium_cost: u64,
+    /// Cost of traversing trust graph edge of low trust level
     #[structopt(long = "low-cost", default_value = "5")]
     pub low_cost: u64,
 }
@@ -95,10 +100,10 @@ pub struct VerificationRequirements {
     pub redundancy: u64,
     /// Required understanding
     #[structopt(long = "understanding", default_value = "none")]
-    pub understanding: Level,
+    pub understanding_level: Level,
     /// Required thoroughness
     #[structopt(long = "thoroughness", default_value = "none")]
-    pub thoroughness: Level,
+    pub thoroughness_level: Level,
 }
 
 impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
@@ -106,8 +111,8 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
         crev_lib::VerificationRequirements {
             trust_level: req.trust_level,
             redundancy: req.redundancy,
-            understanding: req.understanding,
-            thoroughness: req.thoroughness,
+            understanding: req.understanding_level,
+            thoroughness: req.thoroughness_level,
         }
     }
 }
@@ -115,6 +120,7 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
 #[derive(Debug, StructOpt, Clone)]
 pub struct VerifyDeps {
     #[structopt(long = "verbose", short = "v")]
+    /// Display more informations about the crates
     pub verbose: bool,
 
     #[structopt(flatten)]
@@ -124,12 +130,16 @@ pub struct VerifyDeps {
     pub requirements: VerificationRequirements,
 
     #[structopt(long = "skip-verified")]
+    /// Display only crates not passing the verification
     pub skip_verified: bool,
 
     #[structopt(long = "skip-known-owners")]
+    /// Skip crate from known owners (use `edit known` to edit the list)
     pub skip_known_owners: bool,
 
     #[structopt(long = "for-id")]
+
+    /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
 }
 
