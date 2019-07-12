@@ -55,7 +55,7 @@ for Rust/crates.io ecosystem.
 
 See it in action:
 
-![`cargo crev verify deps` output](https://i.imgur.com/wDQAKur.png)
+![`cargo crev verify` output](https://i.imgur.com/wDQAKur.png)
 
 ## Changelog
 

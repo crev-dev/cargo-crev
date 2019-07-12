@@ -1,29 +1,28 @@
 use crev_common::convert::OptionDeref;
-use crev_lib::{self};
+use crev_lib;
 use std::{
     collections::{BTreeMap, HashSet},
     default::Default,
 };
 
-use crate::prelude::*;
 use crate::crates_io;
 use crate::opts::*;
+use crate::prelude::*;
 use crate::repo::*;
 use crate::shared::*;
 use crate::term;
 use crate::tokei;
 
-pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
+pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let mut term = term::Term::new();
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
 
-    let trust_set =
-        if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
-            db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
-        } else {
-            crev_lib::proofdb::TrustSet::default()
-        };
+    let trust_set = if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
+        db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+    } else {
+        crev_lib::proofdb::TrustSet::default()
+    };
 
     let repo = Repo::auto_open_cwd()?;
     let ignore_list = cargo_min_ignore_list();
@@ -35,19 +34,11 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
         }
         eprint!(
             "{:6} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
-            "status",
-            "reviews",
-            "downloads",
-            "own.",
-            "issues",
-            "lines",
-            "geiger",
-            "flgs"
+            "status", "reviews", "downloads", "own.", "issues", "lines", "geiger", "flgs"
         );
         eprintln!(" {:<20} {:<15} {:<15}", "crate", "version", "latest_t");
     }
-    let requirements =
-        crev_lib::VerificationRequirements::from(args.requirements.clone());
+    let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
     let mut unclean_digests = BTreeMap::new();
     let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
     let mut total_verification_successful = true;
@@ -73,26 +64,19 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
             return Ok(());
         }
 
-        let pkg_review_count = db.get_package_review_count(
-            PROJECT_SOURCE_CRATES_IO,
-            Some(crate_name),
-            None,
-        );
+        let pkg_review_count =
+            db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(crate_name), None);
         let pkg_version_review_count = db.get_package_review_count(
             PROJECT_SOURCE_CRATES_IO,
             Some(crate_name),
             Some(&crate_version),
         );
 
-        let (
-            version_downloads_str,
-            total_downloads_str,
-            version_downloads,
-            total_downloads,
-        ) = crates_io
-            .get_downloads_count(&crate_name, &crate_version)
-            .map(|(a, b)| (a.to_string(), b.to_string(), a, b))
-            .unwrap_or_else(|_e| ("err".into(), "err".into(), 0, 0));
+        let (version_downloads_str, total_downloads_str, version_downloads, total_downloads) =
+            crates_io
+                .get_downloads_count(&crate_name, &crate_version)
+                .map(|(a, b)| (a.to_string(), b.to_string(), a, b))
+                .unwrap_or_else(|_e| ("err".into(), "err".into(), 0, 0));
 
         let owners = crates_io.get_owners(&crate_name).ok();
         let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
@@ -211,10 +195,7 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
         );
         print!(
             " {}",
-            latest_trusted_version_string(
-                crate_version.clone(),
-                latest_trusted_version
-            )
+            latest_trusted_version_string(crate_version.clone(), latest_trusted_version)
         );
         println!();
 
@@ -233,7 +214,9 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
     }
 
     if !unclean_digests.is_empty() {
-        bail!("Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source.");
+        bail!(
+            "Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source."
+        );
     }
 
     return Ok(if total_verification_successful {
@@ -241,5 +224,4 @@ pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
     } else {
         CommandExitStatus::VerificationFailed
     });
-
 }

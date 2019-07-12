@@ -118,7 +118,25 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct VerifyDeps {
+/// Verify dependencies
+#[structopt(
+    name = "deps",
+    after_help = r"This will show the following information:
+
+- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- reviews    - Number of reviews for the specific version and for all available versions (total)
+- downloads  - Download counts from crates.io for the specific version and all versions
+- own.       - Owner counts from crates.io (known/all)
+- issues     - Number of issues repored (from trusted sources/all)
+- lines      - Lines of Rust code
+- geiger     - Geiger score: number of `unsafe` lines
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build
+- name       - Crate name
+- version    - Crate version
+- latest_t   - Latest trusted version"
+)]
+pub struct Verify {
     #[structopt(long = "verbose", short = "v")]
     /// Display more informations about the crates
     pub verbose: bool,
@@ -141,29 +159,6 @@ pub struct VerifyDeps {
 
     /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub enum Verify {
-    /// Verify dependencies
-    #[structopt(
-        name = "deps",
-        after_help = r"This will show the following information:
-
-- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
-- reviews    - Number of reviews for the specific version and for all available versions (total)
-- downloads  - Download counts from crates.io for the specific version and all versions
-- own.       - Owner counts from crates.io (known/all)
-- issues     - Number of issues repored (from trusted sources/all)
-- lines      - Lines of Rust code
-- geiger     - Geiger score: number of `unsafe` lines
-- flgs       - Flags for specific types of packages
-  - CB         - Custom Build
-- name       - Crate name
-- version    - Crate version
-- latest_t   - Latest trusted version"
-    )]
-    Deps(VerifyDeps),
 }
 
 #[derive(Debug, StructOpt, Clone)]

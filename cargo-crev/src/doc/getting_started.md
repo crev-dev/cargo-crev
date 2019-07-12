@@ -120,12 +120,12 @@ As a user, your goal of using `cargo crev` is verifying that all the dependencie
 crate are trustworthy and free of serious bugs and flaws.
 
 The list of dependencies and their current trustworthiness status is available
-through `cargo crev verify deps` command. This is one of the most important and commonly used sub-command.
+through `cargo crev verify` command. This is one of the most important and commonly used sub-command.
 
 Let's take a look:
 
 ```text
-$ cargo crev verify deps
+$ cargo crev verify
 status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t       
 none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1           
 none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9           
@@ -137,7 +137,7 @@ none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde            
 The actual output is using color to make the data more accessible.
 
 The of meaning of each column, and all the available options are
-described in the output of `cargo crev verify deps --help` command.
+described in the output of `cargo crev verify --help` command.
 
 Right now we will discuss just the most important columns.
 
@@ -175,7 +175,7 @@ This command does a `git fetch` from publicly available *proof repository* of gi
 user, and stores it in a local cache for future use. A *proof repository* is just a
 github repository containing *proofs*.
 
-Go ahead and re-run `cargo crev verify deps`. Chances are you're using crates
+Go ahead and re-run `cargo crev verify`. Chances are you're using crates
 that dpc have already reviewed. The `reviews` column will contain values bigger than zero.
 
 ## Building *trust proofs*
@@ -336,13 +336,13 @@ are not par of your *WoT*. Use `cargo crev fetch all` for that.
 ## Reviewing code
 
 
-Try `cargo crev verify deps` again.
+Try `cargo crev verify` again.
 
 If you are moderately lucky, at least some of the dependencies are now passing the verification.
 
 But ultimately someone has to do the review, and at least sometimes you will have to do it yourself.
 
-Scan the output of `cargo crev verify deps` and pick a crate with low `lines` count. For your first
+Scan the output of `cargo crev verify` and pick a crate with low `lines` count. For your first
 review you want to start small and easy.
 
 
@@ -538,4 +538,4 @@ and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
 * Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
-* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify deps`. 
+* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify`. 

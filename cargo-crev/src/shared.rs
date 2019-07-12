@@ -6,14 +6,14 @@ use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
-    collections::{HashSet},
+    collections::HashSet,
     env,
     path::{Path, PathBuf},
     process,
 };
 
-use crate::prelude::*;
 use crate::opts;
+use crate::prelude::*;
 use crate::repo::*;
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
@@ -135,7 +135,10 @@ pub fn exec_into(mut command: process::Command) -> Result<()> {
 ///
 /// Set some `envs` to help other commands work
 /// from inside such a "review-shell".
-pub fn goto_crate_src(selector: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
+pub fn goto_crate_src(
+    selector: &opts::CrateSelector,
+    unrelated: UnrelatedOrDependency,
+) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
@@ -441,7 +444,6 @@ pub fn check_package_clean_state(
     Ok((digest_clean, vcs))
 }
 
-
 pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
@@ -660,7 +662,7 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
 /// This is to distinguish expeced non-success results,
 /// from errors: unexpected failures.
 pub enum CommandExitStatus {
-    // `verify deps` failed
+    // `verify` failed
     VerificationFailed,
     // Success, exit code 0
     Successs,
