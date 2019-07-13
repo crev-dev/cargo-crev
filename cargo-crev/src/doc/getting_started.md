@@ -212,8 +212,8 @@ has to contains at least one existing commit.
 Then run `cargo crev new id` like this:
 
 ```text
-$ cargo crev new id --url https://github.com/dpc/crev-proofs-test
-https://github.com/dpc/crev-proofs-test cloned to /home/dpc/.config/crev/proofs/Sp87YXeDKUyh4jImm23bCp1Gr-6eNkMoQogWbftNobQ
+$ cargo crev new id --url https://github.com/{user}/crev-proofs
+https://github.com/{user}/crev-proofs cloned to /home/{user}/.config/crev/proofs/Sp87YXeDKUyh4jImm23bCp1Gr-6eNkMoQogWbftNobQ
 CrevID will be protected by a passphrase.
 There's no way to recover your CrevID if you forget your passphrase.
 Enter new passphrase: 
@@ -227,7 +227,7 @@ You can generate and use multiple IDs, but one is generally enough. Check your c
 
 ```text
 $ cargo crev query id current
-2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/dpc/crev-proofs-test
+2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/{user}/crev-proofs
 ```
 
 Now, back to creating *trust proof* for `dpc`.
@@ -306,7 +306,7 @@ all the ids you trust.
 $ cargo crev query id trusted
 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE medium https://github.com/dpc/crev-proofs
 YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA low    https://github.com/oherrala/crev-proofs
-2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/dpc/crev-proofs-test
+2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/{user}/crev-proofs
 ```
 
 That might be a little surprising. Not only are you trusting `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE`
@@ -363,7 +363,7 @@ If you want to review a crate called `default`, you run:
 
 ```text
 $ cargo crev goto default
-Opening shell in: /home/dpc/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
+Opening shell in: /home/{user}/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
 Use `exit` or Ctrl-D to return to the original project.
 Use `review` and `flag` without any arguments to review this crate.
 ```
@@ -489,7 +489,7 @@ date: "2019-06-19T23:32:13.683894969-07:00"
 from:
   id-type: crev
   id: 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA
-  url: "https://github.com/dpc/crev-proofs-test"
+  url: "https://github.com/{user}/crev-proofs"
 package:
   source: "https://crates.io"
   name: default
@@ -515,7 +515,7 @@ You can access this repository using `cargo crev git` command.
 ```text
 $ cargo crev git log
 commit a308421882822bd2256574b6e966a114dd4bfc6e (HEAD -> master)
-Author: Dawid Ciężarkiewicz <dpc@dpc.pw>
+Author: {user} <{user}@users.noreply.github.com>
 Date:   Wed Jun 19 23:44:20 2019 -0700
 
     Add review for default v0.1.2
