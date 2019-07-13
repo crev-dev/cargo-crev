@@ -1,8 +1,9 @@
 //! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
 //!
-//!
-#![cfg_attr(feature = "documentation", doc = "See [user documentation module](./doc/user/index.html).")]
-
+#![cfg_attr(
+    feature = "documentation",
+    doc = "See [user documentation module](./doc/user/index.html)."
+)]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
 use crev_common::convert::OptionDeref;
@@ -18,19 +19,19 @@ use structopt::StructOpt;
 pub mod doc;
 
 mod crates_io;
+mod dep;
 mod opts;
 mod prelude;
 mod repo;
-mod unsorted_mess;
-mod table;
+mod review;
+mod shared;
 mod term;
 mod tokei;
-mod verify_deps;
 
 use crev_lib::TrustOrDistrust::{self, *};
-use crate::repo::Repo;
-use crate::unsorted_mess::*;
-
+use crate::shared::*;
+use crate::review::*;
+use crate::repo::*;
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
@@ -71,7 +72,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Verify(cmd) => match cmd {
             opts::Verify::Deps(args) => {
-                verify_deps::run(args)?;
+                dep::verify_deps(args)?;
             }
         },
         opts::Command::Query(cmd) => match cmd {
@@ -124,6 +125,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 UnrelatedOrDependency::from_unrelated_flag(args.common.unrelated),
             )?,
             opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
+            opts::Query::Issue(args) => list_issues(&args)?,
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
@@ -131,6 +133,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    if args.issue {
+                        Some(opts::ReportCommon::default())
+                    } else {
+                        None
+                    },
                     if args.advisory {
                         Some(opts::AdviseCommon::default())
                     } else {
@@ -160,6 +167,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    if args.issue {
+                        Some(opts::ReportCommon::default())
+                    } else {
+                        None
+                    },
                     if args.advisory {
                         Some(opts::AdviseCommon::default())
                     } else {
@@ -178,7 +190,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     c,
                     v,
                     i,
+                    None,
                     Some(args.advise_common),
+                    TrustOrDistrust::Distrust,
+                    &args.common_proof_create,
+                    &None,
+                    true,
+                )
+            })?;
+        }
+        opts::Command::Report(args) => {
+            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
+                create_review_proof(
+                    c,
+                    v,
+                    i,
+                    Some(args.report_common),
+                    None,
                     TrustOrDistrust::Distrust,
                     &args.common_proof_create,
                     &None,
@@ -307,6 +335,7 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 }
 
 fn main() {
+    env_logger::init();
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
     match run_command(command) {

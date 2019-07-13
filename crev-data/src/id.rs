@@ -68,7 +68,7 @@ impl Id {
 }
 
 impl fmt::Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Id::Crev { id } => f.write_str(&crev_common::base64_encode(id)),
         }
@@ -87,7 +87,7 @@ impl PubId {
     pub fn new(id: Id, url: Url) -> Self {
         PubId { id, url }
     }
-    
+
     pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Self {
         PubId {
             id: Id::Crev { id: v },

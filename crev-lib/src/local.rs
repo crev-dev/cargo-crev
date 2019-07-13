@@ -354,19 +354,19 @@ impl Local {
 
     pub fn read_current_unlocked_id_opt(
         &self,
-        passphrase_callback: PassphraseFn,
+        passphrase_callback: PassphraseFn<'_>,
     ) -> Result<Option<OwnId>> {
         self.get_current_userid_opt()?
             .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
             .inside_out()
     }
 
-    pub fn read_current_unlocked_id(&self, passphrase_callback: PassphraseFn) -> Result<OwnId> {
+    pub fn read_current_unlocked_id(&self, passphrase_callback: PassphraseFn<'_>) -> Result<OwnId> {
         self.read_current_unlocked_id_opt(passphrase_callback)?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
-    pub fn read_unlocked_id(&self, id: &Id, passphrase_callback: PassphraseFn) -> Result<OwnId> {
+    pub fn read_unlocked_id(&self, id: &Id, passphrase_callback: PassphraseFn<'_>) -> Result<OwnId> {
         let locked = self.read_locked_id(id)?;
         let mut i = 0;
         loop {
@@ -934,7 +934,7 @@ impl ProofStore for Local {
         Ok(())
     }
 
-    fn proofs_iter(&self) -> Result<Box<Iterator<Item = proof::Proof>>> {
+    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof>>> {
         Ok(Box::new(
             self.get_proofs_dir_path_opt()?
                 .into_iter()

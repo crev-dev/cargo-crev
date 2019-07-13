@@ -1,5 +1,5 @@
 use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, package::PackageSet, SourceId},
+    core::{dependency::Dependency, source::SourceMap, Package, PackageId, package::PackageSet, SourceId},
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
@@ -13,7 +13,7 @@ use std::{
 
 use crate::prelude::*;
 use crate::crates_io;
-use crate::unsorted_mess::*;
+use crate::shared::*;
 
 /// A handle to the current Rust project
 pub struct Repo {
@@ -27,7 +27,15 @@ impl Repo {
         let cwd = env::current_dir()?;
         let manifest_path = find_root_manifest_for_wd(&cwd)?;
         let mut config = cargo::util::config::Config::default()?;
-        config.configure(0, None, &None, false, false, &None, &[])?;
+        config.configure(
+            0,
+            None,
+            &None,
+            /* frozen: */ false,
+            /* locked: */ true,
+            &None,
+            &[],
+        )?;
         Ok(Repo {
             manifest_path,
             config,
@@ -60,12 +68,23 @@ impl Repo {
         Ok(source)
     }
 
+    pub fn load_source_with_whitelist<'a>(
+        &'a self,
+        yanked_whitelist: HashSet<PackageId>,
+    ) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source = map.load(source_id, &yanked_whitelist)?;
+        Ok(source)
+    }
+
     /// Run `f` for every non-local dependency crate
     pub fn for_every_non_local_dep_crate(
         &self,
         mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        // take all the packages inside current workspace
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
@@ -94,7 +113,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn non_local_dep_crates(& self) -> Result<PackageSet> {
+    pub fn non_local_dep_crates(& self) -> Result<PackageSet<'_>> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
@@ -108,13 +127,20 @@ impl Repo {
         Ok(package_set)
     }
 
-
     pub fn find_idependent_crate_dir(
         &self,
         name: &str,
         version: Option<&Version>,
     ) -> Result<Option<Package>> {
-        let mut source = self.load_source()?;
+        let mut source = if let Some(version) = version {
+            // special case - we need to whitelist the crate, in case it was yanked
+            let mut yanked_whitelist = HashSet::default();
+            let source_id = SourceId::crates_io(&self.config)?;
+            yanked_whitelist.insert(PackageId::new(name, version, source_id)?);
+            self.load_source_with_whitelist(yanked_whitelist)?
+        } else {
+            self.load_source()?
+        };
         let mut summaries = vec![];
         let version_str = version.map(ToString::to_string);
         let dependency_request =
@@ -124,6 +150,9 @@ impl Repo {
         })?;
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
+        // special case - if the crate was yanked, it's not in our `Cargo.yaml`
+        // so it's not possible to get it via normal means
+        // return Ok(Some(Box::new(&mut source).download_now(&self.config)?));
         } else {
             summaries.iter().max_by_key(|s| s.version())
         };

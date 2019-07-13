@@ -35,7 +35,7 @@ pub struct Term {
 }
 
 fn output_to<O>(
-    args: std::fmt::Arguments,
+    args: std::fmt::Arguments<'_>,
     color: Option<Color>,
     term: &mut dyn term::Terminal<Output = O>,
     is_tty: bool,
@@ -69,7 +69,7 @@ impl Term {
         }
     }
 
-    pub fn print<C>(&mut self, fmt: Arguments, color: C) -> io::Result<()>
+    pub fn print<C>(&mut self, fmt: Arguments<'_>, color: C) -> io::Result<()>
     where
         C: Into<Option<Color>>,
     {
@@ -79,7 +79,7 @@ impl Term {
             output_to(
                 fmt,
                 color,
-                (&mut **term) as &mut term::Terminal<Output = _>,
+                (&mut **term) as &mut dyn term::Terminal<Output = _>,
                 self.stdout_is_tty,
             )?;
         }
@@ -87,7 +87,7 @@ impl Term {
     }
 
     #[allow(unused)]
-    pub fn eprint<C>(&mut self, fmt: Arguments, color: C) -> io::Result<()>
+    pub fn eprint<C>(&mut self, fmt: Arguments<'_>, color: C) -> io::Result<()>
     where
         C: Into<Option<Color>>,
     {
@@ -97,7 +97,7 @@ impl Term {
             output_to(
                 fmt,
                 color,
-                (&mut **term) as &mut term::Terminal<Output = _>,
+                (&mut **term) as &mut dyn term::Terminal<Output = _>,
                 self.stdout_is_tty,
             )?;
         }

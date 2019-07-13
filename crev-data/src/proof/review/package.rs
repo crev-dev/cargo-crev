@@ -199,7 +199,7 @@ pub enum VersionRange {
 pub struct VersionRangeParseError(());
 
 impl fmt::Display for VersionRangeParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Could not parse an incorrect advisory range value")
     }
 }
