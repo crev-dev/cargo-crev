@@ -2,7 +2,7 @@
 # and reputable authors.
 #
 # List usernames of crates.io users line by line to
-# make them count as "known owners" in `crev verify deps`
+# make them count as "known owners" in `crev verify`
 # output.
 #
 # Remember that `crev` has no way to verify information

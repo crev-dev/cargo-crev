@@ -1,4 +1,4 @@
-# `cargo-crev` for organizations and businesses
+# Using in organizations and businesses
 
 `cargo-crev` is being developed with an explicit goal of supporting teams, groups,
 businesses and even very large organizations. It is our belief that companies developing software
@@ -72,7 +72,7 @@ an arbitrary identity.
 
 
 ```text
-cargo crev verify deps  --for-id <rootID>
+cargo crev verify  --for-id <rootID>
 ```
 
 is the basic way to verify review status of all the packages from the perspective

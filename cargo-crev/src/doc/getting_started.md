@@ -1,4 +1,4 @@
-# `cargo-crev` - Getting Started Guide
+# Getting Started Guide
 
 ## Introduction
 
@@ -33,9 +33,15 @@ with IDEs and text editors are possible, but not implemented at the moment.
 `cargo-crev` is written in Rust, and until binaries for various operating systems are
 available, the recommended way to install it is installing from source.
 
-## Dependencies
+### Using static binaries
 
-Regrettably `cargo-crev` has requires a couple of non-Rust dependencies to compile:
+Static binaries build by CI pipeline are available on [crev's releases](https://github.com/dpc/crev/releases) github page.
+
+### Building from source
+
+#### Dependencies
+
+Regrettably `cargo-crev` requires couple of non-Rust dependencies to compile:
 
 * `argonautica` crate requires LLVM to compile some C/C++ code,
 * OpenSSL is required for TLS support.
@@ -43,7 +49,7 @@ Regrettably `cargo-crev` has requires a couple of non-Rust dependencies to compi
 Though these are popular and readily available, it's virtually impossible to cover installing
 them on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
 
-#### Unix
+##### Unix
 
 The following should work on Ubuntu:
 
@@ -57,15 +63,15 @@ sudo apt-get install clang llvm-dev libclang-dev
 
 and should have matching command in the Unix-like OS of your choice.
 
-#### Windows
+##### Windows
 
 On Windows, make sure you have
 [LLVM](http://releases.llvm.org/download.html) installed and added to your
 system path.
 
-### Compiling
+#### Compiling
 
-To compile and install `cargo-crev` use `cargo`:
+To compile and install latest `cargo-crev` release use `cargo`:
 
 ```text
 cargo install cargo-crev
@@ -120,12 +126,12 @@ As a user, your goal of using `cargo crev` is verifying that all the dependencie
 crate are trustworthy and free of serious bugs and flaws.
 
 The list of dependencies and their current trustworthiness status is available
-through `cargo crev verify deps` command. This is one of the most important and commonly used sub-command.
+through `cargo crev verify` command. This is one of the most important and commonly used sub-command.
 
 Let's take a look:
 
 ```text
-$ cargo crev verify deps
+$ cargo crev verify
 status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t       
 none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1           
 none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9           
@@ -137,7 +143,7 @@ none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde            
 The actual output is using color to make the data more accessible.
 
 The of meaning of each column, and all the available options are
-described in the output of `cargo crev verify deps --help` command.
+described in the output of `cargo crev verify --help` command.
 
 Right now we will discuss just the most important columns.
 
@@ -175,7 +181,7 @@ This command does a `git fetch` from publicly available *proof repository* of gi
 user, and stores it in a local cache for future use. A *proof repository* is just a
 github repository containing *proofs*.
 
-Go ahead and re-run `cargo crev verify deps`. Chances are you're using crates
+Go ahead and re-run `cargo crev verify`. Chances are you're using crates
 that dpc have already reviewed. The `reviews` column will contain values bigger than zero.
 
 ## Building *trust proofs*
@@ -206,8 +212,8 @@ has to contains at least one existing commit.
 Then run `cargo crev new id` like this:
 
 ```text
-$ cargo crev new id --url https://github.com/dpc/crev-proofs-test
-https://github.com/dpc/crev-proofs-test cloned to /home/dpc/.config/crev/proofs/Sp87YXeDKUyh4jImm23bCp1Gr-6eNkMoQogWbftNobQ
+$ cargo crev new id --url https://github.com/YOUR-USERNAME/crev-proofs
+https://github.com/YOUR-USERNAME/crev-proofs cloned to /home/YOUR-USERNAME/.config/crev/proofs/Sp87YXeDKUyh4jImm23bCp1Gr-6eNkMoQogWbftNobQ
 CrevID will be protected by a passphrase.
 There's no way to recover your CrevID if you forget your passphrase.
 Enter new passphrase: 
@@ -221,7 +227,7 @@ You can generate and use multiple IDs, but one is generally enough. Check your c
 
 ```text
 $ cargo crev query id current
-2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/dpc/crev-proofs-test
+2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/YOUR-USERNAME/crev-proofs
 ```
 
 Now, back to creating *trust proof* for `dpc`.
@@ -300,7 +306,7 @@ all the ids you trust.
 $ cargo crev query id trusted
 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE medium https://github.com/dpc/crev-proofs
 YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA low    https://github.com/oherrala/crev-proofs
-2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/dpc/crev-proofs-test
+2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/YOUR-USERNAME/crev-proofs
 ```
 
 That might be a little surprising. Not only are you trusting `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE`
@@ -336,13 +342,13 @@ are not par of your *WoT*. Use `cargo crev fetch all` for that.
 ## Reviewing code
 
 
-Try `cargo crev verify deps` again.
+Try `cargo crev verify` again.
 
 If you are moderately lucky, at least some of the dependencies are now passing the verification.
 
 But ultimately someone has to do the review, and at least sometimes you will have to do it yourself.
 
-Scan the output of `cargo crev verify deps` and pick a crate with low `lines` count. For your first
+Scan the output of `cargo crev verify` and pick a crate with low `lines` count. For your first
 review you want to start small and easy.
 
 
@@ -357,7 +363,7 @@ If you want to review a crate called `default`, you run:
 
 ```text
 $ cargo crev goto default
-Opening shell in: /home/dpc/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
+Opening shell in: /home/YOUR-USERNAME/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
 Use `exit` or Ctrl-D to return to the original project.
 Use `review` and `flag` without any arguments to review this crate.
 ```
@@ -483,7 +489,7 @@ date: "2019-06-19T23:32:13.683894969-07:00"
 from:
   id-type: crev
   id: 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA
-  url: "https://github.com/dpc/crev-proofs-test"
+  url: "https://github.com/YOUR-USERNAME/crev-proofs"
 package:
   source: "https://crates.io"
   name: default
@@ -509,7 +515,7 @@ You can access this repository using `cargo crev git` command.
 ```text
 $ cargo crev git log
 commit a308421882822bd2256574b6e966a114dd4bfc6e (HEAD -> master)
-Author: Dawid Ciężarkiewicz <dpc@dpc.pw>
+Author: You <your_email@example.org>
 Date:   Wed Jun 19 23:44:20 2019 -0700
 
     Add review for default v0.1.2
@@ -538,4 +544,4 @@ and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
 * Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
-* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify deps`. 
+* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify`. 

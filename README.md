@@ -2,8 +2,14 @@
   <a href="https://travis-ci.org/dpc/crev">
       <img src="https://img.shields.io/travis/dpc/crev/master.svg?style=flat-square" alt="Travis CI Build Status">
   </a>
+  <a href="https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org">
+    <img src="https://img.shields.io/matrix/crev:matrix.org.svg?server_fqdn=matrix.org&style=flat-square" alt="crev matrix channel">
+  </a>
   <a href="https://gitter.im/dpc/crev">
-      <img src="https://img.shields.io/badge/GITTER-join%20chat-green.svg?style=flat-square" alt="Gitter Chat">
+    <img src="https://img.shields.io/gitter/room/dpc/crev.svg?style=flat-square" alt="crev gitter channel">
+  </a>
+  <a href="https://docs.rs/cargo-crev">
+    <img src="https://img.shields.io/badge/Documentation-docs.rs-informational.svg?style=flat-square" alt="Documentation on docs.rs">
   </a>
   <br>
 </p>
@@ -12,7 +18,7 @@
 
 ## Status
 
-* [cargo-crev: implementation for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready
+* [cargo-crev: crev for Rust](https://github.com/dpc/crev/tree/master/cargo-crev) - ready; most of the actually useful things (like documentation) is available there
 * other languages/ecosystems - in plans
 
 ## Introduction
@@ -105,6 +111,5 @@ QpigffpvOnK7KNdDzQSNRt8bkOFYP_LOLE-vOZ2lu6Je5jvF3t4VZddZDDnPhxaY9zEQurozqTiYAHX8
 
 ## Links
 
+* [cargo-crev](https://github.com/dpc/crev/tree/master/cargo-crev) - most of the actually useful things (like documentation) is available there
 * [Crev FAQ](https://github.com/dpc/crev/wiki/FAQ)
-* ["cargo-trust: Concept"](https://github.com/dpc/crev/wiki/cargo-trust:-Concept)
-
