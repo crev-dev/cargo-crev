@@ -12,7 +12,6 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "../README.md"
 
 [dependencies]
-argonautica = "0.2"
 chrono = "0.4"
 common_failures = "0.1"
 crev-common = { path = "../crev-common", version = "0.8" }
@@ -25,8 +24,9 @@ ifmt = "0.2"
 git2 = "0.8"
 insideout = "0.2"
 miscreant = { version = "0.4", features = ["soft-aes"] }
-rand = "0.6"
+num_cpus = "1"
 resiter = "0.3"
+rust-argon2 = "0.4.0"
 semver = "0.9"
 serde = "1"
 serde_cbor = "0.9"

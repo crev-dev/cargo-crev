@@ -1,10 +1,11 @@
 use crate::prelude::*;
-use argonautica::{self, Hasher};
+use argon2::{self, Config};
+use crev_common::rand::random_vec;
 use crev_common::serde::{as_base64, from_base64};
 use crev_data::id::{OwnId, PubId};
 use failure::{bail, format_err};
 use miscreant;
-use rand::{self, Rng};
+use num_cpus;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{self, fmt, io::Write, path::Path};
@@ -61,25 +62,29 @@ impl std::str::FromStr for LockedId {
 impl LockedId {
     pub fn from_own_id(own_id: &OwnId, passphrase: &str) -> Result<LockedId> {
         use miscreant::aead::Aead;
-        let mut hasher = Hasher::default();
 
-        hasher
-            .configure_memory_size(4096)
-            .configure_hash_len(64)
-            .opt_out_of_secret_key(true);
+        let config = Config {
+            variant: argon2::Variant::Argon2id,
+            version: argon2::Version::Version13,
 
-        let pwhash = hasher.with_password(passphrase).hash_raw()?;
+            hash_length: 64,
+            mem_cost: 4096,
+            time_cost: 192,
 
-        let mut siv = miscreant::aead::Aes256SivAead::new(pwhash.raw_hash_bytes());
+            lanes: num_cpus::get() as u32,
+            thread_mode: argon2::ThreadMode::Parallel,
 
-        let seal_nonce: Vec<u8> = rand::thread_rng()
-            .sample_iter(&rand::distributions::Standard)
-            .take(32)
-            .collect();
+            ad: &[],
+            secret: &[],
+        };
 
-        let hasher_config = hasher.config();
+        let pwsalt = random_vec(32);
+        let pwhash = argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config)?;
 
-        assert_eq!(hasher_config.version(), argonautica::config::Version::_0x13);
+        let mut siv = miscreant::aead::Aes256SivAead::new(&pwhash);
+
+        let seal_nonce = random_vec(32);
+
         Ok(LockedId {
             version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
             public_key: own_id.keypair.public.to_bytes().to_vec(),
@@ -87,12 +92,12 @@ impl LockedId {
             seal_nonce,
             url: own_id.id.url.clone(),
             pass: PassConfig {
-                salt: pwhash.raw_salt_bytes().to_vec(),
-                iterations: hasher_config.iterations(),
-                memory_size: hasher_config.memory_size(),
+                salt: pwsalt,
+                iterations: config.time_cost,
+                memory_size: config.mem_cost,
                 version: 0x13,
-                lanes: Some(hasher_config.lanes()),
-                variant: hasher_config.variant().as_str().to_string(),
+                lanes: Some(config.lanes),
+                variant: config.variant.as_lowercase_str().to_string(),
             },
         })
     }
@@ -136,27 +141,32 @@ impl LockedId {
             }
             use miscreant::aead::Aead;
 
-            let mut hasher = Hasher::default();
-            hasher
-                .configure_memory_size(pass.memory_size)
-                .configure_version(argonautica::config::Version::from_u32(pass.version)?)
-                .configure_iterations(pass.iterations)
-                .configure_variant(std::str::FromStr::from_str(&pass.variant)?)
-                .with_salt(&pass.salt)
-                .configure_hash_len(64)
-                .opt_out_of_secret_key(true);
+            let mut config = Config {
+                variant: argon2::Variant::from_str(&pass.variant)?,
+                version: argon2::Version::Version13,
+
+                hash_length: 64,
+                mem_cost: pass.memory_size,
+                time_cost: pass.iterations,
+
+                lanes: num_cpus::get() as u32,
+                thread_mode: argon2::ThreadMode::Parallel,
+
+                ad: &[],
+                secret: &[],
+            };
 
             if let Some(lanes) = pass.lanes {
-                hasher.configure_lanes(lanes);
+                config.lanes = lanes;
             } else {
                 eprintln!(
                     "`lanes` not configured. Old bug. See: https://github.com/dpc/crev/issues/151"
                 );
-                eprintln!("Using `lanes: {}`", hasher.config().lanes());
+                eprintln!("Using `lanes: {}`", config.lanes);
             }
 
-            let passphrase_hash = hasher.with_password(passphrase).hash_raw()?;
-            let mut siv = miscreant::aead::Aes256SivAead::new(passphrase_hash.raw_hash_bytes());
+            let passphrase_hash = argon2::hash_raw(passphrase.as_bytes(), &pass.salt, &config)?;
+            let mut siv = miscreant::aead::Aes256SivAead::new(&passphrase_hash);
 
             let secret_key = siv
                 .open(&seal_nonce, &[], &sealed_secret_key)
