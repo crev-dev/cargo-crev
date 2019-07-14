@@ -70,10 +70,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 edit_known_owners_list()?;
             }
         },
-        opts::Command::Verify(cmd) => match cmd {
-            opts::Verify::Deps(args) => {
-                dep::verify_deps(args)?;
-            }
+        opts::Command::Verify(args) => {
+            dep::verify_deps(args)?;
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {

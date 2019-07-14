@@ -11,12 +11,7 @@ mod computer;
 
 use crate::dep::{dep::*, computer::*};
 
-pub enum DepComputationEvent {
-    FinishedDep(usize),
-    FinishedTable,
-}
-
-pub fn verify_deps(args: VerifyDeps) -> Result<CommandExitStatus> {
+pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
 
     dbg!(args.interactive);
 

@@ -24,7 +24,7 @@ use crossterm::{AlternateScreen, TerminalCursor, Color::*};
 use minimad::Alignment;
 use termimad;
 
-pub fn run(args: VerifyDeps) -> Result<()> {
+pub fn run(args: Verify) -> Result<()> {
     let repo = Repo::auto_open_cwd()?;
     let package_set = repo.non_local_dep_crates()?;
     let mut source = repo.load_source()?;
@@ -59,7 +59,7 @@ pub fn run(args: VerifyDeps) -> Result<()> {
 
 // run in the alternate screen
 fn run_on_deps<'a>(
-    args: VerifyDeps,
+    args: Verify,
     package_set: PackageSet,
     unclean_digests: &mut BTreeMap<(String, String), Digest>,
     source: &mut Box<dyn cargo::core::source::Source + 'a>,

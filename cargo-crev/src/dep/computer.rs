@@ -35,7 +35,7 @@ pub struct DepComputer {
 impl DepComputer {
 
     pub fn new(
-        args: &VerifyDeps,
+        args: &Verify,
     ) -> Result<DepComputer> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
