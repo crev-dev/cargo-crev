@@ -1,5 +1,6 @@
-// Here are the structs and functions which still need to be sorted
-//
+// Here are the things I can't let in main but that I don't
+// know yet where to put (or what they are)
+
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
@@ -7,6 +8,7 @@ use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
     collections::{HashSet},
+    default::Default,
     env,
     path::{Path, PathBuf},
     process,
@@ -34,6 +36,37 @@ pub const PROJECT_SOURCE_CRATES_IO: &str = "https://crates.io";
 /// The file added to crates containing vcs revision
 pub const VCS_INFO_JSON_FILE: &str = ".cargo_vcs_info.json";
 
+pub fn pad_left_manually(s: String, width: usize) -> String {
+    if s.len() <= width {
+        let padding = std::iter::repeat(" ")
+            .take(width - s.len())
+            .collect::<String>();
+        format!("{}{}", s, padding)
+    } else {
+        s
+    }
+}
+
+pub fn latest_trusted_version_string(
+    base_version: Version,
+    latest_trusted_version: Option<Version>,
+) -> String {
+    latest_trusted_version
+        .map(|latest_trusted_version| {
+            // there seems to be a big bug in termimad or crossterm in some cases
+            // with multibytes characters
+            let ch = if base_version < latest_trusted_version {
+                ">" //"↑"
+            } else if latest_trusted_version < base_version {
+                "<"// "↓"
+            } else {
+                "="
+            };
+            format!("{}{}", ch, latest_trusted_version)
+        })
+        .unwrap_or_else(|| "".into())
+}
+
 /// Data from `.cargo_vcs_info.json`
 #[derive(Debug, Clone, Deserialize)]
 pub struct VcsInfoJson {
@@ -45,13 +78,13 @@ pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
         .unwrap_or_else(|| "".into())
 }
 #[derive(Debug, Clone, Deserialize)]
-pub enum VcsInfoJsonGit {
+enum VcsInfoJsonGit {
     #[serde(rename = "sha1")]
     Sha1(String),
 }
 
 impl VcsInfoJson {
-    fn read_from_crate_dir(pkg_dir: &Path) -> Result<Option<Self>> {
+    pub fn read_from_crate_dir(pkg_dir: &Path) -> Result<Option<Self>> {
         let path = pkg_dir.join(VCS_INFO_JSON_FILE);
 
         if path.exists() {
@@ -62,11 +95,12 @@ impl VcsInfoJson {
             Ok(None)
         }
     }
-    fn get_git_revision(&self) -> Option<String> {
+    pub fn get_git_revision(&self) -> Option<String> {
         let VcsInfoJsonGit::Sha1(ref s) = self.git;
         Some(s.to_string())
     }
 }
+
 
 /// Ignore things that are commonly added during the review (eg. by RLS)
 pub fn cargo_full_ignore_list() -> HashSet<PathBuf> {
@@ -412,8 +446,213 @@ pub fn check_package_clean_state(
     Ok((digest_clean, vcs))
 }
 
+pub fn find_previous_review_data(
+    db: &crev_lib::ProofDB,
+    id: &crev_data::PubId,
+    name: &str,
+    crate_version: &Version,
+    diff_base_version: &Option<Version>,
+) -> Option<(
+    Option<crev_data::proof::Date>,
+    crev_data::proof::review::Review,
+    Option<crev_data::proof::review::package::Advisory>,
+    String,
+)> {
+    if let Some(previous_review) =
+        db.get_package_review_by_author(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id)
+    {
+        return Some((
+            Some(previous_review.date),
+            previous_review.review,
+            previous_review.advisory,
+            previous_review.comment,
+        ));
+    } else if let Some(diff_base_version) = diff_base_version {
+        if let Some(base_review) = db.get_package_review_by_author(
+            PROJECT_SOURCE_CRATES_IO,
+            name,
+            &diff_base_version,
+            &id.id,
+        ) {
+            return Some((None, base_review.review, None, base_review.comment));
+        }
+    }
+    None
+}
 
-pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
+/// Review a crate
+///
+/// * `unrelated` - the crate might not actually be a dependency
+pub fn create_review_proof(
+    name: &str,
+    version: Option<&Version>,
+    unrelated: UnrelatedOrDependency,
+    advise_common: Option<opts::AdviseCommon>,
+    trust: TrustOrDistrust,
+    proof_create_opt: &opts::CommonProofCreate,
+    diff_version: &Option<Option<Version>>,
+    skip_activity_check: bool,
+) -> Result<()> {
+    let repo = Repo::auto_open_cwd()?;
+
+    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let crate_root = crate_.root();
+    let effective_crate_version = crate_.version();
+
+    assert!(!crate_root.starts_with(std::env::current_dir()?));
+    let local = Local::auto_open()?;
+
+    let diff_base_version = crate_review_activity_check(
+        &local,
+        name,
+        &effective_crate_version,
+        &diff_version,
+        skip_activity_check,
+    )?;
+
+    let (digest_clean, vcs) =
+        check_package_clean_state(&repo, &crate_root, name, &effective_crate_version)?;
+
+    let diff_base = if let Some(ref diff_base_version) = diff_base_version {
+        let crate_ = repo.find_crate(
+            name,
+            Some(diff_base_version),
+            UnrelatedOrDependency::Unrelated,
+        )?;
+        let crate_root = crate_.root();
+
+        let (digest, vcs) =
+            check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?;
+
+        Some(proof::PackageInfo {
+            id: None,
+            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
+            name: name.to_owned(),
+            version: diff_base_version.to_owned(),
+            digest: digest.into_vec(),
+            digest_type: proof::default_digest_type(),
+            revision: vcs_info_to_revision_string(vcs),
+            revision_type: proof::default_revision_type(),
+        })
+    } else {
+        None
+    };
+
+    let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+
+    let db = local.load_db()?;
+    let mut review = proof::review::PackageBuilder::default()
+        .from(id.id.to_owned())
+        .package(proof::PackageInfo {
+            id: None,
+            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
+            name: name.to_owned(),
+            version: effective_crate_version.to_owned(),
+            digest: digest_clean.into_vec(),
+            digest_type: proof::default_digest_type(),
+            revision: vcs_info_to_revision_string(vcs),
+            revision_type: proof::default_revision_type(),
+        })
+        .review(if advise_common.is_some() {
+            crev_data::Review::new_none()
+        } else {
+            trust.to_review()
+        })
+        .diff_base(diff_base)
+        .build()
+        .map_err(|e| format_err!("{}", e))?;
+
+    let previous_date = if let Some((prev_date, prev_review, prev_advisory, prev_comment)) =
+        find_previous_review_data(
+            &db,
+            &id.id,
+            name,
+            effective_crate_version,
+            &diff_base_version,
+        ) {
+        review.review = prev_review;
+        review.comment = prev_comment;
+        if let Some(prev_advisory) = prev_advisory {
+            review.advisory = Some(prev_advisory);
+        }
+        prev_date
+    } else {
+        None
+    };
+
+    if review.advisory.is_none() {
+        if let Some(advise_common) = advise_common {
+            let mut advisory: proof::review::package::Advisory = advise_common.affected.into();
+            advisory.critical = advise_common.critical;
+            review.advisory = Some(advisory);
+        }
+    }
+    let review = crev_lib::util::edit_proof_content_iteractively(
+        &review.into(),
+        previous_date.as_ref(),
+        diff_base_version.as_ref(),
+    )?;
+
+    let proof = review.sign_by(&id)?;
+
+    let commit_msg = format!(
+        "Add review for {crate} v{version}",
+        crate = name,
+        version = effective_crate_version
+    );
+    maybe_store(&local, &proof, &commit_msg, proof_create_opt)
+}
+
+pub fn maybe_store(
+    local: &Local,
+    proof: &crev_data::proof::Proof,
+    commit_msg: &str,
+    proof_create_opt: &opts::CommonProofCreate,
+) -> Result<()> {
+    if proof_create_opt.print_unsigned {
+        print!("{}", proof.body);
+    }
+
+    if proof_create_opt.print_signed {
+        print!("{}", proof);
+    }
+
+    if !proof_create_opt.no_store {
+        local.insert(&proof)?;
+
+        if !proof_create_opt.no_commit {
+            local
+                .proof_dir_commit(&commit_msg)
+                .with_context(|_| format_err!("Could not not automatically commit"))?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn find_reviews(
+    crate_: &opts::CrateSelector,
+) -> Result<impl Iterator<Item = proof::review::Package>> {
+    let local = crev_lib::Local::auto_open()?;
+    let db = local.load_db()?;
+    Ok(db.get_package_reviews_for_package(
+        PROJECT_SOURCE_CRATES_IO,
+        crate_.name.as_ref().map(String::as_str),
+        crate_.version.as_ref(),
+    ))
+}
+
+pub fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
+    for review in find_reviews(crate_)? {
+        println!("{}", review);
+    }
+
+    Ok(())
+}
+
+pub fn find_advisories(
+    crate_: &opts::CrateSelector,
+) -> Result<impl Iterator<Item = (Version, proof::review::Package)>> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
 
@@ -423,8 +662,7 @@ pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review
             crate_.name.as_ref().map(String::as_str),
             crate_.version.as_ref(),
         )
-        .cloned()
-        .collect())
+        .into_iter())
 }
 
 pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
@@ -493,34 +731,12 @@ pub fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) 
 }
 
 pub fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
-    for review in find_advisories(crate_)? {
+    for (_, review) in find_advisories(crate_)? {
         println!("{}", review);
     }
 
     Ok(())
 }
-
-pub fn list_issues(args: &opts::QueryIssue) -> Result<()> {
-    let trust_distance_params = args.trust_params.clone().into();
-
-    let local = crev_lib::Local::auto_open()?;
-    let current_id = local.get_current_userid()?;
-    let db = local.load_db()?;
-    let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
-
-    for review in db.get_pkg_reviews_with_issues_for(
-        PROJECT_SOURCE_CRATES_IO,
-        args.crate_.name.as_ref().map(String::as_str),
-        args.crate_.version.as_ref(),
-        &trust_set,
-        args.trust_level.into(),
-    ) {
-        println!("{}", review);
-    }
-
-    Ok(())
-}
-
 /// Handle the `goto mode` commands
 ///
 /// After jumping to a crate with `goto`, the crate is selected
@@ -610,7 +826,6 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
         .filter_map(|res| res)
 }
 
-// Note: this function is very slow
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
     let mut count = 0;
     for metrics in iter_rs_files_in_dir(path)
@@ -654,29 +869,3 @@ pub fn is_digest_clean(
         || !at_least_one
 }
 
-pub fn maybe_store(
-    local: &Local,
-    proof: &crev_data::proof::Proof,
-    commit_msg: &str,
-    proof_create_opt: &opts::CommonProofCreate,
-) -> Result<()> {
-    if proof_create_opt.print_unsigned {
-        print!("{}", proof.body);
-    }
-
-    if proof_create_opt.print_signed {
-        print!("{}", proof);
-    }
-
-    if !proof_create_opt.no_store {
-        local.insert(&proof)?;
-
-        if !proof_create_opt.no_commit {
-            local
-                .proof_dir_commit(&commit_msg)
-                .with_context(|_| format_err!("Could not not automatically commit"))?;
-        }
-    }
-
-    Ok(())
-}

@@ -2,13 +2,16 @@
 //!
 #![cfg_attr(
     feature = "documentation",
-    doc = "See the [user documentation module](./doc/user/index.html) and in particular the [Getting Started Guide](./doc/user/getting_started/index.html)."
+    doc = "See [user documentation module](./doc/user/index.html)."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{default::Default, io::BufRead};
+use std::{
+    default::Default,
+    io::BufRead,
+};
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -25,10 +28,10 @@ mod shared;
 mod term;
 mod tokei;
 
-use crate::repo::*;
-use crate::review::*;
-use crate::shared::*;
 use crev_lib::TrustOrDistrust::{self, *};
+use crate::shared::*;
+use crate::review::*;
+use crate::repo::*;
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
@@ -69,7 +72,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Verify(args) => {
             dep::verify_deps(args)?;
-        }
+        },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
                 opts::QueryId::Current => {
