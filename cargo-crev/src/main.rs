@@ -71,7 +71,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Verify(args) => {
-            dep::verify_deps(args)?;
+            return dep::verify_deps(args);
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {

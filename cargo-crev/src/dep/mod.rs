@@ -13,8 +13,6 @@ use crate::dep::{dep::*, computer::*};
 
 pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
 
-    dbg!(args.interactive);
-
     let repo = Repo::auto_open_cwd()?;
     let mut term = term::Term::new();
 
@@ -34,11 +32,17 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let mut computer = DepComputer::new(&args)?;
 
     let mut nb_unclean_digests = 0;
+    let mut nb_unverified = 0;
     for row in table.rows.iter_mut() {
         computer.compute(row);
         row.term_print(&mut term, args.verbose)?;
-        if row.is_digest_unclean() {
-            nb_unclean_digests += 1;
+        if let ComputationStatus::Ok{dep} = &row.computation_status {
+            if dep.unclean_digest {
+                nb_unclean_digests += 1;
+            }
+            if !dep.verified {
+                nb_unverified += 1;
+            }
         }
     }
 
@@ -60,6 +64,12 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
         }
     }
 
-    Ok(CommandExitStatus::Successs)
+    Ok(
+        if nb_unverified == 0 {
+            CommandExitStatus::Successs
+        } else {
+            CommandExitStatus::VerificationFailed
+        }
+    )
 }
 
