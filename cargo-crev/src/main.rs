@@ -6,6 +6,7 @@
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use self::prelude::*;
+
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
 use std::{
@@ -27,6 +28,7 @@ mod review;
 mod shared;
 mod term;
 mod tokei;
+mod tui;
 
 use crev_lib::TrustOrDistrust::{self, *};
 use crate::shared::*;
@@ -71,7 +73,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Verify(args) => {
-            return dep::verify_deps(args);
+            return if args.interactive {
+                tui::verify_deps(args)
+            } else {
+                dep::verify_deps(args)
+            };
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
