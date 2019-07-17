@@ -169,16 +169,16 @@ impl DepComputer {
         &mut self,
         row: &mut DepRow,
     ) {
-        row.computation_status = ComputationStatus::InProgress;
+        row.computation_status = RowComputationStatus::InProgress;
         match self.try_compute(row) {
             Ok(Some(dep)) => {
-                row.computation_status = ComputationStatus::Ok{dep};
+                row.computation_status = RowComputationStatus::Ok{dep};
             }
             Ok(None) => {
-                row.computation_status = ComputationStatus::Skipped;
+                row.computation_status = RowComputationStatus::Skipped;
             }
             Err(e) => {
-                row.computation_status = ComputationStatus::Failed;
+                row.computation_status = RowComputationStatus::Failed;
                 println!("Computation Failed: {:?}", e);
             }
         }

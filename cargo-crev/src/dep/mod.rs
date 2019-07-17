@@ -11,6 +11,11 @@ mod computer;
 
 use crate::dep::{dep::*, computer::*};
 
+pub use dep::{
+    Progress, TableComputationStatus, RowComputationStatus, CrateCounts, TrustCount,
+    DepTable, DepRow,
+};
+
 pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
 
     let repo = Repo::auto_open_cwd()?;
@@ -36,7 +41,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     for row in table.rows.iter_mut() {
         computer.compute(row);
         row.term_print(&mut term, args.verbose)?;
-        if let ComputationStatus::Ok{dep} = &row.computation_status {
+        if let RowComputationStatus::Ok{dep} = &row.computation_status {
             if dep.unclean_digest {
                 nb_unclean_digests += 1;
             }

@@ -13,7 +13,30 @@ use crate::shared::*;
 use crev_data::*;
 use crev_lib::*;
 
-pub enum ComputationStatus {
+#[derive(Clone, Copy, Debug)]
+pub struct Progress {
+    pub done: usize,
+    pub total: usize,
+}
+impl Progress {
+    pub fn is_complete(&self) -> bool {
+        self.done >= self.total
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum TableComputationStatus {
+    New,
+    ComputingGeiger {
+        progress: Progress,
+    },
+    Done,
+}
+impl TableComputationStatus {
+
+}
+
+pub enum RowComputationStatus {
     New,
     InProgress,
     Ok {
@@ -55,7 +78,7 @@ pub struct DepRow {
     pub root: PathBuf,
     pub has_custom_build: bool,
     pub geiger_count: Option<u64>,
-    pub computation_status: ComputationStatus,
+    pub computation_status: RowComputationStatus,
 }
 
 impl Dep {
@@ -164,7 +187,7 @@ impl DepRow {
             root,
             has_custom_build,
             geiger_count: None,
-            computation_status: ComputationStatus::New,
+            computation_status: RowComputationStatus::New,
         }
     }
 
@@ -188,7 +211,7 @@ impl DepRow {
 
     pub fn is_digest_unclean(&self) -> bool {
         match &self.computation_status {
-            ComputationStatus::Ok{dep} => dep.unclean_digest,
+            RowComputationStatus::Ok{dep} => dep.unclean_digest,
             _ => false,
         }
     }
@@ -213,19 +236,19 @@ impl DepRow {
 
     pub fn term_print(&self, term: &mut Term, verbose: bool) -> Result<()> {
         match &self.computation_status {
-            ComputationStatus::New => {
+            RowComputationStatus::New => {
                 println!("not yet computed");
             }
-            ComputationStatus::InProgress => {
+            RowComputationStatus::InProgress => {
                 println!("in progress...");
             }
-            ComputationStatus::Failed => {
+            RowComputationStatus::Failed => {
                 println!("computation failed"); // TODO write the name
             }
-            ComputationStatus::Skipped => {
+            RowComputationStatus::Skipped => {
                 println!("skipped"); // TODO write the name
             }
-            ComputationStatus::Ok{dep} => {
+            RowComputationStatus::Ok{dep} => {
                 dep.term_print(term, self.geiger_count, verbose)?;
                 println!();
             }
@@ -237,6 +260,7 @@ impl DepRow {
 
 pub struct DepTable {
     pub rows: Vec<DepRow>,
+    pub computation_status: TableComputationStatus,
 }
 impl DepTable {
     pub fn new(package_set: &PackageSet<'_>) -> Result<DepTable> {
@@ -247,6 +271,7 @@ impl DepTable {
             .collect();
         Ok(DepTable {
             rows,
+            computation_status: TableComputationStatus::New,
         })
     }
 }
