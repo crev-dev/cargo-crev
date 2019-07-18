@@ -42,7 +42,7 @@ time = "0.1.42"
 env_logger = { version = "0.6.2", default-features = false, features = ["termcolor", "atty", "humantime"]}
 rayon = "1.1"
 crossterm = "0.9.6"
-crossbeam-channel = "0.3.8"
+crossbeam = "0.7"
 
 [features]
 default = []

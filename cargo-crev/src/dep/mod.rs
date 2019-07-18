@@ -2,50 +2,56 @@ use rayon::prelude::*;
 
 use crate::prelude::*;
 use crate::opts::*;
-use crate::repo::*;
 use crate::shared::*;
 use crate::term;
 
 mod dep;
 mod computer;
-
-use crate::dep::{dep::*, computer::*};
+mod print_term;
 
 pub use dep::{
-    Progress, TableComputationStatus, RowComputationStatus, CrateCounts, TrustCount,
-    DepTable, DepRow,
+    Progress, TableComputationStatus, DepComputationStatus, CrateCounts, TrustCount,
+    Dep, ComputedDep, DepTable,
 };
+pub use computer::DepComputer;
+use print_term::*;
 
 pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
 
-    let repo = Repo::auto_open_cwd()?;
     let mut term = term::Term::new();
 
-    let package_set = repo.non_local_dep_crates()?;
-    let mut table = DepTable::new(&package_set)?;
+    let mut table = DepTable::new();
     if term.stderr_is_tty && term.stdout_is_tty {
-        DepRow::term_print_header(&mut term, args.verbose);
+        term_print_header(&mut term, args.verbose);
     }
+    let computer = DepComputer::new(&args)?;
+    let rx_events = computer.run_computation();
 
-    table.rows
-        .par_iter_mut()
-        .for_each(|row| {
-            row.download_if_needed().unwrap(); // FIXME unwrap. What to do exactly apart die ?
-            row.count_geiger();
-        });
-
-    let mut computer = DepComputer::new(&args)?;
+    loop {
+        let event = match rx_events.recv() {
+            Ok(event) => event,
+            Err(_) => {
+                break;
+            }
+        };
+        //println!("got event, status={:?}", &event.computation_status);
+        if let Some(dep) = &event.finished_dep {
+            term_print_dep(&dep, &mut term, args.verbose)?;
+        }
+        table.update(event);
+        if table.is_computation_finished() {
+            break;
+        }
+    }
 
     let mut nb_unclean_digests = 0;
     let mut nb_unverified = 0;
-    for row in table.rows.iter_mut() {
-        computer.compute(row);
-        row.term_print(&mut term, args.verbose)?;
-        if let RowComputationStatus::Ok{dep} = &row.computation_status {
-            if dep.unclean_digest {
+    for dep in table.deps.iter() {
+        if let DepComputationStatus::Ok{computed_dep} = &dep.computation_status {
+            if computed_dep.unclean_digest {
                 nb_unclean_digests += 1;
             }
-            if !dep.verified {
+            if !computed_dep.verified {
                 nb_unverified += 1;
             }
         }
@@ -57,12 +63,10 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
             if nb_unclean_digests > 1 { "s" } else { "" },
             nb_unclean_digests
         );
-        for row in table.rows {
-            if row.is_digest_unclean() {
-                let name = row.id.name().as_str();
-                let version = row.id.version();
+        for dep in table.deps {
+            if dep.is_digest_unclean() {
                 term.eprint(
-                    format_args!("Unclean crate {} {}\n", name, version),
+                    format_args!("Unclean crate {} {}\n", &dep.name, &dep.version),
                     ::term::color::RED,
                 )?;
             }

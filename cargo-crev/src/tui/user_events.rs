@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Instant, Duration};
 use std::sync::{Arc};
-use crossbeam_channel::{Sender, Receiver, unbounded, RecvError};
+use crossbeam::channel::{Sender, Receiver, unbounded, RecvError};
 use crossterm::{InputEvent, KeyEvent, MouseEvent, TerminalInput};
 
 const DOUBLE_CLICK_MAX_DURATION: Duration = Duration::from_millis(700);

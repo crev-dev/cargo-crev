@@ -1,7 +1,7 @@
 mod user_events;
 
 use std::thread;
-use crossbeam_channel::{Sender, Receiver, unbounded, RecvError};
+use crossbeam::channel::{Sender, Receiver, unbounded, RecvError};
 use crossterm::{
     AlternateScreen,
     TerminalCursor,
@@ -20,11 +20,9 @@ use crate::tui::user_events::*;
 use crate::repo::Repo;
 pub use crate::dep::{
     CrateCounts, TrustCount, Progress,
-    RowComputationStatus, TableComputationStatus,
-    DepTable, DepRow,
+    DepComputationStatus, TableComputationStatus,
+    DepTable,
 };
-
-
 
 ///
 fn is_quit_event(event: &Event) -> bool {
@@ -33,7 +31,6 @@ fn is_quit_event(event: &Event) -> bool {
         _ => false,
     }
 }
-
 
 /// called in case of an --interactive execution
 ///
@@ -45,6 +42,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let cursor = TerminalCursor::new();
     cursor.hide()?;
 
+    /*
 
     let repo = Repo::auto_open_cwd()?;
     let package_set = repo.non_local_dep_crates()?;
@@ -82,6 +80,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
             tx_geiger.send(true).unwrap();
         });
 
+    */
     println!("Hit ctrl-Q to quit");
 
     let event_source = EventSource::new();
