@@ -1,8 +1,6 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Instant, Duration};
-use std::sync::{Arc};
-use crossbeam::channel::{Sender, Receiver, unbounded, RecvError};
+use crossbeam::channel::{Sender, Receiver, unbounded};
 use crossterm::{InputEvent, KeyEvent, MouseEvent, TerminalInput};
 
 const DOUBLE_CLICK_MAX_DURATION: Duration = Duration::from_millis(700);
@@ -43,7 +41,6 @@ impl From<Event> for TimedEvent {
 pub struct EventSource {
     rx_events: Receiver<Event>,
     tx_quit: Sender<bool>,
-    task_count: Arc<AtomicUsize>,
 }
 
 impl EventSource {
@@ -51,13 +48,11 @@ impl EventSource {
     pub fn new() -> EventSource {
         let (tx_events, rx_events) = unbounded();
         let (tx_quit, rx_quit) = unbounded();
-        let task_count = Arc::new(AtomicUsize::new(0));
-        let event_count = Arc::clone(&task_count);
         thread::spawn(move || {
             let input = TerminalInput::new();
             let mut last_event: Option<TimedEvent> = None;
             if let Err(e) = input.enable_mouse_mode() {
-                println!("WARN Error while enabling mouse. {:?}", e);
+                eprintln!("WARN Error while enabling mouse. {:?}", e);
             }
             let mut crossterm_events = input.read_sync();
             loop {
@@ -73,7 +68,6 @@ impl EventSource {
                         }
                     }
                     last_event = Some(TimedEvent::from(event.clone()));
-                    event_count.fetch_add(1, Ordering::SeqCst);
                     // we send the even to the receiver in the main event loop
                     tx_events.send(event).unwrap();
                     let quit = rx_quit.recv().unwrap();
@@ -93,7 +87,6 @@ impl EventSource {
         EventSource {
             rx_events,
             tx_quit,
-            task_count,
         }
     }
 
@@ -104,10 +97,8 @@ impl EventSource {
         self.tx_quit.send(quit).unwrap();
     }
 
-    /// receives a new event. Blocks until there's one.
-    /// Event listening will be off until the next call to unblock.
-    pub fn recv(&self) -> Result<Event, RecvError> {
-        self.rx_events.recv()
+    pub fn receiver(&self) -> Receiver<Event> {
+        self.rx_events.clone()
     }
 }
 

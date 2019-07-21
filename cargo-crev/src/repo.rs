@@ -42,6 +42,13 @@ impl Repo {
         })
     }
 
+    pub fn name(&self) -> std::borrow::Cow<'_, str> {
+        self.manifest_path
+            .parent().unwrap()
+            .file_name().unwrap()
+            .to_string_lossy()
+    }
+
     pub fn update_source(&self) -> Result<()> {
         let mut source = self.load_source()?;
         source.update()?;

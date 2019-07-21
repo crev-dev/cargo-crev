@@ -16,18 +16,15 @@ use crossbeam:: {
     channel::{Sender, Receiver, unbounded},
 };
 
-
 use crate::prelude::*;
 use crate::crates_io;
 use crate::opts::*;
 use crate::repo::*;
 use crate::shared::*;
 use crate::tokei;
-
 use crate::dep::dep::*;
 
 use crev_lib::{*, proofdb::*};
-
 
 /// a structure internally used by the computer
 struct DepRow {
@@ -121,10 +118,10 @@ impl DepComputer {
         thread::spawn(move || {
             match self.compute_all(tx_events) {
                 Ok(()) => {
-                    println!("OK - computation done"); // we need a better logging
+                    //println!("OK - computation done"); // we need a better logging
                 }
-                Err(e) => {
-                    println!("NOT OK: {:?}", e);
+                Err(_e) => {
+                    //println!("NOT OK: {:?}", e);
                 }
             }
         });
@@ -157,7 +154,10 @@ impl DepComputer {
         let tx_geiger_events = tx_events.clone();
         thread::spawn(move|| {
             loop {
-                let b = rx_geiger.recv().unwrap();
+                if rx_geiger.recv().is_err() {
+                    // TODO log
+                    break;
+                }
                 progress.done += 1;
                 let status = TableComputationStatus::ComputingGeiger { progress };
                 tx_geiger_events.send(ComputationEvent::from_status(status)).unwrap();
@@ -210,8 +210,8 @@ impl DepComputer {
             Ok(None) => {
                 DepComputationStatus::Skipped
             }
-            Err(e) => {
-                println!("Computation Failed: {:?}", e);
+            Err(_e) => {
+                //println!("Computation Failed: {:?}", e);
                 DepComputationStatus::Failed
             }
         };

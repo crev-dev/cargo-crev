@@ -1,5 +1,3 @@
-use rayon::prelude::*;
-
 use crate::prelude::*;
 use crate::opts::*;
 use crate::shared::*;
@@ -12,6 +10,7 @@ mod print_term;
 pub use dep::{
     Progress, TableComputationStatus, DepComputationStatus, CrateCounts, TrustCount,
     Dep, ComputedDep, DepTable,
+    latest_trusted_version_string,
 };
 pub use computer::DepComputer;
 use print_term::*;
@@ -60,8 +59,8 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     if nb_unclean_digests > 0 {
         println!(
             "{} unclean package{} detected. Use `cargo crev clean <crate>` to wipe the local source.",
+            nb_unclean_digests,
             if nb_unclean_digests > 1 { "s" } else { "" },
-            nb_unclean_digests
         );
         for dep in table.deps {
             if dep.is_digest_unclean() {
