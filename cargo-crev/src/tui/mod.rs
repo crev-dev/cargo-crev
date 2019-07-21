@@ -1,36 +1,26 @@
 mod user_events;
+mod verify_screen;
+mod table_view;
 
-use std::thread;
-use crossbeam::channel::{Sender, Receiver, unbounded, RecvError};
 use crossterm::{
     AlternateScreen,
     TerminalCursor,
-    TerminalInput,
     KeyEvent,
-    Color::*
 };
-use rayon::prelude::*;
-
 use crate::prelude::*;
 use crate::opts::{
     Verify,
 };
 use crate::shared::CommandExitStatus;
 use crate::tui::user_events::*;
-use crate::repo::Repo;
 pub use crate::dep::{
-    CrateCounts, TrustCount, Progress,
-    DepComputationStatus, TableComputationStatus,
-    DepTable,
+    Progress, TableComputationStatus, DepComputationStatus, CrateCounts, TrustCount,
+    Dep, ComputedDep, DepTable,
+    DepComputer,
 };
-
-///
-fn is_quit_event(event: &Event) -> bool {
-    match event {
-        Event::Key(KeyEvent::Ctrl('q')) => true,
-        _ => false,
-    }
-}
+use verify_screen::{
+    VerifyScreen,
+};
 
 /// called in case of an --interactive execution
 ///
@@ -42,65 +32,56 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let cursor = TerminalCursor::new();
     cursor.hide()?;
 
-    /*
+    let mut screen = VerifyScreen::new()?;
 
-    let repo = Repo::auto_open_cwd()?;
-    let package_set = repo.non_local_dep_crates()?;
-    let mut table = DepTable::new(&package_set)?;
+    let mut table = DepTable::new();
+    screen.update_for(&table);
 
-    let mut progress = Progress {
-        done: 0,
-        total: table.rows.len(),
-    };
-    table.computation_status = TableComputationStatus::ComputingGeiger {
-        progress,
-    };
+    let computer = DepComputer::new(&args)?;
+    let rx_comp = computer.run_computation(); // computation starts here on other threads
+    let event_source = EventSource::new();
+    let rx_user = event_source.receiver();
 
-    let (tx_geiger, rx_geiger) = unbounded();
-
-    thread::spawn(move || {
-        println!("processing...");
-        let cursor = TerminalCursor::new();
-        loop {
-            let b = rx_geiger.recv().unwrap();
-            progress.done += 1;
-            cursor.goto(2, 2).unwrap();
-            println!("progres: {:?}", &progress);
-            if progress.is_complete() {
-                break;
+    loop {
+        select! {
+            recv(rx_comp) -> comp_event => {
+                if let Ok(comp_event) = comp_event {
+                    table.update(comp_event);
+                    screen.update_for(&table);
+                } else {
+                    // This happens on computation end (channel closed).
+                    // We don't break because we let the user read the result.
+                }
+            }
+            recv(rx_user) -> user_event => {
+                if let Ok(user_event) = user_event {
+                    let mut quit = false;
+                    match user_event {
+                        Event::Key(KeyEvent::Ctrl('q')) => {
+                            quit = true;
+                        }
+                        Event::Key(KeyEvent::PageUp) => {
+                            screen.try_scroll_pages(-1);
+                        }
+                        Event::Key(KeyEvent::PageDown) => {
+                            screen.try_scroll_pages(1);
+                        }
+                        _ => {}
+                    }
+                    event_source.unblock(quit); // this will lead to channel closing
+                    if !quit {
+                        screen.update_for(&table);
+                    }
+                } else {
+                    // The channel has been closed, which means the event source
+                    // has properly released its resources, we may quit.
+                    break;
+                }
             }
         }
-    });
-
-    table.rows
-        .par_iter_mut()
-        .for_each(|row| {
-            row.download_if_needed().unwrap();
-            row.count_geiger();
-            tx_geiger.send(true).unwrap();
-        });
-
-    */
-    println!("Hit ctrl-Q to quit");
-
-    let event_source = EventSource::new();
-    let mut quit = false;
-    loop {
-        let event = match event_source.recv() {
-            Ok(event) => event,
-            Err(_) => {
-                // this is how we quit the application,
-                // when the input thread is properly closed
-                break;
-            }
-        };
-
-        quit = is_quit_event(&event);
-        // handle event & display here
-        event_source.unblock(quit);
     }
 
-    cursor.show()?;
+    cursor.show()?; // if we don't do this, the poor terminal is cursorless
     Ok(CommandExitStatus::Successs)
 }
 

@@ -15,6 +15,12 @@ use std::{
 };
 use structopt::StructOpt;
 
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use(select)]
+extern crate crossbeam;
+
 #[cfg(feature = "documentation")]
 /// Documentation
 pub mod doc;

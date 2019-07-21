@@ -5,7 +5,6 @@ use crate::prelude::*;
 use crate::term::{self, *};
 use crate::dep::dep::*;
 
-
 fn pad_left_manually(s: String, width: usize) -> String {
     if s.len() <= width {
         let padding = std::iter::repeat(" ")
@@ -106,7 +105,7 @@ pub fn term_print_computed_dep(
     Ok(())
 }
 
-fn term_print_dep_id(dep: &Dep, term: &mut Term) {
+fn term_print_dep_id(dep: &Dep, _term: &mut Term) {
     print!(
         " {:<20} {:<15}",
         dep.name,

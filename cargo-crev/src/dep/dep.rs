@@ -28,6 +28,16 @@ pub enum TableComputationStatus {
     },
     Done, // might be a crash, too
 }
+impl TableComputationStatus {
+    /// Are we in the initial phase during which there's no dep ?
+    pub fn is_before_deps(&self) -> bool {
+        match self {
+            TableComputationStatus::New => true,
+            TableComputationStatus::ComputingGeiger{ progress:_ } => true,
+            _ => false,
+        }
+    }
+}
 
 /// Events are the output of the computer, this is
 ///  where the computed data are to be read.
@@ -91,11 +101,16 @@ pub struct Dep {
 }
 
 impl Dep {
-
     pub fn is_digest_unclean(&self) -> bool {
         match &self.computation_status {
             DepComputationStatus::Ok{computed_dep} => computed_dep.unclean_digest,
             _ => false,
+        }
+    }
+    pub fn computed(&self) -> Option<&ComputedDep> {
+        match &self.computation_status {
+            DepComputationStatus::Ok{computed_dep} => Some(&computed_dep),
+            _ => None,
         }
     }
 }
