@@ -12,15 +12,6 @@ use crate::prelude::*;
 use crate::repo::Repo;
 use crate::tui::table_view::*;
 
-/*
- Areas:
- - repo name
- - dep table
- - computation status / warnings
- - user action hint ("Hit ctrl-q to quit")
- - input
-*/
-
 struct DepTableSkin {
     std: CompoundStyle,
     bad: CompoundStyle,
@@ -53,13 +44,26 @@ pub struct VerifyScreen<'t> {
 }
 
 
-fn u64_to_str(i: u64) -> String {
-    if i==0 {
-        "".to_owned()
-    } else {
-        format!("{}", i)
+const SIZE_NAMES: &[&str] = &["", "K", "M", "G", "T", "P", "E", "Z", "Y"];
+/// format a number of as a string
+pub fn u64_to_str(mut v: u64) -> String {
+    if v == 0 {
+        return "".to_owned()
     }
+    let mut i = 0;
+    while v >= 1200 && i < SIZE_NAMES.len() - 1 {
+        v >>= 10;
+        i += 1;
+    }
+    format!("{}{}", v, &SIZE_NAMES[i])
 }
+//fn u64_to_str(i: u64) -> String {
+//    if i==0 {
+//        "".to_owned()
+//    } else {
+//        format!("{}", i)
+//    }
+//}
 
 impl<'t> VerifyScreen<'t> {
     pub fn new() -> Result<Self> {
@@ -128,11 +132,11 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Center),
             Column::new(
                 "downloads",
-                8,
+                6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
-                            format!("{}", downloads.version),
+                            u64_to_str(downloads.version),
                             if downloads.version < 1000 { &TS.medium } else  { &TS.std },
                         )
                     } else {
@@ -142,11 +146,11 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "downloads",
-                9,
+                6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
-                            format!("{}", downloads.total),
+                            u64_to_str(downloads.total),
                             if downloads.total < 1000 { &TS.medium } else  { &TS.std },
                         )
                     } else {
@@ -216,7 +220,7 @@ impl<'t> VerifyScreen<'t> {
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{loc:Some(loc),..}) = dep.computed() {
                         Cell::new(
-                            format!("{}", loc),
+                            u64_to_str(*loc as u64),
                             &TS.std,
                         )
                     } else {
