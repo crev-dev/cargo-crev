@@ -5,7 +5,7 @@ use termimad::*;
 
 use crev_lib::VerificationStatus;
 use crate::dep::{
-    Dep, ComputedDep, DepTable,
+    Dep, ComputedDep, DepTable, TableComputationStatus,
     latest_trusted_version_string,
 };
 use crate::prelude::*;
@@ -184,7 +184,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "issues",
-                3,
+                2,
                 Box::new(|dep: &Dep| {
                     if let Some(cdp) = dep.computed() {
                         Cell::new(
@@ -255,6 +255,7 @@ impl<'t> VerifyScreen<'t> {
         self.skin.italic.set_fg(ansi(153));
         self.skin.scrollbar.thumb.set_fg(ansi(178));
         self.status_skin.paragraph.set_bg(gray(4));
+        self.status_skin.italic.set_fg(ansi(225));
     }
     pub fn resize(&mut self) {
         let (w, h) = terminal_size();
@@ -294,8 +295,22 @@ impl<'t> VerifyScreen<'t> {
         }
     }
     fn update_status(&self, table: &DepTable) {
+        let status = match table.computation_status {
+            TableComputationStatus::New => {
+                "Computation starting...".to_owned()
+            }
+            TableComputationStatus::ComputingGeiger{ progress } => {
+                format!("Computing Geiger : *{}* / {}", progress.done, progress.total)
+            }
+            TableComputationStatus::ComputingTrust{ progress } => {
+                format!("Computing Trust : *{}* / {}", progress.done, progress.total)
+            }
+            TableComputationStatus::Done => {
+                "Computation finished".to_owned()
+            }
+        };
         self.status_skin.write_in_area(
-            &format!("status: {:?}", &table.computation_status),
+            &status,
             &self.status_area
         ).unwrap();
     }
