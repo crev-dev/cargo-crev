@@ -57,13 +57,6 @@ pub fn u64_to_str(mut v: u64) -> String {
     }
     format!("{}{}", v, &SIZE_NAMES[i])
 }
-//fn u64_to_str(i: u64) -> String {
-//    if i==0 {
-//        "".to_owned()
-//    } else {
-//        format!("{}", i)
-//    }
-//}
 
 impl<'t> VerifyScreen<'t> {
     pub fn new() -> Result<Self> {
@@ -162,13 +155,13 @@ impl<'t> VerifyScreen<'t> {
                 "owners",
                 2,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{owners:Some(owners),..}) = dep.computed() {
-                        Cell::new(
-                            format!("{}", owners.trusted),
-                            if owners.trusted > 0 { &TS.good } else  { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    match dep.computed() {
+                        Some(ComputedDep{owners:Some(owners),..}) if owners.trusted > 0 => {
+                            Cell::new(format!("{}", owners.trusted), &TS.good)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
@@ -176,27 +169,28 @@ impl<'t> VerifyScreen<'t> {
                 "owners",
                 3,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{owners:Some(owners),..}) = dep.computed() {
-                        Cell::new(
-                            format!("{}", owners.total),
-                            &TS.std,
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
-                    }
+                    Cell::new(
+                        match dep.computed() {
+                            Some(ComputedDep{owners:Some(owners),..}) if owners.total > 0 => {
+                                format!("{}", owners.total)
+                            }
+                            _ => "".to_owned(),
+                        },
+                        &TS.std
+                    )
                 }),
             ).with_align(Alignment::Right),
             Column::new(
                 "issues",
                 2,
                 Box::new(|dep: &Dep| {
-                    if let Some(cdp) = dep.computed() {
-                        Cell::new(
-                            format!("{}", cdp.issues.trusted),
-                            if cdp.issues.trusted > 0 { &TS.bad } else { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    match dep.computed() {
+                        Some(ComputedDep{issues,..}) if issues.trusted > 0 => {
+                            Cell::new(format!("{}", issues.trusted), &TS.bad)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
@@ -204,13 +198,13 @@ impl<'t> VerifyScreen<'t> {
                 "issues",
                 3,
                 Box::new(|dep: &Dep| {
-                    if let Some(cdp) = dep.computed() {
-                        Cell::new(
-                            format!("{}", cdp.issues.total),
-                            if cdp.issues.total > 0 { &TS.medium } else { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    match dep.computed() {
+                        Some(ComputedDep{issues,..}) if issues.total > 0 => {
+                            Cell::new(format!("{}", issues.total), &TS.medium)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
@@ -218,14 +212,13 @@ impl<'t> VerifyScreen<'t> {
                 "l.o.c.",
                 6,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{loc:Some(loc),..}) = dep.computed() {
-                        Cell::new(
-                            u64_to_str(*loc as u64),
-                            &TS.std,
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
-                    }
+                    Cell::new(
+                        match dep.computed() {
+                            Some(ComputedDep{loc:Some(loc),..}) => u64_to_str(*loc as u64),
+                            _ => "".to_string(),
+                        },
+                        &TS.std
+                    )
                 }),
             ).with_align(Alignment::Right),
         ];
