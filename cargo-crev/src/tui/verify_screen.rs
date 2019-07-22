@@ -64,20 +64,20 @@ impl<'t> VerifyScreen<'t> {
             static ref TS: DepTableSkin = DepTableSkin::default();
         }
 
-        let mut columns = vec![
+        let columns = vec![
             Column::new(
                 "crate",
-                10,
+                10, 80,
                 Box::new(|dep: &Dep| Cell::new(dep.name.to_string(), &TS.std)),
             ).with_align(Alignment::Left),
             Column::new(
                 "version",
-                9,
+                9, 13,
                 Box::new(|dep: &Dep| Cell::new(dep.version.to_string(), &TS.std)),
             ).with_align(Alignment::Right),
             Column::new(
                 "trust",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(cdep) = dep.computed() {
                         match cdep.trust {
@@ -92,7 +92,7 @@ impl<'t> VerifyScreen<'t> {
             ),
             Column::new(
                 "last trusted",
-                12,
+                12, 16,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -103,7 +103,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "reviews",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -114,7 +114,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Center),
             Column::new(
                 "reviews",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -125,7 +125,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Center),
             Column::new(
                 "downloads",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
@@ -139,7 +139,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "downloads",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
@@ -153,7 +153,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "owners",
-                2,
+                2, 2,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{owners:Some(owners),..}) if owners.trusted > 0 => {
@@ -167,7 +167,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "owners",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| {
                     Cell::new(
                         match dep.computed() {
@@ -182,7 +182,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "issues",
-                2,
+                2, 2,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{issues,..}) if issues.trusted > 0 => {
@@ -196,7 +196,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "issues",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{issues,..}) if issues.total > 0 => {
@@ -210,7 +210,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "l.o.c.",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     Cell::new(
                         match dep.computed() {
@@ -222,7 +222,6 @@ impl<'t> VerifyScreen<'t> {
                 }),
             ).with_align(Alignment::Right),
         ];
-        columns[0].set_grow(true);
 
         let table_view = TableView::new(
             Area::new(0, 1, 10, 10),
