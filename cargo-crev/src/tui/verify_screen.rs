@@ -1,5 +1,7 @@
 use crossterm::{
+    ClearType,
     Color::*,
+    Terminal,
 };
 use termimad::*;
 
@@ -41,6 +43,7 @@ pub struct VerifyScreen<'t> {
     table_view: TableView<'t, Dep>,
     skin: MadSkin,
     status_skin: MadSkin,
+    last_dimensions: (u16, u16),
 }
 
 
@@ -239,6 +242,7 @@ impl<'t> VerifyScreen<'t> {
             table_view,
             skin: MadSkin::default(),
             status_skin: MadSkin::default(),
+            last_dimensions: (0, 0),
         };
         screen.resize();
         screen.make_skins();
@@ -255,6 +259,11 @@ impl<'t> VerifyScreen<'t> {
     }
     pub fn resize(&mut self) {
         let (w, h) = terminal_size();
+        if (w, h) == self.last_dimensions {
+            return;
+        }
+        Terminal::new().clear(ClearType::All).unwrap();
+        self.last_dimensions = (w, h);
         self.title_area.width = w;
         self.table_view.area.width = w;
         self.table_view.area.height = h - 4;
