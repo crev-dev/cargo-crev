@@ -41,33 +41,21 @@ Static binaries build by CI pipeline are available on [crev's releases](https://
 
 #### Dependencies
 
-Regrettably `cargo-crev` requires couple of non-Rust dependencies to compile:
+Regrettably `cargo-crev` requires a non-Rust dependency to compile, as OpenSSL
+is required for TLS support.
 
-* `argonautica` crate requires LLVM to compile some C/C++ code,
-* OpenSSL is required for TLS support.
-
-Though these are popular and readily available, it's virtually impossible to cover installing
-them on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
+Though OpenSSL is popular and readily available, it's virtually impossible to cover installing
+it on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
 
 ##### Unix
 
 The following should work on Ubuntu:
 
 ```text
-# openssl
 sudo apt-get install openssl libssl-dev
-
-# argonautica build system
-sudo apt-get install clang llvm-dev libclang-dev
 ```
 
 and should have matching command in the Unix-like OS of your choice.
-
-##### Windows
-
-On Windows, make sure you have
-[LLVM](http://releases.llvm.org/download.html) installed and added to your
-system path.
 
 #### Compiling
 
