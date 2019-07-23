@@ -66,6 +66,9 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
                         Event::Key(KeyEvent::PageDown) => {
                             screen.try_scroll_pages(1);
                         }
+                        Event::Wheel(lines_count) => {
+                            screen.try_scroll_lines(lines_count);
+                        }
                         _ => {}
                     }
                     event_source.unblock(quit); // this will lead to channel closing
