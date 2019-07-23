@@ -88,7 +88,11 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> std::io::
 /// ln -sf /tmp/a/b/c/d/e/f/g/h "../../a"
 /// rblake2sum /tmp/a
 /// ```
+/// 
+/// Ignored by default on Windows, as users typically cannot create symlinks
+/// without running as admin.
 #[test]
+#[cfg_attr(target_family = "windows", ignore)]
 fn backward_comp() -> Result<(), DigestError> {
     let tmp_dir = TempDir::new("recursive-digest-test2")?;
 
