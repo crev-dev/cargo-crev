@@ -272,7 +272,7 @@ impl Local {
     ) -> PathBuf {
         self.cache_activity_path()
             .join("review")
-            .join(source)
+            .join(source.to_owned().replace(":", "_"))
             .join(name)
             .join(version.to_string())
             .with_extension("yaml")
