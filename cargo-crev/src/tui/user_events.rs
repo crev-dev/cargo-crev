@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::{Instant, Duration};
 use crossbeam::channel::{Sender, Receiver, unbounded};
-use crossterm::{InputEvent, KeyEvent, MouseEvent, TerminalInput};
+use crossterm::{InputEvent, KeyEvent, MouseEvent, MouseButton, TerminalInput};
 
 const DOUBLE_CLICK_MAX_DURATION: Duration = Duration::from_millis(700);
 
@@ -11,6 +11,7 @@ pub enum Event {
     Key(KeyEvent),
     Click(u16, u16),
     DoubleClick(u16, u16),
+    Wheel(i32),
 }
 
 impl Event {
@@ -18,6 +19,8 @@ impl Event {
         match crossterm_event {
             Some(InputEvent::Keyboard(key)) => Some(Event::Key(key)),
             Some(InputEvent::Mouse(MouseEvent::Release(x, y))) => Some(Event::Click(x, y)),
+            Some(InputEvent::Mouse(MouseEvent::Press(MouseButton::WheelUp, _, _))) => Some(Event::Wheel(-5)),
+            Some(InputEvent::Mouse(MouseEvent::Press(MouseButton::WheelDown, _, _))) => Some(Event::Wheel(5)),
             _ => None,
         }
     }

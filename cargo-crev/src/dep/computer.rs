@@ -6,6 +6,7 @@ use cargo::core::{
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use std::{
+    cmp::Ordering,
     collections::HashSet,
     default::Default,
     path::PathBuf,
@@ -63,8 +64,23 @@ impl DepRow {
         debug_assert!(self.root.exists());
         self.geiger_count = get_geiger_count(&self.root).ok();
     }
-
-
+}
+impl PartialOrd for DepRow {
+    fn partial_cmp(&self, other: &DepRow) -> Option<Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+impl Ord for DepRow {
+    fn cmp(&self, other: &DepRow) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+impl PartialEq for DepRow {
+    fn eq(&self, other: &DepRow) -> bool {
+        self.id == other.id
+    }
+}
+impl Eq for DepRow {
 }
 
 /// manages analysis of a crate dependency.
@@ -173,6 +189,8 @@ impl DepComputer {
                 row.count_geiger();
                 tx_geiger.send(true).unwrap();
             });
+
+        rows.sort();
 
         // doing the rest of the computation
         progress.done = 0;

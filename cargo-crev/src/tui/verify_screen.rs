@@ -1,5 +1,7 @@
 use crossterm::{
+    ClearType,
     Color::*,
+    Terminal,
 };
 use termimad::*;
 
@@ -41,6 +43,7 @@ pub struct VerifyScreen<'t> {
     table_view: TableView<'t, Dep>,
     skin: MadSkin,
     status_skin: MadSkin,
+    last_dimensions: (u16, u16),
 }
 
 
@@ -57,13 +60,6 @@ pub fn u64_to_str(mut v: u64) -> String {
     }
     format!("{}{}", v, &SIZE_NAMES[i])
 }
-//fn u64_to_str(i: u64) -> String {
-//    if i==0 {
-//        "".to_owned()
-//    } else {
-//        format!("{}", i)
-//    }
-//}
 
 impl<'t> VerifyScreen<'t> {
     pub fn new() -> Result<Self> {
@@ -71,20 +67,20 @@ impl<'t> VerifyScreen<'t> {
             static ref TS: DepTableSkin = DepTableSkin::default();
         }
 
-        let mut columns = vec![
+        let columns = vec![
             Column::new(
                 "crate",
-                10,
+                10, 80,
                 Box::new(|dep: &Dep| Cell::new(dep.name.to_string(), &TS.std)),
             ).with_align(Alignment::Left),
             Column::new(
                 "version",
-                9,
+                9, 13,
                 Box::new(|dep: &Dep| Cell::new(dep.version.to_string(), &TS.std)),
             ).with_align(Alignment::Right),
             Column::new(
                 "trust",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(cdep) = dep.computed() {
                         match cdep.trust {
@@ -99,7 +95,7 @@ impl<'t> VerifyScreen<'t> {
             ),
             Column::new(
                 "last trusted",
-                12,
+                12, 16,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -110,7 +106,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "reviews",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -121,7 +117,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Center),
             Column::new(
                 "reviews",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| Cell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
@@ -132,7 +128,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Center),
             Column::new(
                 "downloads",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
@@ -146,7 +142,7 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "downloads",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
                         Cell::new(
@@ -160,76 +156,75 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
             Column::new(
                 "owners",
-                2,
+                2, 2,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{owners:Some(owners),..}) = dep.computed() {
-                        Cell::new(
-                            format!("{}", owners.trusted),
-                            if owners.trusted > 0 { &TS.good } else  { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    match dep.computed() {
+                        Some(ComputedDep{owners:Some(owners),..}) if owners.trusted > 0 => {
+                            Cell::new(format!("{}", owners.trusted), &TS.good)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
             Column::new(
                 "owners",
-                3,
+                3, 3,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{owners:Some(owners),..}) = dep.computed() {
-                        Cell::new(
-                            format!("{}", owners.total),
-                            &TS.std,
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    Cell::new(
+                        match dep.computed() {
+                            Some(ComputedDep{owners:Some(owners),..}) if owners.total > 0 => {
+                                format!("{}", owners.total)
+                            }
+                            _ => "".to_owned(),
+                        },
+                        &TS.std
+                    )
+                }),
+            ).with_align(Alignment::Right),
+            Column::new(
+                "issues",
+                2, 2,
+                Box::new(|dep: &Dep| {
+                    match dep.computed() {
+                        Some(ComputedDep{issues,..}) if issues.trusted > 0 => {
+                            Cell::new(format!("{}", issues.trusted), &TS.bad)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
             Column::new(
                 "issues",
-                2,
+                3, 3,
                 Box::new(|dep: &Dep| {
-                    if let Some(cdp) = dep.computed() {
-                        Cell::new(
-                            format!("{}", cdp.issues.trusted),
-                            if cdp.issues.trusted > 0 { &TS.bad } else { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
-                    }
-                }),
-            ).with_align(Alignment::Right),
-            Column::new(
-                "issues",
-                3,
-                Box::new(|dep: &Dep| {
-                    if let Some(cdp) = dep.computed() {
-                        Cell::new(
-                            format!("{}", cdp.issues.total),
-                            if cdp.issues.total > 0 { &TS.medium } else { &TS.std },
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
+                    match dep.computed() {
+                        Some(ComputedDep{issues,..}) if issues.total > 0 => {
+                            Cell::new(format!("{}", issues.total), &TS.medium)
+                        }
+                        _ => {
+                            Cell::new("".to_owned(), &TS.std)
+                        }
                     }
                 }),
             ).with_align(Alignment::Right),
             Column::new(
                 "l.o.c.",
-                6,
+                6, 6,
                 Box::new(|dep: &Dep| {
-                    if let Some(ComputedDep{loc:Some(loc),..}) = dep.computed() {
-                        Cell::new(
-                            u64_to_str(*loc as u64),
-                            &TS.std,
-                        )
-                    } else {
-                        Cell::new("".to_string(), &TS.std)
-                    }
+                    Cell::new(
+                        match dep.computed() {
+                            Some(ComputedDep{loc:Some(loc),..}) => u64_to_str(*loc as u64),
+                            _ => "".to_string(),
+                        },
+                        &TS.std
+                    )
                 }),
             ).with_align(Alignment::Right),
         ];
-        columns[0].set_grow(true);
 
         let table_view = TableView::new(
             Area::new(0, 1, 10, 10),
@@ -247,6 +242,7 @@ impl<'t> VerifyScreen<'t> {
             table_view,
             skin: MadSkin::default(),
             status_skin: MadSkin::default(),
+            last_dimensions: (0, 0),
         };
         screen.resize();
         screen.make_skins();
@@ -263,6 +259,11 @@ impl<'t> VerifyScreen<'t> {
     }
     pub fn resize(&mut self) {
         let (w, h) = terminal_size();
+        if (w, h) == self.last_dimensions {
+            return;
+        }
+        Terminal::new().clear(ClearType::All).unwrap();
+        self.last_dimensions = (w, h);
         self.title_area.width = w;
         self.table_view.area.width = w;
         self.table_view.area.height = h - 4;

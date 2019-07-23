@@ -29,7 +29,7 @@ pub struct Title {
 pub struct Column<'t, T> {
     title: String,
     min_width: usize,
-    grow: bool,
+    max_width: usize,
     spacing: Spacing,
     extract: Box<dyn Fn(&T) -> Cell<'t>>,
 }
@@ -67,13 +67,18 @@ impl<'t> Cell<'t> {
 }
 
 impl<'t, T> Column<'t, T> {
-    pub fn new(title: &str, width: usize, extract: Box<dyn Fn(&T) -> Cell<'t>>) -> Self {
+    pub fn new(
+        title: &str,
+        min_width: usize,
+        max_width: usize,
+        extract: Box<dyn Fn(&T) -> Cell<'t>>
+    ) -> Self {
         Self {
             title: title.to_owned(),
-            min_width: width,
-            grow: false,
+            min_width: min_width,
+            max_width: max_width,
             spacing: Spacing {
-                width,
+                width: min_width,
                 align: Alignment::Center,
             },
             extract,
@@ -85,9 +90,6 @@ impl<'t, T> Column<'t, T> {
     }
     pub fn print_cell(&self, cell: &Cell<'_>) {
         self.spacing.print_counted_str(&cell.con, cell.width, &cell.style);
-    }
-    pub fn set_grow(&mut self, grow: bool) {
-        self.grow = grow;
     }
 }
 
@@ -160,15 +162,19 @@ impl<'t, T> TableView<'t, T> {
             - (self.columns.len() as i32 - 1) // we remove the separator
             - 1; // we remove 1 to let space for the scrollbar
         let sum_min_widths: i32 = self.columns.iter().map(|c| c.min_width as i32).sum();
-        // right now we assume there's only one growing column, because that's our current
-        // use case.
-        for i in 0..self.columns.len() {
-            if self.columns[i].grow {
-                self.columns[i].spacing.width =
-                    self.columns[i].min_width
-                    + (available_width - sum_min_widths).max(0) as usize;
-                break;
+        if sum_min_widths >= available_width {
+            for i in 0..self.columns.len() {
+                self.columns[i].spacing.width = self.columns[i].min_width;
             }
+        } else {
+            let mut excess = available_width - sum_min_widths;
+            for i in 0..self.columns.len() {
+                let d = ((self.columns[i].max_width - self.columns[i].min_width) as i32).min(excess);
+                excess -= d;
+                self.columns[i].spacing.width = self.columns[i].min_width + d as usize;
+            }
+            // there might be some excess, but it's better to have some space at right rather
+            //  than a too wide table
         }
     }
     pub fn display(&self) -> io::Result<()> {
