@@ -78,8 +78,13 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
 
 pub fn run_with_shell_cmd(cmd: OsString, path: &Path) -> Result<std::process::ExitStatus> {
     Ok(if cfg!(windows) {
-        let mut proc = process::Command::new(cmd.clone());
-        proc.arg(path);
+        // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes .arg()'s built-in escaping problematic:
+        // https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
+        // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode still works.
+        let mut proc = process::Command::new("cmd.exe");
+        proc.arg("/c").arg("%CREV_EDITOR% %CREV_PATH%");
+        proc.env("CREV_EDITOR", &cmd);
+        proc.env("CREV_PATH", path);
         proc
     } else if cfg!(unix) {
         let mut proc = process::Command::new("/bin/sh");
