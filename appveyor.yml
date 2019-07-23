@@ -19,7 +19,7 @@ build_script:
 - cmd: cargo build %RELEASE% --verbose --features="all %EXTRA_FEATURES%"
 
 test_script:
-- cmd: cargo test --all %RELEASE% --verbose --features="all %EXTRA_FEATURES%"
+- cmd: cargo test --all %RELEASE% --verbose --features="all %EXTRA_FEATURES%" -- --ignored
 
 for:
 
