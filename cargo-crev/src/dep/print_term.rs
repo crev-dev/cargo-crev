@@ -1,9 +1,9 @@
 // Functions related to printing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
+use crate::dep::dep::*;
 use crate::prelude::*;
 use crate::term::{self, *};
-use crate::dep::dep::*;
 
 fn pad_left_manually(s: String, width: usize) -> String {
     if s.len() <= width {
@@ -22,23 +22,12 @@ pub fn term_print_header(_term: &mut Term, verbose: bool) {
     }
     eprint!(
         "{:6} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
-        "status",
-        "reviews",
-        "downloads",
-        "own.",
-        "issues",
-        "lines",
-        "geiger",
-        "flgs"
+        "status", "reviews", "downloads", "own.", "issues", "lines", "geiger", "flgs"
     );
     eprintln!(" {:<20} {:<15} {:<15}", "crate", "version", "latest_t");
 }
 
-pub fn term_print_computed_dep(
-    cdep: &ComputedDep,
-    term: &mut Term,
-    verbose: bool,
-) -> Result<()> {
+pub fn term_print_computed_dep(cdep: &ComputedDep, term: &mut Term, verbose: bool) -> Result<()> {
     if verbose {
         print!("{:43} ", cdep.digest);
     }
@@ -70,12 +59,9 @@ pub fn term_print_computed_dep(
     if let Some(owners) = &cdep.owners {
         term.print(
             format_args!(" {}", owners.trusted),
-            term::known_owners_count_color(owners.trusted)
+            term::known_owners_count_color(owners.trusted),
         )?;
-        term.print(
-            format_args!(" {}", owners.total),
-            term::known_owners_count_color(owners.total)
-        )?;
+        term.print(format_args!(" {}", owners.total), None)?;
     } else {
         println!(" ???");
     }
@@ -123,7 +109,7 @@ pub fn term_print_dep(dep: &Dep, term: &mut Term, verbose: bool) -> Result<()> {
             term_print_dep_id(dep, term);
             println!(" -- skipped");
         }
-        DepComputationStatus::Ok{computed_dep} => {
+        DepComputationStatus::Ok { computed_dep } => {
             term_print_computed_dep(&computed_dep, term, verbose)?;
             match dep.geiger_count {
                 Some(geiger_count) => print!(" {:>7}", geiger_count),
@@ -136,10 +122,7 @@ pub fn term_print_dep(dep: &Dep, term: &mut Term, verbose: bool) -> Result<()> {
             term_print_dep_id(dep, term);
             print!(
                 " {}",
-                latest_trusted_version_string(
-                    &dep.version,
-                    &computed_dep.latest_trusted_version
-                )
+                latest_trusted_version_string(&dep.version, &computed_dep.latest_trusted_version)
             );
             println!();
         }
