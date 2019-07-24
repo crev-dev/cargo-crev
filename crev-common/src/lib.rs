@@ -56,18 +56,24 @@ pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
 /// # use std::path::Path;
 /// # use crev_common::sanitize_name;
 /// // Pass through when able
-/// assert_eq!(sanitize_name("lazy_static"), Path::new("lazy_static"));
+/// assert_eq!(sanitize_name("lazy_static"), Path::new("lazy_static-05d6bbf07772f618"));
 /// 
 /// // Hash reserved windows filenames (or any other 3 letter name)
 /// assert_eq!(sanitize_name("CON"), Path::new("CON-f8d86fcc7f21486b"));
 /// 
 /// // Hash on escaped chars to avoid collisions
 /// assert_eq!(sanitize_name("https://crates.io"), Path::new("https___crates_io-c931072c02cbd3b6"));
+/// 
+/// // Limit absurdly long names.  Combining a bunch of these can still run into filesystem limits however.
+/// let a64   = std::iter::repeat("a").take(  64).collect::<String>();
+/// let a2048 = std::iter::repeat("a").take(2048).collect::<String>();
+/// let a2049 = std::iter::repeat("a").take(2049).collect::<String>();
+/// assert_eq!(sanitize_name(a2048.as_str()).to_str().unwrap(), format!("{}-e22ba9260ac1c319", a64));
+/// assert_eq!(sanitize_name(a2049.as_str()).to_str().unwrap(), format!("{}-54c46acba91f5873", a64));
 /// ```
 pub fn sanitize_name(s: &str) -> PathBuf {
     let mut buffer = String::new();
-    let mut hash = s.len() == 3;
-    for ch in s.chars() {
+    for ch in s.chars().take(64) {
         match ch {
             'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => buffer.push(ch),
             _ => {
@@ -77,16 +83,13 @@ pub fn sanitize_name(s: &str) -> PathBuf {
                 //  '/', '\\' (path navigation attacks)
                 // Unicode, Punctuation (out of an abundance of cross platform paranoia)
                 buffer.push('_');
-                hash = true;
             }
         }
     }
-    if hash {
-        buffer.push('-');
-        for b in blake2b256sum(s.as_bytes()).iter().take(8) {
-            use std::fmt::Write;
-            write!(buffer, "{:02x}", b).unwrap();
-        }
+    buffer.push('-');
+    for b in blake2b256sum(s.as_bytes()).iter().take(8) {
+        use std::fmt::Write;
+        write!(buffer, "{:02x}", b).unwrap();
     }
     PathBuf::from(buffer)
 }
