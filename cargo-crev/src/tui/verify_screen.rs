@@ -84,9 +84,9 @@ impl<'t> VerifyScreen<'t> {
                 Box::new(|dep: &Dep| {
                     if let Some(cdep) = dep.computed() {
                         match cdep.trust {
-                            VerificationStatus::Verified => Cell::new("high".to_owned(), &TS.good),
+                            VerificationStatus::Verified => Cell::new("pass".to_owned(), &TS.good),
                             VerificationStatus::Insufficient => Cell::new("none".to_owned(), &TS.none),
-                            VerificationStatus::Negative => Cell::new("NO".to_owned(), &TS.bad),
+                            VerificationStatus::Negative => Cell::new("fail".to_owned(), &TS.bad),
                         }
                     } else {
                         Cell::new("?".to_string(), &TS.medium)
