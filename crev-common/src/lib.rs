@@ -19,7 +19,7 @@ use rprompt;
 use std::{
     env,
     io::{self, BufRead, Read, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 /// Now with a fixed offset of the current system timezone
@@ -46,6 +46,49 @@ pub fn base64_decode<T: ?Sized + AsRef<[u8]>>(input: &T) -> Result<Vec<u8>, base
 
 pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
     base64::encode_config(input, base64::URL_SAFE_NO_PAD)
+}
+
+/// Takes an identifier like "https://crates.io" and converts it to something safe for use in paths etc.
+/// 
+/// # Examples
+/// 
+/// ```
+/// # use std::path::Path;
+/// # use crev_common::sanitize_name;
+/// // Pass through when able
+/// assert_eq!(sanitize_name("lazy_static"), Path::new("lazy_static"));
+/// 
+/// // Hash reserved windows filenames (or any other 3 letter name)
+/// assert_eq!(sanitize_name("CON"), Path::new("CON-f8d86fcc7f21486b"));
+/// 
+/// // Hash on escaped chars to avoid collisions
+/// assert_eq!(sanitize_name("https://crates.io"), Path::new("https___crates_io-c931072c02cbd3b6"));
+/// ```
+pub fn sanitize_name(s: &str) -> PathBuf {
+    let mut buffer = String::new();
+    let mut hash = s.len() == 3;
+    for ch in s.chars() {
+        match ch {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => buffer.push(ch),
+            _ => {
+                // Intentionally 'escaped' here:
+                //  '.' (path navigation attacks, and windows doesn't like leading/trailing '.'s)
+                //  ':' (windows reserves this for drive letters)
+                //  '/', '\\' (path navigation attacks)
+                // Unicode, Punctuation (out of an abundance of cross platform paranoia)
+                buffer.push('_');
+                hash = true;
+            }
+        }
+    }
+    if hash {
+        buffer.push('-');
+        for b in blake2b256sum(s.as_bytes()).iter().take(8) {
+            use std::fmt::Write;
+            write!(buffer, "{:02x}", b).unwrap();
+        }
+    }
+    PathBuf::from(buffer)
 }
 
 pub fn is_equal_default<T: Default + PartialEq>(t: &T) -> bool {

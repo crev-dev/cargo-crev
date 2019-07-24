@@ -6,6 +6,7 @@ use crate::{
 };
 use crev_common::{
     self,
+    sanitize_name,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -272,9 +273,9 @@ impl Local {
     ) -> PathBuf {
         self.cache_activity_path()
             .join("review")
-            .join(source.to_owned().replace(":", "_"))
-            .join(name)
-            .join(version.to_string())
+            .join(sanitize_name(source))
+            .join(sanitize_name(name))
+            .join(sanitize_name(&version.to_string()))
             .with_extension("yaml")
     }
 
