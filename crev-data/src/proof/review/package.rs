@@ -10,7 +10,7 @@ use failure::bail;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::{default::Default, fmt};
+use std::{default::Default, fmt, mem};
 use typed_builder::TypedBuilder;
 
 const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
@@ -75,7 +75,7 @@ pub struct PackageDraft {
     pub advisories: Vec<Advisory>,
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub issues: Vec<Issue>,
-    #[serde(default = "Default::default")]
+    #[serde(default = "Default::default", skip_serializing_if = "String::is_empty")]
     comment: String,
 }
 
@@ -175,15 +175,38 @@ impl PackageDraft {
     }
 }
 
+fn write_comment(comment: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    writeln!(f, "comment: |")?;
+    for line in comment.lines() {
+        writeln!(f, "  {}", line)?;
+    }
+    if comment.is_empty() {
+        writeln!(f, "  ")?;
+    }
+    Ok(())
+}
+
 impl fmt::Display for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
+        // Remove comment for manual formatting
+        let mut clone = self.clone();
+        let mut comment = String::new();
+        mem::swap(&mut comment, &mut clone.comment);
+
+        crev_common::serde::write_as_headerless_yaml(&clone, f)?;
+        write_comment(comment.as_str(), f)
     }
 }
 
 impl fmt::Display for PackageDraft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
+        // Remove comment for manual formatting
+        let mut clone = self.clone();
+        let mut comment = String::new();
+        mem::swap(&mut comment, &mut clone.comment);
+
+        crev_common::serde::write_as_headerless_yaml(&clone, f)?;
+        write_comment(comment.as_str(), f)
     }
 }
 
