@@ -43,6 +43,7 @@ env_logger = { version = "0.6.2", default-features = false, features = ["termcol
 lazy_static = "1.3"
 rayon = "1.1"
 crossterm = "0.9.6"
+crossterm_style = "=0.3.3" # 0.3.4 breaks crossterm 0.9.6
 crossbeam = "0.7"
 termimad = "0.5.1"
 #termimad = { path = "../../termimad" }
