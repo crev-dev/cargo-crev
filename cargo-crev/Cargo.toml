@@ -44,7 +44,7 @@ lazy_static = "1.3"
 rayon = "1.1"
 crossterm = "0.9.6"
 crossbeam = "0.7"
-termimad = "0.5.1"
+termimad = "0.6.0"
 #termimad = { path = "../../termimad" }
 
 [features]
