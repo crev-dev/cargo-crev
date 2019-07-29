@@ -8,6 +8,8 @@ use serde::Deserialize;
 use std::{
     collections::{HashSet},
     env,
+    ffi::{OsStr},
+    io,
     path::{Path, PathBuf},
     process,
 };
@@ -468,16 +470,38 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 
     use std::process::Command;
 
-    let status = Command::new("diff")
-        .arg("-r")
-        .arg("-N")
-        .arg(src_crate.root())
-        .arg(dst_crate.root())
-        .args(&args.args)
-        .status()
-        .expect("failed to execute git");
+    let diff = |exe| {
+        let mut command = Command::new(exe);
+        command
+            .arg("-r")
+            .arg("-N")
+            .arg(src_crate.root())
+            .arg(dst_crate.root())
+            .args(&args.args);
+        command
+    };
 
-    Ok(status)
+    let mut command = diff(OsStr::new("diff"));
+
+    match command.status() {
+        Err(ref err) if err.kind() == io::ErrorKind::NotFound && cfg!(windows) => {
+            // On Windows, diff is likely available but *not* in %PATH.  Specifically, the git installer warns that
+            // adding *nix tools to %PATH% will change the behavior of some built in windows commands like "find", and
+            // by default doesn't do this to avoid breaking anything.
+
+            let program_files =
+                env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".to_owned());
+            let mut diff_exe = PathBuf::from(program_files);
+            diff_exe.push(r"Git\usr\bin\diff.exe");
+
+            let mut command = diff(diff_exe.as_os_str());
+            command
+                .status()
+                .or_else(|err| panic!("Failed to execute {:?}\n{:?}", command, err))
+        }
+        Err(ref err) => panic!("Failed to execute {:?}\n{:?}", command, err),
+        Ok(status) => Ok(status),
+    }
 }
 
 pub fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
