@@ -235,7 +235,7 @@ pub struct QueryDir {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Query {
     /// Query Ids
-    #[structopt(name = "id")]
+    #[structopt(name = "id", alias = "new")]  // alias is a hack for back-compat
     Id(QueryId),
 
     /// Query reviews
@@ -256,10 +256,26 @@ pub enum Query {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Switch {
+pub enum Id {
+    /// Create a new Id
+    #[structopt(name = "new", alias = "id")] // alias is a hack for back-compat
+    New(NewId),
+
+    /// Export your own Id
+    #[structopt(name = "export")]
+    Export(ExportId),
+
+    /// Import an Id as your own
+    #[structopt(name = "import")]
+    Import,
+
+    /// Show your own Id
+    #[structopt(name = "show")]
+    Show,
+
     /// Change current Id
-    #[structopt(name = "id")]
-    Id(SwitchId),
+    #[structopt(name = "switch")]
+    Switch(SwitchId),
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -395,17 +411,7 @@ pub struct ExportId {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Export {
-    #[structopt(name = "id")]
-    Id(ExportId),
-}
-
-#[derive(Debug, StructOpt, Clone)]
 pub enum Import {
-    /// Import an Id
-    #[structopt(name = "id")]
-    Id,
-
     /// Import proofs: resign proofs using current id
     ///
     /// Useful for mass-import of proofs signed by another ID
@@ -425,13 +431,9 @@ pub struct ImportProof {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
-    /// Create an Id, ...
-    #[structopt(name = "new")]
-    New(New),
-
-    /// Switch current Id, ...
-    #[structopt(name = "switch")]
-    Switch(Switch),
+    /// Manage your own Id (create new, show, export, import, switch)
+    #[structopt(name = "id", alias="new")]
+    Id(Id),
 
     /// Edit README.md of the current Id, ...
     #[structopt(name = "edit")]
@@ -519,11 +521,7 @@ pub enum Command {
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
 
-    /// Export an id, ...
-    #[structopt(name = "export")]
-    Export(Export),
-
-    /// Import an Id, ...
+    /// Import proofs, ...
     #[structopt(name = "import")]
     Import(Import),
 
