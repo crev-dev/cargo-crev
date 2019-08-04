@@ -437,7 +437,7 @@ pub enum Command {
     Verify(Verify),
 
     /// Review a crate (code review, security advisory, flag issues)
-    #[structopt(name = "review", alias = "report", alias = "flag", alias = "advise")]
+    #[structopt(name = "review")]
     Review(Review),
 
     /// Query Ids, packages, reviews...
