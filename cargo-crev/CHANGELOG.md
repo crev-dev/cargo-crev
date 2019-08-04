@@ -8,13 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Fixed detailed help for `verify` not showing.
+* Renamed `cargo crev * id` to `cargo crev id *`, e.g. `cargo crev id new`, `cargo crev id export`. Added `cargo crev id show`.
+* Combined `advise`, `flag`, `report` into `review --advisory` and `review --issue`
 
 ## [0.8.0](https://github.com/dpc/crev/compare/cargo-crev-v0.7.0...cargo-crev-v0.8.0) - 2019-07-11
 ### Changed
 
 * `verify deps` was renamed to just `verify`
 * Not saving the default draft is considered as canceling the operation.
-* Revamp *advisories* system and add 
+* Revamp *advisories* system and add
 
 ### Added
 
@@ -29,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Advisories (https://github.com/dpc/crev/wiki/Advisories)
     * `cargo crev advise [name [version]]`
-    * `cargo crev query advisory [name [version]]` 
+    * `cargo crev query advisory [name [version]]`
 
 ## [0.6.0](https://github.com/dpc/crev/compare/cargo-crev-v0.5.0...cargo-crev-v0.6.0) - 2019-04-13
 ### Changed

@@ -351,9 +351,19 @@ pub struct Review {
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
 
+    /// Create advisory urging to upgrade to a safe version
     #[structopt(long = "advisory")]
     pub advisory: bool,
 
+    /// This release contains advisory (important fix)
+    #[structopt(long = "affected")]
+    pub affected: Option<crev_data::proof::review::package::VersionRange>,
+
+    /// Severity of bug/security issue [none low medium high]
+    #[structopt(long = "severity")]
+    pub severity: Option<Level>,
+
+    /// Flag the crate as buggy/low-quality/dangerous
     #[structopt(long = "issue")]
     pub issue: bool,
 
@@ -365,44 +375,11 @@ pub struct Review {
     pub diff: Option<Option<semver::Version>>,
 }
 
-#[derive(Debug, StructOpt, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct AdviseCommon {
     /// This release contains advisory (important fix)
-    #[structopt(long = "affected", default_value = "major")]
     pub affected: crev_data::proof::review::package::VersionRange,
-
-    #[structopt(long = "severity", default_value = "medium")]
     pub severity: Level,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct Advise {
-    #[structopt(flatten)]
-    pub common: ReviewOrGotoCommon,
-
-    #[structopt(flatten)]
-    pub common_proof_create: CommonProofCreate,
-
-    #[structopt(flatten)]
-    pub advise_common: AdviseCommon,
-}
-
-#[derive(Debug, StructOpt, Clone, Default)]
-pub struct ReportCommon {
-    #[structopt(long = "severity", default_value = "medium")]
-    pub severity: Level,
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct Report {
-    #[structopt(flatten)]
-    pub common: ReviewOrGotoCommon,
-
-    #[structopt(flatten)]
-    pub common_proof_create: CommonProofCreate,
-
-    #[structopt(flatten)]
-    pub report_common: ReportCommon,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -459,21 +436,9 @@ pub enum Command {
     )]
     Verify(Verify),
 
-    /// Review a crate
-    #[structopt(name = "review")]
+    /// Review a crate (code review, security advisory, flag issues)
+    #[structopt(name = "review", alias = "report", alias = "flag", alias = "advise")]
     Review(Review),
-
-    /// Flag a crate as buggy/low-quality/dangerous
-    #[structopt(name = "flag")]
-    Flag(Review),
-
-    /// Report that the crate is affected by a certain issue
-    #[structopt(name = "report")]
-    Report(Report),
-
-    /// Create advisory urging to upgrade to given package version
-    #[structopt(name = "advise")]
-    Advise(Advise),
 
     /// Query Ids, packages, reviews...
     #[structopt(name = "query")]

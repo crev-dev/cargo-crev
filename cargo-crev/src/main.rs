@@ -9,10 +9,7 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{
-    default::Default,
-    io::BufRead,
-};
+use std::io::BufRead;
 use structopt::StructOpt;
 
 #[macro_use]
@@ -139,24 +136,32 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
+                let is_advisory = args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
                 create_review_proof(
                     c,
                     v,
                     i,
                     if args.issue {
-                        Some(opts::ReportCommon::default())
+                        Some(crev_data::Level::Medium)
                     } else {
                         None
                     },
-                    if args.advisory {
-                        Some(opts::AdviseCommon::default())
+                    if is_advisory {
+                        Some(opts::AdviseCommon {
+                            severity: args.severity.unwrap_or(crev_data::Level::Medium),
+                            affected: args.affected.unwrap_or(crev_data::proof::review::package::VersionRange::Major),
+                        })
                     } else {
                         None
                     },
-                    TrustOrDistrust::Trust,
+                    if is_advisory || args.issue {
+                        TrustOrDistrust::Distrust
+                    } else {
+                        TrustOrDistrust::Trust
+                    },
                     &args.common_proof_create,
                     &args.diff,
-                    args.skip_activity_check,
+                    args.skip_activity_check || is_advisory || args.issue,
                 )
             })?;
         }
@@ -169,59 +174,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Open(args) => {
             handle_goto_mode_command(&args.common.clone(), |c, v, i| {
                 crate_open(c, v, i, args.cmd, args.cmd_save)
-            })?;
-        }
-        opts::Command::Flag(args) => {
-            handle_goto_mode_command(&args.common, |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    if args.issue {
-                        Some(opts::ReportCommon::default())
-                    } else {
-                        None
-                    },
-                    if args.advisory {
-                        Some(opts::AdviseCommon::default())
-                    } else {
-                        None
-                    },
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &args.diff,
-                    args.skip_activity_check,
-                )
-            })?;
-        }
-        opts::Command::Advise(args) => {
-            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    None,
-                    Some(args.advise_common),
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &None,
-                    true,
-                )
-            })?;
-        }
-        opts::Command::Report(args) => {
-            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    Some(args.report_common),
-                    None,
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &None,
-                    true,
-                )
             })?;
         }
         opts::Command::Clean(args) => {
