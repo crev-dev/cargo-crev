@@ -462,17 +462,9 @@ pub enum Command {
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Git(Git),
 
-    /// Push local changes to the public proof repository (alias to `git push HEAD`)
-    #[structopt(name = "push")]
-    Push,
-
     /// Commit and Push local changes to the public proof repository (alias to `git commit -a && git push HEAD`)
-    #[structopt(name = "publish")]
+    #[structopt(name = "publish", alias = "push")]
     Publish,
-
-    /// Pull changes from the public proof repository (alias to `git pull`)
-    #[structopt(name = "pull")]
-    Pull,
 
     /// Start a shell in source directory of a crate under review
     #[structopt(name = "goto")]
@@ -490,8 +482,8 @@ pub enum Command {
     #[structopt(name = "import")]
     Import(Import),
 
-    /// Update data from online sources (crates.io)
-    #[structopt(name = "update")]
+    /// Update data from online sources (proof repositories, crates.io)
+    #[structopt(name = "update", alias = "pull")]
     Update,
 
     /// Diff between two versions of a package
