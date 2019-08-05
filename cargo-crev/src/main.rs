@@ -190,11 +190,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             let status = local.run_git(git.args)?;
             std::process::exit(status.code().unwrap_or(-159));
         }
-        opts::Command::Push => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["push".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
         opts::Command::Publish => {
             let local = Local::auto_open()?;
             let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
@@ -216,11 +211,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             std::process::exit(status.code().unwrap_or(-159));
         }
-        opts::Command::Pull => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {
                 let local = Local::auto_create_or_open()?;
@@ -236,6 +226,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Update => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+            if !status.success() {
+                std::process::exit(status.code().unwrap_or(-159));
+            }
             let repo = Repo::auto_open_cwd()?;
             repo.update_source()?;
             repo.update_counts()?;
