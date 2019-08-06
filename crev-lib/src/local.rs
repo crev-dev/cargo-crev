@@ -676,7 +676,7 @@ impl Local {
                 let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
 
                 if new_trust_count > 0 {
-                    eprint!("; {} new trust proofs", new_pkg_review_count);
+                    eprint!("; {} new trust proofs", new_trust_count);
                 }
                 if new_pkg_review_count > 0 {
                     eprint!("; {} new package reviews", new_pkg_review_count);
