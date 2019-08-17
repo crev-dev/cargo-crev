@@ -115,31 +115,6 @@ impl Dep {
     }
 }
 
-pub struct DepTable {
-    pub deps: Vec<Dep>, // accumulates the deps sent by the computer
-    pub computation_status: TableComputationStatus,
-}
-impl DepTable {
-    pub fn new() -> DepTable {
-        DepTable {
-            deps: Vec::new(),
-            computation_status: TableComputationStatus::New,
-        }
-    }
-    pub fn update(&mut self, event: ComputationEvent) {
-        self.computation_status = event.computation_status;
-        if let Some(dep) = event.finished_dep {
-            self.deps.push(dep);
-        }
-    }
-    pub fn is_computation_finished(&self) -> bool {
-        match &self.computation_status {
-            TableComputationStatus::Done => true,
-            _ => false,
-        }
-    }
-}
-
 pub fn latest_trusted_version_string(
     base_version: &Version,
     latest_trusted_version: &Option<Version>,

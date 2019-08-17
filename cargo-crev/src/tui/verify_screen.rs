@@ -1,19 +1,34 @@
 use crossterm::{
+    Attribute,
     ClearType,
     Color::*,
+    KeyEvent,
     Terminal,
 };
-use termimad::*;
+use termimad::{
+    ansi,
+    Alignment,
+    Area,
+    CompoundStyle,
+    Event,
+    gray,
+    InputField,
+    ListView,
+    ListViewCell,
+    ListViewColumn,
+    MadSkin,
+    terminal_size,
+};
 
 use crev_lib::VerificationStatus;
 use crate::dep::{
-    Dep, ComputedDep, DepTable, TableComputationStatus,
+    Dep, ComputedDep, TableComputationStatus,
     latest_trusted_version_string,
 };
 use crate::prelude::*;
 use crate::repo::Repo;
-use crate::tui::table_view::*;
 
+/// the styles that can be applied to cells of the dep list
 struct DepTableSkin {
     std: CompoundStyle,
     bad: CompoundStyle,
@@ -34,18 +49,29 @@ impl Default for DepTableSkin {
     }
 }
 
+fn list_skin() -> MadSkin {
+    let mut skin = MadSkin::default();
+    skin.table.align = Alignment::Center;
+    skin.bold.set_fg(gray(22));
+    skin.italic.set_fg(ansi(153));
+    skin.headers[0].compound_style = CompoundStyle::with_attr(Attribute::Bold);
+    skin
+}
+
+/// The whole screen
 pub struct VerifyScreen<'t> {
     pub title: String,
     title_area: Area,
+    title_skin: MadSkin,
     status_area: Area,
-    input_area: Area,
-    hint_area: Area,
-    table_view: TableView<'t, Dep>,
-    skin: MadSkin,
     status_skin: MadSkin,
+    input_field: InputField,
+    hint_area: Area,
+    list_view: ListView<'t, Dep>,
+    skin: &'t MadSkin,
     last_dimensions: (u16, u16),
+    computation_status: TableComputationStatus,
 }
-
 
 const SIZE_NAMES: &[&str] = &["", "K", "M", "G", "T", "P", "E", "Z", "Y"];
 /// format a number of as a string
@@ -65,38 +91,50 @@ impl<'t> VerifyScreen<'t> {
     pub fn new() -> Result<Self> {
         lazy_static! {
             static ref TS: DepTableSkin = DepTableSkin::default();
+            static ref SKIN: MadSkin = list_skin();
         }
 
+        let mut status_skin = MadSkin::default();
+        status_skin.paragraph.set_bg(gray(4));
+        status_skin.italic.set_fg(ansi(225));
+
+        let mut title_skin = MadSkin::default();
+        title_skin.headers[0].compound_style = CompoundStyle::new(
+            Some(gray(22)),
+            None,
+            vec![Attribute::Bold]
+        );
+
         let columns = vec![
-            Column::new(
+            ListViewColumn::new(
                 "crate",
                 10, 80,
-                Box::new(|dep: &Dep| Cell::new(dep.name.to_string(), &TS.std)),
+                Box::new(|dep: &Dep| ListViewCell::new(dep.name.to_string(), &TS.std)),
             ).with_align(Alignment::Left),
-            Column::new(
+            ListViewColumn::new(
                 "version",
                 9, 13,
-                Box::new(|dep: &Dep| Cell::new(dep.version.to_string(), &TS.std)),
+                Box::new(|dep: &Dep| ListViewCell::new(dep.version.to_string(), &TS.std)),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "trust",
                 6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(cdep) = dep.computed() {
                         match cdep.trust {
-                            VerificationStatus::Verified => Cell::new("pass".to_owned(), &TS.good),
-                            VerificationStatus::Insufficient => Cell::new("none".to_owned(), &TS.none),
-                            VerificationStatus::Negative => Cell::new("fail".to_owned(), &TS.bad),
+                            VerificationStatus::Verified => ListViewCell::new("pass".to_owned(), &TS.good),
+                            VerificationStatus::Insufficient => ListViewCell::new("none".to_owned(), &TS.none),
+                            VerificationStatus::Negative => ListViewCell::new("fail".to_owned(), &TS.bad),
                         }
                     } else {
-                        Cell::new("?".to_string(), &TS.medium)
+                        ListViewCell::new("?".to_string(), &TS.medium)
                     }
                 }),
             ),
-            Column::new(
+            ListViewColumn::new(
                 "last trusted",
                 12, 16,
-                Box::new(|dep: &Dep| Cell::new(
+                Box::new(|dep: &Dep| ListViewCell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
                         |cdep| latest_trusted_version_string(&dep.version, &cdep.latest_trusted_version)
@@ -104,10 +142,10 @@ impl<'t> VerifyScreen<'t> {
                     &TS.std
                 )),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "reviews",
                 3, 3,
-                Box::new(|dep: &Dep| Cell::new(
+                Box::new(|dep: &Dep| ListViewCell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
                         |cdep| u64_to_str(cdep.reviews.version)
@@ -115,10 +153,10 @@ impl<'t> VerifyScreen<'t> {
                     &TS.std
                 )),
             ).with_align(Alignment::Center),
-            Column::new(
+            ListViewColumn::new(
                 "reviews",
                 3, 3,
-                Box::new(|dep: &Dep| Cell::new(
+                Box::new(|dep: &Dep| ListViewCell::new(
                     dep.computed().map_or(
                         "?".to_owned(),
                         |cdep| u64_to_str(cdep.reviews.total)
@@ -126,53 +164,53 @@ impl<'t> VerifyScreen<'t> {
                     &TS.std
                 )),
             ).with_align(Alignment::Center),
-            Column::new(
+            ListViewColumn::new(
                 "downloads",
                 6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
-                        Cell::new(
+                        ListViewCell::new(
                             u64_to_str(downloads.version),
                             if downloads.version < 1000 { &TS.medium } else  { &TS.std },
                         )
                     } else {
-                        Cell::new("".to_string(), &TS.std)
+                        ListViewCell::new("".to_string(), &TS.std)
                     }
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "downloads",
                 6, 6,
                 Box::new(|dep: &Dep| {
                     if let Some(ComputedDep{downloads:Some(downloads),..}) = dep.computed() {
-                        Cell::new(
+                        ListViewCell::new(
                             u64_to_str(downloads.total),
                             if downloads.total < 1000 { &TS.medium } else  { &TS.std },
                         )
                     } else {
-                        Cell::new("".to_string(), &TS.std)
+                        ListViewCell::new("".to_string(), &TS.std)
                     }
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "owners",
                 2, 2,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{owners:Some(owners),..}) if owners.trusted > 0 => {
-                            Cell::new(format!("{}", owners.trusted), &TS.good)
+                            ListViewCell::new(format!("{}", owners.trusted), &TS.good)
                         }
                         _ => {
-                            Cell::new("".to_owned(), &TS.std)
+                            ListViewCell::new("".to_owned(), &TS.std)
                         }
                     }
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "owners",
                 3, 3,
                 Box::new(|dep: &Dep| {
-                    Cell::new(
+                    ListViewCell::new(
                         match dep.computed() {
                             Some(ComputedDep{owners:Some(owners),..}) if owners.total > 0 => {
                                 format!("{}", owners.total)
@@ -183,39 +221,39 @@ impl<'t> VerifyScreen<'t> {
                     )
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "issues",
                 2, 2,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{issues,..}) if issues.trusted > 0 => {
-                            Cell::new(format!("{}", issues.trusted), &TS.bad)
+                            ListViewCell::new(format!("{}", issues.trusted), &TS.bad)
                         }
                         _ => {
-                            Cell::new("".to_owned(), &TS.std)
+                            ListViewCell::new("".to_owned(), &TS.std)
                         }
                     }
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "issues",
                 3, 3,
                 Box::new(|dep: &Dep| {
                     match dep.computed() {
                         Some(ComputedDep{issues,..}) if issues.total > 0 => {
-                            Cell::new(format!("{}", issues.total), &TS.medium)
+                            ListViewCell::new(format!("{}", issues.total), &TS.medium)
                         }
                         _ => {
-                            Cell::new("".to_owned(), &TS.std)
+                            ListViewCell::new("".to_owned(), &TS.std)
                         }
                     }
                 }),
             ).with_align(Alignment::Right),
-            Column::new(
+            ListViewColumn::new(
                 "l.o.c.",
                 6, 6,
                 Box::new(|dep: &Dep| {
-                    Cell::new(
+                    ListViewCell::new(
                         match dep.computed() {
                             Some(ComputedDep{loc:Some(loc),..}) => u64_to_str(*loc as u64),
                             _ => "".to_string(),
@@ -226,9 +264,10 @@ impl<'t> VerifyScreen<'t> {
             ).with_align(Alignment::Right),
         ];
 
-        let table_view = TableView::new(
+        let list_view = ListView::new(
             Area::new(0, 1, 10, 10),
             columns,
+            &SKIN,
         );
 
         let repo = Repo::auto_open_cwd()?; // TODO not extra clean
@@ -236,26 +275,24 @@ impl<'t> VerifyScreen<'t> {
         let mut screen = Self {
             title,
             title_area: Area::new(0, 0, 10, 1),
+            title_skin,
             status_area: Area::new(0, 2, 10, 1),
-            input_area: Area::new(0, 3, 10, 1),
+            input_field: InputField::new(Area::new(0, 3, 10, 1)),
             hint_area: Area::new(0, 3, 10, 1),
-            table_view,
-            skin: MadSkin::default(),
-            status_skin: MadSkin::default(),
+            list_view,
+            skin: &SKIN,
+            status_skin,
             last_dimensions: (0, 0),
+            computation_status: TableComputationStatus::New,
         };
         screen.resize();
-        screen.make_skins();
         Ok(screen)
     }
-    pub fn make_skins(&mut self) {
-        self.skin.table.align = Alignment::Center;
-        self.skin.set_headers_fg(AnsiValue(178));
-        self.skin.bold.set_fg(Yellow);
-        self.skin.italic.set_fg(ansi(153));
-        self.skin.scrollbar.thumb.set_fg(ansi(178));
-        self.status_skin.paragraph.set_bg(gray(4));
-        self.status_skin.italic.set_fg(ansi(225));
+    pub fn set_computation_status(&mut self, computation_status: TableComputationStatus) {
+        self.computation_status = computation_status;
+    }
+    pub fn add_dep(&mut self, dep: Dep) {
+        self.list_view.add_row(dep);
     }
     pub fn resize(&mut self) {
         let (w, h) = terminal_size();
@@ -265,42 +302,34 @@ impl<'t> VerifyScreen<'t> {
         Terminal::new().clear(ClearType::All).unwrap();
         self.last_dimensions = (w, h);
         self.title_area.width = w;
-        self.table_view.area.width = w;
-        self.table_view.area.height = h - 4;
-        self.table_view.update_dimensions();
+        self.list_view.area.width = w;
+        self.list_view.area.height = h - 4;
+        self.list_view.update_dimensions();
         self.status_area.top = h - 3;
         self.status_area.width = w;
-        self.input_area.top = h - 2;
-        self.input_area.width = w / 2;
+        self.input_field.change_area(0, h-2, w/2);
         self.hint_area.top = h - 2;
-        self.hint_area.left = self.input_area.width;
+        self.hint_area.left = self.input_field.area.width;
         self.hint_area.width = w - self.hint_area.left;
     }
-    fn update_title(&self, _table: &DepTable) {
-        self.skin.write_in_area(
-            &format!("# {}", &self.title),
+    fn update_title(&self) {
+        self.title_skin.write_in_area(
+            &format!("# *crev* : {}", &self.title),
             &self.title_area
         ).unwrap();
     }
-    fn update_table_view(&mut self, table: &DepTable) {
-        if table.computation_status.is_before_deps() {
+    fn update_list_view(&mut self) {
+        if self.computation_status.is_before_deps() {
             self.skin.write_in_area(
                 &format!("\n*preparing table... You may quit at any time with ctrl-q*"),
-                &self.table_view.area
+                &self.list_view.area
             ).unwrap();
         } else {
-            let iab = self.table_view.do_scroll_show_bottom();
-            for i in self.table_view.row_count()..table.deps.len() {
-                self.table_view.add_row(&table.deps[i]);
-            }
-            if iab {
-                self.table_view.scroll_to_bottom();
-            }
-            self.table_view.display().unwrap();
+            self.list_view.display().unwrap();
         }
     }
-    fn update_status(&self, table: &DepTable) {
-        let status = match table.computation_status {
+    fn update_status(&self) {
+        let mut status = match self.computation_status {
             TableComputationStatus::New => {
                 "Computation starting...".to_owned()
             }
@@ -314,18 +343,21 @@ impl<'t> VerifyScreen<'t> {
                 "Computation finished".to_owned()
             }
         };
+        let (displayed, total) = self.list_view.row_counts();
+        if displayed < total {
+            status.push_str(&format!(" - **Filtered list** displays *{}* / *{}*. Hit `<esc>` to show all", displayed, total));
+        }
         self.status_skin.write_in_area(
             &status,
             &self.status_area
         ).unwrap();
     }
-    fn update_input(&self, _table: &DepTable) {
-        // temporary. Main purpose is to clean the area (in case of resize)
-        self.skin.write_in_area("", &self.input_area).unwrap();
+    fn update_input(&self) {
+        self.input_field.display();
     }
-    fn update_hint(&self, table: &DepTable) {
+    fn update_hint(&self) {
         self.skin.write_in_area(
-            if table.computation_status.is_before_deps() {
+            if self.computation_status.is_before_deps() {
                 "Hit *ctrl-q* to quit"
             } else {
                 "Hit *ctrl-q* to quit, *PageUp* or *PageDown* to scroll"
@@ -333,22 +365,52 @@ impl<'t> VerifyScreen<'t> {
             &self.hint_area
         ).unwrap();
     }
-    pub fn update_for(&mut self, table: &DepTable) {
+    pub fn update(&mut self) {
         self.resize();
-        self.update_title(table);
-        self.update_table_view(table);
-        self.update_status(table);
-        self.update_input(table);
-        self.update_hint(table);
+        self.update_title();
+        self.update_list_view();
+        self.update_status();
+        self.update_input();
+        self.update_hint();
     }
     #[allow(dead_code)]
     pub fn try_scroll_lines(&mut self, lines_count: i32) {
-        self.table_view.try_scroll_lines(lines_count);
+        self.list_view.try_scroll_lines(lines_count);
     }
     /// set the scroll amount.
     /// pages_count can be negative
     pub fn try_scroll_pages(&mut self, pages_count: i32) {
-        self.table_view.try_scroll_pages(pages_count);
+        self.list_view.try_scroll_pages(pages_count);
+    }
+    /// handle a user event
+    pub fn apply_event(&mut self, user_event: &Event) {
+        match user_event {
+            Event::Key(KeyEvent::PageUp) => {
+                self.try_scroll_pages(-1);
+            }
+            Event::Key(KeyEvent::PageDown) => {
+                self.try_scroll_pages(1);
+            }
+            Event::Wheel(lines_count) => {
+                self.try_scroll_lines(*lines_count);
+            }
+            Event::Key(KeyEvent::Esc) => {
+                self.input_field.set_content("");
+                self.list_view.remove_filter();
+            }
+            _ => {
+                if self.input_field.apply_event(user_event) {
+                    let pattern = self.input_field.get_content();
+                    if pattern.len() > 0 {
+                        self.list_view.set_filter(Box::new(
+                            move |dep: &Dep| dep.name.contains(&pattern)
+                        ));
+                    } else {
+                        self.list_view.remove_filter();
+                    }
+                }
+            }
+        }
     }
 }
 
