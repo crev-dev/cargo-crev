@@ -20,7 +20,7 @@ pub fn create_review_proof(
     name: &str,
     version: Option<&Version>,
     unrelated: UnrelatedOrDependency,
-    report_common: Option<opts::ReportCommon>,
+    report_severity: Option<crev_data::Level>,
     advise_common: Option<opts::AdviseCommon>,
     trust: TrustOrDistrust,
     proof_create_opt: &opts::CommonProofCreate,
@@ -87,7 +87,7 @@ pub fn create_review_proof(
             revision: vcs_info_to_revision_string(vcs),
             revision_type: proof::default_revision_type(),
         })
-        .review(if advise_common.is_some() || report_common.is_some() {
+        .review(if advise_common.is_some() || report_severity.is_some() {
             crev_data::Review::new_none()
         } else {
             trust.to_review()
@@ -120,10 +120,10 @@ pub fn create_review_proof(
         advisory.severity = advise_common.severity;
         review.advisories.push(advisory);
     }
-    if let Some(report_common) = report_common {
+    if let Some(severity) = report_severity {
         let mut report =
-            proof::review::package::Issue::new_with_severity("".into(), report_common.severity);
-        report.severity = report_common.severity;
+            proof::review::package::Issue::new_with_severity("".into(), severity);
+        report.severity = severity;
         review.issues.push(report);
         review.review.rating = Rating::Negative;
     }

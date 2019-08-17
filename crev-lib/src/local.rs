@@ -146,7 +146,7 @@ impl Local {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
         if !repo.root_path.exists() || !repo.user_config_path().exists() {
-            bail!("User config not-initialized. Use `crev new id` to generate CrevID.");
+            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
         }
 
         *repo.user_config.borrow_mut() = Some(repo.load_user_config()?);
@@ -676,7 +676,7 @@ impl Local {
                 let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
 
                 if new_trust_count > 0 {
-                    eprint!("; {} new trust proofs", new_pkg_review_count);
+                    eprint!("; {} new trust proofs", new_trust_count);
                 }
                 if new_pkg_review_count > 0 {
                     eprint!("; {} new package reviews", new_pkg_review_count);
@@ -883,6 +883,15 @@ impl Local {
     pub fn list_own_ids(&self) -> Result<()> {
         for id in self.list_ids()? {
             println!("{} {}", id.id, id.url.url);
+        }
+        Ok(())
+    }
+
+    pub fn show_own_ids(&self) -> Result<()> {
+        let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
+        for id in self.list_ids()? {
+            let is_current = current.as_ref().map_or(false, |c| {c.id == id.id});
+            println!("{} {}{}", id.id, id.url.url, if is_current {" (current)"} else {""});
         }
         Ok(())
     }

@@ -9,10 +9,7 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{
-    default::Default,
-    io::BufRead,
-};
+use std::io::BufRead;
 use structopt::StructOpt;
 
 #[macro_use]
@@ -43,23 +40,19 @@ use crate::repo::*;
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
-        opts::Command::New(cmd) => match cmd {
-            opts::New::Id(args) => {
-                let local = Local::auto_create_or_open()?;
-                let res = local.generate_id(args.url, args.github_username, args.use_https_push);
-                if res.is_err() {
-                    eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
-                }
-                let local = crev_lib::Local::auto_open()?;
-                let _ = ensure_known_owners_list_exists(&local);
-                res?;
+        opts::Command::Id(opts::Id::New(args)) => {
+            let local = Local::auto_create_or_open()?;
+            let res = local.generate_id(args.url, args.github_username, args.use_https_push);
+            if res.is_err() {
+                eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
             }
+            let local = crev_lib::Local::auto_open()?;
+            let _ = ensure_known_owners_list_exists(&local);
+            res?;
         },
-        opts::Command::Switch(cmd) => match cmd {
-            opts::Switch::Id(args) => {
-                let local = Local::auto_open()?;
-                local.switch_id(&args.id)?
-            }
+        opts::Command::Id(opts::Id::Switch(args)) => {
+            let local = Local::auto_open()?;
+            local.switch_id(&args.id)?
         },
         opts::Command::Diff(args) => {
             let status = run_diff(&args)?;
@@ -84,6 +77,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             } else {
                 dep::verify_deps(args)
             };
+        },
+        opts::Command::Id(opts::Id::Show) => {
+            let local = Local::auto_open()?;
+            local.show_own_ids()?;
         },
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
@@ -139,24 +136,32 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
+                let is_advisory = args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
                 create_review_proof(
                     c,
                     v,
                     i,
                     if args.issue {
-                        Some(opts::ReportCommon::default())
+                        Some(crev_data::Level::Medium)
                     } else {
                         None
                     },
-                    if args.advisory {
-                        Some(opts::AdviseCommon::default())
+                    if is_advisory {
+                        Some(opts::AdviseCommon {
+                            severity: args.severity.unwrap_or(crev_data::Level::Medium),
+                            affected: args.affected.unwrap_or(crev_data::proof::review::package::VersionRange::Major),
+                        })
                     } else {
                         None
                     },
-                    TrustOrDistrust::Trust,
+                    if is_advisory || args.issue {
+                        TrustOrDistrust::Distrust
+                    } else {
+                        TrustOrDistrust::Trust
+                    },
                     &args.common_proof_create,
                     &args.diff,
-                    args.skip_activity_check,
+                    args.skip_activity_check || is_advisory || args.issue,
                 )
             })?;
         }
@@ -171,59 +176,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 crate_open(c, v, i, args.cmd, args.cmd_save)
             })?;
         }
-        opts::Command::Flag(args) => {
-            handle_goto_mode_command(&args.common, |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    if args.issue {
-                        Some(opts::ReportCommon::default())
-                    } else {
-                        None
-                    },
-                    if args.advisory {
-                        Some(opts::AdviseCommon::default())
-                    } else {
-                        None
-                    },
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &args.diff,
-                    args.skip_activity_check,
-                )
-            })?;
-        }
-        opts::Command::Advise(args) => {
-            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    None,
-                    Some(args.advise_common),
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &None,
-                    true,
-                )
-            })?;
-        }
-        opts::Command::Report(args) => {
-            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    Some(args.report_common),
-                    None,
-                    TrustOrDistrust::Distrust,
-                    &args.common_proof_create,
-                    &None,
-                    true,
-                )
-            })?;
-        }
         opts::Command::Clean(args) => {
             handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
         }
@@ -236,11 +188,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Git(git) => {
             let local = Local::auto_open()?;
             let status = local.run_git(git.args)?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Push => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["push".into()])?;
             std::process::exit(status.code().unwrap_or(-159));
         }
         opts::Command::Publish => {
@@ -264,11 +211,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             std::process::exit(status.code().unwrap_or(-159));
         }
-        opts::Command::Pull => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
         opts::Command::Fetch(cmd) => match cmd {
             opts::Fetch::Trusted(params) => {
                 let local = Local::auto_create_or_open()?;
@@ -284,30 +226,33 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Update => {
+            let local = Local::auto_open()?;
+            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+            if !status.success() {
+                std::process::exit(status.code().unwrap_or(-159));
+            }
             let repo = Repo::auto_open_cwd()?;
             repo.update_source()?;
             repo.update_counts()?;
         }
-        opts::Command::Export(cmd) => match cmd {
-            opts::Export::Id(params) => {
-                let local = Local::auto_open()?;
-                println!("{}", local.export_locked_id(params.id)?);
+        opts::Command::Id(opts::Id::Export(params)) => {
+            let local = Local::auto_open()?;
+            println!("{}", local.export_locked_id(params.id)?);
+        },
+        opts::Command::Id(opts::Id::Import) => {
+            let local = Local::auto_create_or_open()?;
+            let s = load_stdin_with_prompt()?;
+            let id = local.import_locked_id(&String::from_utf8(s)?)?;
+            // Note: It's unclear how much of this should be done by
+            // the library
+            local.save_current_id(&id.id)?;
+
+            let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
+            if !proof_dir_path.exists() {
+                local.clone_proof_dir_from_git(&id.url.url, false)?;
             }
         },
         opts::Command::Import(cmd) => match cmd {
-            opts::Import::Id => {
-                let local = Local::auto_create_or_open()?;
-                let s = load_stdin_with_prompt()?;
-                let id = local.import_locked_id(&String::from_utf8(s)?)?;
-                // Note: It's unclear how much of this should be done by
-                // the library
-                local.save_current_id(&id.id)?;
-
-                let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
-                if !proof_dir_path.exists() {
-                    local.clone_proof_dir_from_git(&id.url.url, false)?;
-                }
-            }
             opts::Import::Proof(args) => {
                 let local = Local::auto_create_or_open()?;
                 let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;

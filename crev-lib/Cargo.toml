@@ -18,7 +18,7 @@ crev-common = { path = "../crev-common", version = "0.8" }
 crev-data = { path = "../crev-data", version = "0.8" }
 crev-recursive-digest = { path = "../recursive-digest", version = "0.2.1" }
 default = "0.1"
-directories = "1.0.2"
+directories = "2"
 failure = "0.1"
 ifmt = "0.2"
 git2 = "0.8"
@@ -26,10 +26,10 @@ insideout = "0.2"
 miscreant = { version = "0.4", features = ["soft-aes"] }
 num_cpus = "1"
 resiter = "0.3"
-rust-argon2 = "0.4.0"
+rust-argon2 = "0.5"
 semver = "0.9"
 serde = "1"
-serde_cbor = "0.9"
+serde_cbor = "0.10"
 serde_yaml = "0.8"
 shell-escape = "0.1"
 tempdir = "0.3"
