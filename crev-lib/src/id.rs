@@ -115,6 +115,12 @@ impl LockedId {
             .create(true)
             .append(true)
             .open(path)?;
+
+        // it is not terribly important for this file to be readable
+        // only for the user (because the key is encrypted anyway),
+        // so ignore the error if it happens
+        let _ = crate::util::chmod_path_to_600(path);
+
         write!(file, "{}", self)?;
 
         Ok(())

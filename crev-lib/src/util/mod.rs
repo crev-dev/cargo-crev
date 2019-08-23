@@ -5,6 +5,7 @@ use crev_common;
 use crev_data::proof;
 use failure::{bail, format_err};
 use git2;
+use std::io;
 use std::{
     self, env,
     ffi::{self, OsString},
@@ -166,4 +167,17 @@ pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O
         }
         Ok(o) => Some(o),
     }
+}
+
+#[cfg(target_family = "unix")]
+pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
+    use std::fs::Permissions;
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(path, Permissions::from_mode(0o600))
+}
+
+#[cfg(not(target_family = "unix"))]
+pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
+    Ok(())
 }
