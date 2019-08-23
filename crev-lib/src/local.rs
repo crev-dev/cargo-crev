@@ -441,7 +441,7 @@ impl Local {
         Ok(())
     }
 
-    pub fn init_readme_using_this_repo_file(&self) -> Result<()> {
+    pub fn init_repo_readme_using_template(&self) -> Result<()> {
         const README_MARKER_V0: &str = "CREV_README_MARKER_V0";
 
         let proof_dir = self.get_proofs_dir_path()?;
@@ -871,7 +871,7 @@ impl Local {
         eprintln!("");
         println!("{}", locked);
 
-        self.init_readme_using_this_repo_file()?;
+        self.init_repo_readme_using_template()?;
 
         Ok(())
     }
