@@ -1,26 +1,23 @@
-use cargo::{
-    core::{Package, package::PackageSet},
-};
+use cargo::core::{package::PackageSet, Package};
 use crev_common::convert::OptionDeref;
-use crev_lib::{self};
+use crev_lib;
 use std::{
     collections::{BTreeMap, HashSet},
     default::Default,
 };
 
-use crev_data::Digest;
-use std::io;
-use crate::prelude::*;
 use crate::crates_io;
 use crate::opts::*;
+use crate::prelude::*;
 use crate::repo::*;
-use crate::unsorted_mess::*;
 use crate::table::*;
 use crate::tokei::get_rust_line_count;
+use crev_data::Digest;
 use crev_lib::proofdb::ProofDB;
 use crev_lib::VerificationStatus;
+use std::io;
 
-use crossterm::{AlternateScreen, TerminalCursor, Color::*};
+use crossterm::{AlternateScreen, Color::*, TerminalCursor};
 use minimad::Alignment;
 use termimad;
 
@@ -32,12 +29,7 @@ pub fn run(args: Verify) -> Result<()> {
     let mut unclean_digests = BTreeMap::new();
     let cursor = TerminalCursor::new();
     cursor.hide()?;
-    let table = run_on_deps(
-        args,
-        package_set,
-        &mut unclean_digests,
-        &mut source,
-    )?;
+    let table = run_on_deps(args, package_set, &mut unclean_digests, &mut source)?;
     cursor.show()?;
 
     table.print();
@@ -46,12 +38,12 @@ pub fn run(args: Verify) -> Result<()> {
         println!();
     }
     for (name, version) in unclean_digests.keys() {
-        print!(
-            "Unclean crate {} {}\n", name, version
-        );
+        print!("Unclean crate {} {}\n", name, version);
     }
     if !unclean_digests.is_empty() {
-        bail!("Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source.");
+        bail!(
+            "Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source."
+        );
     }
 
     Ok(())
@@ -68,12 +60,11 @@ fn run_on_deps<'a>(
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
     let ignore_list = cargo_min_ignore_list();
-    let trust_set =
-        if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
-            db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
-        } else {
-            crev_lib::proofdb::TrustSet::default()
-        };
+    let trust_set = if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
+        db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+    } else {
+        crev_lib::proofdb::TrustSet::default()
+    };
     let crates_io = crates_io::Client::new(&local)?;
     let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
     let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
@@ -102,7 +93,6 @@ fn run_on_deps<'a>(
     let cursor = TerminalCursor::new();
     let (_, h) = termimad::terminal_size();
     for (idx, pkg) in pkgs.iter().enumerate() {
-
         if !pkg.summary().source_id().is_registry() {
             continue;
         }
@@ -119,7 +109,10 @@ fn run_on_deps<'a>(
         let digest = crev_lib::get_dir_digest(&crate_root, &ignore_list)?;
 
         if !is_digest_clean(&db, &crate_name, &crate_version, &digest) {
-            unclean_digests.insert((crate_name.to_string(), crate_version.to_string()), digest.clone());
+            unclean_digests.insert(
+                (crate_name.to_string(), crate_version.to_string()),
+                digest.clone(),
+            );
         }
 
         let result = db.verify_package_digest(&digest, &trust_set, &requirements);
@@ -134,26 +127,19 @@ fn run_on_deps<'a>(
             &crate_name,
             &requirements,
         );
-        let pkg_review_count = db.get_package_review_count(
-            PROJECT_SOURCE_CRATES_IO,
-            Some(crate_name),
-            None,
-        );
+        let pkg_review_count =
+            db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(crate_name), None);
         let pkg_version_review_count = db.get_package_review_count(
             PROJECT_SOURCE_CRATES_IO,
             Some(crate_name),
             Some(&crate_version),
         );
 
-        let (
-            version_downloads_str,
-            total_downloads_str,
-            version_downloads,
-            total_downloads,
-        ) = crates_io
-            .get_downloads_count(&crate_name, &crate_version)
-            .map(|(a, b)| (a.to_string(), b.to_string(), a, b))
-            .unwrap_or_else(|_e| ("err".into(), "err".into(), 0, 0));
+        let (version_downloads_str, total_downloads_str, version_downloads, total_downloads) =
+            crates_io
+                .get_downloads_count(&crate_name, &crate_version)
+                .map(|(a, b)| (a.to_string(), b.to_string(), a, b))
+                .unwrap_or_else(|_e| ("err".into(), "err".into(), 0, 0));
 
         let owners = crates_io.get_owners(&crate_name).ok();
         let (known_owners_count, total_owners_count) = if let Some(owners) = owners {
@@ -184,24 +170,22 @@ fn run_on_deps<'a>(
 
         row.push_str(&format!(
             " {}|",
-            latest_trusted_version_string(
-                crate_version.clone(),
-                latest_trusted_version
-            )
+            latest_trusted_version_string(crate_version.clone(), latest_trusted_version)
         ));
         //term.print(
         //    format_args!("{:6}", result),
         //    term::verification_status_color(&result),
         //)?;
-        row.push_str(
-            match result {
-                VerificationStatus::Verified => " high|",
-                VerificationStatus::Insufficient => " |",
-                VerificationStatus::Flagged => " *flag*|",
-                VerificationStatus::Dangerous => " **/!\\**|",
-            }
-        );
-        row.push_str(&format!(" {}| {}|", pkg_version_review_count, pkg_review_count,));
+        row.push_str(match result {
+            VerificationStatus::Verified => " high|",
+            VerificationStatus::Insufficient => " |",
+            VerificationStatus::Flagged => " *flag*|",
+            VerificationStatus::Dangerous => " **/!\\**|",
+        });
+        row.push_str(&format!(
+            " {}| {}|",
+            pkg_version_review_count, pkg_review_count,
+        ));
         //row.push_str(&format!(
         //    format_args!(" {}|", version_downloads_str),
         //    if version_downloads < 1000 {
@@ -210,9 +194,7 @@ fn run_on_deps<'a>(
         //        None
         //    },
         //)?;
-        row.push_str(&format!(
-            " {}|", version_downloads_str
-        ));
+        row.push_str(&format!(" {}|", version_downloads_str));
         //term.print(
         //    format_args!(" {}|", total_downloads_str),
         //    if total_downloads < 10000 {
@@ -221,9 +203,7 @@ fn run_on_deps<'a>(
         //        None
         //    },
         //)?;
-        row.push_str(&format!(
-            " {}|", total_downloads_str
-        ));
+        row.push_str(&format!(" {}|", total_downloads_str));
         //term.print(
         //    format_args!(
         //        " {}",
@@ -234,10 +214,10 @@ fn run_on_deps<'a>(
         //    term::known_owners_count_color(known_owners_count.unwrap_or(0)),
         //)?;
         row.push_str(&format!(
-                " {}",
-                &known_owners_count
-                    .map(|c| c.to_string())
-                    .unwrap_or_else(|| "?".into())
+            " {}",
+            &known_owners_count
+                .map(|c| c.to_string())
+                .unwrap_or_else(|| "?".into())
         ));
         row.push_str(&format!(
             "/{} |",
@@ -246,11 +226,8 @@ fn run_on_deps<'a>(
                 .unwrap_or_else(|| "?".into())
         ));
 
-        let advisories = db.get_advisories_for_version(
-            PROJECT_SOURCE_CRATES_IO,
-            crate_name,
-            crate_version,
-        );
+        let advisories =
+            db.get_advisories_for_version(PROJECT_SOURCE_CRATES_IO, crate_name, crate_version);
         let trusted_advisories = advisories
             .iter()
             .filter(|(_version, package_review)| {
@@ -266,13 +243,11 @@ fn run_on_deps<'a>(
         //        None
         //    },
         //)?;
-        row.push_str(&
-            if trusted_advisories>0 {
-                format!(" *{}*", trusted_advisories)
-            } else {
-                format!(" {}", trusted_advisories)
-            }
-        );
+        row.push_str(&if trusted_advisories > 0 {
+            format!(" *{}*", trusted_advisories)
+        } else {
+            format!(" {}", trusted_advisories)
+        });
         row.push_str(&format!("/"));
         //term.print(
         //    format_args!("{}|", advisories.len()),
@@ -282,9 +257,7 @@ fn run_on_deps<'a>(
         //        Some(::term::color::YELLOW)
         //    },
         //)?;
-        row.push_str(&format!(
-            "{} |", advisories.len()
-        ));
+        row.push_str(&format!("{} |", advisories.len()));
         row.push_str(&format!(
             "{}| {}|",
             get_rust_line_count(crate_root)
@@ -300,14 +273,22 @@ fn run_on_deps<'a>(
         //    ::term::color::YELLOW,
         //)?;
         row.push_str(&format!(
-            " {}|", if crate_.has_custom_build() { "*CB*" } else { "" }
+            " {}|",
+            if crate_.has_custom_build() {
+                "*CB*"
+            } else {
+                ""
+            }
         ));
         table.add_row(row);
         table.display_view()?;
-        cursor.goto(0, h-1)?;
-        table.skin.print_inline(&format!("**Cargo Crev** verify deps: *{}* / {}", idx+1, nb_packages));
+        cursor.goto(0, h - 1)?;
+        table.skin.print_inline(&format!(
+            "**Cargo Crev** verify deps: *{}* / {}",
+            idx + 1,
+            nb_packages
+        ));
     }
-
 
     Ok(table)
 }

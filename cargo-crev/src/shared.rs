@@ -6,16 +6,16 @@ use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
-    collections::{HashSet},
+    collections::HashSet,
     env,
-    ffi::{OsStr},
+    ffi::OsStr,
     io,
     path::{Path, PathBuf},
     process,
 };
 
-use crate::prelude::*;
 use crate::opts;
+use crate::prelude::*;
 use crate::repo::*;
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
@@ -74,7 +74,6 @@ impl VcsInfoJson {
 pub fn cargo_full_ignore_list() -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
-    ignore_list.insert(PathBuf::from("Cargo.lock"));
     ignore_list.insert(PathBuf::from("target"));
     ignore_list
 }
@@ -108,7 +107,10 @@ pub fn exec_into(mut command: process::Command) -> Result<()> {
 ///
 /// Set some `envs` to help other commands work
 /// from inside such a "review-shell".
-pub fn goto_crate_src(selector: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
+pub fn goto_crate_src(
+    selector: &opts::CrateSelector,
+    unrelated: UnrelatedOrDependency,
+) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
@@ -399,21 +401,23 @@ pub fn check_package_clean_state(
         crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_full_ignore_list())?;
 
     if digest_clean != digest_reviewed {
-        bail!(
-            "The digest of the reviewed and freshly downloaded crate were different; {} != {}; {} != {}",
-            digest_clean,
-            digest_reviewed,
+        eprintln!(
+            r#"The digest of the reviewed source code is different from the digest of a freshly downloaded copy.
+            This is most probably caused by your actions: creating new or modified files.
+            Will continue with the digest of a fresh copy.
+            Fresh copy: {}
+            Reviewed code: {}."#,
             crate_root.display(),
             reviewed_pkg_dir.display(),
         );
+    } else {
+        std::fs::remove_dir_all(&reviewed_pkg_dir)?;
     }
-    std::fs::remove_dir_all(&reviewed_pkg_dir)?;
 
     let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
 
     Ok((digest_clean, vcs))
 }
-
 
 pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
     let local = crev_lib::Local::auto_open()?;
