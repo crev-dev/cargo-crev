@@ -9,6 +9,12 @@ pub struct CrateSelector {
     pub version: Option<Version>,
 }
 
+impl CrateSelector {
+    pub fn is_empty(&self) -> bool {
+        self.name.is_none() && self.version.is_none()
+    }
+}
+
 #[derive(Debug, StructOpt, Clone)]
 pub struct NewId {
     #[structopt(long = "url")]
@@ -36,7 +42,7 @@ pub struct SwitchId {
 }
 
 /// Parameters describing trust graph traversal
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct TrustDistanceParams {
     #[structopt(long = "depth", default_value = "10")]
     /// Maximum allowed distance from the root identity when traversing trust graph
@@ -89,7 +95,7 @@ pub struct Diff {
 }
 
 /// Verification Requirements
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct VerificationRequirements {
     /// Minimum trust level of the reviewers for reviews
     #[structopt(long = "trust", default_value = "low")]
@@ -117,7 +123,7 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
     }
 }
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct Verify {
     #[structopt(long = "verbose", short = "v")]
     /// Display more informations about the crates
@@ -141,7 +147,6 @@ pub struct Verify {
     pub skip_known_owners: bool,
 
     #[structopt(long = "for-id")]
-
     /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
 }

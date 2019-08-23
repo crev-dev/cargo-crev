@@ -1,10 +1,17 @@
 // Here are the structs and functions which still need to be sorted
 //
+use crate::deps::scan;
+use crate::opts;
+use crate::prelude::*;
+use crate::repo::*;
+use crev_data::proof;
+use crev_lib::TrustOrDistrust;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
+use std::ffi::OsString;
 use std::{
     collections::HashSet,
     env,
@@ -13,12 +20,6 @@ use std::{
     path::{Path, PathBuf},
     process,
 };
-
-use crate::opts;
-use crate::prelude::*;
-use crate::repo::*;
-use crev_data::proof;
-use crev_lib::TrustOrDistrust;
 
 /// Name of ENV with original location `crev goto` was called from
 pub const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
@@ -178,6 +179,23 @@ pub fn edit_known_owners_list() -> Result<()> {
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
     ensure_known_owners_list_exists(&local)?;
     crev_lib::util::edit_file(&path)?;
+    Ok(())
+}
+
+pub fn clean_all_unclean_crates() -> Result<()> {
+    let scanner = scan::Scanner::new(&opts::Verify::default())?;
+    let events = scanner.run();
+
+    for stats in events.into_iter() {
+        if stats.is_digest_unclean() {
+            clean_crate(
+                &stats.info.id.name().to_string(),
+                Some(stats.info.id.version()),
+                UnrelatedOrDependency::Dependency,
+            )?;
+        }
+    }
+
     Ok(())
 }
 
@@ -549,6 +567,14 @@ pub fn list_issues(args: &opts::QueryIssue) -> Result<()> {
     Ok(())
 }
 
+/// Are we executing from a shell started by `cargo crev goto`?
+///
+/// If yes - return the path the original directory where the
+/// `goto` command was issued.
+pub fn are_we_called_from_goto_shell() -> Option<OsString> {
+    env::var_os(GOTO_ORIGINAL_DIR_ENV)
+}
+
 /// Handle the `goto mode` commands
 ///
 /// After jumping to a crate with `goto`, the crate is selected
@@ -558,7 +584,7 @@ pub fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Res
 where
     F: FnOnce(&str, Option<&Version>, UnrelatedOrDependency) -> Result<()>,
 {
-    if let Some(org_dir) = env::var_os(GOTO_ORIGINAL_DIR_ENV) {
+    if let Some(org_dir) = are_we_called_from_goto_shell() {
         if args.crate_.name.is_some() {
             bail!("In `crev goto` mode no arguments can be given");
         } else {

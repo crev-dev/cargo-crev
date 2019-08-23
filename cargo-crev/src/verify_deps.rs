@@ -41,9 +41,7 @@ pub fn run(args: Verify) -> Result<()> {
         print!("Unclean crate {} {}\n", name, version);
     }
     if !unclean_digests.is_empty() {
-        bail!(
-            "Unclean packages detected. Use `cargo crev clean <crate>` to wipe the local source."
-        );
+        bail!("Unclean packages detected. Use `cargo crev clean` to wipe all unclean crates.");
     }
 
     Ok(())

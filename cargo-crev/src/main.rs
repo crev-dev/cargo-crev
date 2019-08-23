@@ -181,7 +181,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             })?;
         }
         opts::Command::Clean(args) => {
-            handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
+            if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
+                clean_all_unclean_crates()?;
+            } else {
+                handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
+            }
         }
         opts::Command::Trust(args) => {
             create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
