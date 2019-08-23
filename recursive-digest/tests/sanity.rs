@@ -88,7 +88,7 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> std::io::
 /// ln -sf /tmp/a/b/c/d/e/f/g/h "../../a"
 /// rblake2sum /tmp/a
 /// ```
-/// 
+///
 /// Ignored by default on Windows, as users typically cannot create symlinks
 /// without running as admin.
 #[test]

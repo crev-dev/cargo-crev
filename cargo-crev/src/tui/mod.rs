@@ -1,6 +1,6 @@
 mod verify_screen;
 
-pub use crate::deps::{DownloadCount, TrustCount, scan};
+pub use crate::deps::{scan, DownloadCount, TrustCount};
 use crate::opts::Verify;
 use crate::prelude::*;
 use crate::shared::CommandExitStatus;

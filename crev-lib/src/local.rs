@@ -5,8 +5,7 @@ use crate::{
     util, ProofDB, ProofStore,
 };
 use crev_common::{
-    self,
-    sanitize_name,
+    self, sanitize_name,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -367,7 +366,11 @@ impl Local {
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
-    pub fn read_unlocked_id(&self, id: &Id, passphrase_callback: PassphraseFn<'_>) -> Result<OwnId> {
+    pub fn read_unlocked_id(
+        &self,
+        id: &Id,
+        passphrase_callback: PassphraseFn<'_>,
+    ) -> Result<OwnId> {
         let locked = self.read_locked_id(id)?;
         let mut i = 0;
         loop {
@@ -890,8 +893,13 @@ impl Local {
     pub fn show_own_ids(&self) -> Result<()> {
         let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
         for id in self.list_ids()? {
-            let is_current = current.as_ref().map_or(false, |c| {c.id == id.id});
-            println!("{} {}{}", id.id, id.url.url, if is_current {" (current)"} else {""});
+            let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
+            println!(
+                "{} {}{}",
+                id.id,
+                id.url.url,
+                if is_current { " (current)" } else { "" }
+            );
         }
         Ok(())
     }

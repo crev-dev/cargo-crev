@@ -33,10 +33,10 @@ mod term;
 mod tokei;
 mod tui;
 
-use crev_lib::TrustOrDistrust::{self, *};
-use crate::shared::*;
-use crate::review::*;
 use crate::repo::*;
+use crate::review::*;
+use crate::shared::*;
+use crev_lib::TrustOrDistrust::{self, *};
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
@@ -49,11 +49,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             let local = crev_lib::Local::auto_open()?;
             let _ = ensure_known_owners_list_exists(&local);
             res?;
-        },
+        }
         opts::Command::Id(opts::Id::Switch(args)) => {
             let local = Local::auto_open()?;
             local.switch_id(&args.id)?
-        },
+        }
         opts::Command::Diff(args) => {
             let status = run_diff(&args)?;
             std::process::exit(status.code().unwrap_or(-159));
@@ -77,11 +77,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             } else {
                 deps::verify_deps(args)
             };
-        },
+        }
         opts::Command::Id(opts::Id::Show) => {
             let local = Local::auto_open()?;
             local.show_own_ids()?;
-        },
+        }
         opts::Command::Query(cmd) => match cmd {
             opts::Query::Id(cmd) => match cmd {
                 opts::QueryId::Current => {
@@ -136,7 +136,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Review(args) => {
             handle_goto_mode_command(&args.common, |c, v, i| {
-                let is_advisory = args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
+                let is_advisory = args.advisory
+                    || args.affected.is_some()
+                    || (!args.issue && args.severity.is_some());
                 create_review_proof(
                     c,
                     v,
@@ -149,7 +151,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     if is_advisory {
                         Some(opts::AdviseCommon {
                             severity: args.severity.unwrap_or(crev_data::Level::Medium),
-                            affected: args.affected.unwrap_or(crev_data::proof::review::package::VersionRange::Major),
+                            affected: args
+                                .affected
+                                .unwrap_or(crev_data::proof::review::package::VersionRange::Major),
                         })
                     } else {
                         None
@@ -238,7 +242,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Id(opts::Id::Export(params)) => {
             let local = Local::auto_open()?;
             println!("{}", local.export_locked_id(params.id)?);
-        },
+        }
         opts::Command::Id(opts::Id::Import) => {
             let local = Local::auto_create_or_open()?;
             let s = load_stdin_with_prompt()?;
@@ -251,7 +255,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             if !proof_dir_path.exists() {
                 local.clone_proof_dir_from_git(&id.url.url, false)?;
             }
-        },
+        }
         opts::Command::Import(cmd) => match cmd {
             opts::Import::Proof(args) => {
                 let local = Local::auto_create_or_open()?;

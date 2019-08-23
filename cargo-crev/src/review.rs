@@ -1,17 +1,15 @@
 use crev_data::Rating;
 use crev_lib::{self, local::Local};
 use failure::format_err;
-use std::{
-    default::Default,
-};
+use std::default::Default;
 
-use crate::prelude::*;
 use crate::opts;
+use crate::prelude::*;
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
 
-use crate::shared::*;
 use crate::repo::*;
+use crate::shared::*;
 
 /// Review a crate
 ///
@@ -121,8 +119,7 @@ pub fn create_review_proof(
         review.advisories.push(advisory);
     }
     if let Some(severity) = report_severity {
-        let mut report =
-            proof::review::package::Issue::new_with_severity("".into(), severity);
+        let mut report = proof::review::package::Issue::new_with_severity("".into(), severity);
         report.severity = severity;
         review.issues.push(report);
         review.review.rating = Rating::Negative;
@@ -142,7 +139,6 @@ pub fn create_review_proof(
     );
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)
 }
-
 
 pub fn find_previous_review_data(
     db: &crev_lib::ProofDB,

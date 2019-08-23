@@ -235,7 +235,7 @@ pub struct QueryDir {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Query {
     /// Query Ids
-    #[structopt(name = "id", alias = "new")]  // alias is a hack for back-compat
+    #[structopt(name = "id", alias = "new")] // alias is a hack for back-compat
     Id(QueryId),
 
     /// Query reviews
@@ -409,7 +409,7 @@ pub struct ImportProof {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Manage your own Id (create new, show, export, import, switch)
-    #[structopt(name = "id", alias="new")]
+    #[structopt(name = "id", alias = "new")]
     Id(Id),
 
     /// Edit README.md of the current Id, ...

@@ -49,21 +49,21 @@ pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
 }
 
 /// Takes an identifier like "https://crates.io" and converts it to something safe for use in paths etc.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// # use std::path::Path;
 /// # use crev_common::sanitize_name;
 /// // Pass through when able
 /// assert_eq!(sanitize_name("lazy_static"), Path::new("lazy_static-05d6bbf07772f618"));
-/// 
+///
 /// // Hash reserved windows filenames (or any other 3 letter name)
 /// assert_eq!(sanitize_name("CON"), Path::new("CON-f8d86fcc7f21486b"));
-/// 
+///
 /// // Hash on escaped chars to avoid collisions
 /// assert_eq!(sanitize_name("https://crates.io"), Path::new("https___crates_io-c931072c02cbd3b6"));
-/// 
+///
 /// // Limit absurdly long names.  Combining a bunch of these can still run into filesystem limits however.
 /// let a64   = std::iter::repeat("a").take(  64).collect::<String>();
 /// let a2048 = std::iter::repeat("a").take(2048).collect::<String>();
