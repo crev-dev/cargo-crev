@@ -23,7 +23,7 @@ extern crate crossbeam;
 pub mod doc;
 
 mod crates_io;
-mod dep;
+mod deps;
 mod opts;
 mod prelude;
 mod repo;
@@ -75,7 +75,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             return if args.interactive {
                 tui::verify_deps(args)
             } else {
-                dep::verify_deps(args)
+                deps::verify_deps(args)
             };
         },
         opts::Command::Id(opts::Id::Show) => {

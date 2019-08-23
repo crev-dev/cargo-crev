@@ -1,4 +1,4 @@
-#![type_length_limit="10709970"]
+#![type_length_limit = "10709970"]
 
 pub mod activity;
 pub mod id;
@@ -64,6 +64,7 @@ impl TrustOrDistrust {
 }
 
 /// Verification requirements
+#[derive(Clone)]
 pub struct VerificationRequirements {
     pub trust_level: crev_data::Level,
     pub understanding: crev_data::Level,
@@ -74,7 +75,7 @@ pub struct VerificationRequirements {
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum VerificationStatus {
     Verified,
     Insufficient,

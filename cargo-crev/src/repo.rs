@@ -1,18 +1,17 @@
 use cargo::{
-    core::{dependency::Dependency, source::SourceMap, Package, PackageId, package::PackageSet, SourceId},
+    core::{
+        dependency::Dependency, package::PackageSet, source::SourceMap, Package, PackageId,
+        SourceId,
+    },
     util::important_paths::find_root_manifest_for_wd,
 };
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use failure::format_err;
-use std::{
-    collections::{HashSet},
-    env,
-    path::{PathBuf},
-};
+use std::{collections::HashSet, env, path::PathBuf};
 
-use crate::prelude::*;
 use crate::crates_io;
+use crate::prelude::*;
 use crate::shared::*;
 
 /// A handle to the current Rust project
@@ -44,8 +43,10 @@ impl Repo {
 
     pub fn name(&self) -> std::borrow::Cow<'_, str> {
         self.manifest_path
-            .parent().unwrap()
-            .file_name().unwrap()
+            .parent()
+            .unwrap()
+            .file_name()
+            .unwrap()
             .to_string_lossy()
     }
 
@@ -120,7 +121,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn non_local_dep_crates(& self) -> Result<PackageSet<'_>> {
+    pub fn get_deps_package_set(&self) -> Result<PackageSet<'_>> {
         let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
@@ -179,7 +180,11 @@ impl Repo {
         Ok(Some(package_set.get_one(pkg_id)?.to_owned()))
     }
 
-    pub fn find_dependency(&self, name: &str, version: Option<&Version>) -> Result<Option<Package>> {
+    pub fn find_dependency(
+        &self,
+        name: &str,
+        version: Option<&Version>,
+    ) -> Result<Option<Package>> {
         let mut ret = vec![];
 
         self.for_every_non_local_dep_crate(|pkg| {
@@ -213,4 +218,3 @@ impl Repo {
         .ok_or_else(|| format_err!("Could not find requested crate"))
     }
 }
-

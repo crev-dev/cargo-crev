@@ -1,8 +1,7 @@
 // Functions related to printing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
-use crate::dep::dep::*;
-use crate::prelude::*;
+use super::*;
 use crate::term::{self, *};
 
 fn pad_left_manually(s: String, width: usize) -> String {
@@ -16,7 +15,7 @@ fn pad_left_manually(s: String, width: usize) -> String {
     }
 }
 
-pub fn term_print_header(_term: &mut Term, verbose: bool) {
+pub fn print_header(_term: &mut Term, verbose: bool) {
     if verbose {
         eprint!("{:43} ", "digest");
     }
@@ -27,7 +26,7 @@ pub fn term_print_header(_term: &mut Term, verbose: bool) {
     eprintln!(" {:<20} {:<15} {:<15}", "crate", "version", "latest_t");
 }
 
-pub fn term_print_computed_dep(cdep: &ComputedDep, term: &mut Term, verbose: bool) -> Result<()> {
+pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Result<()> {
     if verbose {
         print!("{:43} ", cdep.digest);
     }
@@ -91,38 +90,41 @@ pub fn term_print_computed_dep(cdep: &ComputedDep, term: &mut Term, verbose: boo
     Ok(())
 }
 
-fn term_print_dep_id(dep: &Dep, _term: &mut Term) {
+fn print_stats_crate_id(stats: &CrateStats, _term: &mut Term) {
     print!(
         " {:<20} {:<15}",
-        dep.name,
-        pad_left_manually(dep.version.to_string(), 15)
+        stats.info.id.name(),
+        pad_left_manually(stats.info.id.version().to_string(), 15)
     );
 }
 
-pub fn term_print_dep(dep: &Dep, term: &mut Term, verbose: bool) -> Result<()> {
-    match &dep.computation_status {
-        DepComputationStatus::Failed => {
-            term_print_dep_id(dep, term);
+pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<()> {
+    match &stats.details {
+        Err(_) => {
+            print_stats_crate_id(stats, term);
             println!(" -- computation failed");
         }
-        DepComputationStatus::Skipped => {
-            term_print_dep_id(dep, term);
+        Ok(None) => {
+            print_stats_crate_id(stats, term);
             println!(" -- skipped");
         }
-        DepComputationStatus::Ok { computed_dep } => {
-            term_print_computed_dep(&computed_dep, term, verbose)?;
-            match dep.geiger_count {
+        Ok(Some(details)) => {
+            print_details(&details, term, verbose)?;
+            match details.geiger_count {
                 Some(geiger_count) => print!(" {:>7}", geiger_count),
                 None => print!(" {:>7}", "err"),
             }
             term.print(
-                format_args!(" {:4}", if dep.has_custom_build { "CB" } else { "" }),
+                format_args!(" {:4}", if stats.has_custom_build() { "CB" } else { "" }),
                 ::term::color::YELLOW,
             )?;
-            term_print_dep_id(dep, term);
+            print_stats_crate_id(stats, term);
             print!(
                 " {}",
-                latest_trusted_version_string(&dep.version, &computed_dep.latest_trusted_version)
+                latest_trusted_version_string(
+                    &stats.info.id.version(),
+                    &details.latest_trusted_version
+                )
             );
             println!();
         }
