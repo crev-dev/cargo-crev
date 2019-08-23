@@ -36,7 +36,11 @@ pub(crate) fn rel_store_path(content: &Content, host_salt: &[u8]) -> PathBuf {
             crev_common::base64_encode(&host_plus_id_digest[..4])
         )
     } else {
-        date
+        format!(
+            "{}-{}",
+            date,
+            crev_common::base64_encode(&host_plus_id_digest[..4])
+        )
     })
     .with_extension("proof.crev")
 }
