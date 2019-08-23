@@ -32,6 +32,7 @@ impl Repo {
             &None,
             /* frozen: */ false,
             /* locked: */ true,
+            /* offline: */ false,
             &None,
             &[],
         )?;
@@ -96,7 +97,6 @@ impl Repo {
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
-            None,
             &[],
             true,  // all_features
             false, // no_default_features
@@ -126,7 +126,6 @@ impl Repo {
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
-            None,
             &[],
             true,  // all_features
             false, // no_default_features
@@ -153,6 +152,7 @@ impl Repo {
         let version_str = version.map(ToString::to_string);
         let dependency_request =
             Dependency::parse_no_deprecated(name, version_str.as_deref(), source.source_id())?;
+        let _lock = self.config.acquire_package_cache_lock()?;
         source.query(&dependency_request, &mut |summary| {
             summaries.push(summary.clone())
         })?;
