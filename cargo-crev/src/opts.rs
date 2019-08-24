@@ -508,6 +508,7 @@ pub enum MainCommand {
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(about = "Distributed code review system")]
+#[structopt(raw(global_setting = "structopt::clap::AppSettings::ColoredHelp"))]
 pub struct Opts {
     #[structopt(subcommand)]
     pub command: MainCommand,
