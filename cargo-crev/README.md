@@ -14,7 +14,7 @@
   <br>
 </p>
 
-# `cargo-crev` - [Crev](https://github.com/crev-dev/crev) implementation for Rust and cargo
+# `cargo-crev` - [Crev](https://github.com/crev-dev/crev) (Code REView system) for Rust/cargo
 
 ## Introduction
 
