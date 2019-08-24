@@ -14,41 +14,44 @@
   <br>
 </p>
 
-# `cargo-crev` - Cargo Code REView!
+# `cargo-crev` - [Crev](https://github.com/crev-dev/crev) implementation for Rust and cargo
 
 ## Introduction
 
 [Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
 distributed Code REView system.
 
-`cargo-crev` is a CLI implementation/frontend of Crev integrated with `cargo` and targeting
+`cargo-crev` is a CLI application implementation/frontend of Crev integrated with `cargo` and targeting
 Rust/crates.io ecosystem.
 
 `cargo-crev` is a tool helping Rust users evalute quality and trustworthiness
 of dependencies they use.
 
-## How it works
+## Why Rust developers should use `cargo-crev`?
 
-* Identify your dependencies: list in many useful ways.
-* Review crates: judge their safety, quality and document problems.
-* Publish verifiable reviews in a public git repository.
-* People download your reviews, you download reviews of others.
-* Build a web of trust veting whole Rust ecosystem.
-* Gain reputation and trust. Maybe even monetize it, by reving code for money.
-* Implement it in your company and/or team to stay ahead!
-* Never again get bitten by unreviewed and untrusted code.
+`cargo-crev` can already:
+
+* warn you about untrustworthy crates and security vulnerabilities,
+* display useful metrics about your dependencies,
+* help you identify dependency-bloat,
+* allow you to review most suspicious dependencies and publish your findings,
+* use reviews produced by other users,
+* increase trustworthiness of your own code,
+* build a web of trust of other reputable users to help verify the code you use,
+
+and many other things with many more to come.
 
 ## Getting started
 
-Static binaries are availble on [crev's releases](https://github.com/dpc/crev/releases) page.
+Static binaries are availble on [crev's releases](https://github.com/crev-dev/cargo-crev/releases) page.
 
-Follow the [`cargo-crev` - Getting Started Guide](https://github.com/dpc/crev/blob/master/cargo-crev/src/doc/getting_started.md)
+Follow the [`cargo-crev` - Getting Started Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
 `cargo-crev` is a work in progress, but it should be usable at all times.
-Join [crev gitter channel](https://gitter.im/dpc/crev), get help,
+Join our [matrix](https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org) or [gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help,
 report problems and feedback. Thank you!
 
 ## Changelog
 
-Changelog can be found here: https://github.com/dpc/crev/blob/master/cargo-crev/CHANGELOG.md
+Changelog can be found here: https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/CHANGELOG.md
