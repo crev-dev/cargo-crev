@@ -190,11 +190,11 @@ Oops. That's right. You can't sign an *proof* until you have your own identity.
 
 ## Creating a `CrevID`
 
-To create a `CrevID` you'll first need an empty github repository to serve
-as your public *proof repository*. Go ahead, and create one on github, or whatever
-else your typically host your code. Customarily the repository should be called `crev-proofs`.
+To create a `CrevID` you'll first need a github repository to serve
+as your public *proof repository*. Customarily the repository should be called `crev-proofs`.
 
-Note: `cargo-crev` requires the master branch to already exist, so the repository you have created
+* Github users can just [fork a template](https://github.com/crev-dev/crev-proofs/fork).
+* Other users can do it manually. **Note**: `cargo-crev` requires the master branch to already exist, so the repository you have created
 has to contains at least one existing commit.
 
 Then run `cargo crev id new` like this:
