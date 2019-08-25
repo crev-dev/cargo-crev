@@ -104,10 +104,7 @@ pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<(
             print_stats_crate_id(stats, term);
             println!(" -- computation failed");
         }
-        Ok(None) => {
-            print_stats_crate_id(stats, term);
-            println!(" -- skipped");
-        }
+        Ok(None) => { /* just skip */ }
         Ok(Some(details)) => {
             print_details(&details, term, verbose)?;
             match details.geiger_count {
