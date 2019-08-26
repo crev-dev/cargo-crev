@@ -12,12 +12,6 @@ use crev_lib::{self, local::Local};
 use std::io::BufRead;
 use structopt::StructOpt;
 
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use(select)]
-extern crate crossbeam;
-
 #[cfg(feature = "documentation")]
 /// Documentation
 pub mod doc;

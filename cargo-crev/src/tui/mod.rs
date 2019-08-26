@@ -1,9 +1,11 @@
 mod verify_screen;
 
+use crate::deps;
 pub use crate::deps::{scan, DownloadCount, TrustCount};
 use crate::opts::Verify;
 use crate::prelude::*;
 use crate::shared::CommandExitStatus;
+use crossbeam::channel::select;
 use crossterm::{AlternateScreen, KeyEvent, TerminalCursor};
 use termimad::{Event, EventSource};
 use verify_screen::VerifyScreen;
@@ -25,41 +27,65 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     screen.update();
     let crate_stats_rx = computer.run();
     let event_source = EventSource::new();
-    let rx_user = event_source.receiver();
+    let user_event_rx = event_source.receiver();
     let mut crate_count = 0;
+
+    fn handle_crate_stats(
+        screen: &mut VerifyScreen,
+        crate_stats: deps::CrateStats,
+        crate_count: &mut usize,
+    ) {
+        *crate_count += 1;
+        screen.set_computation_status(*crate_count);
+        if crate_stats.has_details() {
+            screen.add_dep(crate_stats);
+        }
+    }
+
+    fn handle_user_action(
+        screen: &mut VerifyScreen,
+        user_event: termimad::Event,
+        event_source: &EventSource,
+    ) {
+        let quit = match user_event {
+            Event::Key(KeyEvent::Ctrl('q')) => true,
+            _ => {
+                screen.apply_event(&user_event);
+                false
+            }
+        };
+        event_source.unblock(quit); // this will lead to channel closing
+    }
 
     loop {
         screen.update();
         select! {
             recv(crate_stats_rx) -> crate_stats => {
                 if let Ok(crate_stats) = crate_stats {
-                    crate_count += 1;
-                    screen.set_computation_status(crate_count);
-                    if crate_stats.has_details() {
-                        screen.add_dep(crate_stats);
+                    handle_crate_stats(&mut screen, crate_stats, &mut crate_count);
+                    // drain the channel completely, so do don't redraw screen (slow)
+                    // over and over again causing irritating blinking and cpu waste
+                    while let Ok(crate_stats) = crate_stats_rx.recv_timeout(std::time::Duration::from_micros(0)) {
+                        handle_crate_stats(&mut screen, crate_stats, &mut crate_count);
                     }
                 } else {
-                    // This happens on computation end (channel closed).
-                    // We don't break because we let the user read the result.
+                    break;
                 }
             }
-            recv(rx_user) -> user_event => {
-                if let Ok(user_event) = user_event {
-                    let quit = match user_event {
-                        Event::Key(KeyEvent::Ctrl('q')) => true,
-                        _ => {
-                            screen.apply_event(&user_event);
-                            false
-                        }
-                    };
-                    event_source.unblock(quit); // this will lead to channel closing
+            recv(user_event_rx) -> user_event => {
+                if let  Ok(user_event) = user_event {
+                    handle_user_action(&mut screen, user_event, &event_source);
                 } else {
-                    // The channel has been closed, which means the event source
-                    // has properly released its resources, we may quit.
                     break;
                 }
             }
         }
+    }
+
+    screen.update();
+    for user_event in user_event_rx.into_iter() {
+        handle_user_action(&mut screen, user_event, &event_source);
+        screen.update();
     }
 
     cursor.show()?; // if we don't do this, the poor terminal is cursorless

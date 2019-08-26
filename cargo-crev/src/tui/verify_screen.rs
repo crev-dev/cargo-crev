@@ -8,6 +8,7 @@ use crate::deps::{latest_trusted_version_string, CrateDetails, CrateStats, Progr
 use crate::prelude::*;
 use crate::repo::Repo;
 use crev_lib::VerificationStatus;
+use lazy_static::lazy_static;
 
 /// the styles that can be applied to cells of the dep list
 struct DepTableSkin {
@@ -289,7 +290,7 @@ impl<'t> VerifyScreen<'t> {
             .with_align(Alignment::Right),
         ];
 
-        let list_view = ListView::new(Area::new(0, 1, 10, 10), columns, &SKIN);
+        let list_view = ListView::new(Area::new(0, 1, 10, 1), columns, &SKIN);
 
         let repo = Repo::auto_open_cwd()?; // TODO not extra clean
         let title = repo.name().to_string();
@@ -319,40 +320,40 @@ impl<'t> VerifyScreen<'t> {
     pub fn add_dep(&mut self, dep: CrateStats) {
         self.list_view.add_row(dep);
     }
+
     pub fn resize(&mut self) {
         let (w, h) = terminal_size();
+        // XXX: TODO: https://github.com/Canop/termimad/issues/6
+        let (w, h) = (w - 1, h - 1);
         if (w, h) == self.last_dimensions {
             return;
         }
-        Terminal::new().clear(ClearType::All).unwrap();
         self.last_dimensions = (w, h);
+        self.title_area.top = 0;
         self.title_area.width = w;
+        self.list_view.area.top = 1;
         self.list_view.area.width = w;
         self.list_view.area.height = h - 4;
         self.list_view.update_dimensions();
         self.status_area.top = h - 3;
+        self.status_area.height = 3;
         self.status_area.width = w;
         self.input_field.change_area(0, h - 2, w / 2);
         self.hint_area.top = h - 2;
         self.hint_area.left = self.input_field.area.width;
         self.hint_area.width = w - self.hint_area.left;
+
+        Terminal::new().clear(ClearType::All).unwrap();
     }
+
     fn update_title(&self) {
         self.title_skin
             .write_in_area(&format!("# *crev* : {}", &self.title), &self.title_area)
             .unwrap();
     }
+
     fn update_list_view(&mut self) {
-        if !self.progress.is_complete() {
-            self.skin
-                .write_in_area(
-                    &format!("\n*preparing table... You may quit at any time with ctrl-q*"),
-                    &self.list_view.area,
-                )
-                .unwrap();
-        } else {
-            self.list_view.display().unwrap();
-        }
+        self.list_view.display().unwrap();
     }
 
     fn all_deps_ready(&self) -> bool {
