@@ -62,7 +62,7 @@ before_cache:
 branches:
   only:
     # release tags
-    - /^cargo-crev-v\d+\.\d+\.\d+.*$/
+    - /^v\d+\.\d+\.\d+.*$/
     - master
 
 notifications:

@@ -45,7 +45,7 @@ for:
 -
   branches:
     only:
-      - /cargo-crev-v\d+\.\d+\.\d+/
+      - /v\d+\.\d+\.\d+/
       - master
   environment:
     # Only build a release build for releases.
