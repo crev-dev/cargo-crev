@@ -32,7 +32,7 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     }
     term.print(
         format_args!("{:6}", cdep.trust),
-        term::verification_status_color(&cdep.trust),
+        term::verification_status_color(cdep.trust),
     )?;
     print!(" {:2} {:2}", cdep.reviews.version, cdep.reviews.total);
     if let Some(downloads) = &cdep.downloads {

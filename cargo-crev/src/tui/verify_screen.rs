@@ -357,7 +357,7 @@ impl<'t> VerifyScreen<'t> {
     }
 
     fn all_deps_ready(&self) -> bool {
-        self.progress.total == self.progress.done
+        self.progress.is_complete()
     }
 
     fn update_status(&self) {
@@ -431,7 +431,7 @@ impl<'t> VerifyScreen<'t> {
             _ => {
                 if self.input_field.apply_event(user_event) {
                     let pattern = self.input_field.get_content();
-                    if pattern.len() > 0 {
+                    if !pattern.is_empty() {
                         self.list_view.set_filter(Box::new(move |dep: &CrateStats| {
                             dep.info.id.name().contains(&pattern)
                         }));

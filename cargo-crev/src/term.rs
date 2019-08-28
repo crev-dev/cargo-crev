@@ -9,7 +9,7 @@ use term::{
     StderrTerminal, StdoutTerminal,
 };
 
-pub fn verification_status_color(s: &VerificationStatus) -> Option<color::Color> {
+pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> {
     match s {
         VerificationStatus::Verified => Some(term::color::GREEN),
         VerificationStatus::Insufficient => None,

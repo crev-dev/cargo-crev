@@ -14,6 +14,7 @@ use crate::shared::*;
 /// Review a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
+#[allow(clippy::option_option)]
 pub fn create_review_proof(
     name: &str,
     version: Option<&Version>,

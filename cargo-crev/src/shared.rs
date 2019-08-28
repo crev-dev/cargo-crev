@@ -353,7 +353,7 @@ pub fn crate_review_activity_check(
                 }
             }
             ReviewMode::Differential => {
-                if !diff.is_some() {
+                if diff.is_none() {
                     bail!(
                         "Last review activity record for {}:{} indicates differential review. \
                          Use `--diff` flag? Use `--skip-activity-check` to override.",
