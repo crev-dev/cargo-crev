@@ -5,7 +5,7 @@ use crate::{
     util, ProofDB, ProofStore,
 };
 use crev_common::{
-    self, sanitize_name,
+    self, sanitize_name_for_fs,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -272,9 +272,9 @@ impl Local {
     ) -> PathBuf {
         self.cache_activity_path()
             .join("review")
-            .join(sanitize_name(source))
-            .join(sanitize_name(name))
-            .join(sanitize_name(&version.to_string()))
+            .join(sanitize_name_for_fs(source))
+            .join(sanitize_name_for_fs(name))
+            .join(sanitize_name_for_fs(&version.to_string()))
             .with_extension("yaml")
     }
 
