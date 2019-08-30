@@ -5,7 +5,7 @@ use crate::{
     util, ProofDB, ProofStore,
 };
 use crev_common::{
-    self, sanitize_name_for_fs,
+    self, sanitize_name_for_fs, sanitize_url_for_fs,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -494,14 +494,23 @@ impl Local {
     }
 
     pub fn get_proofs_dir_path_for_url(&self, url: &Url) -> Result<PathBuf> {
-        Ok(self.user_proofs_path().join(url.digest().to_string()))
+        let old_path = self.user_proofs_path().join(url.digest().to_string());
+        let new_path = self.user_proofs_path().join(sanitize_url_for_fs(&url.url));
+
+        if old_path.exists() {
+            std::fs::rename(&old_path, &new_path)?;
+        }
+
+        Ok(new_path)
     }
 
     // Path where the `proofs` are stored under `git` repository
     pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
-        Ok(self
-            .get_cur_url()?
-            .map(|url| self.root_path.join("proofs").join(url.digest().to_string())))
+        if let Some(url) = self.get_cur_url()? {
+            Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
@@ -637,17 +646,26 @@ impl Local {
         Ok(())
     }
 
-    pub fn get_remote_git_cache_path(&self, url: &str) -> PathBuf {
+    pub fn get_remote_git_cache_path(&self, url: &str) -> Result<PathBuf> {
         let digest = crev_common::blake2b256sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
-        self.cache_remotes_path().join(digest.to_string())
+        let old_path = self.cache_remotes_path().join(digest.to_string());
+        let new_path = self
+            .cache_remotes_path()
+            .join(sanitize_url_for_fs(&url.to_string()));
+
+        if old_path.exists() {
+            std::fs::rename(&old_path, &new_path)?;
+        }
+
+        Ok(new_path)
     }
 
     /// Fetch a git proof repository
     ///
     /// Returns url where it was cloned/fetched
     pub fn fetch_remote_git(&self, url: &str) -> Result<PathBuf> {
-        let dir = self.get_remote_git_cache_path(url);
+        let dir = self.get_remote_git_cache_path(url)?;
 
         if dir.exists() {
             let repo = git2::Repository::open(&dir)?;
