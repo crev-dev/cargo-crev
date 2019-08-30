@@ -388,6 +388,15 @@ pub struct AdviseCommon {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct Lookup {
+    /// Number of results
+    #[structopt(long = "count", default_value = "10")]
+    pub count: usize,
+    /// Query to use
+    pub query: String,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct ExportId {
     pub id: Option<String>,
 }
@@ -490,6 +499,10 @@ pub enum Command {
     /// Update data from online sources (proof repositories, crates.io)
     #[structopt(name = "update", alias = "pull")]
     Update,
+
+    /// Lookup dependencies from crates.io sorted by review count
+    #[structopt(name = "lookup", alias = "lookup")]
+    Lookup(Lookup),
 
     /// Diff between two versions of a package
     #[structopt(name = "diff")]

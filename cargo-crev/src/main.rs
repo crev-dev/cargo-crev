@@ -274,6 +274,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
         },
+        opts::Command::Lookup(args) => {
+            lookup_crates(&args.query, args.count)?;
+        }
     }
 
     Ok(CommandExitStatus::Successs)

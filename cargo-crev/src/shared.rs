@@ -734,3 +734,50 @@ pub fn maybe_store(
 
     Ok(())
 }
+
+pub fn lookup_crates(query: &str, count: usize) -> Result<()> {
+    struct CrateStats {
+        name: String,
+        downloads: u64,
+        proof_count: usize,
+    }
+
+    use crates_io_api::{ListOptions, Sort, SyncClient};
+
+    let local = crev_lib::Local::auto_create_or_open()?;
+    let db = local.load_db()?;
+
+    let client = SyncClient::new();
+    let mut stats: Vec<_> = client
+        .crates(ListOptions {
+            sort: Sort::Downloads,
+            per_page: 100,
+            page: 1,
+            query: Some(query.to_string()),
+        })?
+        .crates
+        .iter()
+        .map(|crate_| CrateStats {
+            name: crate_.name.clone(),
+            downloads: crate_.downloads,
+            proof_count: db.get_package_review_count(
+                PROJECT_SOURCE_CRATES_IO,
+                Some(&crate_.name),
+                None,
+            ),
+        })
+        .collect();
+
+    stats.sort_by(|a, b| {
+        a.proof_count
+            .cmp(&b.proof_count)
+            .then(a.downloads.cmp(&b.downloads))
+            .reverse()
+    });
+
+    for stats in stats.iter().take(count) {
+        println!("{:8} {}", stats.proof_count, stats.name);
+    }
+
+    Ok(())
+}
