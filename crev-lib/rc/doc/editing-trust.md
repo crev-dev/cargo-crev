@@ -1,6 +1,6 @@
 # Creating Trust Proof
 
-Trust Proof records your trust in abilities and standards of another
+A Trust Proof records your trust in abilities and standards of another
 entity using `crev` system.
 
 ## Responsibility
@@ -13,15 +13,15 @@ On the other hand, the more trustworthy entites in your Web of Trust,
 the broader the reach of it and more data it can find.
 
 Your Proofs are cryptographically signed and will circulate in the ecosystem.
-While there is no explicit or implicity legal responsibiltity attached to
+While there is no explicit or implicity legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 
 ## Data fields
 
 * `trust` - trust level; possible values:
-  * `high` - "for most practically purposes, I trust this ID as much or more
-             than myself" eg. "my dayjob ID", "known and reputatable expert",
+  * `high` - "for most practical purposes, I trust this ID as much or more
+             than myself" eg. "my dayjob ID", "known and reputable expert",
              "employee within my team"
   * `medium` - typical, normal level of trust
   * `low` - "I have some reservations about trusting this entity"

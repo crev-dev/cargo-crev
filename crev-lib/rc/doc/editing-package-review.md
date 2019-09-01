@@ -1,18 +1,18 @@
 # Creating Package Review Proof
 
-Package Review Proof records results of your review of a version/release
+A Package Review Proof records results of your review of a version/release
 of a software package.
 
 ## Responsibility
 
-It is important that your review is truthfull. At very least, make sure
+It is important that your review is truthful. At the very least, make sure
 to adjust the `thoroughness` and `understanding` correctly.
 
 Other users might use information you provide, to judge software quality
 and trustworthiness.
 
 Your Proofs are cryptographically signed and will circulate in the ecosystem.
-While there is no explicit or implicity legal responsibiltity attached to
+While there is no explicit or implicity legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 
@@ -42,20 +42,20 @@ your other work, etc.
     * `negative` - severe flaws and not ok for production usage
     * `dangerous` - unsafe to use; severe flaws and/or possibly malicious
 * `advisories` - advisories mark package versions containing an important fix (list)
-    * `ids` - list of IDs identifing the issue being fixed
+    * `ids` - list of IDs identifying the issue being fixed
     * `range` - versions are potentially affected
-      * `all` - all previous version
-      * `major` - all previous version within the same major release version
-      * `minor` - all previous version within the same minor release version
+      * `all` - all previous versions
+      * `major` - all previous versions within the same major release version
+      * `minor` - all previous versions within the same minor release version
     * `severity`
       * `high` - critical issue (often with security implications)
       * `medium` - important
-      * `low` - low severity 
+      * `low` - low severity
 * `issues` - issues report a problem in a release (list)
     * `id` - an ID of an issue
     * `severity` - same as in the `advisories` section
 * `comment` - human-readable information about this review
-              (eg. why it was done, how, and `rating` explanation)
+              (e.g. why it was done, how, and `rating` explanation)
 
 ## Further reading
 
