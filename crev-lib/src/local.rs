@@ -498,6 +498,9 @@ impl Local {
         let new_path = self.user_proofs_path().join(sanitize_url_for_fs(&url.url));
 
         if old_path.exists() {
+            // we used to use less human-friendly path format; move directories
+            // from old to new path
+            // TODO: get rid of this in some point in the future
             std::fs::rename(&old_path, &new_path)?;
         }
 
@@ -655,6 +658,9 @@ impl Local {
             .join(sanitize_url_for_fs(&url.to_string()));
 
         if old_path.exists() {
+            // we used to use less human-friendly path format; move directories
+            // from old to new path
+            // TODO: get rid of this in some point in the future
             std::fs::rename(&old_path, &new_path)?;
         }
 
