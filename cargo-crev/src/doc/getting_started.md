@@ -9,7 +9,7 @@ ideas behind them and describe the basic workflows that will allow you to start 
 Please remember that `crev` project is still largely a work in progress,
 and this documentation might be incorrect or stale. In case of any problems
 please don't hesitate to [join crev's gitter channel](https://gitter.im/dpc/crev)
-and ask for help or open a github issue.
+and ask for help or open a GitHub issue.
 
 Any help in improving this documentation is greatly appreciated.
 
@@ -35,7 +35,7 @@ available, the recommended way to install it is installing from source.
 
 ### Using static binaries
 
-Static binaries build by CI pipeline are available on [crev's releases](https://github.com/dpc/crev/releases) github page.
+Static binaries build by CI pipeline are available on [crev's releases](https://github.com/dpc/crev/releases) GitHub page.
 
 ### Building from source
 
@@ -45,7 +45,7 @@ Regrettably `cargo-crev` requires a non-Rust dependency to compile, as OpenSSL
 is required for TLS support.
 
 Though OpenSSL is popular and readily available, it's virtually impossible to cover installing
-it on all the available Operating Systems. In case of problems, don't hesitate to ask for help.
+it on all the available operating systems. In case of problems, don't hesitate to ask for help.
 
 ##### Unix
 
@@ -120,17 +120,17 @@ Let's take a look:
 
 ```text
 $ cargo crev verify
-status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t       
-none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1           
-none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9           
-none    0  0  1045209   2648161 1/1    0/0    403       3      same-file            1.0.4           
-none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde                1.0.90          
+status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t
+none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1
+none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9
+none    0  0  1045209   2648161 1/1    0/0    403       3      same-file            1.0.4
+none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde                1.0.90
 (...)
 ```
 
 The actual output is using color to make the data more accessible.
 
-The of meaning of each column, and all the available options are
+The meaning of each column, and all the available options are
 described in the output of `cargo crev verify --help` command.
 
 Right now we will discuss just the most important columns.
@@ -145,7 +145,7 @@ Verification of dependencies is considered as successful only if all the values
 in `trust` column contain `pass` value.
 
 If you just started using `crev`, your Rust project probably has more than 100
-dependencies, and all of them are not passing the verification. That's the reason 
+dependencies, and all of them are not passing the verification. That's the reason
 why `crev` was created - your software is implicitly trusting 100 or more libraries,
 created by strangers from the Internet, containing code that you've never looked at.
 
@@ -165,9 +165,9 @@ Found proofs from:
       70 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
 ```
 
-This command does a `git fetch` from publicly available *proof repository* of github
+This command does a `git fetch` from a publicly available *proof repository* of a git
 user, and stores it in a local cache for future use. A *proof repository* is just a
-github repository containing *proofs*.
+git repository containing *proofs*.
 
 Go ahead and re-run `cargo crev verify`. Chances are you're using crates
 that dpc have already reviewed. The `reviews` column will contain values bigger than zero.
@@ -177,7 +177,7 @@ that dpc have already reviewed. The `reviews` column will contain values bigger 
 Right now none of your crates is considered trusted yet, despite the fact that dpc might
 have reviewed them already. The reason is: you don't trust this user.
 
-For most project it is not possible to review all dependencies by yourself. You will have
+For most projects it is not possible to review all dependencies by yourself. You will have
 to trust some people. Let's crate a *trust proof* for dpc. You can always revoke this trust
 later if you wish.
 
@@ -186,16 +186,16 @@ $ cargo crev trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
 Error: User config not-initialized. Use `crev id new` to generate CrevID.
 ```
 
-Oops. That's right. You can't sign an *proof* until you have your own identity.
+Oops. That's right. You can't sign a *proof* until you have your own identity.
 
 ## Creating a `CrevID`
 
 To create a `CrevID` you'll first need a github repository to serve
 as your public *proof repository*. Customarily the repository should be called `crev-proofs`.
 
-* Github users can just [fork a template](https://github.com/crev-dev/crev-proofs/fork).
+* GitHub users can just [fork a template](https://github.com/crev-dev/crev-proofs/fork).
 * Other users can do it manually. **Note**: `cargo-crev` requires the master branch to already exist, so the repository you have created
-has to contains at least one existing commit.
+has to contain at least one existing commit.
 
 Then run `cargo crev id new` like this:
 
@@ -204,7 +204,7 @@ $ cargo crev id new --url https://github.com/YOUR-USERNAME/crev-proofs
 https://github.com/YOUR-USERNAME/crev-proofs cloned to /home/YOUR-USERNAME/.config/crev/proofs/Sp87YXeDKUyh4jImm23bCp1Gr-6eNkMoQogWbftNobQ
 CrevID will be protected by a passphrase.
 There's no way to recover your CrevID if you forget your passphrase.
-Enter new passphrase: 
+Enter new passphrase:
 ```
 
 
@@ -218,12 +218,12 @@ $ cargo crev query id current
 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/YOUR-USERNAME/crev-proofs
 ```
 
-Now, back to creating *trust proof* for `dpc`.
+Now, back to creating a *trust proof* for `dpc`.
 
 
 ```text
 $  cargo crev trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
-Enter passphrase to unlock: 
+Enter passphrase to unlock:
 ```
 
 After you unlock your ID you'll be put into a text editor to create a *proof*:
@@ -237,7 +237,7 @@ comment: ""
 
 # # Creating Trust Proof
 # 
-# Trust Proof records your trust in abilities and standards of another
+# A Trust Proof records your trust in abilities and standards of another
 # entity using `crev` system.
 # 
 # ## Responsibility
@@ -300,11 +300,11 @@ YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA low    https://github.com/oherrala/c
 That might be a little surprising. Not only are you trusting `FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE`
 which you have just signed the *trust proof* for, but also some other user.
 
-That's because [user `dpc` already trusted user `oherrala`](https://github.com/dpc/crev-proofs/blob/2d250e26bed95927a76551c7969cd108ebb1946c/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/trust/2019-04.proof.crev#L1). Trust in `crev` is transitive. If you trust user `a`, and user `b` trusts user `c`, you're implicitly trusting user `c`. That is what your personal *Web of Trust* really means in `crev`.
+That's because [user `dpc` already trusted user `oherrala`](https://github.com/dpc/crev-proofs/blob/2d250e26bed95927a76551c7969cd108ebb1946c/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/trust/2019-04.proof.crev#L1). Trust in `crev` is transitive. If you trust user `b`, and user `b` trusts user `c`, you're implicitly trusting user `c`. That is what your personal *Web of Trust* really means in `crev`.
 
-For distrustful people, it seem scary at first, but it should not.
+For distrustful people, it seems scary at first, but it should not.
 
-We are trying to achieve an "impossible" here. We're not going to get much done if we are not reusing work of other people.
+We are trying to achieve the "impossible" here. We're not going to get much done if we are not reusing work of other people.
 And we should use any help we can get.
 
 
@@ -340,9 +340,9 @@ Scan the output of `cargo crev verify` and pick a crate with low `lines` count. 
 review you want to start small and easy.
 
 
-At the moment of writting this `cargo crev` provides two methods of reviewing crate source code:
+At the moment of writing this `cargo crev` provides two methods of reviewing crate source code:
 
-* for people prefering the command line and text editors like Vim, there's a `cargo crev goto` command
+* for people preferring the command line and text editors like Vim, there's a `cargo crev goto` command
 * for IDE users `cargo crev open`
 
 ### Reviewing code using `cargo crev goto`
@@ -373,7 +373,7 @@ temporary review-shell and use `cargo crev review <cratename>`.
 
 ### Reviewing code using `cargo crev open`
 
-If you are an IDE users you can make `crev` open the crate source code in the IDE of your choice.
+If you are an IDE user you can make `crev` open the crate source code in the IDE of your choice.
 
 Example. VSCode users can run:
 
@@ -404,12 +404,12 @@ comment: ""
 
 # # Creating Package Review Proof
 # 
-# Package Review Proof records results of your review of a version/release
+# A Package Review Proof records results of your review of a version/release
 # of a software package.
 # 
 # ## Responsibility
 # 
-# It is important that your review is truthfull. At very least, make sure
+# It is important that your review is truthful. At very least, make sure
 # to adjust the `thoroughness` and `understanding` correctly.
 # 
 # Other users might use information you provide, to judge software quality
@@ -430,7 +430,7 @@ Again, a helpful comment section documents the basic guidelines of *review proof
 
 The most important part is: just be truthful.
 
-Before you finish, and save the *proof*. Let us look at [an existing, signed *review proof*](https://github.com/dpc/crev-proofs/blob/2d250e26bed95927a76551c7969cd108ebb1946c/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/reviews/2018-12-packages-Ua7DxQ.proof.crev#L84)
+Before you finish and save the *proof*, let us look at [an existing, signed *review proof*](https://github.com/dpc/crev-proofs/blob/2d250e26bed95927a76551c7969cd108ebb1946c/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/reviews/2018-12-packages-Ua7DxQ.proof.crev#L84)
 
 ```text
 -----BEGIN CREV PACKAGE REVIEW-----
@@ -458,8 +458,8 @@ IBPz20fpI6x3nWJJ1pRsHqGVq3b6yQxyYppIlVPUEZIL3h9AYrV-u7UJMPu5sqCWski91mX8qOE5D3_2
 As you might have already noticed, the document you are editing is not a complete
 *review proof*. A lot of details will be filled automatically by `cargo crev`.
 
-`crev` proofs are Yaml documents, wrapped in GPG-like separatos, and signed using
-private key generated during `cargo crev id new`.
+`crev` proofs are Yaml documents, wrapped in GPG-like separators, and signed using
+the private key generated during `cargo crev id new`.
 
 Yaml is a popular serialization format. It is easy to read and easy to parse. It also
 makes the document format easily extendable in the future.
@@ -518,7 +518,7 @@ easily discoverable.
 
 You can ask other people to include them in their *WoT* by publishing a blog-post, sending a tweet, sending message on
 [`crev's` gitter channel](https://gitter.im/dpc/crev) or adding it to the
-[official bootstraping wiki-page list of crev *proof repositories*](https://github.com/dpc/crev/wiki/List-of-Proof-Repositories)
+[official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/dpc/crev/wiki/List-of-Proof-Repositories)
 
 You can also use these places to find more *proof repositories* of other people.
 
@@ -532,4 +532,4 @@ and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
 * Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
-* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify`. 
+* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify`.
