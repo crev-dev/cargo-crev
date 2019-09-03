@@ -53,6 +53,7 @@ impl Repo {
 
     pub fn update_source(&self) -> Result<()> {
         let mut source = self.load_source()?;
+        let _lock = self.config.acquire_package_cache_lock()?;
         source.update()?;
         Ok(())
     }
