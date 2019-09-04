@@ -603,6 +603,7 @@ impl Local {
                     continue;
                 } else if let Some(url) = db.lookup_url(id).cloned() {
                     self.fetch_proof_repo_import_and_print_counts(&url.url, &mut db);
+                    something_was_fetched = true;
                 } else {
                     eprintln!("No URL for {}", id);
                 }
@@ -637,10 +638,10 @@ impl Local {
 
                     if already_fetched_urls.contains(&url) {
                         continue;
-                    } else {
-                        already_fetched_urls.insert(url.clone());
                     }
+                    already_fetched_urls.insert(url.clone());
                     self.fetch_proof_repo_import_and_print_counts(&url, db);
+                    something_was_fetched = true;
                 } else {
                     eprintln!("No URL for {}", id);
                 }
