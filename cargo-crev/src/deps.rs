@@ -156,7 +156,11 @@ pub fn latest_trusted_version_string(
             } else {
                 "="
             },
-            &latest_trusted_version,
+            if base_version == latest_trusted_version {
+                "".into()
+            } else {
+                latest_trusted_version.to_string()
+            },
         )
     } else {
         "".to_owned()
