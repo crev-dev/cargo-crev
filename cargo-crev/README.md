@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://travis-ci.org/crev-dev/cargo-crev">
-      <img src="https://img.shields.io/travis/dpc/crev/master.svg?style=flat-square" alt="Travis CI Build Status">
+      <img src="https://img.shields.io/travis/crev-dev/cargo-crev/master.svg?style=flat-square" alt="Travis CI Build Status">
   </a>
   <a href="https://crates.io/crates/cargo-crev">
       <img src="http://meritbadge.herokuapp.com/cargo-crev?style=flat-square" alt="crates.io">
