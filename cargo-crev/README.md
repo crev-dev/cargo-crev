@@ -14,20 +14,17 @@
   <br>
 </p>
 
-# `cargo-crev` - [Crev](https://github.com/crev-dev/crev) (Code REView system) for Rust/cargo
+# cargo-crev
+
+> A cryptographically verifiable **c**ode **rev**iew system for the cargo (Rust) package manager.
 
 ## Introduction
 
-[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic,
-distributed Code REView system.
+[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic, distributed **c**ode **rev**iew system.
 
-`cargo-crev` is a CLI application implementation/frontend of Crev integrated with `cargo` and targeting
-Rust/crates.io ecosystem.
+`cargo-crev` is an implementation of Crev as a command line tool integrated with `cargo`. This tool helps Rust users evaluate the quality and trustworthiness of their package dependencies.
 
-`cargo-crev` is a tool helping Rust users evalute quality and trustworthiness
-of dependencies they use.
-
-## Why Rust developers should use `cargo-crev`?
+## Features
 
 `cargo-crev` can already:
 
