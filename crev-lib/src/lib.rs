@@ -3,6 +3,7 @@
 pub mod activity;
 pub mod id;
 pub mod local;
+pub mod cli;
 pub(crate) mod prelude;
 pub mod proof;
 pub mod proofdb;

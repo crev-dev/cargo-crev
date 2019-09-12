@@ -8,6 +8,7 @@
 use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
+use crev_lib::TrustOrDistrust::{self, *};
 use crev_lib::{self, local::Local};
 use std::io::BufRead;
 use structopt::StructOpt;
@@ -30,7 +31,6 @@ mod tui;
 use crate::repo::*;
 use crate::review::*;
 use crate::shared::*;
-use crev_lib::TrustOrDistrust::{self, *};
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
@@ -301,9 +301,11 @@ fn main() {
     match run_command(command) {
         Ok(CommandExitStatus::Success) => {}
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
-        Err(e) => {
-            eprintln!("{}", e.display_causes_and_backtrace());
-            std::process::exit(-2)
+        Err(_) => {
+            if let Err(e) = crev_lib::cli::parse() {
+                eprintln!("{}", e.display_causes_and_backtrace());
+                std::process::exit(-2)
+            }
         }
     }
 }
