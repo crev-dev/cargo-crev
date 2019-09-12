@@ -219,7 +219,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     }
 
     Ok(if nb_unverified == 0 {
-        CommandExitStatus::Successs
+        CommandExitStatus::Success
     } else {
         CommandExitStatus::VerificationFailed
     })

@@ -40,7 +40,7 @@ and many other things with many more to come.
 
 ## Getting started
 
-Static binaries are availble on [crev's releases](https://github.com/crev-dev/cargo-crev/releases) page.
+Static binaries are available from the [releases page](https://github.com/crev-dev/cargo-crev/releases).
 
 Follow the [`cargo-crev` - Getting Started Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
