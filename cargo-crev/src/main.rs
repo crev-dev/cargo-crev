@@ -279,7 +279,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
     }
 
-    Ok(CommandExitStatus::Successs)
+    Ok(CommandExitStatus::Success)
 }
 
 fn load_stdin_with_prompt() -> Result<Vec<u8>> {
@@ -299,7 +299,7 @@ fn main() {
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
     match run_command(command) {
-        Ok(CommandExitStatus::Successs) => {}
+        Ok(CommandExitStatus::Success) => {}
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
         Err(e) => {
             eprintln!("{}", e.display_causes_and_backtrace());

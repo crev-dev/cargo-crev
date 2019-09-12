@@ -256,7 +256,7 @@ pub fn crate_open(
     let crate_root = crate_.root();
 
     if cmd_save && cmd.is_none() {
-        bail!("Can't save cmd without specifing it");
+        bail!("Can't save cmd without specifying it");
     }
 
     let open_cmd = if let Some(cmd) = cmd {
@@ -325,7 +325,7 @@ pub fn crate_review_activity_check(
                 .diff_base
                 .ok_or_else(|| {
                     format_err!(
-                        "Last review activity record for {}:{} indcates full review. \
+                        "Last review activity record for {}:{} indicates full review. \
                          Are you sure you want to use `--diff` flag? \
                          Use `--skip-activity-check` to override.",
                         name,
@@ -344,7 +344,7 @@ pub fn crate_review_activity_check(
             ReviewMode::Full => {
                 if diff.is_some() {
                     bail!(
-                        "Last review activity record for {}:{} indcates full review. \
+                        "Last review activity record for {}:{} indicates full review. \
                          Are you sure you want to use `--diff` flag? \
                          Use `--skip-activity-check` to override.",
                         name,
@@ -683,13 +683,13 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
 
 /// Result of `run_command`
 ///
-/// This is to distinguish expeced non-success results,
+/// This is to distinguish expected non-success results,
 /// from errors: unexpected failures.
 pub enum CommandExitStatus {
     // `verify deps` failed
     VerificationFailed,
     // Success, exit code 0
-    Successs,
+    Success,
 }
 
 pub fn is_digest_clean(

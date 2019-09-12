@@ -89,5 +89,5 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     }
 
     cursor.show()?; // if we don't do this, the poor terminal is cursorless
-    Ok(CommandExitStatus::Successs)
+    Ok(CommandExitStatus::Success)
 }
