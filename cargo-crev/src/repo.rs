@@ -60,6 +60,7 @@ fn get_cfgs(rustc: &Rustc, target: &Option<String>) -> CargoResult<Option<Vec<Cf
         lines.map(Cfg::from_str).collect::<CargoResult<Vec<_>>>()?,
     ))
 }
+
 fn resolve<'a, 'cfg>(
     registry: &mut PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,
@@ -229,6 +230,17 @@ impl Repo {
         let ids = packages.package_ids().collect::<Vec<_>>();
         let packages = registry.get(&ids)?;
 
+        // TODO: get rid of this
+        //
+        // I don't like that we depend on `rustc` and
+        // even have to call it. If there is no better way,
+        // then in case `rustc` is missing or something, we should
+        // just match on any cfg in `get_cfgs`? Probably always?
+        // Other functions seems to be using much simpler way of
+        // traversing all packages, and we probably don't want to
+        // get into all the details of "replaced" packages and configs
+        // just in this one function. So we either lift other ones,
+        // or dumb down this one.
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
 
         let target = if self.cargo_opts.all_targets {
