@@ -1,3 +1,13 @@
+use crate::opts;
+use cargo::core::dependency::Kind;
+use cargo::core::manifest::ManifestMetadata;
+use cargo::core::registry::PackageRegistry;
+use cargo::core::resolver::Method;
+use cargo::core::InternedString;
+use cargo::core::{Resolve, Workspace};
+use cargo::ops;
+use cargo::util::Rustc;
+use cargo::util::{self, CargoResult, Cfg};
 use cargo::{
     core::{
         dependency::Dependency, package::PackageSet, source::SourceMap, Package, PackageId,
@@ -8,23 +18,153 @@ use cargo::{
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use failure::format_err;
+use petgraph::graph::NodeIndex;
+use std::collections::hash_map::Entry;
+use std::collections::{BTreeSet, HashMap};
+use std::rc::Rc;
+use std::str::FromStr;
 use std::{collections::HashSet, env, path::PathBuf};
 
 use crate::crates_io;
 use crate::prelude::*;
 use crate::shared::*;
 
+#[derive(Debug)]
+struct Node {
+    #[allow(unused)]
+    id: PackageId,
+    #[allow(unused)]
+    metadata: ManifestMetadata,
+}
+
+#[derive(Debug)]
+pub struct Graph {
+    graph: petgraph::Graph<Node, Kind>,
+    nodes: HashMap<PackageId, NodeIndex>,
+}
+
+fn get_cfgs(rustc: &Rustc, target: &Option<String>) -> CargoResult<Option<Vec<Cfg>>> {
+    let mut process = util::process(&rustc.path);
+    process.arg("--print=cfg").env_remove("RUST_LOG");
+    if let Some(ref s) = *target {
+        process.arg("--target").arg(s);
+    }
+
+    let output = match process.exec_with_output() {
+        Ok(output) => output,
+        Err(e) => return Err(e),
+    };
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let lines = output.lines();
+    Ok(Some(
+        lines.map(Cfg::from_str).collect::<CargoResult<Vec<_>>>()?,
+    ))
+}
+fn resolve<'a, 'cfg>(
+    registry: &mut PackageRegistry<'cfg>,
+    workspace: &'a Workspace<'cfg>,
+    features: &Vec<String>,
+    all_features: bool,
+    no_default_features: bool,
+    no_dev_dependencies: bool,
+) -> CargoResult<(PackageSet<'a>, Resolve)> {
+    let (packages, resolve) = ops::resolve_ws(workspace)?;
+
+    let method = Method::Required {
+        dev_deps: !no_dev_dependencies,
+        features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
+        all_features,
+        uses_default_features: !no_default_features,
+    };
+
+    let resolve =
+        ops::resolve_with_previous(registry, workspace, method, Some(&resolve), None, &[], true)?;
+    Ok((packages, resolve))
+}
+
+fn build_graph<'a>(
+    resolve: &'a Resolve,
+    packages: &'a PackageSet<'_>,
+    roots: impl Iterator<Item = PackageId>,
+    target: Option<&str>,
+    cfgs: Option<&[Cfg]>,
+) -> CargoResult<Graph> {
+    let mut graph = Graph {
+        graph: petgraph::Graph::new(),
+        nodes: HashMap::new(),
+    };
+
+    let mut pending = vec![];
+    for root in roots {
+        let node = Node {
+            id: root.clone(),
+            metadata: packages.get_one(root)?.manifest().metadata().clone(),
+        };
+        graph.nodes.insert(root.clone(), graph.graph.add_node(node));
+        pending.push(root);
+    }
+
+    while let Some(pkg_id) = pending.pop() {
+        let idx = graph.nodes[&pkg_id];
+        let pkg = packages.get_one(pkg_id)?;
+
+        for raw_dep_id in resolve.deps_not_replaced(pkg_id) {
+            let it = pkg
+                .dependencies()
+                .iter()
+                .filter(|d| d.matches_ignoring_source(raw_dep_id))
+                .filter(|d| {
+                    d.platform()
+                        .and_then(|p| target.map(|t| p.matches(t, cfgs)))
+                        .unwrap_or(true)
+                });
+            let dep_id = match resolve.replacement(raw_dep_id) {
+                Some(id) => id,
+                None => raw_dep_id,
+            };
+            for dep in it {
+                let dep_idx = match graph.nodes.entry(dep_id) {
+                    Entry::Occupied(e) => *e.get(),
+                    Entry::Vacant(e) => {
+                        pending.push(dep_id);
+                        let node = Node {
+                            id: dep_id,
+                            metadata: packages.get_one(dep_id)?.manifest().metadata().clone(),
+                        };
+                        *e.insert(graph.graph.add_node(node))
+                    }
+                };
+                graph.graph.add_edge(idx, dep_idx, dep.kind());
+            }
+        }
+    }
+
+    Ok(graph)
+}
+
 /// A handle to the current Rust project
 pub struct Repo {
     manifest_path: PathBuf,
     config: cargo::util::config::Config,
+    cargo_opts: opts::CargoOpts,
+    #[allow(unused)]
+    features_set: BTreeSet<InternedString>,
+    features_list: Vec<String>,
 }
 
 impl Repo {
-    pub fn auto_open_cwd() -> Result<Self> {
+    pub fn auto_open_cwd_default() -> Result<Self> {
+        Self::auto_open_cwd(Default::default())
+    }
+
+    pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
         cargo::core::enable_nightly_features();
-        let cwd = env::current_dir()?;
-        let manifest_path = find_root_manifest_for_wd(&cwd)?;
+        let manifest_path = if let Some(ref path) = cargo_opts.manifest_path {
+            path.to_owned()
+        } else {
+            let cwd = env::current_dir()?;
+            find_root_manifest_for_wd(&cwd)?
+        };
         let mut config = cargo::util::config::Config::default()?;
         config.configure(
             0,
@@ -34,11 +174,18 @@ impl Repo {
             /* locked: */ true,
             /* offline: */ false,
             &None,
-            &[],
+            &cargo_opts.unstable_flags,
         )?;
+        let features_set =
+            Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(|| String::new())]);
+
+        let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
         Ok(Repo {
             manifest_path,
             config,
+            features_set,
+            features_list,
+            cargo_opts,
         })
     }
 
@@ -49,6 +196,63 @@ impl Repo {
             .file_name()
             .unwrap()
             .to_string_lossy()
+    }
+
+    fn workspace(&self) -> CargoResult<Workspace<'_>> {
+        Workspace::new(&self.manifest_path, &self.config)
+    }
+
+    fn registry<'a>(
+        &'a self,
+        source_ids: impl Iterator<Item = SourceId>,
+    ) -> CargoResult<PackageRegistry<'a>> {
+        let mut registry = PackageRegistry::new(&self.config)?;
+        registry.add_sources(source_ids)?;
+        Ok(registry)
+    }
+
+    pub fn get_dependency_graph(&self) -> CargoResult<Graph> {
+        let workspace = self.workspace()?;
+        let mut registry = self.registry(
+            workspace
+                .members()
+                .map(|m| m.summary().source_id().to_owned()),
+        )?;
+        let (packages, resolve) = resolve(
+            &mut registry,
+            &workspace,
+            &self.features_list,
+            self.cargo_opts.all_features,
+            self.cargo_opts.no_default_features,
+            self.cargo_opts.no_dev_dependencies,
+        )?;
+        let ids = packages.package_ids().collect::<Vec<_>>();
+        let packages = registry.get(&ids)?;
+
+        let rustc = self.config.load_global_rustc(Some(&workspace))?;
+
+        let target = if self.cargo_opts.all_targets {
+            None
+        } else {
+            Some(
+                self.cargo_opts
+                    .target
+                    .as_ref()
+                    .unwrap_or(&rustc.host)
+                    .as_str(),
+            )
+        };
+
+        let cfgs = get_cfgs(&rustc, &self.cargo_opts.target)?;
+        let graph = build_graph(
+            &resolve,
+            &packages,
+            workspace.members().map(|m| m.package_id()),
+            target,
+            cfgs.as_ref().map(|r| &**r),
+        )?;
+
+        Ok(graph)
     }
 
     pub fn update_source(&self) -> Result<()> {
@@ -93,14 +297,15 @@ impl Repo {
         &self,
         mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
-        let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        // let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        let workspace = self.workspace()?;
         // take all the packages inside current workspace
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
             &[],
-            true,  // all_features
-            false, // no_default_features
+            self.cargo_opts.all_features,
+            self.cargo_opts.no_default_features,
             &specs,
         )?;
         let mut source = self.load_source()?;
@@ -127,9 +332,9 @@ impl Repo {
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,
-            &[],
-            true,  // all_features
-            false, // no_default_features
+            &self.features_list,
+            self.cargo_opts.all_features,
+            self.cargo_opts.no_default_features,
             &specs,
         )?;
         Ok(package_set)

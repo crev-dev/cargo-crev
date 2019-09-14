@@ -22,7 +22,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let cursor = TerminalCursor::new();
     cursor.hide()?;
 
-    let mut screen = VerifyScreen::new(computer.total_crate_count())?;
+    let mut screen = VerifyScreen::new(computer.total_crate_count(), args.cargo_opts)?;
 
     screen.update();
     let crate_stats_rx = computer.run();

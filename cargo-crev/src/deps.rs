@@ -82,9 +82,9 @@ impl CrateInfo {
         }
     }
 
-    pub fn download_if_needed(&self) -> Result<()> {
+    pub fn download_if_needed(&self, cargo_opts: CargoOpts) -> Result<()> {
         if !self.root.exists() {
-            let repo = crate::Repo::auto_open_cwd()?;
+            let repo = crate::Repo::auto_open_cwd(cargo_opts)?;
             let mut source = repo.load_source()?;
             source.download(self.id)?;
         }

@@ -160,6 +160,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     &args.common_proof_create,
                     &args.diff,
                     args.skip_activity_check || is_advisory || args.issue,
+                    args.cargo_opts.clone(),
                 )
             })?;
         }
@@ -227,13 +228,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 local.fetch_all()?;
             }
         },
-        opts::Command::Update => {
+        opts::Command::Update(args) => {
             let local = Local::auto_open()?;
             let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(-159));
             }
-            let repo = Repo::auto_open_cwd()?;
+            let repo = Repo::auto_open_cwd(args.cargo_opts)?;
             repo.update_source()?;
             repo.update_counts()?;
         }

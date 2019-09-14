@@ -1,6 +1,7 @@
 use crev_data::Level;
 use semver::Version;
 use std::ffi::OsString;
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone)]
@@ -13,6 +14,34 @@ impl CrateSelector {
     pub fn is_empty(&self) -> bool {
         self.name.is_none() && self.version.is_none()
     }
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
+pub struct CargoOpts {
+    #[structopt(long = "features", value_name = "FEATURES")]
+    /// Space-separated list of features to activate
+    pub features: Option<String>,
+    #[structopt(long = "all-features")]
+    /// Activate all available features
+    pub all_features: bool,
+    #[structopt(long = "no-default-features")]
+    /// Do not activate the `default` feature
+    pub no_default_features: bool,
+    #[structopt(long = "target", value_name = "TARGET")]
+    /// Set the target triple
+    pub target: Option<String>,
+    #[structopt(long = "all-targets")]
+    /// Return dependencies for all targets. By default only the host target is matched.
+    pub all_targets: bool,
+    #[structopt(long = "no-dev-dependencies")]
+    /// Skip dev dependencies.
+    pub no_dev_dependencies: bool,
+    #[structopt(long = "manifest-path", value_name = "PATH", parse(from_os_str))]
+    /// Path to Cargo.toml
+    pub manifest_path: Option<PathBuf>,
+    #[structopt(short = "Z", value_name = "FLAG")]
+    /// Unstable (nightly-only) flags to Cargo
+    pub unstable_flags: Vec<String>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -124,6 +153,12 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
+pub struct Update {
+    #[structopt(flatten)]
+    pub cargo_opts: CargoOpts,
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct Verify {
     #[structopt(long = "verbose", short = "v")]
     /// Display more informations about the crates
@@ -149,6 +184,13 @@ pub struct Verify {
     #[structopt(long = "for-id")]
     /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
+
+    #[structopt(long = "recursive-metrics")]
+    /// Calculate recursive metrics for your packages
+    pub recursive: bool,
+
+    #[structopt(flatten)]
+    pub cargo_opts: CargoOpts,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -378,6 +420,9 @@ pub struct Review {
     #[structopt(long = "diff")]
     #[allow(clippy::option_option)]
     pub diff: Option<Option<semver::Version>>,
+
+    #[structopt(flatten)]
+    pub cargo_opts: CargoOpts,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -498,7 +543,7 @@ pub enum Command {
 
     /// Update data from online sources (proof repositories, crates.io)
     #[structopt(name = "update", alias = "pull")]
-    Update,
+    Update(Update),
 
     /// Lookup dependencies from crates.io sorted by review count
     #[structopt(name = "lookup", alias = "lookup")]

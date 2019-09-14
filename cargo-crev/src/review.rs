@@ -4,6 +4,7 @@ use failure::format_err;
 use std::default::Default;
 
 use crate::opts;
+use crate::opts::CargoOpts;
 use crate::prelude::*;
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
@@ -25,8 +26,9 @@ pub fn create_review_proof(
     proof_create_opt: &opts::CommonProofCreate,
     diff_version: &Option<Option<Version>>,
     skip_activity_check: bool,
+    cargo_opts: CargoOpts,
 ) -> Result<()> {
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd(cargo_opts)?;
 
     let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();

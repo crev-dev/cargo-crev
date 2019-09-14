@@ -5,6 +5,7 @@ use termimad::{
 };
 
 use crate::deps::{latest_trusted_version_string, CrateDetails, CrateStats, Progress};
+use crate::opts::CargoOpts;
 use crate::prelude::*;
 use crate::repo::Repo;
 use crev_lib::VerificationStatus;
@@ -70,7 +71,7 @@ pub fn u64_to_str(mut v: u64) -> String {
 }
 
 impl<'t> VerifyScreen<'t> {
-    pub fn new(total_crate_count: usize) -> Result<Self> {
+    pub fn new(total_crate_count: usize, cargo_opts: CargoOpts) -> Result<Self> {
         lazy_static! {
             static ref TS: DepTableSkin = DepTableSkin::default();
             static ref SKIN: MadSkin = list_skin();
@@ -292,7 +293,7 @@ impl<'t> VerifyScreen<'t> {
 
         let list_view = ListView::new(Area::new(0, 1, 10, 1), columns, &SKIN);
 
-        let repo = Repo::auto_open_cwd()?; // TODO not extra clean
+        let repo = Repo::auto_open_cwd(cargo_opts)?; // TODO not extra clean
         let title = repo.name().to_string();
         let mut screen = Self {
             title,

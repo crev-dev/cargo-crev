@@ -24,6 +24,7 @@ pub struct Scanner {
     skip_verified: bool,
     skip_known_owners: bool,
     crates: Vec<CrateInfo>,
+    cargo_opts: CargoOpts,
 }
 
 impl Scanner {
@@ -42,7 +43,7 @@ impl Scanner {
         let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
         let skip_verified = args.skip_verified;
         let skip_known_owners = args.skip_known_owners;
-        let repo = Repo::auto_open_cwd()?;
+        let repo = Repo::auto_open_cwd(args.cargo_opts.clone())?;
         let package_set = repo.get_deps_package_set()?;
         let pkg_ids = package_set.package_ids();
         let crates = package_set
@@ -51,6 +52,11 @@ impl Scanner {
             .filter(|pkg| pkg.summary().source_id().is_registry())
             .map(|pkg| CrateInfo::from_pkg(pkg))
             .collect();
+
+        if args.recursive {
+            let _graph = repo.get_dependency_graph()?;
+        }
+
         Ok(Scanner {
             db: Arc::new(db),
             trust_set,
@@ -61,6 +67,7 @@ impl Scanner {
             skip_verified,
             skip_known_owners,
             crates,
+            cargo_opts: args.cargo_opts.clone(),
         })
     }
 
@@ -91,7 +98,7 @@ impl Scanner {
     fn get_crate_details(&mut self, info: &CrateInfo) -> Result<Option<CrateDetails>> {
         let pkg_name = info.id.name();
         let pkg_version = info.id.version();
-        info.download_if_needed()?;
+        info.download_if_needed(self.cargo_opts.clone())?;
         let geiger_count = get_geiger_count(&info.root).ok();
         let digest = crev_lib::get_dir_digest(&info.root, &self.ignore_list)?;
         let unclean_digest = !is_digest_clean(&self.db, &pkg_name, &pkg_version, &digest);

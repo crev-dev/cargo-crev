@@ -115,7 +115,7 @@ pub fn goto_crate_src(
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd_default()?;
     let name = selector
         .name
         .clone()
@@ -205,7 +205,7 @@ pub fn clean_crate(
     version: Option<&Version>,
     unrelated: UnrelatedOrDependency,
 ) -> Result<()> {
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd_default()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
     let crate_root = crate_.root();
 
@@ -250,7 +250,7 @@ pub fn crate_open(
     cmd_save: bool,
 ) -> Result<()> {
     let local = Local::auto_create_or_open()?;
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd_default()?;
     let crate_ = repo.find_crate(name, version, unrelated)?;
 
     let crate_root = crate_.root();
@@ -452,7 +452,7 @@ pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review
 }
 
 pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd_default()?;
     let name = &args.name;
 
     let dst_version = &args.dst;
@@ -527,7 +527,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 }
 
 pub fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
-    let repo = Repo::auto_open_cwd()?;
+    let repo = Repo::auto_open_cwd_default()?;
     let name = crate_
         .name
         .clone()
