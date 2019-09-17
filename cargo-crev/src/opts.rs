@@ -30,9 +30,6 @@ pub struct CargoOpts {
     #[structopt(long = "target", value_name = "TARGET")]
     /// Set the target triple
     pub target: Option<String>,
-    #[structopt(long = "all-targets")]
-    /// Return dependencies for all targets. By default only the host target is matched.
-    pub all_targets: bool,
     #[structopt(long = "no-dev-dependencies")]
     /// Skip dev dependencies.
     pub no_dev_dependencies: bool,

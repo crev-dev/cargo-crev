@@ -6,8 +6,7 @@ use cargo::core::resolver::Method;
 use cargo::core::InternedString;
 use cargo::core::{Resolve, Workspace};
 use cargo::ops;
-use cargo::util::Rustc;
-use cargo::util::{self, CargoResult, Cfg};
+use cargo::util::CargoResult;
 use cargo::{
     core::{
         dependency::Dependency, package::PackageSet, source::SourceMap, Package, PackageId,
@@ -22,7 +21,6 @@ use petgraph::graph::NodeIndex;
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
-use std::str::FromStr;
 use std::{collections::HashSet, env, path::PathBuf};
 
 use crate::crates_io;
@@ -41,24 +39,6 @@ struct Node {
 pub struct Graph {
     graph: petgraph::Graph<Node, Kind>,
     nodes: HashMap<PackageId, NodeIndex>,
-}
-
-fn get_cfgs(rustc: &Rustc, target: &Option<String>) -> CargoResult<Option<Vec<Cfg>>> {
-    let mut process = util::process(&rustc.path);
-    process.arg("--print=cfg").env_remove("RUST_LOG");
-    if let Some(ref s) = *target {
-        process.arg("--target").arg(s);
-    }
-
-    let output = match process.exec_with_output() {
-        Ok(output) => output,
-        Err(e) => return Err(e),
-    };
-    let output = std::str::from_utf8(&output.stdout).unwrap();
-    let lines = output.lines();
-    Ok(Some(
-        lines.map(Cfg::from_str).collect::<CargoResult<Vec<_>>>()?,
-    ))
 }
 
 fn resolve<'a, 'cfg>(
@@ -87,8 +67,6 @@ fn build_graph<'a>(
     resolve: &'a Resolve,
     packages: &'a PackageSet<'_>,
     roots: impl Iterator<Item = PackageId>,
-    target: Option<&str>,
-    cfgs: Option<&[Cfg]>,
 ) -> CargoResult<Graph> {
     let mut graph = Graph {
         graph: petgraph::Graph::new(),
@@ -113,12 +91,7 @@ fn build_graph<'a>(
             let it = pkg
                 .dependencies()
                 .iter()
-                .filter(|d| d.matches_ignoring_source(raw_dep_id))
-                .filter(|d| {
-                    d.platform()
-                        .and_then(|p| target.map(|t| p.matches(t, cfgs)))
-                        .unwrap_or(true)
-                });
+                .filter(|d| d.matches_ignoring_source(raw_dep_id));
             let dep_id = match resolve.replacement(raw_dep_id) {
                 Some(id) => id,
                 None => raw_dep_id,
@@ -230,38 +203,10 @@ impl Repo {
         let ids = packages.package_ids().collect::<Vec<_>>();
         let packages = registry.get(&ids)?;
 
-        // TODO: get rid of this
-        //
-        // I don't like that we depend on `rustc` and
-        // even have to call it. If there is no better way,
-        // then in case `rustc` is missing or something, we should
-        // just match on any cfg in `get_cfgs`? Probably always?
-        // Other functions seems to be using much simpler way of
-        // traversing all packages, and we probably don't want to
-        // get into all the details of "replaced" packages and configs
-        // just in this one function. So we either lift other ones,
-        // or dumb down this one.
-        let rustc = self.config.load_global_rustc(Some(&workspace))?;
-
-        let target = if self.cargo_opts.all_targets {
-            None
-        } else {
-            Some(
-                self.cargo_opts
-                    .target
-                    .as_ref()
-                    .unwrap_or(&rustc.host)
-                    .as_str(),
-            )
-        };
-
-        let cfgs = get_cfgs(&rustc, &self.cargo_opts.target)?;
         let graph = build_graph(
             &resolve,
             &packages,
             workspace.members().map(|m| m.package_id()),
-            target,
-            cfgs.as_ref().map(|r| &**r),
         )?;
 
         Ok(graph)
