@@ -45,7 +45,6 @@ rayon = "1.1"
 crossterm = "0.9.6"
 crossbeam = "0.7"
 termimad = "0.6"
-threadpool = "1.7.1"
 petgraph = "*"
 num_cpus = "1.10"
 
