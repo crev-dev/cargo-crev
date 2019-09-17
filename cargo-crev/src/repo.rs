@@ -41,6 +41,19 @@ pub struct Graph {
     nodes: HashMap<PackageId, NodeIndex>,
 }
 
+impl Graph {
+    pub fn dependency_of<'s>(&'s self, pkg_id: &PackageId) -> impl Iterator<Item = PackageId> + 's {
+        self.nodes
+            .get(pkg_id)
+            .into_iter()
+            .flat_map(move |node_idx| {
+                self.graph
+                    .neighbors_directed(*node_idx, petgraph::Direction::Outgoing)
+            })
+            .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
+    }
+}
+
 fn resolve<'a, 'cfg>(
     registry: &mut PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,

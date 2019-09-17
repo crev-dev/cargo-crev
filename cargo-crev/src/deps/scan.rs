@@ -46,6 +46,7 @@ impl Scanner {
         let repo = Repo::auto_open_cwd(args.cargo_opts.clone())?;
         let package_set = repo.get_deps_package_set()?;
         let pkg_ids = package_set.package_ids();
+
         let crates = package_set
             .get_many(pkg_ids)?
             .into_iter()
@@ -54,7 +55,15 @@ impl Scanner {
             .collect();
 
         if args.recursive {
-            let _graph = repo.get_dependency_graph()?;
+            let graph = repo.get_dependency_graph()?;
+
+            for pkg_id in package_set.package_ids() {
+                eprint!("{}: ", pkg_id);
+                for dep_pkg_id in graph.dependency_of(&pkg_id) {
+                    eprint!("{}, ", dep_pkg_id);
+                }
+                eprint!("\n");
+            }
         }
 
         Ok(Scanner {
