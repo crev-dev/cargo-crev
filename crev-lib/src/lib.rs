@@ -75,11 +75,11 @@ pub struct VerificationRequirements {
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum VerificationStatus {
-    Verified,
-    Insufficient,
     Negative,
+    Insufficient,
+    Verified,
 }
 
 impl VerificationStatus {
@@ -87,6 +87,16 @@ impl VerificationStatus {
         match self {
             VerificationStatus::Verified => true,
             _ => false,
+        }
+    }
+
+    pub fn min(self, other: Self) -> Self {
+        if self < other {
+            return self;
+        } else if other < self {
+            return other;
+        } else {
+            return self;
         }
     }
 }

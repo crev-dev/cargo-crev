@@ -42,7 +42,10 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn dependency_of<'s>(&'s self, pkg_id: &PackageId) -> impl Iterator<Item = PackageId> + 's {
+    pub fn get_dependencies_of<'s>(
+        &'s self,
+        pkg_id: &PackageId,
+    ) -> impl Iterator<Item = PackageId> + 's {
         self.nodes
             .get(pkg_id)
             .into_iter()

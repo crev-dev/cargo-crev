@@ -4,7 +4,9 @@ use termimad::{
     ListViewCell, ListViewColumn, MadSkin,
 };
 
-use crate::deps::{latest_trusted_version_string, CrateDetails, CrateStats, Progress};
+use crate::deps::{
+    latest_trusted_version_string, AccumulativeCrateDetails, CrateDetails, CrateStats, Progress,
+};
 use crate::opts::CargoOpts;
 use crate::prelude::*;
 use crate::repo::Repo;
@@ -110,7 +112,7 @@ impl<'t> VerifyScreen<'t> {
                 6,
                 Box::new(|dep: &CrateStats| {
                     if let Some(details) = dep.details() {
-                        match details.trust {
+                        match details.accumulative.trust {
                             VerificationStatus::Verified => {
                                 ListViewCell::new("pass".to_owned(), &TS.good)
                             }
@@ -255,8 +257,8 @@ impl<'t> VerifyScreen<'t> {
                 2,
                 2,
                 Box::new(|dep: &CrateStats| match dep.details() {
-                    Some(CrateDetails { issues, .. }) if issues.trusted > 0 => {
-                        ListViewCell::new(format!("{}", issues.trusted), &TS.bad)
+                    Some(CrateDetails { accumulative, .. }) if accumulative.issues.trusted > 0 => {
+                        ListViewCell::new(format!("{}", accumulative.issues.trusted), &TS.bad)
                     }
                     _ => ListViewCell::new("".to_owned(), &TS.std),
                 }),
@@ -267,8 +269,8 @@ impl<'t> VerifyScreen<'t> {
                 3,
                 3,
                 Box::new(|dep: &CrateStats| match dep.details() {
-                    Some(CrateDetails { issues, .. }) if issues.total > 0 => {
-                        ListViewCell::new(format!("{}", issues.total), &TS.medium)
+                    Some(CrateDetails { accumulative, .. }) if accumulative.issues.total > 0 => {
+                        ListViewCell::new(format!("{}", accumulative.issues.total), &TS.medium)
                     }
                     _ => ListViewCell::new("".to_owned(), &TS.std),
                 }),
@@ -281,7 +283,10 @@ impl<'t> VerifyScreen<'t> {
                 Box::new(|dep: &CrateStats| {
                     ListViewCell::new(
                         match dep.details() {
-                            Some(CrateDetails { loc: Some(loc), .. }) => u64_to_str(*loc as u64),
+                            Some(CrateDetails {
+                                accumulative: AccumulativeCrateDetails { loc: Some(loc), .. },
+                                ..
+                            }) => u64_to_str(*loc as u64),
                             _ => "".to_string(),
                         },
                         &TS.std,

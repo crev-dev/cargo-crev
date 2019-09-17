@@ -182,7 +182,7 @@ pub struct Verify {
     /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
 
-    #[structopt(long = "recursive-metrics")]
+    #[structopt(long = "recursive")]
     /// Calculate recursive metrics for your packages
     pub recursive: bool,
 

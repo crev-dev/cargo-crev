@@ -8,6 +8,7 @@ use crate::opts::*;
 use crate::prelude::*;
 use crate::shared::*;
 use crate::term;
+use std::ops::Add;
 
 mod print_term;
 pub mod scan;
@@ -46,20 +47,62 @@ pub struct TrustCount {
     pub total: usize,
 }
 
+impl Add<TrustCount> for TrustCount {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            trusted: self.trusted + other.trusted,
+            total: self.total + other.total,
+        }
+    }
+}
+
+/// Crate statistics - details that can be accumulated
+/// by recursively including dependencies
+#[derive(Clone, Debug, Copy)]
+pub struct AccumulativeCrateDetails {
+    pub trust: VerificationStatus,
+    pub issues: TrustCount,
+    pub verified: bool,
+    pub loc: Option<usize>,
+    pub geiger_count: Option<u64>,
+}
+
+fn sum_options<T>(a: Option<T>, b: Option<T>) -> Option<T::Output>
+where
+    T: Add<T>,
+{
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a + b),
+        _ => None,
+    }
+}
+
+impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            trust: self.trust.min(other.trust),
+            issues: self.issues + other.issues,
+            verified: self.verified && other.verified,
+            loc: sum_options(self.loc, other.loc),
+            geiger_count: sum_options(self.geiger_count, other.geiger_count),
+        }
+    }
+}
+
 /// Crate statistics - details
 #[derive(Clone, Debug)]
 pub struct CrateDetails {
     pub digest: Digest,
     pub latest_trusted_version: Option<Version>,
-    pub trust: VerificationStatus,
     pub reviews: ReviewCount,
     pub downloads: Option<DownloadCount>,
     pub owners: Option<TrustCount>,
-    pub issues: TrustCount,
-    pub loc: Option<usize>,
     pub unclean_digest: bool,
-    pub verified: bool,
-    pub geiger_count: Option<u64>,
+    pub accumulative: AccumulativeCrateDetails,
 }
 
 /// Basic crate info of a crate we're scanning
@@ -192,7 +235,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
             if details.unclean_digest {
                 nb_unclean_digests += 1;
             }
-            if !details.verified {
+            if !details.accumulative.verified {
                 nb_unverified += 1;
             }
         }

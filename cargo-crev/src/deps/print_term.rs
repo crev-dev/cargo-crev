@@ -31,8 +31,8 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
         print!("{:43} ", cdep.digest);
     }
     term.print(
-        format_args!("{:6}", cdep.trust),
-        term::verification_status_color(cdep.trust),
+        format_args!("{:6}", cdep.accumulative.trust),
+        term::verification_status_color(cdep.accumulative.trust),
     )?;
     print!(" {:2} {:2}", cdep.reviews.version, cdep.reviews.total);
     if let Some(downloads) = &cdep.downloads {
@@ -66,8 +66,8 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     }
 
     term.print(
-        format_args!("{:4}", cdep.issues.trusted),
-        if cdep.issues.trusted > 0 {
+        format_args!("{:4}", cdep.accumulative.issues.trusted),
+        if cdep.accumulative.issues.trusted > 0 {
             Some(::term::color::RED)
         } else {
             None
@@ -75,14 +75,14 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     )?;
     print!("/");
     term.print(
-        format_args!("{:<2}", cdep.issues.total),
-        if cdep.issues.total > 0 {
+        format_args!("{:<2}", cdep.accumulative.issues.total),
+        if cdep.accumulative.issues.total > 0 {
             Some(::term::color::YELLOW)
         } else {
             None
         },
     )?;
-    match cdep.loc {
+    match cdep.accumulative.loc {
         Some(loc) => print!(" {:>6}", loc),
         None => print!(" {:>6}", "err"),
     }
@@ -107,7 +107,7 @@ pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<(
         Ok(None) => { /* just skip */ }
         Ok(Some(details)) => {
             print_details(&details, term, verbose)?;
-            match details.geiger_count {
+            match details.accumulative.geiger_count {
                 Some(geiger_count) => print!(" {:>7}", geiger_count),
                 None => print!(" {:>7}", "err"),
             }

@@ -8,8 +8,8 @@ use crossbeam::{
     self,
     channel::{unbounded, Receiver},
 };
-use std::sync::Arc;
-use std::{collections::HashSet, default::Default, path::PathBuf};
+use std::sync::{Arc, Mutex};
+use std::{collections::HashMap, collections::HashSet, default::Default, path::PathBuf};
 
 use crev_lib::proofdb::*;
 
@@ -25,6 +25,8 @@ pub struct Scanner {
     skip_known_owners: bool,
     crates: Vec<CrateInfo>,
     cargo_opts: CargoOpts,
+    graph: Option<Arc<crate::repo::Graph>>,
+    ready_details: Arc<Mutex<HashMap<cargo::core::PackageId, Option<CrateDetails>>>>,
 }
 
 impl Scanner {
@@ -54,17 +56,11 @@ impl Scanner {
             .map(|pkg| CrateInfo::from_pkg(pkg))
             .collect();
 
-        if args.recursive {
-            let graph = repo.get_dependency_graph()?;
-
-            for pkg_id in package_set.package_ids() {
-                eprint!("{}: ", pkg_id);
-                for dep_pkg_id in graph.dependency_of(&pkg_id) {
-                    eprint!("{}, ", dep_pkg_id);
-                }
-                eprint!("\n");
-            }
-        }
+        let graph = if args.recursive {
+            Some(Arc::new(repo.get_dependency_graph()?))
+        } else {
+            None
+        };
 
         Ok(Scanner {
             db: Arc::new(db),
@@ -77,6 +73,8 @@ impl Scanner {
             skip_known_owners,
             crates,
             cargo_opts: args.cargo_opts.clone(),
+            graph,
+            ready_details: Default::default(),
         })
     }
 
@@ -84,24 +82,71 @@ impl Scanner {
         self.crates.len()
     }
 
-    /// start computations on a new thread, and return
-    /// - a channel receiver, to get new events
-    /// - a channel sender, to ask for computation stop
+    /// start computations on a new thread
     pub fn run(self) -> Receiver<CrateStats> {
-        let (tx, rx) = unbounded();
+        let (ready_tx, ready_rx) = unbounded();
+        // instead of properly traversing the graph
+        // to be able to calculate recursive stats,
+        // we use pending channel to postpone working
+        // on crates that need their dependencies to be
+        // analyzed first
+        let (pending_tx, pending_rx) = unbounded();
 
-        let pool = threadpool::Builder::new().build();
+        let total_crates_len = self.crates.len();
         for info in self.crates.clone().into_iter() {
+            pending_tx.send(info).unwrap();
+        }
+
+        // we share the loop-back pending tx, so we can drop
+        // it once for all the worker threads, after we hit
+        // the terminating condition
+        let pending_tx = Arc::new(Mutex::new(Some(pending_tx)));
+
+        for _ in 0..num_cpus::get() {
+            let pending_rx = pending_rx.clone();
+            let pending_tx = pending_tx.clone();
+            let ready_tx = ready_tx.clone();
             let mut self_clone = self.clone();
-            let tx = tx.clone();
-            pool.execute(move || {
-                let details = self_clone.get_crate_details(&info);
-                tx.send(CrateStats { info, details })
-                    .expect("channel will be there waiting for the pool");
+            std::thread::spawn(move || {
+                pending_rx
+                    .into_iter()
+                    .map(move |info: CrateInfo| {
+                        if let Some(ref graph) = self_clone.graph {
+                            let ready_details = self_clone.ready_details.lock().unwrap();
+
+                            for dep_pkg_id in graph.get_dependencies_of(&info.id) {
+                                if !ready_details.contains_key(&dep_pkg_id) {
+                                    pending_tx
+                                        .lock()
+                                        .unwrap()
+                                        .as_mut()
+                                        .unwrap()
+                                        .send(info)
+                                        .unwrap();
+                                    return;
+                                }
+                            }
+                        }
+
+                        let details = self_clone.get_crate_details(&info);
+                        let mut ready_details = self_clone.ready_details.lock().unwrap();
+                        ready_details
+                            .insert(info.id, details.as_ref().ok().and_then(|d| d.clone()));
+                        if ready_details.len() == total_crates_len {
+                            // we processed all the crates, let all the workers terminate
+                            *pending_tx.lock().unwrap() = None;
+                        }
+
+                        drop(ready_details);
+                        ready_tx
+                            .send(CrateStats { info, details })
+                            .expect("channel will be there waiting for the pool");
+                    })
+                    .count()
             });
         }
 
-        rx
+        ready_rx
     }
 
     fn get_crate_details(&mut self, info: &CrateInfo) -> Result<Option<CrateDetails>> {
@@ -182,18 +227,36 @@ impl Scanner {
             &pkg_name,
             &self.requirements,
         );
-        Ok(Some(CrateDetails {
+
+        let mut accumulative = AccumulativeCrateDetails {
+            trust: result,
+            issues,
             geiger_count,
+            loc,
+            verified,
+        };
+
+        if let Some(ref graph) = self.graph {
+            let ready_details = self.ready_details.lock().expect("lock works");
+            for dep_pkg_id in graph.get_dependencies_of(&info.id) {
+                match ready_details
+                    .get(&dep_pkg_id)
+                    .expect("dependency already calculated")
+                {
+                    Some(dep_details) => accumulative = accumulative + dep_details.accumulative,
+                    None => bail!("Dependency {} failed", dep_pkg_id),
+                }
+            }
+        }
+
+        Ok(Some(CrateDetails {
             digest,
             latest_trusted_version,
-            trust: result,
             reviews,
             downloads,
             owners,
-            issues,
-            loc,
             unclean_digest,
-            verified,
+            accumulative,
         }))
     }
 }
