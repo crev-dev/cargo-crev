@@ -29,7 +29,6 @@ use crate::shared::*;
 
 #[derive(Debug)]
 struct Node {
-    #[allow(unused)]
     id: PackageId,
     #[allow(unused)]
     metadata: ManifestMetadata,
@@ -54,6 +53,44 @@ impl Graph {
                     .neighbors_directed(*node_idx, petgraph::Direction::Outgoing)
             })
             .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
+    }
+
+    pub fn get_recursive_dependencies_of<'s>(
+        &'s self,
+        root_pkg_id: &PackageId,
+    ) -> HashSet<PackageId> {
+        let mut pending = BTreeSet::new();
+        let mut processed = HashSet::new();
+
+        pending.insert(*root_pkg_id);
+
+        while let Some(pkg_id) = pending.iter().next().cloned() {
+            pending.remove(&pkg_id);
+
+            if processed.contains(&pkg_id) {
+                continue;
+            } else {
+                processed.insert(pkg_id);
+            }
+
+            if let Some(node_idx) = self.nodes.get(&pkg_id) {
+                for node_idx in self
+                    .graph
+                    .neighbors_directed(*node_idx, petgraph::Direction::Outgoing)
+                {
+                    pending.insert(self.graph.node_weight(node_idx).unwrap().id);
+                }
+            } else {
+                eprintln!(
+                    "No node for {} when checking recdeps for {}",
+                    pkg_id, root_pkg_id
+                );
+            }
+        }
+
+        processed.remove(root_pkg_id);
+
+        processed
     }
 }
 
@@ -129,7 +166,7 @@ fn build_graph<'a>(
         }
     }
 
-    Ok(graph)
+    Ok(dbg!(graph))
 }
 
 /// A handle to the current Rust project

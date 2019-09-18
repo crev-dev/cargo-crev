@@ -102,6 +102,7 @@ pub struct CrateDetails {
     pub downloads: Option<DownloadCount>,
     pub owners: Option<TrustCount>,
     pub unclean_digest: bool,
+    pub accumulative_single: AccumulativeCrateDetails,
     pub accumulative: AccumulativeCrateDetails,
 }
 

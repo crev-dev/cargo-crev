@@ -228,7 +228,7 @@ impl Scanner {
             &self.requirements,
         );
 
-        let mut accumulative = AccumulativeCrateDetails {
+        let accumulative_single = AccumulativeCrateDetails {
             trust: result,
             issues,
             geiger_count,
@@ -236,14 +236,18 @@ impl Scanner {
             verified,
         };
 
+        let mut accumulative = accumulative_single;
+
         if let Some(ref graph) = self.graph {
             let ready_details = self.ready_details.lock().expect("lock works");
-            for dep_pkg_id in graph.get_dependencies_of(&info.id) {
+            for dep_pkg_id in graph.get_recursive_dependencies_of(&info.id).into_iter() {
                 match ready_details
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")
                 {
-                    Some(dep_details) => accumulative = accumulative + dep_details.accumulative,
+                    Some(dep_details) => {
+                        accumulative = accumulative + dep_details.accumulative_single
+                    }
                     None => bail!("Dependency {} failed", dep_pkg_id),
                 }
             }
@@ -256,6 +260,7 @@ impl Scanner {
             downloads,
             owners,
             unclean_digest,
+            accumulative_single,
             accumulative,
         }))
     }
