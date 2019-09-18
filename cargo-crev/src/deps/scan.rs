@@ -228,7 +228,7 @@ impl Scanner {
             &self.requirements,
         );
 
-        let accumulative_single = AccumulativeCrateDetails {
+        let accumulative_own = AccumulativeCrateDetails {
             trust: result,
             issues,
             geiger_count,
@@ -236,7 +236,7 @@ impl Scanner {
             verified,
         };
 
-        let mut accumulative = accumulative_single;
+        let mut accumulative = accumulative_own;
 
         if let Some(ref graph) = self.graph {
             let ready_details = self.ready_details.lock().expect("lock works");
@@ -245,9 +245,7 @@ impl Scanner {
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")
                 {
-                    Some(dep_details) => {
-                        accumulative = accumulative + dep_details.accumulative_single
-                    }
+                    Some(dep_details) => accumulative = accumulative + dep_details.accumulative_own,
                     None => bail!("Dependency {} failed", dep_pkg_id),
                 }
             }
@@ -260,7 +258,7 @@ impl Scanner {
             downloads,
             owners,
             unclean_digest,
-            accumulative_single,
+            accumulative_own,
             accumulative,
         }))
     }
