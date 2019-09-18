@@ -4,6 +4,7 @@ use cargo::core::manifest::ManifestMetadata;
 use cargo::core::registry::PackageRegistry;
 use cargo::core::resolver::Method;
 use cargo::core::InternedString;
+use cargo::core::PackageIdSpec;
 use cargo::core::{Resolve, Workspace};
 use cargo::ops;
 use cargo::util::CargoResult;
@@ -102,6 +103,13 @@ fn resolve<'a, 'cfg>(
     no_default_features: bool,
     no_dev_dependencies: bool,
 ) -> CargoResult<(PackageSet<'a>, Resolve)> {
+    // there is bunch of slightly different ways to do it,
+    // so I leave some dead code around, in case I want to
+    // try the other ones, in some near future
+
+    // this one will create a `Cargo.lock` file if it didn't exist before
+    // good? not good? it also uses the registry to make it possible
+    // the other methods
     let (packages, resolve) = ops::resolve_ws(workspace)?;
 
     let method = Method::Required {
@@ -111,9 +119,56 @@ fn resolve<'a, 'cfg>(
         uses_default_features: !no_default_features,
     };
 
-    let resolve =
-        ops::resolve_with_previous(registry, workspace, method, Some(&resolve), None, &[], true)?;
+    let specs: Vec<_> = workspace
+        .members()
+        .map(|m| m.summary().package_id())
+        .map(|id| PackageIdSpec::from_package_id(id))
+        .collect();
+    let resolve = ops::resolve_with_previous(
+        registry,
+        workspace,
+        method,
+        Some(&resolve),
+        None,
+        &specs,
+        true,
+    )?;
     Ok((packages, resolve))
+
+    /*
+    // this method does not allow passing no_dev_dependencies
+    let specs: Vec<_> = workspace
+        .members()
+        .map(|m| m.summary().package_id())
+        .map(|id| PackageIdSpec::from_package_id(id))
+        .collect();
+
+    ops::resolve_ws_precisely(
+        workspace,
+        features,
+        all_features,
+        no_default_features,
+        &specs,
+    )
+    */
+
+    /*
+    // this does not update/create `Cargo.lock` AFAIU
+    let method = Method::Required {
+        dev_deps: !no_dev_dependencies,
+        features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
+        all_features,
+        uses_default_features: !no_default_features,
+    };
+
+    let specs: Vec<_> = workspace
+        .members()
+        .map(|m| m.summary().package_id())
+        .map(|id| PackageIdSpec::from_package_id(id))
+        .collect();
+
+    ops::resolve_ws_with_method(workspace, method, &specs)
+    */
 }
 
 fn build_graph<'a>(
@@ -166,7 +221,7 @@ fn build_graph<'a>(
         }
     }
 
-    Ok(dbg!(graph))
+    Ok(graph)
 }
 
 /// A handle to the current Rust project
@@ -253,8 +308,8 @@ impl Repo {
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
         )?;
-        let ids = packages.package_ids().collect::<Vec<_>>();
-        let packages = registry.get(&ids)?;
+        // let ids = packages.package_ids().collect::<Vec<_>>();
+        // let packages = registry.get(&ids)?;
 
         let graph = build_graph(
             &resolve,
