@@ -95,7 +95,7 @@ impl Graph {
     }
 }
 
-fn resolve<'a, 'cfg>(
+fn our_resolve<'a, 'cfg>(
     registry: &mut PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,
     features: &Vec<String>,
@@ -300,7 +300,7 @@ impl Repo {
                 .members()
                 .map(|m| m.summary().source_id().to_owned()),
         )?;
-        let (packages, resolve) = resolve(
+        let (packages, resolve) = our_resolve(
             &mut registry,
             &workspace,
             &self.features_list,
@@ -308,8 +308,6 @@ impl Repo {
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
         )?;
-        // let ids = packages.package_ids().collect::<Vec<_>>();
-        // let packages = registry.get(&ids)?;
 
         let graph = build_graph(
             &resolve,
@@ -362,16 +360,21 @@ impl Repo {
         &self,
         mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
-        // let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
         let workspace = self.workspace()?;
-        // take all the packages inside current workspace
-        let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
-        let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
+
+        let mut registry = self.registry(
+            workspace
+                .members()
+                .map(|m| m.summary().source_id().to_owned()),
+        )?;
+
+        let (package_set, _resolve) = our_resolve(
+            &mut registry,
             &workspace,
-            &[],
+            &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            &specs,
+            self.cargo_opts.no_dev_dependencies,
         )?;
         let mut source = self.load_source()?;
 
@@ -381,7 +384,6 @@ impl Repo {
             if !pkg.summary().source_id().is_registry() {
                 continue;
             }
-
             if !pkg.root().exists() {
                 source.download(pkg.package_id())?;
             }
@@ -393,7 +395,7 @@ impl Repo {
     }
 
     pub fn get_deps_package_set(&self) -> Result<PackageSet<'_>> {
-        let workspace = cargo::core::Workspace::new(&self.manifest_path, &self.config)?;
+        let workspace = self.workspace()?;
         let specs = cargo::ops::Packages::All.to_package_id_specs(&workspace)?;
         let (package_set, _resolve) = cargo::ops::resolve_ws_precisely(
             &workspace,

@@ -240,6 +240,7 @@ impl Scanner {
 
         if let Some(ref graph) = self.graph {
             let ready_details = self.ready_details.lock().expect("lock works");
+
             for dep_pkg_id in graph.get_recursive_dependencies_of(&info.id).into_iter() {
                 match ready_details
                     .get(&dep_pkg_id)
