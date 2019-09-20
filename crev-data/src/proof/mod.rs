@@ -359,7 +359,7 @@ impl Serialized {
                             self.body += line;
                             self.body += "\n";
                         }
-                        if self.body.len() > 16_000 {
+                        if self.body.len() > 32_000 {
                             bail!("Proof body too long");
                         }
                     }
