@@ -433,6 +433,7 @@ impl Repo {
             summaries.iter().find(|s| s.version() == version)
         // special case - if the crate was yanked, it's not in our `Cargo.yaml`
         // so it's not possible to get it via normal means
+        // This will not work:
         // return Ok(Some(Box::new(&mut source).download_now(&self.config)?));
         } else {
             summaries.iter().max_by_key(|s| s.version())
