@@ -112,7 +112,18 @@ pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<(
                 None => print!(" {:>7}", "err"),
             }
             term.print(
-                format_args!(" {:4}", if stats.has_custom_build() { "CB" } else { "" }),
+                format_args!(
+                    " {:4}",
+                    if let Some(has_custom_build) = stats.has_custom_build() {
+                        if has_custom_build {
+                            "CB"
+                        } else {
+                            ""
+                        }
+                    } else {
+                        "?"
+                    }
+                ),
                 ::term::color::YELLOW,
             )?;
             print_stats_crate_id(stats, term);

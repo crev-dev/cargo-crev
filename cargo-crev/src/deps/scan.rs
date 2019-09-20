@@ -234,6 +234,7 @@ impl Scanner {
             geiger_count,
             loc,
             verified,
+            has_custom_build: info.has_custom_build,
         };
 
         let mut accumulative = accumulative_own;

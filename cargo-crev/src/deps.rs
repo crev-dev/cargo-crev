@@ -67,6 +67,7 @@ pub struct AccumulativeCrateDetails {
     pub verified: bool,
     pub loc: Option<usize>,
     pub geiger_count: Option<u64>,
+    pub has_custom_build: bool,
 }
 
 fn sum_options<T>(a: Option<T>, b: Option<T>) -> Option<T::Output>
@@ -89,6 +90,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
             verified: self.verified && other.verified,
             loc: sum_options(self.loc, other.loc),
             geiger_count: sum_options(self.geiger_count, other.geiger_count),
+            has_custom_build: self.has_custom_build || other.has_custom_build,
         }
     }
 }
@@ -173,8 +175,13 @@ impl CrateStats {
         self.details().is_some()
     }
 
-    pub fn has_custom_build(&self) -> bool {
-        self.info.has_custom_build
+    pub fn has_custom_build(&self) -> Option<bool> {
+        self.details
+            .as_ref()
+            .ok()
+            .and_then(|d| d.as_ref())
+            .map(|d| d.accumulative)
+            .map(|a| a.has_custom_build)
     }
 
     pub fn details(&self) -> Option<&CrateDetails> {
