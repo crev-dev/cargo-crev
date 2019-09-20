@@ -8,6 +8,8 @@ use crate::opts::*;
 use crate::prelude::*;
 use crate::shared::*;
 use crate::term;
+use cargo::core::PackageId;
+use std::collections::{HashMap, HashSet};
 use std::ops::Add;
 
 mod print_term;
@@ -58,9 +60,36 @@ impl Add<TrustCount> for TrustCount {
     }
 }
 
+/// A set of set of owners
+#[derive(Clone, Debug)]
+pub struct OwnerSetSet(HashMap<PackageId, HashSet<String>>);
+
+impl OwnerSetSet {
+    fn new(pkg_id: PackageId, set: impl IntoIterator<Item = String>) -> Self {
+        let mut owner_set = HashMap::new();
+
+        owner_set.insert(pkg_id, set.into_iter().collect());
+
+        OwnerSetSet(owner_set)
+    }
+}
+
+impl std::ops::Add<OwnerSetSet> for OwnerSetSet {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let mut set = self.0.clone();
+        for (k, v) in other.0 {
+            set.insert(k, v);
+        }
+
+        OwnerSetSet(set)
+    }
+}
+
 /// Crate statistics - details that can be accumulated
 /// by recursively including dependencies
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug)]
 pub struct AccumulativeCrateDetails {
     pub trust: VerificationStatus,
     pub issues: TrustCount,
@@ -68,6 +97,7 @@ pub struct AccumulativeCrateDetails {
     pub loc: Option<usize>,
     pub geiger_count: Option<u64>,
     pub has_custom_build: bool,
+    pub owner_set: OwnerSetSet,
 }
 
 fn sum_options<T>(a: Option<T>, b: Option<T>) -> Option<T::Output>
@@ -91,6 +121,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
             loc: sum_options(self.loc, other.loc),
             geiger_count: sum_options(self.geiger_count, other.geiger_count),
             has_custom_build: self.has_custom_build || other.has_custom_build,
+            owner_set: self.owner_set + other.owner_set,
         }
     }
 }
@@ -180,7 +211,7 @@ impl CrateStats {
             .as_ref()
             .ok()
             .and_then(|d| d.as_ref())
-            .map(|d| d.accumulative)
+            .map(|d| &d.accumulative)
             .map(|a| a.has_custom_build)
     }
 

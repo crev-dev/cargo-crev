@@ -182,7 +182,7 @@ impl Scanner {
             Err(_) => None,
         };
 
-        let owners = match self.crates_io.get_owners(&pkg_name) {
+        let (owners, owner_list) = match self.crates_io.get_owners(&pkg_name) {
             Ok(owners) => {
                 let total_owners_count = owners.len();
                 let known_owners_count = owners
@@ -192,12 +192,15 @@ impl Scanner {
                 if known_owners_count > 0 && self.skip_known_owners {
                     return Ok(None);
                 }
-                Some(TrustCount {
-                    trusted: known_owners_count,
-                    total: total_owners_count,
-                })
+                (
+                    Some(TrustCount {
+                        trusted: known_owners_count,
+                        total: total_owners_count,
+                    }),
+                    Some(owners),
+                )
             }
-            Err(_) => None,
+            Err(_) => (None, None),
         };
 
         let issues_from_trusted = self.db.get_open_issues_for_version(
@@ -207,6 +210,7 @@ impl Scanner {
             &self.trust_set,
             self.requirements.trust_level.into(),
         );
+
         let issues_from_all = self.db.get_open_issues_for_version(
             PROJECT_SOURCE_CRATES_IO,
             &pkg_name,
@@ -214,6 +218,7 @@ impl Scanner {
             &self.trust_set,
             crev_data::Level::None.into(),
         );
+
         let issues = TrustCount {
             trusted: issues_from_trusted.len(),
             total: issues_from_all.len(),
@@ -228,6 +233,8 @@ impl Scanner {
             &self.requirements,
         );
 
+        let owner_set = OwnerSetSet::new(info.id, owner_list.unwrap_or(vec![]));
+
         let accumulative_own = AccumulativeCrateDetails {
             trust: result,
             issues,
@@ -235,9 +242,10 @@ impl Scanner {
             loc,
             verified,
             has_custom_build: info.has_custom_build,
+            owner_set,
         };
 
-        let mut accumulative = accumulative_own;
+        let mut accumulative = accumulative_own.clone();
 
         if let Some(ref graph) = self.graph {
             let ready_details = self.ready_details.lock().expect("lock works");
@@ -247,7 +255,9 @@ impl Scanner {
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")
                 {
-                    Some(dep_details) => accumulative = accumulative + dep_details.accumulative_own,
+                    Some(dep_details) => {
+                        accumulative = accumulative + dep_details.accumulative_own.clone()
+                    }
                     None => bail!("Dependency {} failed", dep_pkg_id),
                 }
             }
