@@ -34,11 +34,14 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
         format_args!("{:6}", cdep.accumulative.trust),
         term::verification_status_color(cdep.accumulative.trust),
     )?;
-    print!(" {:2} {:2}", cdep.reviews.version, cdep.reviews.total);
-    if let Some(downloads) = &cdep.downloads {
+    print!(
+        " {:2} {:2}",
+        cdep.version_reviews.count, cdep.version_reviews.total
+    );
+    if let Some(downloads) = &cdep.version_downloads {
         term.print(
-            format_args!(" {:>8}", downloads.version),
-            if downloads.version < 1000 {
+            format_args!(" {:>8}", downloads.count),
+            if downloads.count < 1000 {
                 Some(::term::color::YELLOW)
             } else {
                 None
@@ -55,10 +58,10 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     } else {
         println!(" {:>8} {:>9}", "?", "?");
     }
-    if let Some(owners) = &cdep.owners {
+    if let Some(owners) = &cdep.known_owners {
         term.print(
-            format_args!(" {}", owners.trusted),
-            term::known_owners_count_color(owners.trusted),
+            format_args!(" {}", owners.count),
+            term::known_owners_count_color(owners.count),
         )?;
         term.print(format_args!(" {}", owners.total), None)?;
     } else {
@@ -66,8 +69,8 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     }
 
     term.print(
-        format_args!("{:4}", cdep.accumulative.issues.trusted),
-        if cdep.accumulative.issues.trusted > 0 {
+        format_args!("{:4}", cdep.accumulative.trusted_issues.count),
+        if cdep.accumulative.trusted_issues.count > 0 {
             Some(::term::color::RED)
         } else {
             None
@@ -75,8 +78,8 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     )?;
     print!("/");
     term.print(
-        format_args!("{:<2}", cdep.accumulative.issues.total),
-        if cdep.accumulative.issues.total > 0 {
+        format_args!("{:<2}", cdep.accumulative.trusted_issues.total),
+        if cdep.accumulative.trusted_issues.total > 0 {
             Some(::term::color::YELLOW)
         } else {
             None

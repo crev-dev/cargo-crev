@@ -17,7 +17,7 @@ pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> 
     }
 }
 
-pub fn known_owners_count_color(count: usize) -> Option<color::Color> {
+pub fn known_owners_count_color(count: u64) -> Option<color::Color> {
     if count > 0 {
         Some(color::GREEN)
     } else {

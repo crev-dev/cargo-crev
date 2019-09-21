@@ -32,29 +32,20 @@ impl Progress {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct ReviewCount {
-    pub version: u64,
-    pub total: u64,
+pub struct CountWithTotal<T = u64> {
+    pub count: T, // or "known" in case of crate owners
+    pub total: T,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct DownloadCount {
-    pub version: u64,
-    pub total: u64,
-}
+impl<T> Add<CountWithTotal<T>> for CountWithTotal<T>
+where
+    T: Add<T>,
+{
+    type Output = CountWithTotal<<T as Add>::Output>;
 
-#[derive(Copy, Clone, Debug)]
-pub struct TrustCount {
-    pub trusted: usize, // or "known" in case of crate owners
-    pub total: usize,
-}
-
-impl Add<TrustCount> for TrustCount {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        Self {
-            trusted: self.trusted + other.trusted,
+    fn add(self, other: CountWithTotal<T>) -> Self::Output {
+        CountWithTotal {
+            count: self.count + other.count,
             total: self.total + other.total,
         }
     }
@@ -92,7 +83,7 @@ impl std::ops::Add<OwnerSetSet> for OwnerSetSet {
 #[derive(Clone, Debug)]
 pub struct AccumulativeCrateDetails {
     pub trust: VerificationStatus,
-    pub issues: TrustCount,
+    pub trusted_issues: CountWithTotal,
     pub verified: bool,
     pub loc: Option<usize>,
     pub geiger_count: Option<u64>,
@@ -116,7 +107,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
     fn add(self, other: Self) -> Self {
         Self {
             trust: self.trust.min(other.trust),
-            issues: self.issues + other.issues,
+            trusted_issues: self.trusted_issues + other.trusted_issues,
             verified: self.verified && other.verified,
             loc: sum_options(self.loc, other.loc),
             geiger_count: sum_options(self.geiger_count, other.geiger_count),
@@ -131,9 +122,9 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
 pub struct CrateDetails {
     pub digest: Digest,
     pub latest_trusted_version: Option<Version>,
-    pub reviews: ReviewCount,
-    pub downloads: Option<DownloadCount>,
-    pub owners: Option<TrustCount>,
+    pub version_reviews: CountWithTotal,
+    pub version_downloads: Option<CountWithTotal>,
+    pub known_owners: Option<CountWithTotal>,
     pub unclean_digest: bool,
     pub accumulative_own: AccumulativeCrateDetails,
     pub accumulative: AccumulativeCrateDetails,

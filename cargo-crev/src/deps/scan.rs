@@ -172,17 +172,20 @@ impl Scanner {
         let total_reviews_count =
             self.db
                 .get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(&pkg_name), None);
-        let reviews = ReviewCount {
-            version: version_reviews_count as u64,
+        let version_reviews = CountWithTotal {
+            count: version_reviews_count as u64,
             total: total_reviews_count as u64,
         };
 
-        let downloads = match self.crates_io.get_downloads_count(&pkg_name, &pkg_version) {
-            Ok((version, total)) => Some(DownloadCount { version, total }),
+        let version_downloads = match self.crates_io.get_downloads_count(&pkg_name, &pkg_version) {
+            Ok((version, total)) => Some(CountWithTotal {
+                count: version,
+                total,
+            }),
             Err(_) => None,
         };
 
-        let (owners, owner_list) = match self.crates_io.get_owners(&pkg_name) {
+        let (known_owners, owner_list) = match self.crates_io.get_owners(&pkg_name) {
             Ok(owners) => {
                 let total_owners_count = owners.len();
                 let known_owners_count = owners
@@ -193,9 +196,9 @@ impl Scanner {
                     return Ok(None);
                 }
                 (
-                    Some(TrustCount {
-                        trusted: known_owners_count,
-                        total: total_owners_count,
+                    Some(CountWithTotal {
+                        count: known_owners_count as u64,
+                        total: total_owners_count as u64,
                     }),
                     Some(owners),
                 )
@@ -219,9 +222,9 @@ impl Scanner {
             crev_data::Level::None.into(),
         );
 
-        let issues = TrustCount {
-            trusted: issues_from_trusted.len(),
-            total: issues_from_all.len(),
+        let issues = CountWithTotal {
+            count: issues_from_trusted.len() as u64,
+            total: issues_from_all.len() as u64,
         };
 
         let loc = crate::tokei::get_rust_line_count(&info.root).ok();
@@ -237,7 +240,7 @@ impl Scanner {
 
         let accumulative_own = AccumulativeCrateDetails {
             trust: result,
-            issues,
+            trusted_issues: issues,
             geiger_count,
             loc,
             verified,
@@ -266,9 +269,9 @@ impl Scanner {
         Ok(Some(CrateDetails {
             digest,
             latest_trusted_version,
-            reviews,
-            downloads,
-            owners,
+            version_reviews,
+            version_downloads,
+            known_owners,
             unclean_digest,
             accumulative_own,
             accumulative,

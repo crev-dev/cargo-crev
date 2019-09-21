@@ -1,7 +1,7 @@
 mod verify_screen;
 
 use crate::deps;
-pub use crate::deps::{scan, DownloadCount, TrustCount};
+pub use crate::deps::{scan, CountWithTotal};
 use crate::opts::Verify;
 use crate::prelude::*;
 use crate::shared::CommandExitStatus;
