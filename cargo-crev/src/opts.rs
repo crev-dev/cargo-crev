@@ -477,6 +477,8 @@ pub enum Command {
         name = "verify",
         after_help = r"This will show the following information:
 
+Recursive mode will will calculate most metrics for the crate together with all its dependencies.
+
 - trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
 - reviews    - Number of reviews for the specific version and for all available versions (total)
 - downloads  - Download counts from crates.io for the specific version and all versions
