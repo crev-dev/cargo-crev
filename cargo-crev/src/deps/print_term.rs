@@ -20,13 +20,19 @@ pub fn print_header(_term: &mut Term, verbose: bool) {
         eprint!("{:43} ", "digest");
     }
     eprint!(
-        "{:6} {:8} {:^15} {:4} {:6} {:6} {:6} {:4}",
-        "status", "reviews", "downloads", "own.", "issues", "lines", "geiger", "flgs"
+        "{:6} {:8} {:^15} {:6} {:6} {:6} {:6} {:4}",
+        "status", "reviews", "downloads", "owner", "issues", "lines", "geiger", "flgs"
     );
     eprintln!(" {:<20} {:<15} {:<15}", "crate", "version", "latest_t");
 }
 
-pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Result<()> {
+#[allow(clippy::collapsible_if)]
+pub fn print_details(
+    cdep: &CrateDetails,
+    term: &mut Term,
+    verbose: bool,
+    recursive_mode: bool,
+) -> Result<()> {
     if verbose {
         print!("{:43} ", cdep.digest);
     }
@@ -58,14 +64,26 @@ pub fn print_details(cdep: &CrateDetails, term: &mut Term, verbose: bool) -> Res
     } else {
         println!(" {:>8} {:>9}", "?", "?");
     }
-    if let Some(owners) = &cdep.known_owners {
+
+    if recursive_mode {
         term.print(
-            format_args!(" {}", owners.count),
-            term::known_owners_count_color(owners.count),
+            format_args!(
+                " {:>2} {:>2}",
+                cdep.accumulative.owner_set.to_total_owners(),
+                cdep.accumulative.owner_set.to_total_distinct_groups()
+            ),
+            None,
         )?;
-        term.print(format_args!(" {}", owners.total), None)?;
     } else {
-        println!(" ???");
+        if let Some(owners) = &cdep.known_owners {
+            term.print(
+                format_args!(" {:>2}", owners.count),
+                term::known_owners_count_color(owners.count),
+            )?;
+            term.print(format_args!("/{:<2}", owners.total), None)?;
+        } else {
+            println!(" ???");
+        }
     }
 
     term.print(
@@ -101,7 +119,12 @@ fn print_stats_crate_id(stats: &CrateStats, _term: &mut Term) {
     );
 }
 
-pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<()> {
+pub fn print_dep(
+    stats: &CrateStats,
+    term: &mut Term,
+    verbose: bool,
+    recursive_mode: bool,
+) -> Result<()> {
     match &stats.details {
         Err(_) => {
             print_stats_crate_id(stats, term);
@@ -109,7 +132,7 @@ pub fn print_dep(stats: &CrateStats, term: &mut Term, verbose: bool) -> Result<(
         }
         Ok(None) => { /* just skip */ }
         Ok(Some(details)) => {
-            print_details(&details, term, verbose)?;
+            print_details(&details, term, verbose, recursive_mode)?;
             match details.accumulative.geiger_count {
                 Some(geiger_count) => print!(" {:>7}", geiger_count),
                 None => print!(" {:>7}", "err"),

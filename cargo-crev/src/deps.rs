@@ -63,6 +63,33 @@ impl OwnerSetSet {
 
         OwnerSetSet(owner_set)
     }
+
+    pub fn to_total_owners(&self) -> usize {
+        let all_owners: HashSet<_> = self.0.iter().flat_map(|(_pkg, set)| set).collect();
+
+        all_owners.len()
+    }
+
+    pub fn to_total_distinct_groups(&self) -> usize {
+        let mut count = 0;
+
+        'outer: for (group_i, (_pkg, group)) in self.0.iter().enumerate() {
+            for (other_group_i, (_pkg, other_group)) in self.0.iter().enumerate() {
+                if group_i == other_group_i {
+                    continue;
+                }
+
+                if group.iter().all(|member| other_group.contains(member)) {
+                    // there is an `other_group` that is a super-set of this `group`
+                    continue 'outer;
+                }
+            }
+            // there was no other_group that would contain all members of this one
+            count += 1;
+        }
+
+        count
+    }
 }
 
 impl std::ops::Add<OwnerSetSet> for OwnerSetSet {
@@ -252,7 +279,7 @@ pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
     let deps: Vec<_> = events
         .into_iter()
         .map(|stats| {
-            print_term::print_dep(&stats, &mut term, args.verbose)?;
+            print_term::print_dep(&stats, &mut term, args.verbose, args.recursive)?;
             Ok(stats)
         })
         .collect::<Result<_>>()?;

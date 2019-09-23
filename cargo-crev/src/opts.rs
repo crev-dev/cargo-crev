@@ -480,7 +480,11 @@ pub enum Command {
 - trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
 - reviews    - Number of reviews for the specific version and for all available versions (total)
 - downloads  - Download counts from crates.io for the specific version and all versions
-- own.       - Owner counts from crates.io (known/all)
+- owner
+  - In non-recursive mode: Owner counts from crates.io (known/all)
+  - In recursive mode:
+    - Total number of owners from crates.io
+    - Total number of owner groups ignoring subsets
 - issues     - Number of issues repored (from trusted sources/all)
 - lines      - Lines of Rust code
 - geiger     - Geiger score: number of `unsafe` lines
