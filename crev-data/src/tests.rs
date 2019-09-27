@@ -5,6 +5,7 @@ use crate::{
 };
 use failure::format_err;
 use semver::Version;
+use std::default::Default;
 use std::path::PathBuf;
 
 #[test]
@@ -129,5 +130,35 @@ pub fn verify_works() -> Result<()> {
 
     assert!(proof.verify().is_err());
 
+    Ok(())
+}
+
+#[test]
+pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
+    let a = OwnId::generate_for_git_url("https://a");
+    let digest = vec![0; 32];
+    let package = proof::PackageInfo {
+        id: None,
+        source: "source".into(),
+        name: "name".into(),
+        version: Version::parse("1.0.0").unwrap(),
+        digest: digest.clone(),
+        digest_type: proof::default_digest_type(),
+        revision: "".into(),
+        revision_type: proof::default_revision_type(),
+    };
+
+    let mut package = a.as_pubid().create_package_review_proof(
+        package.clone(),
+        Default::default(),
+        "a".into(),
+    )?;
+    assert!(proof::Content::from(package.clone())
+        .ensure_serializes_to_valid_proof()
+        .is_ok());
+    package.comment = std::iter::repeat("a").take(32_000).collect::<String>();
+    assert!(proof::Content::from(package)
+        .ensure_serializes_to_valid_proof()
+        .is_err());
     Ok(())
 }
