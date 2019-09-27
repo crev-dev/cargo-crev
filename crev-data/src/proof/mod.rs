@@ -22,6 +22,8 @@ pub use review::*;
 
 use crate::Result;
 
+const MAX_PROOF_BODY_LENGHT: usize = 32_000;
+
 pub type Date = chrono::DateTime<FixedOffset>;
 
 pub trait ContentCommon {
@@ -240,6 +242,25 @@ impl Content {
             Package(review) => review::PackageDraft::from(*review).to_string(),
         }
     }
+
+    /// Ensure the proof generated from this `Content` is going to deserialize
+    pub fn ensure_serializes_to_valid_proof(&self) -> Result<()> {
+        let body = self.to_string();
+        let signature = "somefakesignature";
+        let proof = Proof {
+            digest: crev_common::blake2b256sum(&body.as_bytes()),
+            body,
+            signature: crev_common::base64_encode(&signature),
+            content: self.clone(),
+        };
+        let parsed = Proof::parse(std::io::Cursor::new(proof.to_string().as_bytes()))?;
+
+        if parsed.len() != 1 {
+            bail!("Serialized to {} proofs");
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -359,7 +380,7 @@ impl Serialized {
                             self.body += line;
                             self.body += "\n";
                         }
-                        if self.body.len() > 32_000 {
+                        if self.body.len() > MAX_PROOF_BODY_LENGHT {
                             bail!("Proof body too long");
                         }
                     }

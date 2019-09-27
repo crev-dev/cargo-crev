@@ -154,7 +154,14 @@ pub fn edit_proof_content_iteractively(
                 eprintln!("There was an error parsing content: {}", e);
                 crev_common::try_again_or_cancel()?;
             }
-            Ok(content) => return Ok(content),
+            Ok(content) => {
+                if let Err(e) = content.ensure_serializes_to_valid_proof() {
+                    eprintln!("There was an error validating serialized proof: {}", e);
+                    crev_common::try_again_or_cancel()?;
+                } else {
+                    return Ok(content);
+                }
+            }
         }
     }
 }
