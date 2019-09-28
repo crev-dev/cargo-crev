@@ -197,7 +197,7 @@ pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::P
 
 pub fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     for review in find_reviews(crate_)? {
-        println!("{}", review);
+        println!("---\n{}", review);
     }
 
     Ok(())

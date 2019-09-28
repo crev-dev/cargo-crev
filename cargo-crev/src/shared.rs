@@ -540,7 +540,7 @@ pub fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) 
 
 pub fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
     for review in find_advisories(crate_)? {
-        println!("{}", review);
+        println!("---\n{}", review);
     }
 
     Ok(())
@@ -561,7 +561,7 @@ pub fn list_issues(args: &opts::QueryIssue) -> Result<()> {
         &trust_set,
         args.trust_level.into(),
     ) {
-        println!("{}", review);
+        println!("---\n{}", review);
     }
 
     Ok(())
