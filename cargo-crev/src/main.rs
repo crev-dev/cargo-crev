@@ -92,7 +92,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 } => {
                     let local = crev_lib::Local::auto_open()?;
                     let db = local.load_db()?;
-                    let for_id = local.get_for_id_from_str(for_id.as_deref())?;
+                    let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
                     for id in trust_set.trusted_ids() {

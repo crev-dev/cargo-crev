@@ -34,7 +34,7 @@ impl Scanner {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set =
-            if let Some(for_id) = local.get_for_id_from_str_opt(args.for_id.as_deref())? {
+            if let Some(for_id) = local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.for_id))? {
                 db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
             } else {
                 crev_lib::proofdb::TrustSet::default()
