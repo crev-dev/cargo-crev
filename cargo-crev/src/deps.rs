@@ -16,6 +16,7 @@ mod print_term;
 pub mod scan;
 
 #[derive(Copy, Clone, Debug)]
+/// Progress-bar kind of thing, you know?
 pub struct Progress {
     pub done: usize,
     pub total: usize,
@@ -32,6 +33,9 @@ impl Progress {
 }
 
 #[derive(Copy, Clone, Debug)]
+/// A count of something, plus the "total" number of that thing.
+///
+/// This is kind of context-dependent
 pub struct CountWithTotal<T = u64> {
     pub count: T, // or "known" in case of crate owners
     pub total: T,

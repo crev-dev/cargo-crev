@@ -25,6 +25,7 @@ pub fn known_owners_count_color(count: u64) -> Option<color::Color> {
     }
 }
 
+/// Helper to control (possibly) colored output
 pub struct Term {
     pub stdout_is_tty: bool,
     pub stderr_is_tty: bool,

@@ -181,10 +181,10 @@ fn build_graph<'a>(
     let mut pending = vec![];
     for root in roots {
         let node = Node {
-            id: root.clone(),
+            id: root,
             metadata: packages.get_one(root)?.manifest().metadata().clone(),
         };
-        graph.nodes.insert(root.clone(), graph.graph.add_node(node));
+        graph.nodes.insert(root, graph.graph.add_node(node));
         pending.push(root);
     }
 
@@ -256,7 +256,7 @@ impl Repo {
             &cargo_opts.unstable_flags,
         )?;
         let features_set =
-            Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(|| String::new())]);
+            Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
 
         let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
         Ok(Repo {

@@ -69,9 +69,9 @@ impl<'a, T: review::Common> From<&'a T> for TimestampedReview {
 /// to refer to a review by an unique combination of:
 ///
 /// * author's ID
-/// * source
-/// * crate
-/// * version
+/// * pkg source
+/// * pkg name
+/// * pkg version
 #[derive(Hash, Debug, Clone, PartialEq, Eq)]
 pub struct PkgReviewId {
     from: Id,
@@ -128,7 +128,9 @@ pub type Name = String;
 /// all the logic here will have to be moved to a real embedded db
 /// of some kind.
 pub struct ProofDB {
-    trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>, // who -(trusts)-> whom
+    /// who -(trusts)-> whom
+    trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>,
+
     url_by_id: HashMap<Id, TimestampedUrl>,
     url_by_id_secondary: HashMap<Id, TimestampedUrl>,
 
@@ -949,6 +951,7 @@ impl TrustSet {
     pub fn contains_distrusted(&self, id: &Id) -> bool {
         self.distrusted.contains_key(id)
     }
+
     /// Record that an Id is considered trusted
     ///
     /// Returns `true` if this actually added or changed the `subject` details,

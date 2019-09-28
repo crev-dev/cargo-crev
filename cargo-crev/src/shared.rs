@@ -47,6 +47,7 @@ pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
     vcs.and_then(|vcs| vcs.get_git_revision())
         .unwrap_or_else(|| "".into())
 }
+
 #[derive(Debug, Clone, Deserialize)]
 pub enum VcsInfoJsonGit {
     #[serde(rename = "sha1")]
@@ -283,6 +284,8 @@ pub fn crate_open(
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+/// Do you select a dependency of the current project
+/// or just a random, unrelated crate.
 pub enum UnrelatedOrDependency {
     Unrelated,
     Dependency,
