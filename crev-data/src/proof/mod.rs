@@ -141,9 +141,8 @@ impl Content {
 
     pub fn validate_data(&self) -> Result<()> {
         use self::Content::*;
-        match self {
-            Package(review) => review.validate_data()?,
-            _ => {}
+        if let Package(review) = self {
+            review.validate_data()?
         }
 
         Ok(())

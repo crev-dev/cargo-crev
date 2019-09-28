@@ -33,12 +33,13 @@ impl Scanner {
     pub fn new(args: &Verify) -> Result<Scanner> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
-        let trust_set =
-            if let Some(for_id) = local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.for_id))? {
-                db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
-            } else {
-                crev_lib::proofdb::TrustSet::default()
-            };
+        let trust_set = if let Some(for_id) =
+            local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.for_id))?
+        {
+            db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+        } else {
+            crev_lib::proofdb::TrustSet::default()
+        };
         let ignore_list = cargo_min_ignore_list();
         let crates_io = crates_io::Client::new(&local)?;
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
@@ -114,7 +115,7 @@ impl Scanner {
                         if let Some(ref graph) = self_clone.graph {
                             let ready_details = self_clone.ready_details.lock().unwrap();
 
-                            for dep_pkg_id in graph.get_dependencies_of(&info.id) {
+                            for dep_pkg_id in graph.get_dependencies_of(info.id) {
                                 if !ready_details.contains_key(&dep_pkg_id) {
                                     pending_tx
                                         .lock()
@@ -236,7 +237,7 @@ impl Scanner {
             &self.requirements,
         );
 
-        let owner_set = OwnerSetSet::new(info.id, owner_list.unwrap_or(vec![]));
+        let owner_set = OwnerSetSet::new(info.id, owner_list.unwrap_or_else(|| vec![]));
 
         let accumulative_own = AccumulativeCrateDetails {
             trust: result,
@@ -253,7 +254,7 @@ impl Scanner {
         if let Some(ref graph) = self.graph {
             let ready_details = self.ready_details.lock().expect("lock works");
 
-            for dep_pkg_id in graph.get_recursive_dependencies_of(&info.id).into_iter() {
+            for dep_pkg_id in graph.get_recursive_dependencies_of(info.id).into_iter() {
                 match ready_details
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")

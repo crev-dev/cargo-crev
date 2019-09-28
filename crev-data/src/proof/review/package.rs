@@ -251,7 +251,8 @@ impl VersionRange {
         VersionRange::All
     }
 
-    fn is_all(&self) -> bool {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn is_all_ref(&self) -> bool {
         VersionRange::All == *self
     }
 }
@@ -271,7 +272,7 @@ pub struct Advisory {
     #[builder(default)]
     #[serde(
         default = "VersionRange::all",
-        skip_serializing_if = "VersionRange::is_all"
+        skip_serializing_if = "VersionRange::is_all_ref"
     )]
     pub range: VersionRange,
 
@@ -345,7 +346,7 @@ pub struct Issue {
     #[builder(default)]
     #[serde(
         default = "VersionRange::all",
-        skip_serializing_if = "VersionRange::is_all"
+        skip_serializing_if = "VersionRange::is_all_ref"
     )]
     pub range: VersionRange,
 

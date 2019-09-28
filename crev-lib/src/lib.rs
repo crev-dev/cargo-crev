@@ -83,7 +83,7 @@ pub enum VerificationStatus {
 }
 
 impl VerificationStatus {
-    pub fn is_verified(&self) -> bool {
+    pub fn is_verified(self) -> bool {
         match self {
             VerificationStatus::Verified => true,
             _ => false,
@@ -92,11 +92,11 @@ impl VerificationStatus {
 
     pub fn min(self, other: Self) -> Self {
         if self < other {
-            return self;
+            self
         } else if other < self {
-            return other;
+            other
         } else {
-            return self;
+            self
         }
     }
 }

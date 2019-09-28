@@ -44,10 +44,10 @@ pub struct Graph {
 impl Graph {
     pub fn get_dependencies_of<'s>(
         &'s self,
-        pkg_id: &PackageId,
+        pkg_id: PackageId,
     ) -> impl Iterator<Item = PackageId> + 's {
         self.nodes
-            .get(pkg_id)
+            .get(&pkg_id)
             .into_iter()
             .flat_map(move |node_idx| {
                 self.graph
@@ -56,14 +56,11 @@ impl Graph {
             .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
     }
 
-    pub fn get_recursive_dependencies_of<'s>(
-        &'s self,
-        root_pkg_id: &PackageId,
-    ) -> HashSet<PackageId> {
+    pub fn get_recursive_dependencies_of(&self, root_pkg_id: PackageId) -> HashSet<PackageId> {
         let mut pending = BTreeSet::new();
         let mut processed = HashSet::new();
 
-        pending.insert(*root_pkg_id);
+        pending.insert(root_pkg_id);
 
         while let Some(pkg_id) = pending.iter().next().cloned() {
             pending.remove(&pkg_id);
@@ -89,7 +86,7 @@ impl Graph {
             }
         }
 
-        processed.remove(root_pkg_id);
+        processed.remove(&root_pkg_id);
 
         processed
     }
@@ -98,7 +95,7 @@ impl Graph {
 fn our_resolve<'a, 'cfg>(
     registry: &mut PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,
-    features: &Vec<String>,
+    features: &[String],
     all_features: bool,
     no_default_features: bool,
     no_dev_dependencies: bool,
@@ -122,7 +119,7 @@ fn our_resolve<'a, 'cfg>(
     let specs: Vec<_> = workspace
         .members()
         .map(|m| m.summary().package_id())
-        .map(|id| PackageIdSpec::from_package_id(id))
+        .map(PackageIdSpec::from_package_id)
         .collect();
     let resolve = ops::resolve_with_previous(
         registry,

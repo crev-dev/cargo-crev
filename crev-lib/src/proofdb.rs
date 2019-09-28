@@ -304,7 +304,7 @@ impl ProofDB {
         source: &'b str,
         name: Option<&'c str>,
         version: Option<&'c Version>,
-        trust_set: &'c TrustSet,
+        trust_set: &'d TrustSet,
         trust_level_required: TrustLevel,
     ) -> impl Iterator<Item = &proof::review::Package> {
         match (name, version) {

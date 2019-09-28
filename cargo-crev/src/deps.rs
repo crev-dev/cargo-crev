@@ -131,6 +131,7 @@ where
 impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
     type Output = Self;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, other: Self) -> Self {
         Self {
             trust: self.trust.min(other.trust),

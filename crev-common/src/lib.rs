@@ -143,7 +143,7 @@ pub fn is_equal_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == T::default()
 }
 
-pub fn is_vec_empty<T>(t: &Vec<T>) -> bool {
+pub fn is_vec_empty<T>(t: &[T]) -> bool {
     t.is_empty()
 }
 
