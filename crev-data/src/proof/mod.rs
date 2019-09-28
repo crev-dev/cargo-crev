@@ -22,7 +22,7 @@ pub use review::*;
 
 use crate::Result;
 
-const MAX_PROOF_BODY_LENGHT: usize = 32_000;
+const MAX_PROOF_BODY_LENGTH: usize = 32_000;
 
 pub type Date = chrono::DateTime<FixedOffset>;
 
@@ -256,7 +256,7 @@ impl Content {
         let parsed = Proof::parse(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 
         if parsed.len() != 1 {
-            bail!("Serialized to {} proofs");
+            bail!("Serialized to {} proofs", parsed.len());
         }
 
         Ok(())
@@ -380,7 +380,7 @@ impl Serialized {
                             self.body += line;
                             self.body += "\n";
                         }
-                        if self.body.len() > MAX_PROOF_BODY_LENGHT {
+                        if self.body.len() > MAX_PROOF_BODY_LENGTH {
                             bail!("Proof body too long");
                         }
                     }
