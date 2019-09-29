@@ -272,7 +272,7 @@ pub fn latest_trusted_version_string(
     }
 }
 
-pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
+pub fn verify_deps(args: CrateVerify) -> Result<CommandExitStatus> {
     let mut term = term::Term::new();
     if term.stderr_is_tty && term.stdout_is_tty {
         self::print_term::print_header(&mut term, args.verbose);

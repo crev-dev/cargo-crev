@@ -1,7 +1,14 @@
-use super::*;
 use crate::crates_io;
-use crate::repo::*;
+use crate::deps::{
+    AccumulativeCrateDetails, CountWithTotal, CrateDetails, CrateInfo, CrateStats, OwnerSetSet,
+};
+use crate::opts::{CargoOpts, CrateVerify};
+use crate::prelude::*;
+use crate::repo::Repo;
 use crate::shared::get_geiger_count;
+use crate::shared::{
+    cargo_min_ignore_list, is_digest_clean, read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
+};
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use crossbeam::{
@@ -30,7 +37,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(args: &Verify) -> Result<Scanner> {
+    pub fn new(args: &CrateVerify) -> Result<Scanner> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set = if let Some(for_id) =

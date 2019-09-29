@@ -184,7 +184,7 @@ pub fn edit_known_owners_list() -> Result<()> {
 }
 
 pub fn clean_all_unclean_crates() -> Result<()> {
-    let scanner = scan::Scanner::new(&opts::Verify::default())?;
+    let scanner = scan::Scanner::new(&opts::CrateVerify::default())?;
     let events = scanner.run();
 
     for stats in events.into_iter() {
@@ -549,7 +549,7 @@ pub fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
     Ok(())
 }
 
-pub fn list_issues(args: &opts::QueryIssue) -> Result<()> {
+pub fn list_issues(args: &opts::RepoQueryIssue) -> Result<()> {
     let trust_distance_params = args.trust_params.clone().into();
 
     let local = crev_lib::Local::auto_open()?;

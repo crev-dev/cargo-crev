@@ -34,59 +34,58 @@ use crev_lib::TrustOrDistrust::{self, *};
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
-        opts::Command::Id(opts::Id::New(args)) => {
-            let local = Local::auto_create_or_open()?;
-            let res = local.generate_id(args.url, args.github_username, args.use_https_push);
-            if res.is_err() {
-                eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
-            }
-            let local = crev_lib::Local::auto_open()?;
-            let _ = ensure_known_owners_list_exists(&local);
-            res?;
-        }
-        opts::Command::Id(opts::Id::Switch(args)) => {
-            let local = Local::auto_open()?;
-            local.switch_id(&args.id)?
-        }
-        opts::Command::Diff(args) => {
-            let status = run_diff(&args)?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Edit(cmd) => match cmd {
-            opts::Edit::Readme => {
+        opts::Command::Id(args) => match args {
+            opts::Id::New(args) => {
+                let local = Local::auto_create_or_open()?;
+                let res = local.generate_id(args.url, args.github_username, args.use_https_push);
+                if res.is_err() {
+                    eprintln!("Visit https://github.com/dpc/crev/wiki/Proof-Repository for help.");
+                }
                 let local = crev_lib::Local::auto_open()?;
-                local.edit_readme()?;
+                let _ = ensure_known_owners_list_exists(&local);
+                res?;
             }
-            opts::Edit::Config => {
-                let local = crev_lib::Local::auto_create_or_open()?;
-                local.edit_user_config()?;
+            opts::Id::Switch(args) => {
+                let local = Local::auto_open()?;
+                local.switch_id(&args.id)?
             }
-            opts::Edit::Known => {
-                edit_known_owners_list()?;
+            opts::Id::Show => {
+                let local = Local::auto_open()?;
+                local.show_own_ids()?;
             }
-        },
-        opts::Command::Verify(args) => {
-            return if args.interactive {
-                tui::verify_deps(args)
-            } else {
-                deps::verify_deps(args)
-            };
-        }
-        opts::Command::Id(opts::Id::Show) => {
-            let local = Local::auto_open()?;
-            local.show_own_ids()?;
-        }
-        opts::Command::Query(cmd) => match cmd {
-            opts::Query::Id(cmd) => match cmd {
-                opts::QueryId::Current => {
+            opts::Id::Export(args) => {
+                let local = Local::auto_open()?;
+                println!("{}", local.export_locked_id(args.id)?);
+            }
+            opts::Id::Import => {
+                let local = Local::auto_create_or_open()?;
+                let s = load_stdin_with_prompt()?;
+                let id = local.import_locked_id(&String::from_utf8(s)?)?;
+                // Note: It's unclear how much of this should be done by
+                // the library
+                local.save_current_id(&id.id)?;
+
+                let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
+                if !proof_dir_path.exists() {
+                    local.clone_proof_dir_from_git(&id.url.url, false)?;
+                }
+            }
+            opts::Id::Trust(args) => {
+                create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
+            }
+            opts::Id::Distrust(args) => {
+                create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
+            }
+            opts::Id::Query(cmd) => match cmd {
+                opts::IdQuery::Current => {
                     let local = Local::auto_open()?;
                     local.show_current_id()?
                 }
-                opts::QueryId::Own => {
+                opts::IdQuery::Own => {
                     let local = Local::auto_open()?;
                     local.list_own_ids()?
                 }
-                opts::QueryId::Trusted {
+                opts::IdQuery::Trusted {
                     for_id,
                     trust_params,
                 } => {
@@ -107,7 +106,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     }
                 }
                 // TODO: move to crev-lib
-                opts::QueryId::All => {
+                opts::IdQuery::All => {
                     let local = crev_lib::Local::auto_create_or_open()?;
                     let db = local.load_db()?;
 
@@ -120,143 +119,156 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     }
                 }
             },
-            opts::Query::Review(args) => list_reviews(&args.crate_)?,
-            opts::Query::Dir(args) => show_dir(
+        },
+
+        opts::Command::Crate(args) => match args {
+            opts::Crate::Diff(args) => {
+                let status = run_diff(&args)?;
+                std::process::exit(status.code().unwrap_or(-159));
+            }
+            opts::Crate::Verify(args) => {
+                return if args.interactive {
+                    tui::verify_deps(args)
+                } else {
+                    deps::verify_deps(args)
+                };
+            }
+            opts::Crate::Goto(args) => {
+                goto_crate_src(
+                    &args.crate_,
+                    UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
+                )?;
+            }
+            opts::Crate::Open(args) => {
+                handle_goto_mode_command(&args.common.clone(), |c, v, i| {
+                    crate_open(c, v, i, args.cmd, args.cmd_save)
+                })?;
+            }
+            opts::Crate::Clean(args) => {
+                if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
+                    clean_all_unclean_crates()?;
+                } else {
+                    handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
+                }
+            }
+            opts::Crate::Dir(args) => show_dir(
                 &args.common.crate_,
                 UnrelatedOrDependency::from_unrelated_flag(args.common.unrelated),
             )?,
-            opts::Query::Advisory(args) => list_advisories(&args.crate_)?,
-            opts::Query::Issue(args) => list_issues(&args)?,
-        },
-        opts::Command::Review(args) => {
-            handle_goto_mode_command(&args.common, |c, v, i| {
-                let is_advisory = args.advisory
-                    || args.affected.is_some()
-                    || (!args.issue && args.severity.is_some());
-                create_review_proof(
-                    c,
-                    v,
-                    i,
-                    if args.issue {
-                        Some(crev_data::Level::Medium)
-                    } else {
-                        None
-                    },
-                    if is_advisory {
-                        Some(opts::AdviseCommon {
-                            severity: args.severity.unwrap_or(crev_data::Level::Medium),
-                            affected: args
-                                .affected
-                                .unwrap_or(crev_data::proof::review::package::VersionRange::Major),
-                        })
-                    } else {
-                        None
-                    },
-                    if is_advisory || args.issue {
-                        TrustOrDistrust::Distrust
-                    } else {
-                        TrustOrDistrust::Trust
-                    },
-                    &args.common_proof_create,
-                    &args.diff,
-                    args.skip_activity_check || is_advisory || args.issue,
-                    args.cargo_opts.clone(),
-                )
-            })?;
-        }
-        opts::Command::Goto(args) => {
-            goto_crate_src(
-                &args.crate_,
-                UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
-            )?;
-        }
-        opts::Command::Open(args) => {
-            handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                crate_open(c, v, i, args.cmd, args.cmd_save)
-            })?;
-        }
-        opts::Command::Clean(args) => {
-            if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
-                clean_all_unclean_crates()?;
-            } else {
-                handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
-            }
-        }
-        opts::Command::Trust(args) => {
-            create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
-        }
-        opts::Command::Distrust(args) => {
-            create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
-        }
-        opts::Command::Git(git) => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(git.args)?;
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Publish => {
-            let local = Local::auto_open()?;
-            let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
 
-            if status.code().unwrap_or(-2) == 1 {
-                status = local.run_git(vec![
-                    "commit".into(),
-                    "-a".into(),
-                    "-m".into(),
-                    "auto-commit on `crev publish`".into(),
-                ])?;
+            opts::Crate::Review(args) => {
+                handle_goto_mode_command(&args.common, |c, v, i| {
+                    let is_advisory = args.advisory
+                        || args.affected.is_some()
+                        || (!args.issue && args.severity.is_some());
+                    create_review_proof(
+                        c,
+                        v,
+                        i,
+                        if args.issue {
+                            Some(crev_data::Level::Medium)
+                        } else {
+                            None
+                        },
+                        if is_advisory {
+                            Some(opts::AdviseCommon {
+                                severity: args.severity.unwrap_or(crev_data::Level::Medium),
+                                affected: args.affected.unwrap_or(
+                                    crev_data::proof::review::package::VersionRange::Major,
+                                ),
+                            })
+                        } else {
+                            None
+                        },
+                        if is_advisory || args.issue {
+                            TrustOrDistrust::Distrust
+                        } else {
+                            TrustOrDistrust::Trust
+                        },
+                        &args.common_proof_create,
+                        &args.diff,
+                        args.skip_activity_check || is_advisory || args.issue,
+                        args.cargo_opts.clone(),
+                    )
+                })?;
             }
-
-            if status.code().unwrap_or(-1) == 0 {
-                status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-            }
-            if status.code().unwrap_or(-1) == 0 {
-                status = local.run_git(vec!["push".into()])?;
-            }
-            std::process::exit(status.code().unwrap_or(-159));
-        }
-        opts::Command::Fetch(cmd) => match cmd {
-            opts::Fetch::Trusted(params) => {
-                let local = Local::auto_create_or_open()?;
-                local.fetch_trusted(params.into())?;
-            }
-            opts::Fetch::Url(params) => {
-                let local = Local::auto_create_or_open()?;
-                local.fetch_url(&params.url)?;
-            }
-            opts::Fetch::All => {
-                let local = Local::auto_create_or_open()?;
-                local.fetch_all()?;
+            opts::Crate::Search(args) => {
+                lookup_crates(&args.query, args.count)?;
             }
         },
-        opts::Command::Update(args) => {
-            let local = Local::auto_open()?;
-            let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-            if !status.success() {
+        opts::Command::Config(args) => match args {
+            opts::Config::Edit => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                local.edit_user_config()?;
+            }
+        },
+        opts::Command::Repo(args) => match args {
+            opts::Repo::Git(git) => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(git.args)?;
                 std::process::exit(status.code().unwrap_or(-159));
             }
-            let repo = Repo::auto_open_cwd(args.cargo_opts)?;
-            repo.update_source()?;
-            repo.update_counts()?;
-        }
-        opts::Command::Id(opts::Id::Export(params)) => {
-            let local = Local::auto_open()?;
-            println!("{}", local.export_locked_id(params.id)?);
-        }
-        opts::Command::Id(opts::Id::Import) => {
-            let local = Local::auto_create_or_open()?;
-            let s = load_stdin_with_prompt()?;
-            let id = local.import_locked_id(&String::from_utf8(s)?)?;
-            // Note: It's unclear how much of this should be done by
-            // the library
-            local.save_current_id(&id.id)?;
+            opts::Repo::Query(args) => match args {
+                opts::RepoQuery::Review(args) => list_reviews(&args.crate_)?,
+                opts::RepoQuery::Advisory(args) => list_advisories(&args.crate_)?,
+                opts::RepoQuery::Issue(args) => list_issues(&args)?,
+            },
+            opts::Repo::Publish => {
+                let local = Local::auto_open()?;
+                let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
 
-            let proof_dir_path = local.get_proofs_dir_path_for_url(&id.url)?;
-            if !proof_dir_path.exists() {
-                local.clone_proof_dir_from_git(&id.url.url, false)?;
+                if status.code().unwrap_or(-2) == 1 {
+                    status = local.run_git(vec![
+                        "commit".into(),
+                        "-a".into(),
+                        "-m".into(),
+                        "auto-commit on `crev publish`".into(),
+                    ])?;
+                }
+
+                if status.code().unwrap_or(-1) == 0 {
+                    status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+                }
+                if status.code().unwrap_or(-1) == 0 {
+                    status = local.run_git(vec!["push".into()])?;
+                }
+                std::process::exit(status.code().unwrap_or(-159));
             }
-        }
-        opts::Command::Import(cmd) => match cmd {
-            opts::Import::Proof(args) => {
+            opts::Repo::Fetch(cmd) => match cmd {
+                opts::RepoFetch::Trusted(params) => {
+                    let local = Local::auto_create_or_open()?;
+                    local.fetch_trusted(params.into())?;
+                }
+                opts::RepoFetch::Url(params) => {
+                    let local = Local::auto_create_or_open()?;
+                    local.fetch_url(&params.url)?;
+                }
+                opts::RepoFetch::All => {
+                    let local = Local::auto_create_or_open()?;
+                    local.fetch_all()?;
+                }
+            },
+            opts::Repo::Update(args) => {
+                let local = Local::auto_open()?;
+                let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+                if !status.success() {
+                    std::process::exit(status.code().unwrap_or(-159));
+                }
+                let repo = Repo::auto_open_cwd(args.cargo_opts)?;
+                repo.update_source()?;
+                repo.update_counts()?;
+            }
+            opts::Repo::Edit(cmd) => match cmd {
+                opts::RepoEdit::Readme => {
+                    let local = crev_lib::Local::auto_open()?;
+                    local.edit_readme()?;
+                }
+                opts::RepoEdit::Known => {
+                    edit_known_owners_list()?;
+                }
+            },
+
+            opts::Repo::Import(args) => {
                 let local = Local::auto_create_or_open()?;
                 let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
@@ -275,9 +287,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
         },
-        opts::Command::Lookup(args) => {
-            lookup_crates(&args.query, args.count)?;
-        }
     }
 
     Ok(CommandExitStatus::Success)

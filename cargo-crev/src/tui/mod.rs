@@ -2,7 +2,7 @@ mod verify_screen;
 
 use crate::deps;
 pub use crate::deps::{scan, CountWithTotal};
-use crate::opts::Verify;
+use crate::opts::CrateVerify;
 use crate::prelude::*;
 use crate::shared::CommandExitStatus;
 use crossbeam::channel::select;
@@ -15,7 +15,7 @@ use verify_screen::VerifyScreen;
 /// Right now the --interactive is only possible for "verify" subcommand
 ///  but this will hopefully change and the public function here would
 ///  be a run_command
-pub fn verify_deps(args: Verify) -> Result<CommandExitStatus> {
+pub fn verify_deps(args: CrateVerify) -> Result<CommandExitStatus> {
     let computer = scan::Scanner::new(&args)?;
 
     let _alt_screen = AlternateScreen::to_alternate(true);

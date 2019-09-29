@@ -42,7 +42,7 @@ pub struct CargoOpts {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct NewId {
+pub struct IdNew {
     #[structopt(long = "url")]
     /// URL of a git repository to be associated with the new Id
     pub url: Option<String>,
@@ -55,14 +55,7 @@ pub struct NewId {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum New {
-    #[structopt(name = "id")]
-    /// Generate a CrevID
-    Id(NewId),
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct SwitchId {
+pub struct IdSwitch {
     /// Own Id to switch to
     pub id: String,
 }
@@ -156,7 +149,7 @@ pub struct Update {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
-pub struct Verify {
+pub struct CrateVerify {
     #[structopt(long = "verbose", short = "v")]
     /// Display more informations about the crates
     pub verbose: bool,
@@ -191,7 +184,7 @@ pub struct Verify {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Trust {
+pub struct IdTrust {
     /// Public IDs to create Trust Proof for
     pub pub_ids: Vec<String>,
 
@@ -200,20 +193,20 @@ pub struct Trust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct FetchUrl {
+pub struct RepoFetchUrl {
     /// URL to public proof repository
     pub url: String,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Fetch {
+pub enum RepoFetch {
     #[structopt(name = "trusted")]
     /// Fetch updates from trusted Ids
     Trusted(TrustDistanceParams),
 
     #[structopt(name = "url")]
     /// Fetch from a single public proof repository
-    Url(FetchUrl),
+    Url(RepoFetchUrl),
 
     #[structopt(name = "all")]
     /// Fetch all previously retrieved public proof repositories
@@ -221,7 +214,7 @@ pub enum Fetch {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum QueryId {
+pub enum IdQuery {
     /// Show current Id
     #[structopt(name = "current")]
     Current,
@@ -246,19 +239,19 @@ pub enum QueryId {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct QueryReview {
+pub struct RepoQueryReview {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct QueryAdvisory {
+pub struct RepoQueryAdvisory {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct QueryIssue {
+pub struct RepoQueryIssue {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
 
@@ -271,66 +264,31 @@ pub struct QueryIssue {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct QueryDir {
+pub struct CrateDir {
     #[structopt(flatten)]
     pub common: ReviewOrGotoCommon,
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Query {
-    /// Query Ids
-    #[structopt(name = "id", alias = "new")] // alias is a hack for back-compat
-    Id(QueryId),
-
+pub enum RepoQuery {
     /// Query reviews
     #[structopt(name = "review")]
-    Review(QueryReview),
+    Review(RepoQueryReview),
 
     /// Query applicable advisories
     #[structopt(name = "advisory")]
-    Advisory(QueryAdvisory),
+    Advisory(RepoQueryAdvisory),
 
     /// Query applicable issues
     #[structopt(name = "issue")]
-    Issue(QueryIssue),
-
-    /// Query source directory of a package
-    #[structopt(name = "dir")]
-    Dir(QueryDir),
+    Issue(RepoQueryIssue),
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub enum Id {
-    /// Create a new Id
-    #[structopt(name = "new", alias = "id")] // alias is a hack for back-compat
-    New(NewId),
-
-    /// Export your own Id
-    #[structopt(name = "export")]
-    Export(ExportId),
-
-    /// Import an Id as your own
-    #[structopt(name = "import")]
-    Import,
-
-    /// Show your own Id
-    #[structopt(name = "show")]
-    Show,
-
-    /// Change current Id
-    #[structopt(name = "switch")]
-    Switch(SwitchId),
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub enum Edit {
+pub enum RepoEdit {
     /// Edit your README.md file
     #[structopt(name = "readme")]
     Readme,
-
-    /// Edit your user config
-    #[structopt(name = "config")]
-    Config,
 
     /// Edit your KNOWN_CRATE_OWNERS.md file
     #[structopt(name = "known")]
@@ -338,7 +296,7 @@ pub enum Edit {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Git {
+pub struct RepoGit {
     /// Arguments to the `git` command
     #[structopt(parse(from_os_str))]
     pub args: Vec<OsString>,
@@ -355,7 +313,7 @@ pub struct ReviewOrGotoCommon {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Open {
+pub struct CrateOpen {
     /// Shell command to execute with crate directory as an argument. Eg. "code --wait -n" for VSCode
     #[structopt(long = "cmd")]
     pub cmd: Option<String>,
@@ -388,7 +346,7 @@ pub struct CommonProofCreate {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Review {
+pub struct CrateReview {
     #[structopt(flatten)]
     pub common: ReviewOrGotoCommon,
 
@@ -430,7 +388,7 @@ pub struct AdviseCommon {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct Lookup {
+pub struct CrateSearch {
     /// Number of results
     #[structopt(long = "count", default_value = "10")]
     pub count: usize,
@@ -439,21 +397,21 @@ pub struct Lookup {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ExportId {
+pub struct IdExport {
     pub id: Option<String>,
 }
-
+/*
 #[derive(Debug, StructOpt, Clone)]
-pub enum Import {
+pub enum RepoImport {
     /// Import proofs: resign proofs using current id
     ///
     /// Useful for mass-import of proofs signed by another ID
     #[structopt(name = "proof")]
     Proof(ImportProof),
-}
+}*/
 
 #[derive(Debug, StructOpt, Clone)]
-pub struct ImportProof {
+pub struct RepoImport {
     /// Reset proof date to current date
     #[structopt(long = "reset-date")]
     pub reset_date: bool,
@@ -463,7 +421,167 @@ pub struct ImportProof {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum Id {
+    /// Create a new Id
+    #[structopt(name = "new")]
+    New(IdNew),
+
+    /// Export your own Id
+    #[structopt(name = "export")]
+    Export(IdExport),
+
+    /// Import an Id as your own
+    #[structopt(name = "import")]
+    Import,
+
+    /// Show your own Id
+    #[structopt(name = "show")]
+    Show,
+
+    /// Change current Id
+    #[structopt(name = "switch")]
+    Switch(IdSwitch),
+
+    /// Trust an Id
+    #[structopt(name = "trust")]
+    Trust(IdTrust),
+
+    /// Distrust an Id
+    #[structopt(name = "distrust")]
+    Distrust(IdTrust),
+
+    /// Distrust an Id
+    #[structopt(name = "query")]
+    Query(IdQuery),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Crate {
+    /// Start a shell in source directory of a crate under review
+    #[structopt(name = "goto")]
+    Goto(ReviewOrGotoCommon),
+
+    /// Open source code of a crate
+    #[structopt(name = "open")]
+    Open(CrateOpen),
+
+    /// Clean a crate source code (eg. after review)
+    #[structopt(name = "clean")]
+    Clean(ReviewOrGotoCommon),
+
+    /// Diff between two versions of a package
+    #[structopt(name = "diff")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
+    Diff(Diff),
+
+    /// Query source directory of a package
+    #[structopt(name = "dir")]
+    Dir(CrateDir),
+
+    /// Verify dependencies
+    #[structopt(
+        name = "verify",
+        after_help = r"This will show the following information:
+
+Recursive mode will will calculate most metrics for the crate together with all its dependencies.
+
+- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- reviews    - Number of reviews for the specific version and for all available versions (total)
+- downloads  - Download counts from crates.io for the specific version and all versions
+- owner
+  - In non-recursive mode: Owner counts from crates.io (known/all)
+  - In recursive mode:
+    - Total number of owners from crates.io
+    - Total number of owner groups ignoring subsets
+- issues     - Number of issues repored (from trusted sources/all)
+- lines      - Lines of Rust code
+- geiger     - Geiger score: number of `unsafe` lines
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build
+- name       - Crate name
+- version    - Crate version
+- latest_t   - Latest trusted version"
+    )]
+    Verify(CrateVerify),
+
+    /// Review a crate (code review, security advisory, flag issues)
+    #[structopt(name = "review")]
+    Review(CrateReview),
+
+    /// Search crates on crates.io sorting by review count
+    #[structopt(name = "search")]
+    Search(CrateSearch),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Config {
+    /// Edit the config file
+    #[structopt(name = "edit")]
+    Edit,
+}
+
+#[derive(Debug, StructOpt, Clone)]
+/// Local Proof Repository
+pub enum Repo {
+    // TODO: `Dir`
+    /// Publish to remote repository
+    #[structopt(name = "publish")]
+    Publish,
+
+    /// Update data from online sources (proof repositories, crates.io)
+    #[structopt(name = "update", alias = "pull")]
+    Update(Update),
+
+    /// Run raw git commands in the local proof repository
+    #[structopt(name = "git")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
+    Git(RepoGit),
+
+    /// Edit README.md of the current Id, ...
+    #[structopt(name = "edit")]
+    Edit(RepoEdit),
+
+    /// Import proofs
+    #[structopt(name = "import")]
+    Import(RepoImport),
+
+    /*
+    /// Export proofs
+    #[structopt(name = "export")]
+    Export,
+    */
+    /// Query proofs
+    #[structopt(name = "query")]
+    Query(RepoQuery),
+
+    /// Fetch proofs from external sources
+    #[structopt(name = "fetch")]
+    Fetch(RepoFetch),
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Command {
+    /// Id (own and of other users)
+    #[structopt(name = "id")]
+    Id(Id),
+
+    /// Crate related operations (review, verify...)
+    #[structopt(name = "crate")]
+    Crate(Crate),
+
+    /// Proof Repository - store of proofs
+    #[structopt(name = "repo")]
+    Repo(Repo),
+
+    /// Config
+    #[structopt(name = "config")]
+    Config(Config),
+}
+/*
+#[derive(Debug, StructOpt, Clone)]
+pub enum OldCommand {
     /// Manage your own Id (create new, show, export, import, switch)
     #[structopt(name = "id", alias = "new")]
     Id(Id),
@@ -558,6 +676,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Diff(Diff),
 }
+*/
 
 /// Cargo will pass the name of the `cargo-<tool>`
 /// as first argument, so we just have to match it here.
