@@ -149,19 +149,32 @@ pub struct Update {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
+pub struct CrateVerifyCommon {
+    #[structopt(flatten)]
+    pub trust_params: TrustDistanceParams,
+
+    #[structopt(flatten)]
+    pub requirements: VerificationRequirements,
+
+    #[structopt(long = "for-id")]
+    /// Root identity to calculate the Web of Trust for [default: current user id]
+    pub for_id: Option<String>,
+
+    #[structopt(flatten)]
+    pub cargo_opts: CargoOpts,
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateVerify {
+    #[structopt(flatten)]
+    pub common: CrateVerifyCommon,
+
     #[structopt(long = "verbose", short = "v")]
     /// Display more informations about the crates
     pub verbose: bool,
 
     #[structopt(long = "interactive", short = "i")]
     pub interactive: bool,
-
-    #[structopt(flatten)]
-    pub trust_params: TrustDistanceParams,
-
-    #[structopt(flatten)]
-    pub requirements: VerificationRequirements,
 
     #[structopt(long = "skip-verified")]
     /// Display only crates not passing the verification
@@ -171,16 +184,9 @@ pub struct CrateVerify {
     /// Skip crate from known owners (use `edit known` to edit the list)
     pub skip_known_owners: bool,
 
-    #[structopt(long = "for-id")]
-    /// Root identity to calculate the Web of Trust for [default: current user id]
-    pub for_id: Option<String>,
-
     #[structopt(long = "recursive")]
     /// Calculate recursive metrics for your packages
     pub recursive: bool,
-
-    #[structopt(flatten)]
-    pub cargo_opts: CargoOpts,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -504,6 +510,10 @@ Recursive mode will will calculate most metrics for the crate together with all 
 - latest_t   - Latest trusted version"
     )]
     Verify(CrateVerify),
+
+    /// Most valuable players (reviewers)
+    #[structopt(name = "mvp")]
+    Mvp(CrateVerifyCommon),
 
     /// Review a crate (code review, security advisory, flag issues)
     #[structopt(name = "review")]

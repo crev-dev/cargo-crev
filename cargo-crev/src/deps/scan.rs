@@ -41,19 +41,20 @@ impl Scanner {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set = if let Some(for_id) =
-            local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.for_id))?
+            local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.common.for_id))?
         {
-            db.calculate_trust_set(&for_id, &args.trust_params.clone().into())
+            db.calculate_trust_set(&for_id, &args.common.trust_params.clone().into())
         } else {
             crev_lib::proofdb::TrustSet::default()
         };
         let ignore_list = cargo_min_ignore_list();
         let crates_io = crates_io::Client::new(&local)?;
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
-        let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
+        let requirements =
+            crev_lib::VerificationRequirements::from(args.common.requirements.clone());
         let skip_verified = args.skip_verified;
         let skip_known_owners = args.skip_known_owners;
-        let repo = Repo::auto_open_cwd(args.cargo_opts.clone())?;
+        let repo = Repo::auto_open_cwd(args.common.cargo_opts.clone())?;
         let package_set = repo.get_deps_package_set()?;
         let pkg_ids = package_set.package_ids();
 
@@ -80,7 +81,7 @@ impl Scanner {
             skip_verified,
             skip_known_owners,
             crates,
-            cargo_opts: args.cargo_opts.clone(),
+            cargo_opts: args.common.cargo_opts.clone(),
             graph,
             ready_details: Default::default(),
         })
@@ -172,15 +173,22 @@ impl Scanner {
             return Ok(None);
         }
 
-        let version_reviews_count = self.db.get_package_review_count(
-            PROJECT_SOURCE_CRATES_IO,
-            Some(&info.id.name()),
-            Some(&info.id.version()),
-        );
+        let pkg_name = info.id.name().to_string();
+
+        let version_reviews: Vec<_> = self
+            .db
+            .get_package_reviews_for_package(
+                PROJECT_SOURCE_CRATES_IO,
+                Some(&pkg_name),
+                Some(&info.id.version()),
+            )
+            .collect();
+
+        let version_reviews_count = version_reviews.len();
         let total_reviews_count =
             self.db
                 .get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(&pkg_name), None);
-        let version_reviews = CountWithTotal {
+        let version_review_count = CountWithTotal {
             count: version_reviews_count as u64,
             total: total_reviews_count as u64,
         };
@@ -276,8 +284,12 @@ impl Scanner {
 
         Ok(Some(CrateDetails {
             digest,
+            trusted_reviewers: version_reviews
+                .into_iter()
+                .map(|pkg_review| pkg_review.from.to_owned())
+                .collect(),
             latest_trusted_version,
-            version_reviews,
+            version_reviews: version_review_count,
             version_downloads,
             known_owners,
             unclean_digest,

@@ -75,7 +75,7 @@ impl fmt::Display for Id {
     }
 }
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PubId {
     #[serde(flatten)]
     pub id: Id,

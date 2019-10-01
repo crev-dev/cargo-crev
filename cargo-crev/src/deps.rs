@@ -154,6 +154,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
 pub struct CrateDetails {
     pub digest: Digest,
     pub latest_trusted_version: Option<Version>,
+    pub trusted_reviewers: HashSet<PubId>,
     pub version_reviews: CountWithTotal,
     pub version_downloads: Option<CountWithTotal>,
     pub known_owners: Option<CountWithTotal>,
@@ -270,6 +271,32 @@ pub fn latest_trusted_version_string(
     } else {
         "".to_owned()
     }
+}
+
+pub fn crate_mvps(common: CrateVerifyCommon) -> Result<()> {
+    let mut args = CrateVerify::default();
+    args.common = common;
+
+    let scanner = scan::Scanner::new(&args)?;
+    let events = scanner.run();
+
+    let mut mvps: HashMap<PubId, u64> = HashMap::new();
+
+    for stats in events {
+        for reviewer in &stats.details?.expect("some").trusted_reviewers {
+            *mvps.entry(reviewer.to_owned()).or_default() += 1;
+        }
+    }
+
+    let mut mvps: Vec<_> = mvps.into_iter().collect();
+
+    mvps.sort_by(|a, b| a.1.cmp(&b.1).reverse());
+
+    for (id, count) in &mvps {
+        println!("{:>3} {} {}", count, id.id, id.url.url);
+    }
+
+    Ok(())
 }
 
 pub fn verify_deps(args: CrateVerify) -> Result<CommandExitStatus> {

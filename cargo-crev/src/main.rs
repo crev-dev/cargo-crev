@@ -133,6 +133,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     deps::verify_deps(args)
                 };
             }
+            opts::Crate::Mvp(args) => {
+                deps::crate_mvps(args)?;
+            }
             opts::Crate::Goto(args) => {
                 goto_crate_src(
                     &args.crate_,
