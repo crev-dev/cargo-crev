@@ -3,21 +3,22 @@ pub mod git;
 use crate::prelude::*;
 use crev_common;
 use crev_data::proof;
-use failure::{bail, format_err};
+use failure::bail;
 use git2;
 use std::io;
 use std::{
     self, env,
-    ffi::{self, OsString},
+    ffi::{self},
     fmt::Write as FmtWrite,
     fs,
     io::Write,
     path::Path,
-    process,
 };
 use tempdir;
 
-pub use crev_common::{read_file_to_string, store_str_to_file, store_to_file_with};
+pub use crev_common::{
+    read_file_to_string, run_with_shell_cmd, store_str_to_file, store_to_file_with,
+};
 
 fn get_git_default_editor() -> Result<String> {
     let cfg = git2::Config::open_default()?;
@@ -77,38 +78,10 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
     }
 }
 
-pub fn run_with_shell_cmd(cmd: OsString, path: &Path) -> Result<std::process::ExitStatus> {
-    Ok(if cfg!(windows) {
-        // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes .arg()'s built-in escaping problematic:
-        // https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
-        // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode still works.
-        let mut proc = process::Command::new("cmd.exe");
-        proc.arg("/c").arg("%CREV_EDITOR% %CREV_PATH%");
-        proc.env("CREV_EDITOR", &cmd);
-        proc.env("CREV_PATH", path);
-        proc
-    } else if cfg!(unix) {
-        let mut proc = process::Command::new("/bin/sh");
-        proc.arg("-c").arg(format!(
-            "{} {}",
-            cmd.clone().into_string().map_err(|_| format_err!(
-                "command not a valid Unicode: {}",
-                cmd.to_string_lossy()
-            ))?,
-            shell_escape::escape(path.display().to_string().into())
-        ));
-        proc
-    } else {
-        panic!("What platform are you running this on? Please submit a PR!");
-    }
-    .status()
-    .with_context(|_e| format_err!("Couldn't start the command: {}", cmd.to_string_lossy()))?)
-}
-
 pub fn edit_file(path: &Path) -> Result<()> {
     let editor = get_editor_to_use()?;
 
-    let status = run_with_shell_cmd(editor, path)?;
+    let status = run_with_shell_cmd(editor, Some(path))?;
 
     if !status.success() {
         bail!("Editor returned {}", status);

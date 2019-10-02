@@ -16,8 +16,10 @@ use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
 use rpassword;
 use rprompt;
+use std::process;
 use std::{
     env,
+    ffi::OsString,
     io::{self, BufRead, Read, Write},
     path::{Path, PathBuf},
 };
@@ -190,10 +192,87 @@ pub fn yes_or_no_was_y(msg: &str) -> io::Result<bool> {
     }
 }
 
+pub fn run_with_shell_cmd(
+    cmd: OsString,
+    arg: Option<&Path>,
+) -> io::Result<std::process::ExitStatus> {
+    Ok(run_with_shell_cmd_custom(cmd, arg, false)?.status)
+}
+
+pub fn run_with_shell_cmd_capture_stdout(cmd: OsString, arg: Option<&Path>) -> io::Result<Vec<u8>> {
+    let output = run_with_shell_cmd_custom(cmd, arg, true)?;
+    if !output.status.success() {
+        return Err(std::io::Error::new(
+            io::ErrorKind::Other,
+            "command failed with non-zero status",
+        ));
+    }
+    Ok(output.stdout)
+}
+
+pub fn run_with_shell_cmd_custom(
+    cmd: OsString,
+    arg: Option<&Path>,
+    capture_stdout: bool,
+) -> io::Result<std::process::Output> {
+    Ok(if cfg!(windows) {
+        // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes .arg()'s built-in escaping problematic:
+        // https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
+        // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode still works.
+        let mut proc = process::Command::new("cmd.exe");
+        if let Some(arg) = arg {
+            proc.arg("/c").arg("%CREV_CMD% %CREV_ARG%");
+            proc.env("CREV_CMD", &cmd);
+            proc.env("CREV_ARG", arg);
+        } else {
+            proc.arg("/c").arg("%CREV_CMD%");
+            proc.env("CREV_CMD", &cmd);
+        }
+        proc
+    } else if cfg!(unix) {
+        let mut proc = process::Command::new("/bin/sh");
+        if let Some(arg) = arg {
+            proc.arg("-c").arg(format!(
+                "{} {}",
+                cmd.clone().into_string().map_err(|_| std::io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "not a valid unicode"
+                ))?,
+                shell_escape::escape(arg.display().to_string().into())
+            ));
+        } else {
+            proc.arg("-c").arg(format!(
+                "{}",
+                cmd.clone().into_string().map_err(|_| std::io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "not a valid unicode"
+                ))?,
+            ));
+        }
+        proc
+    } else {
+        panic!("What platform are you running this on? Please submit a PR!");
+    }
+    .stdin(process::Stdio::inherit())
+    .stderr(process::Stdio::inherit())
+    .stdout(if capture_stdout {
+        process::Stdio::piped()
+    } else {
+        process::Stdio::inherit()
+    })
+    .output()?)
+}
+
 pub fn read_passphrase() -> io::Result<String> {
     if let Ok(pass) = env::var("CREV_PASSPHRASE") {
         eprint!("Using passphrase set in CREV_PASSPHRASE\n");
         return Ok(pass);
+    } else if let Some(cmd) = env::var_os("CREV_PASSPHRASE_CMD") {
+        return Ok(
+            String::from_utf8_lossy(&run_with_shell_cmd_capture_stdout(cmd, None)?)
+                .trim()
+                .to_owned(),
+        );
     }
     eprint!("Enter passphrase to unlock: ");
     rpassword::read_password()
