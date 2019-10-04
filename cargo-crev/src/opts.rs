@@ -32,25 +32,25 @@ impl CrateSelector {
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct CargoOpts {
     #[structopt(long = "features", value_name = "FEATURES")]
-    /// Space-separated list of features to activate
+    /// [cargo] Space-separated list of features to activate
     pub features: Option<String>,
     #[structopt(long = "all-features")]
-    /// Activate all available features
+    /// [cargo] Activate all available features
     pub all_features: bool,
     #[structopt(long = "no-default-features")]
-    /// Do not activate the `default` feature
+    /// [cargo] Do not activate the `default` feature
     pub no_default_features: bool,
     #[structopt(long = "target", value_name = "TARGET")]
-    /// Set the target triple
+    /// [cargo] Set the target triple
     pub target: Option<String>,
     #[structopt(long = "no-dev-dependencies")]
-    /// Skip dev dependencies.
+    /// [cargo] Skip dev dependencies.
     pub no_dev_dependencies: bool,
     #[structopt(long = "manifest-path", value_name = "PATH", parse(from_os_str))]
-    /// Path to Cargo.toml
+    /// [cargo] Path to Cargo.toml
     pub manifest_path: Option<PathBuf>,
     #[structopt(short = "Z", value_name = "FLAG")]
-    /// Unstable (nightly-only) flags to Cargo
+    /// [cargo] Unstable (nightly-only) flags to Cargo
     pub unstable_flags: Vec<String>,
 }
 
