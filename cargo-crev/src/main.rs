@@ -137,37 +137,29 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 deps::crate_mvps(args)?;
             }
             opts::Crate::Goto(args) => {
-                goto_crate_src(
-                    &args.crate_,
-                    UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
-                )?;
+                goto_crate_src(&args.crate_)?;
             }
             opts::Crate::Open(args) => {
-                handle_goto_mode_command(&args.common.clone(), |c, v, i| {
-                    crate_open(c, v, i, args.cmd, args.cmd_save)
+                handle_goto_mode_command(&args.common.clone(), |sel| {
+                    crate_open(sel, args.cmd, args.cmd_save)
                 })?;
             }
             opts::Crate::Clean(args) => {
                 if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
                     clean_all_unclean_crates()?;
                 } else {
-                    handle_goto_mode_command(&args, |c, v, i| clean_crate(c, v, i))?;
+                    handle_goto_mode_command(&args, |sel| clean_crate(sel))?;
                 }
             }
-            opts::Crate::Dir(args) => show_dir(
-                &args.common.crate_,
-                UnrelatedOrDependency::from_unrelated_flag(args.common.unrelated),
-            )?,
+            opts::Crate::Dir(args) => show_dir(&args.common.crate_)?,
 
             opts::Crate::Review(args) => {
-                handle_goto_mode_command(&args.common, |c, v, i| {
+                handle_goto_mode_command(&args.common, |sel| {
                     let is_advisory = args.advisory
                         || args.affected.is_some()
                         || (!args.issue && args.severity.is_some());
                     create_review_proof(
-                        c,
-                        v,
-                        i,
+                        sel,
                         if args.issue {
                             Some(crev_data::Level::Medium)
                         } else {

@@ -55,10 +55,20 @@ impl Scanner {
         let skip_verified = args.skip_verified;
         let skip_known_owners = args.skip_known_owners;
         let repo = Repo::auto_open_cwd(args.common.cargo_opts.clone())?;
-        let package_set = repo.get_deps_package_set()?;
-        let pkg_ids = package_set.package_ids();
 
-        let crates = package_set
+        if args.common.crate_.unrelated {
+            bail!("Unrealated crates are currently not supported");
+        }
+
+        let roots = repo.find_roots_by_crate_selector(&args.common.crate_)?;
+
+        let package_set = repo.get_package_set()?;
+
+        let graph = repo.get_dependency_graph(roots)?;
+
+        let pkg_ids = graph.get_all_pkg_ids();
+
+        let crates: Vec<_> = package_set
             .get_many(pkg_ids)?
             .into_iter()
             .filter(|pkg| pkg.summary().source_id().is_registry())
@@ -66,7 +76,7 @@ impl Scanner {
             .collect();
 
         let graph = if args.recursive {
-            Some(Arc::new(repo.get_dependency_graph()?))
+            Some(Arc::new(graph))
         } else {
             None
         };

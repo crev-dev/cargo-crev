@@ -1,11 +1,17 @@
+use common_failures::Result;
 use crev_data::Level;
+use failure::bail;
 use semver::Version;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateSelector {
+    /// This crate is not neccesarily a dependency of the current cargo project
+    #[structopt(long = "unrelated", short = "u")]
+    pub unrelated: bool,
+
     pub name: Option<String>,
     pub version: Option<Version>,
 }
@@ -13,6 +19,14 @@ pub struct CrateSelector {
 impl CrateSelector {
     pub fn is_empty(&self) -> bool {
         self.name.is_none() && self.version.is_none()
+    }
+
+    pub fn ensure_name_given(&self) -> Result<()> {
+        if self.name.is_none() {
+            bail!("Crate name argument required!")
+        }
+
+        Ok(())
     }
 }
 
@@ -162,6 +176,9 @@ pub struct CrateVerifyCommon {
 
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
+
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
@@ -312,10 +329,6 @@ pub struct RepoGit {
 pub struct ReviewOrGotoCommon {
     #[structopt(flatten)]
     pub crate_: CrateSelector,
-
-    /// This crate is not neccesarily a dependency of the current cargo project
-    #[structopt(long = "unrelated", short = "u")]
-    pub unrelated: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]

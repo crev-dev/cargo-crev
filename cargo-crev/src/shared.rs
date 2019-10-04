@@ -2,6 +2,7 @@
 //
 use crate::deps::scan;
 use crate::opts;
+use crate::opts::CrateSelector;
 use crate::prelude::*;
 use crate::repo::*;
 use crev_data::proof;
@@ -109,20 +110,16 @@ pub fn exec_into(mut command: process::Command) -> Result<()> {
 ///
 /// Set some `envs` to help other commands work
 /// from inside such a "review-shell".
-pub fn goto_crate_src(
-    selector: &opts::CrateSelector,
-    unrelated: UnrelatedOrDependency,
-) -> Result<()> {
+pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
     };
     let repo = Repo::auto_open_cwd_default()?;
-    let name = selector
-        .name
-        .clone()
-        .ok_or_else(|| format_err!("Crate name argument required"))?;
-    let crate_ = repo.find_crate(&name, selector.version.as_ref(), unrelated)?;
+    selector.ensure_name_given()?;
+    let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
+    let crate_ = repo.get_crate(&crate_id)?;
     let crate_dir = crate_.root();
+    let crate_name = crate_.name();
     let crate_version = crate_.version();
     let local = crev_lib::Local::auto_create_or_open()?;
     local.record_review_activity(
@@ -143,7 +140,7 @@ pub fn goto_crate_src(
         .current_dir(crate_dir)
         .env("PWD", crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
-        .env(GOTO_CRATE_NAME_ENV, name)
+        .env(GOTO_CRATE_NAME_ENV, crate_name.to_string())
         .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string());
 
     exec_into(command)
@@ -189,11 +186,11 @@ pub fn clean_all_unclean_crates() -> Result<()> {
 
     for stats in events.into_iter() {
         if stats.is_digest_unclean() {
-            clean_crate(
-                &stats.info.id.name().to_string(),
-                Some(stats.info.id.version()),
-                UnrelatedOrDependency::Dependency,
-            )?;
+            clean_crate(&CrateSelector {
+                name: Some(stats.info.id.name().to_string()),
+                version: Some(stats.info.id.version().to_owned()),
+                unrelated: false,
+            })?;
         }
     }
 
@@ -201,13 +198,10 @@ pub fn clean_all_unclean_crates() -> Result<()> {
 }
 
 /// Wipe the crate source, then re-download it
-pub fn clean_crate(
-    name: &str,
-    version: Option<&Version>,
-    unrelated: UnrelatedOrDependency,
-) -> Result<()> {
+pub fn clean_crate(selector: &CrateSelector) -> Result<()> {
     let repo = Repo::auto_open_cwd_default()?;
-    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
+    let crate_ = repo.get_crate(&crate_id)?;
     let crate_root = crate_.root();
 
     assert!(!crate_root.starts_with(std::env::current_dir()?));
@@ -215,7 +209,7 @@ pub fn clean_crate(
     if crate_root.is_dir() {
         std::fs::remove_dir_all(&crate_root)?;
     }
-    let _crate = repo.find_crate(name, version, unrelated)?;
+    let _crate_ = repo.get_crate(&crate_id)?;
     Ok(())
 }
 
@@ -243,17 +237,11 @@ pub fn get_open_cmd(local: &Local) -> Result<String> {
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-pub fn crate_open(
-    name: &str,
-    version: Option<&Version>,
-    unrelated: UnrelatedOrDependency,
-    cmd: Option<String>,
-    cmd_save: bool,
-) -> Result<()> {
+pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
-    let crate_ = repo.find_crate(name, version, unrelated)?;
-
+    let crate_id = repo.find_pkgid_by_crate_selector(crate_sel)?;
+    let crate_ = repo.get_crate(&crate_id)?;
     let crate_root = crate_.root();
 
     if cmd_save && cmd.is_none() {
@@ -283,6 +271,7 @@ pub fn crate_open(
     Ok(())
 }
 
+/*
 #[derive(Copy, Clone, PartialEq, Eq)]
 /// Do you select a dependency of the current project
 /// or just a random, unrelated crate.
@@ -303,7 +292,7 @@ impl UnrelatedOrDependency {
             UnrelatedOrDependency::Dependency
         }
     }
-}
+}*/
 
 /// Check `diff` command line argument against previous activity
 ///
@@ -409,7 +398,8 @@ pub fn check_package_clean_state(
     // shells, we move all the entries in a dir, instead of the whole
     // dir. this is not a perfect solution, but better than nothing.
     crev_common::fs::move_dir_content(&crate_root, &reviewed_pkg_dir)?;
-    let crate_second = repo.find_crate(name, Some(version), UnrelatedOrDependency::Unrelated)?;
+    let crate_second_id = repo.find_pkgid(name, Some(version), true)?;
+    let crate_second = repo.get_crate(&crate_second_id)?;
     let crate_root_second = crate_second.root();
     let crate_version_second = crate_second.version();
 
@@ -459,11 +449,8 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     let name = &args.name;
 
     let dst_version = &args.dst;
-    let dst_crate = repo.find_crate(
-        &name,
-        dst_version.as_ref(),
-        UnrelatedOrDependency::Unrelated,
-    )?;
+    let dst_crate_id = repo.find_pkgid(name, dst_version.to_owned().as_ref(), false)?;
+    let dst_crate = repo.get_crate(&dst_crate_id)?;
 
     let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
     let trust_distance_params = &args.trust_params.clone().into();
@@ -484,7 +471,8 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             )
         })
         .ok_or_else(|| format_err!("No previously reviewed version found"))?;
-    let src_crate = repo.find_crate(&name, Some(&src_version), UnrelatedOrDependency::Unrelated)?;
+    let src_crate_id = repo.find_pkgid(name, Some(&src_version), true)?;
+    let src_crate = repo.get_crate(&src_crate_id)?;
 
     local.record_review_activity(
         PROJECT_SOURCE_CRATES_IO,
@@ -529,13 +517,12 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     }
 }
 
-pub fn show_dir(crate_: &opts::CrateSelector, unrelated: UnrelatedOrDependency) -> Result<()> {
+pub fn show_dir(sel: &opts::CrateSelector) -> Result<()> {
     let repo = Repo::auto_open_cwd_default()?;
-    let name = crate_
-        .name
-        .clone()
-        .ok_or_else(|| format_err!("Crate name argument required"))?;
-    let crate_ = repo.find_crate(&name, crate_.version.as_ref(), unrelated)?;
+
+    let _ = sel.ensure_name_given()?;
+    let crate_id = repo.find_pkgid_by_crate_selector(sel)?;
+    let crate_ = repo.get_crate(&crate_id)?;
     println!("{}", crate_.root().display());
 
     Ok(())
@@ -585,7 +572,7 @@ pub fn are_we_called_from_goto_shell() -> Option<OsString> {
 /// like that.
 pub fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
 where
-    F: FnOnce(&str, Option<&Version>, UnrelatedOrDependency) -> Result<()>,
+    F: FnOnce(&CrateSelector) -> Result<()>,
 {
     if let Some(org_dir) = are_we_called_from_goto_shell() {
         if args.crate_.name.is_some() {
@@ -597,24 +584,16 @@ where
                 .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
-            f(
-                &name,
-                Some(&Version::parse(&version)?),
-                UnrelatedOrDependency::Unrelated,
-            )?;
+            f(&CrateSelector {
+                name: Some(name),
+                version: Some(Version::parse(&version)?),
+                unrelated: true,
+            })?;
         }
     } else {
-        let name = args
-            .crate_
-            .name
-            .clone()
-            .ok_or_else(|| format_err!("Crate name required"))?;
+        args.crate_.ensure_name_given()?;
 
-        f(
-            &name,
-            args.crate_.version.as_ref(),
-            UnrelatedOrDependency::from_unrelated_flag(args.unrelated),
-        )?;
+        f(&args.crate_)?;
     }
     Ok(())
 }

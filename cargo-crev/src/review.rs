@@ -4,7 +4,7 @@ use failure::format_err;
 use std::default::Default;
 
 use crate::opts;
-use crate::opts::CargoOpts;
+use crate::opts::{CargoOpts, CrateSelector};
 use crate::prelude::*;
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
@@ -17,9 +17,7 @@ use crate::shared::*;
 /// * `unrelated` - the crate might not actually be a dependency
 #[allow(clippy::option_option)]
 pub fn create_review_proof(
-    name: &str,
-    version: Option<&Version>,
-    unrelated: UnrelatedOrDependency,
+    crate_sel: &CrateSelector,
     report_severity: Option<crev_data::Level>,
     advise_common: Option<opts::AdviseCommon>,
     trust: TrustOrDistrust,
@@ -30,7 +28,8 @@ pub fn create_review_proof(
 ) -> Result<()> {
     let repo = Repo::auto_open_cwd(cargo_opts)?;
 
-    let crate_ = repo.find_crate(name, version, unrelated)?;
+    let pkg_id = repo.find_pkgid_by_crate_selector(crate_sel)?;
+    let crate_ = repo.get_crate(&pkg_id)?;
     let crate_root = crate_.root();
     let effective_crate_version = crate_.version();
 
@@ -39,30 +38,27 @@ pub fn create_review_proof(
 
     let diff_base_version = crate_review_activity_check(
         &local,
-        name,
+        &pkg_id.name(),
         &effective_crate_version,
         &diff_version,
         skip_activity_check,
     )?;
 
     let (digest_clean, vcs) =
-        check_package_clean_state(&repo, &crate_root, name, &effective_crate_version)?;
+        check_package_clean_state(&repo, &crate_root, &crate_.name(), &effective_crate_version)?;
 
     let diff_base = if let Some(ref diff_base_version) = diff_base_version {
-        let crate_ = repo.find_crate(
-            name,
-            Some(diff_base_version),
-            UnrelatedOrDependency::Unrelated,
-        )?;
+        let crate_id = repo.find_pkgid(&crate_.name(), Some(diff_base_version), true)?;
+        let crate_ = repo.get_crate(&crate_id)?;
         let crate_root = crate_.root();
 
         let (digest, vcs) =
-            check_package_clean_state(&repo, &crate_root, name, &diff_base_version)?;
+            check_package_clean_state(&repo, &crate_root, &crate_.name(), &diff_base_version)?;
 
         Some(proof::PackageInfo {
             id: None,
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: name.to_owned(),
+            name: crate_.name().to_string(),
             version: diff_base_version.to_owned(),
             digest: digest.into_vec(),
             digest_type: proof::default_digest_type(),
@@ -81,7 +77,7 @@ pub fn create_review_proof(
         .package(proof::PackageInfo {
             id: None,
             source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: name.to_owned(),
+            name: crate_.name().to_string(),
             version: effective_crate_version.to_owned(),
             digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
@@ -102,7 +98,7 @@ pub fn create_review_proof(
             find_previous_review_data(
                 &db,
                 &id.id,
-                name,
+                &crate_.name(),
                 effective_crate_version,
                 &diff_base_version,
             )
@@ -137,7 +133,7 @@ pub fn create_review_proof(
 
     let commit_msg = format!(
         "Add review for {crate} v{version}",
-        crate = name,
+        crate = &crate_.name(),
         version = effective_crate_version
     );
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)
