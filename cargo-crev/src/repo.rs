@@ -1,31 +1,29 @@
-use crate::opts;
-use crate::opts::CrateSelector;
-use cargo::core::dependency::Kind;
-use cargo::core::manifest::ManifestMetadata;
-use cargo::core::registry::PackageRegistry;
-use cargo::core::resolver::Method;
-use cargo::core::InternedString;
-use cargo::core::{PackageIdSpec, Resolve, Workspace};
-use cargo::ops;
-use cargo::util::CargoResult;
+use crate::{opts, opts::CrateSelector};
 use cargo::{
     core::{
-        dependency::Dependency, package::PackageSet, source::SourceMap, Package, PackageId,
-        SourceId,
+        dependency::{Dependency, Kind},
+        manifest::ManifestMetadata,
+        package::PackageSet,
+        registry::PackageRegistry,
+        resolver::Method,
+        source::SourceMap,
+        InternedString, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
-    util::important_paths::find_root_manifest_for_wd,
+    ops,
+    util::{important_paths::find_root_manifest_for_wd, CargoResult},
 };
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use failure::format_err;
 use petgraph::graph::NodeIndex;
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeSet, HashMap};
-use std::rc::Rc;
-use std::{collections::HashSet, env, path::PathBuf};
+use std::{
+    collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
+    env,
+    path::PathBuf,
+    rc::Rc,
+};
 
-use crate::crates_io;
-use crate::prelude::*;
+use crate::{crates_io, prelude::*};
 
 #[derive(Debug)]
 struct Node {

@@ -5,8 +5,7 @@ use crate::{
 };
 use failure::format_err;
 use semver::Version;
-use std::default::Default;
-use std::path::PathBuf;
+use std::{default::Default, path::PathBuf};
 
 #[test]
 pub fn signed_parse() -> Result<()> {

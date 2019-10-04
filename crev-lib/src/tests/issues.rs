@@ -1,8 +1,10 @@
 use super::*;
 
-use crev_data::review::{Advisory, Issue, VersionRange};
-use crev_data::TrustLevel;
-use crev_data::{proof, OwnId};
+use crev_data::{
+    proof,
+    review::{Advisory, Issue, VersionRange},
+    OwnId, TrustLevel,
+};
 use ifmt::iformat;
 use semver::Version;
 

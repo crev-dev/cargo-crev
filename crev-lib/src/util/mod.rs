@@ -5,15 +5,7 @@ use crev_common;
 use crev_data::proof;
 use failure::bail;
 use git2;
-use std::io;
-use std::{
-    self, env,
-    ffi::{self},
-    fmt::Write as FmtWrite,
-    fs,
-    io::Write,
-    path::Path,
-};
+use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io, io::Write, path::Path};
 use tempdir;
 
 pub use crev_common::{
@@ -151,8 +143,7 @@ pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O
 
 #[cfg(target_family = "unix")]
 pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
-    use std::fs::Permissions;
-    use std::os::unix::fs::PermissionsExt;
+    use std::{fs::Permissions, os::unix::fs::PermissionsExt};
 
     std::fs::set_permissions(path, Permissions::from_mode(0o600))
 }

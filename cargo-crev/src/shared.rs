@@ -1,22 +1,16 @@
 // Here are the structs and functions which still need to be sorted
 //
-use crate::deps::scan;
-use crate::opts;
-use crate::opts::CrateSelector;
-use crate::prelude::*;
-use crate::repo::*;
+use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
 use crev_data::proof;
-use crev_lib::TrustOrDistrust;
-use crev_lib::{self, local::Local, ProofStore, ReviewMode};
+use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustOrDistrust};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
-use std::ffi::OsString;
 use std::{
     collections::HashSet,
     env,
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     io,
     path::{Path, PathBuf},
     process,

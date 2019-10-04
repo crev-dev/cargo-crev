@@ -1,10 +1,9 @@
 use crate::{id, proof, Level, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
-    self,
+    self, is_equal_default, is_vec_empty,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use crev_common::{is_equal_default, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
 use semver::Version;

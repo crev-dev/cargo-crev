@@ -2,8 +2,7 @@ use common_failures::Result;
 use crev_data::Level;
 use failure::bail;
 use semver::Version;
-use std::ffi::OsString;
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone, Default)]

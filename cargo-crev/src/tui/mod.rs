@@ -1,10 +1,7 @@
 mod verify_screen;
 
-use crate::deps;
 pub use crate::deps::{scan, CountWithTotal};
-use crate::opts::CrateVerify;
-use crate::prelude::*;
-use crate::shared::CommandExitStatus;
+use crate::{deps, opts::CrateVerify, prelude::*, shared::CommandExitStatus};
 use crossbeam::channel::select;
 use crossterm::{AlternateScreen, KeyEvent, TerminalCursor};
 use termimad::{Event, EventSource};

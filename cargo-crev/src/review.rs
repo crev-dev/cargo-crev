@@ -3,14 +3,15 @@ use crev_lib::{self, local::Local};
 use failure::format_err;
 use std::default::Default;
 
-use crate::opts;
-use crate::opts::{CargoOpts, CrateSelector};
-use crate::prelude::*;
+use crate::{
+    opts,
+    opts::{CargoOpts, CrateSelector},
+    prelude::*,
+};
 use crev_data::proof;
 use crev_lib::TrustOrDistrust;
 
-use crate::repo::*;
-use crate::shared::*;
+use crate::{repo::*, shared::*};
 
 /// Review a crate
 ///

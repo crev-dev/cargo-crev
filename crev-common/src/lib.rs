@@ -16,12 +16,12 @@ use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
 use rpassword;
 use rprompt;
-use std::process;
 use std::{
     env,
     ffi::OsString,
     io::{self, BufRead, Read, Write},
     path::{Path, PathBuf},
+    process,
 };
 
 /// Now with a fixed offset of the current system timezone

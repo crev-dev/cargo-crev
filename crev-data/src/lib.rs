@@ -16,10 +16,11 @@ pub use crate::{
     digest::Digest,
     id::{Id, OwnId, PubId},
     level::Level,
-    proof::review,
-    proof::review::Rating,
-    proof::review::Review,
-    proof::trust::TrustLevel,
+    proof::{
+        review,
+        review::{Rating, Review},
+        trust::TrustLevel,
+    },
     url::Url,
 };
 

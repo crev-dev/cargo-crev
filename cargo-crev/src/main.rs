@@ -27,9 +27,7 @@ mod term;
 mod tokei;
 mod tui;
 
-use crate::repo::*;
-use crate::review::*;
-use crate::shared::*;
+use crate::{repo::*, review::*, shared::*};
 use crev_lib::TrustOrDistrust::{self, *};
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {

@@ -1,5 +1,5 @@
-use crate::activity::ReviewActivity;
 use crate::{
+    activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
     prelude::*,
     util, ProofDB, ProofStore,

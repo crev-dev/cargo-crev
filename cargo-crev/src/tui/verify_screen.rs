@@ -4,12 +4,14 @@ use termimad::{
     ListViewCell, ListViewColumn, MadSkin,
 };
 
-use crate::deps::{
-    latest_trusted_version_string, AccumulativeCrateDetails, CrateDetails, CrateStats, Progress,
+use crate::{
+    deps::{
+        latest_trusted_version_string, AccumulativeCrateDetails, CrateDetails, CrateStats, Progress,
+    },
+    opts::CargoOpts,
+    prelude::*,
+    repo::Repo,
 };
-use crate::opts::CargoOpts;
-use crate::prelude::*;
-use crate::repo::Repo;
 use crev_lib::VerificationStatus;
 use lazy_static::lazy_static;
 

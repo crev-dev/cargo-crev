@@ -4,13 +4,12 @@ use std::path::PathBuf;
 use crev_data::*;
 use crev_lib::*;
 
-use crate::opts::*;
-use crate::prelude::*;
-use crate::shared::*;
-use crate::term;
+use crate::{opts::*, prelude::*, shared::*, term};
 use cargo::core::PackageId;
-use std::collections::{HashMap, HashSet};
-use std::ops::Add;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Add,
+};
 
 mod print_term;
 pub mod scan;

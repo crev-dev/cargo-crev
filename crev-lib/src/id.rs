@@ -1,7 +1,9 @@
 use crate::prelude::*;
 use argon2::{self, Config};
-use crev_common::rand::random_vec;
-use crev_common::serde::{as_base64, from_base64};
+use crev_common::{
+    rand::random_vec,
+    serde::{as_base64, from_base64},
+};
 use crev_data::id::{OwnId, PubId};
 use failure::{bail, format_err};
 use miscreant;
