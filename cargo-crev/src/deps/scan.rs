@@ -203,8 +203,21 @@ impl Scanner {
                             }
 
                             if self_clone.selected_crates_ids.contains(&pkg_id) {
+                                let details = if let Ok(Some(details)) = details {
+                                    if details.accumulative_own.verified && self_clone.skip_verified
+                                    {
+                                        Ok(None)
+                                    } else {
+                                        Ok(Some(details))
+                                    }
+                                } else {
+                                    details
+                                };
+
+                                let stats = CrateStats { info, details };
+
                                 ready_tx
-                                    .send(CrateStats { info, details })
+                                    .send(stats)
                                     .expect("channel will be there waiting for the pool");
 
                                 if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
@@ -239,7 +252,7 @@ impl Scanner {
             .db
             .verify_package_digest(&digest, &self.trust_set, &self.requirements);
         let verified = result.is_verified();
-        if verified && self.skip_verified {
+        if verified && self.skip_verified && !self.recursive {
             return Ok(None);
         }
 
@@ -278,7 +291,9 @@ impl Scanner {
                     .iter()
                     .filter(|o| self.known_owners.contains(o.as_str()))
                     .count();
-                if known_owners_count > 0 && self.skip_known_owners {
+                // these combinations of `recursive` and `--skip-x` are annoying
+                // some refactoring of how all this stuff is calculated would be great
+                if known_owners_count > 0 && self.skip_known_owners && !self.recursive {
                     return Ok(None);
                 }
                 (
