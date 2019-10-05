@@ -77,16 +77,16 @@ pub struct IdSwitch {
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct TrustDistanceParams {
     #[structopt(long = "depth", default_value = "10")]
-    /// Maximum allowed distance from the root identity when traversing trust graph
+    /// [trust-graph-traversal] Maximum allowed distance from the root identity when traversing trust graph
     pub depth: u64,
 
-    /// Cost of traversing trust graph edge of high trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of high trust level
     #[structopt(long = "high-cost", default_value = "0")]
     pub high_cost: u64,
-    /// Cost of traversing trust graph edge of medium trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of medium trust level
     #[structopt(long = "medium-cost", default_value = "1")]
     pub medium_cost: u64,
-    /// Cost of traversing trust graph edge of low trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of low trust level
     #[structopt(long = "low-cost", default_value = "5")]
     pub low_cost: u64,
 }
@@ -199,6 +199,10 @@ pub struct CrateVerify {
     #[structopt(long = "skip-known-owners")]
     /// Skip crate from known owners (use `edit known` to edit the list)
     pub skip_known_owners: bool,
+
+    #[structopt(long = "skip-indirect")]
+    /// Skip dependencies that are not direct
+    pub skip_indirect: bool,
 
     #[structopt(long = "recursive")]
     /// Calculate recursive metrics for your packages

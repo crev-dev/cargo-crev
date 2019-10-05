@@ -57,6 +57,20 @@ impl Graph {
             .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
     }
 
+    pub fn get_reverse_dependencies_of<'s>(
+        &'s self,
+        pkg_id: PackageId,
+    ) -> impl Iterator<Item = PackageId> + 's {
+        self.nodes
+            .get(&pkg_id)
+            .into_iter()
+            .flat_map(move |node_idx| {
+                self.graph
+                    .neighbors_directed(*node_idx, petgraph::Direction::Incoming)
+            })
+            .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
+    }
+
     pub fn get_recursive_dependencies_of(&self, root_pkg_id: PackageId) -> HashSet<PackageId> {
         let mut pending = BTreeSet::new();
         let mut processed = HashSet::new();
@@ -449,21 +463,19 @@ impl Repo {
     }
     */
 
-    pub fn get_package_set<'a>(&'a self) -> Result<PackageSet<'a>> {
+    pub fn get_package_set<'a>(&'a self) -> Result<(PackageSet<'a>, Resolve)> {
         let workspace = self.workspace()?;
 
         let mut registry = self.registry(vec![].into_iter())?;
 
-        let (packages, _resolve) = our_resolve(
+        Ok(our_resolve(
             &mut registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        )?;
-
-        Ok(packages)
+        )?)
     }
 
     pub fn find_dependency_pkg_id_by_selector(

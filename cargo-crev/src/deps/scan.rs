@@ -11,6 +11,7 @@ use crate::{
         PROJECT_SOURCE_CRATES_IO,
     },
 };
+use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use crossbeam::{
@@ -21,7 +22,7 @@ use std::{
     collections::{HashMap, HashSet},
     default::Default,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{atomic, Arc, Mutex},
 };
 
 use crev_lib::proofdb::*;
@@ -36,10 +37,13 @@ pub struct Scanner {
     requirements: crev_lib::VerificationRequirements,
     skip_verified: bool,
     skip_known_owners: bool,
-    crates: Vec<CrateInfo>,
+    recursive: bool,
+    crate_info_by_id: HashMap<PackageId, CrateInfo>,
+    all_crates_ids: Vec<PackageId>,
+    selected_crates_ids: HashSet<PackageId>,
     cargo_opts: CargoOpts,
-    graph: Option<Arc<crate::repo::Graph>>,
-    ready_details: Arc<Mutex<HashMap<cargo::core::PackageId, Option<CrateDetails>>>>,
+    graph: Arc<crate::repo::Graph>,
+    ready_details: Arc<Mutex<HashMap<PackageId, Option<CrateDetails>>>>,
 }
 
 impl Scanner {
@@ -67,25 +71,39 @@ impl Scanner {
         }
 
         let roots = repo.find_roots_by_crate_selector(&args.common.crate_)?;
+        let roots_set: HashSet<_> = roots.iter().cloned().collect();
 
-        let package_set = repo.get_package_set()?;
+        let (all_pkgs_set, _resolve) = repo.get_package_set()?;
 
-        let graph = repo.get_dependency_graph(roots)?;
+        let graph = repo.get_dependency_graph(roots.clone())?;
 
-        let pkg_ids = graph.get_all_pkg_ids();
+        let all_pkgs_ids = graph.get_all_pkg_ids();
 
-        let crates: Vec<_> = package_set
-            .get_many(pkg_ids)?
+        let crate_info_by_id: HashMap<PackageId, CrateInfo> = all_pkgs_set
+            .get_many(all_pkgs_ids)?
             .into_iter()
             .filter(|pkg| pkg.summary().source_id().is_registry())
-            .map(|pkg| CrateInfo::from_pkg(pkg))
+            .map(|pkg| (pkg.package_id(), CrateInfo::from_pkg(pkg)))
             .collect();
 
-        let graph = if args.recursive {
-            Some(Arc::new(graph))
-        } else {
-            None
-        };
+        let all_crates_ids = crate_info_by_id.keys().cloned().collect();
+
+        let selected_crates_ids = crate_info_by_id
+            .iter()
+            .filter_map(|(id, _crate_info)| {
+                if !args.skip_indirect
+                    || roots_set.contains(id)
+                    || graph
+                        .get_reverse_dependencies_of(*id)
+                        .any(|r_dep| roots.contains(&r_dep))
+                {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect();
 
         Ok(Scanner {
             db: Arc::new(db),
@@ -96,15 +114,18 @@ impl Scanner {
             requirements,
             skip_verified,
             skip_known_owners,
-            crates,
+            recursive: args.recursive,
+            crate_info_by_id,
+            all_crates_ids,
+            selected_crates_ids,
             cargo_opts: args.common.cargo_opts.clone(),
-            graph,
+            graph: Arc::new(graph),
             ready_details: Default::default(),
         })
     }
 
-    pub fn total_crate_count(&self) -> usize {
-        self.crates.len()
+    pub fn selected_crate_count(&self) -> usize {
+        self.selected_crates_ids.len()
     }
 
     /// start computations on a new thread
@@ -117,9 +138,9 @@ impl Scanner {
         // analyzed first
         let (pending_tx, pending_rx) = unbounded();
 
-        let total_crates_len = self.crates.len();
-        for info in self.crates.clone().into_iter() {
-            pending_tx.send(info).unwrap();
+        let total_crates_len = self.selected_crate_count();
+        for id in self.all_crates_ids.clone().into_iter() {
+            pending_tx.send(id).unwrap();
         }
 
         // we share the loop-back pending tx, so we can drop
@@ -127,47 +148,69 @@ impl Scanner {
         // the terminating condition
         let pending_tx = Arc::new(Mutex::new(Some(pending_tx)));
 
+        if total_crates_len == 0 {
+            return ready_rx;
+        }
+
+        let ready_tx_count = Arc::new(atomic::AtomicUsize::new(0));
         for _ in 0..num_cpus::get() {
             let pending_rx = pending_rx.clone();
             let pending_tx = pending_tx.clone();
             let ready_tx = ready_tx.clone();
+            let ready_tx_count = ready_tx_count.clone();
             let mut self_clone = self.clone();
-            std::thread::spawn(move || {
-                pending_rx
-                    .into_iter()
-                    .map(move |info: CrateInfo| {
-                        if let Some(ref graph) = self_clone.graph {
-                            let ready_details = self_clone.ready_details.lock().unwrap();
+            let ready_tx_count = ready_tx_count.clone();
+            let ready_tx_count_clone = ready_tx_count.clone();
+            std::thread::spawn({
+                move || {
+                    pending_rx
+                        .into_iter()
+                        .map(move |pkg_id: PackageId| {
+                            if self_clone.recursive {
+                                let graph = &self_clone.graph;
+                                let ready_details = self_clone.ready_details.lock().unwrap();
 
-                            for dep_pkg_id in graph.get_dependencies_of(info.id) {
-                                if !ready_details.contains_key(&dep_pkg_id) {
-                                    pending_tx
-                                        .lock()
-                                        .unwrap()
-                                        .as_mut()
-                                        .unwrap()
-                                        .send(info)
-                                        .unwrap();
-                                    return;
+                                for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
+                                    if !ready_details.contains_key(&dep_pkg_id) {
+                                        if let Some(pending_tx) =
+                                            pending_tx.lock().unwrap().as_mut()
+                                        {
+                                            pending_tx.send(pkg_id).unwrap();
+                                        }
+                                        return;
+                                    }
                                 }
                             }
-                        }
 
-                        let details = self_clone.get_crate_details(&info);
-                        let mut ready_details = self_clone.ready_details.lock().unwrap();
-                        ready_details
-                            .insert(info.id, details.as_ref().ok().and_then(|d| d.clone()));
-                        if ready_details.len() == total_crates_len {
-                            // we processed all the crates, let all the workers terminate
-                            *pending_tx.lock().unwrap() = None;
-                        }
+                            let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
 
-                        drop(ready_details);
-                        ready_tx
-                            .send(CrateStats { info, details })
-                            .expect("channel will be there waiting for the pool");
-                    })
-                    .count()
+                            let details = self_clone.get_crate_details(&info);
+                            {
+                                let mut ready_details = self_clone.ready_details.lock().unwrap();
+                                ready_details
+                                    .insert(info.id, details.as_ref().ok().and_then(|d| d.clone()));
+                            }
+
+                            if self_clone.selected_crates_ids.contains(&pkg_id) {
+                                ready_tx
+                                    .send(CrateStats { info, details })
+                                    .expect("channel will be there waiting for the pool");
+
+                                if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
+                                    == total_crates_len
+                                {
+                                    // we processed all the crates, let all the workers terminate
+                                    *pending_tx.lock().unwrap() = None;
+                                }
+                            }
+                        })
+                        .count();
+
+                    assert_eq!(
+                        ready_tx_count_clone.load(atomic::Ordering::SeqCst),
+                        total_crates_len
+                    );
+                }
             });
         }
 
@@ -282,10 +325,14 @@ impl Scanner {
 
         let mut accumulative = accumulative_own.clone();
 
-        if let Some(ref graph) = self.graph {
+        if self.recursive {
             let ready_details = self.ready_details.lock().expect("lock works");
 
-            for dep_pkg_id in graph.get_recursive_dependencies_of(info.id).into_iter() {
+            for dep_pkg_id in self
+                .graph
+                .get_recursive_dependencies_of(info.id)
+                .into_iter()
+            {
                 match ready_details
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")
