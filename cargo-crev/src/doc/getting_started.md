@@ -214,7 +214,7 @@ copy that data and store it somewhere reliable.
 You can generate and use multiple IDs, but one is generally enough. Check your current `CrevID` like this:
 
 ```text
-$ cargo crev query id current
+$ cargo crev id current
 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/YOUR-USERNAME/crev-proofs
 ```
 
