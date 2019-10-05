@@ -422,15 +422,6 @@ pub struct CrateSearch {
 pub struct IdExport {
     pub id: Option<String>,
 }
-/*
-#[derive(Debug, StructOpt, Clone)]
-pub enum RepoImport {
-    /// Import proofs: resign proofs using current id
-    ///
-    /// Useful for mass-import of proofs signed by another ID
-    #[structopt(name = "proof")]
-    Proof(ImportProof),
-}*/
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct RepoImport {
@@ -445,54 +436,54 @@ pub struct RepoImport {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Id {
     /// Create a new Id
-    #[structopt(name = "new")]
+    #[structopt(name = "new", alias = "n")]
     New(IdNew),
 
     /// Export your own Id
-    #[structopt(name = "export")]
+    #[structopt(name = "export", alias = "e")]
     Export(IdExport),
 
     /// Import an Id as your own
-    #[structopt(name = "import")]
+    #[structopt(name = "import", alias = "i")]
     Import,
 
-    /// Show your own Id
-    #[structopt(name = "show")]
-    Show,
+    /// Show your current Id
+    #[structopt(name = "current", alias = "c")]
+    Current,
 
     /// Change current Id
-    #[structopt(name = "switch")]
+    #[structopt(name = "switch", alias = "s")]
     Switch(IdSwitch),
 
     /// Trust an Id
-    #[structopt(name = "trust")]
+    #[structopt(name = "trust", alias = "t")]
     Trust(IdTrust),
 
     /// Distrust an Id
-    #[structopt(name = "distrust")]
+    #[structopt(name = "distrust", alias = "d")]
     Distrust(IdTrust),
 
     /// Distrust an Id
-    #[structopt(name = "query")]
+    #[structopt(name = "query", alias = "q")]
     Query(IdQuery),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Crate {
     /// Start a shell in source directory of a crate under review
-    #[structopt(name = "goto")]
+    #[structopt(name = "goto", alias = "g")]
     Goto(ReviewOrGotoCommon),
 
     /// Open source code of a crate
-    #[structopt(name = "open")]
+    #[structopt(name = "open", alias = "o")]
     Open(CrateOpen),
 
     /// Clean a crate source code (eg. after review)
-    #[structopt(name = "clean")]
+    #[structopt(name = "clean", alias = "c")]
     Clean(ReviewOrGotoCommon),
 
     /// Diff between two versions of a package
-    #[structopt(name = "diff")]
+    #[structopt(name = "diff", alias = "d")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Diff(Diff),
@@ -504,6 +495,7 @@ pub enum Crate {
     /// Verify dependencies
     #[structopt(
         name = "verify",
+        alias = "v",
         after_help = r"This will show the following information:
 
 Recursive mode will will calculate most metrics for the crate together with all its dependencies.
@@ -532,11 +524,11 @@ Recursive mode will will calculate most metrics for the crate together with all 
     Mvp(CrateVerifyCommon),
 
     /// Review a crate (code review, security advisory, flag issues)
-    #[structopt(name = "review")]
+    #[structopt(name = "review", alias = "r")]
     Review(CrateReview),
 
     /// Search crates on crates.io sorting by review count
-    #[structopt(name = "search")]
+    #[structopt(name = "search", alias = "s")]
     Search(CrateSearch),
 }
 
@@ -552,7 +544,7 @@ pub enum Config {
 pub enum Repo {
     // TODO: `Dir`
     /// Publish to remote repository
-    #[structopt(name = "publish")]
+    #[structopt(name = "publish", alias = "p")]
     Publish,
 
     /// Update data from online sources (proof repositories, crates.io)
@@ -560,17 +552,17 @@ pub enum Repo {
     Update(Update),
 
     /// Run raw git commands in the local proof repository
-    #[structopt(name = "git")]
+    #[structopt(name = "git", alias = "g")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Git(RepoGit),
 
     /// Edit README.md of the current Id, ...
-    #[structopt(name = "edit")]
+    #[structopt(name = "edit", alias = "e")]
     Edit(RepoEdit),
 
     /// Import proofs
-    #[structopt(name = "import")]
+    #[structopt(name = "import", alias = "i")]
     Import(RepoImport),
 
     /*
@@ -579,130 +571,32 @@ pub enum Repo {
     Export,
     */
     /// Query proofs
-    #[structopt(name = "query")]
+    #[structopt(name = "query", alias = "q")]
     Query(RepoQuery),
 
     /// Fetch proofs from external sources
-    #[structopt(name = "fetch")]
+    #[structopt(name = "fetch", alias = "f")]
     Fetch(RepoFetch),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Command {
     /// Id (own and of other users)
-    #[structopt(name = "id")]
+    #[structopt(name = "id", alias = "i")]
     Id(Id),
 
     /// Crate related operations (review, verify...)
-    #[structopt(name = "crate")]
+    #[structopt(name = "crate", alias = "c")]
     Crate(Crate),
 
     /// Proof Repository - store of proofs
-    #[structopt(name = "repo")]
+    #[structopt(name = "repo", alias = "r")]
     Repo(Repo),
 
     /// Config
-    #[structopt(name = "config")]
+    #[structopt(name = "config", alias = "co")]
     Config(Config),
 }
-/*
-#[derive(Debug, StructOpt, Clone)]
-pub enum OldCommand {
-    /// Manage your own Id (create new, show, export, import, switch)
-    #[structopt(name = "id", alias = "new")]
-    Id(Id),
-
-    /// Edit README.md of the current Id, ...
-    #[structopt(name = "edit")]
-    Edit(Edit),
-
-    /// Verify dependencies
-    #[structopt(
-        name = "verify",
-        after_help = r"This will show the following information:
-
-Recursive mode will will calculate most metrics for the crate together with all its dependencies.
-
-- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
-- reviews    - Number of reviews for the specific version and for all available versions (total)
-- downloads  - Download counts from crates.io for the specific version and all versions
-- owner
-  - In non-recursive mode: Owner counts from crates.io (known/all)
-  - In recursive mode:
-    - Total number of owners from crates.io
-    - Total number of owner groups ignoring subsets
-- issues     - Number of issues repored (from trusted sources/all)
-- lines      - Lines of Rust code
-- geiger     - Geiger score: number of `unsafe` lines
-- flgs       - Flags for specific types of packages
-  - CB         - Custom Build
-- name       - Crate name
-- version    - Crate version
-- latest_t   - Latest trusted version"
-    )]
-    Verify(Verify),
-
-    /// Review a crate (code review, security advisory, flag issues)
-    #[structopt(name = "review")]
-    Review(Review),
-
-    /// Query Ids, packages, reviews...
-    #[structopt(name = "query")]
-    Query(Query),
-
-    /// Trust an Id
-    #[structopt(name = "trust")]
-    Trust(Trust),
-
-    /// Distrust an Id
-    #[structopt(name = "distrust")]
-    Distrust(Trust),
-
-    /// Fetch proofs from external sources
-    #[structopt(name = "fetch")]
-    Fetch(Fetch),
-
-    /// Run raw git commands in the local proof repository
-    #[structopt(name = "git")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
-    Git(Git),
-
-    /// Commit and Push local changes to the public proof repository (alias to `git commit -a && git push HEAD`)
-    #[structopt(name = "publish", alias = "push")]
-    Publish,
-
-    /// Start a shell in source directory of a crate under review
-    #[structopt(name = "goto")]
-    Goto(ReviewOrGotoCommon),
-
-    /// Open source code of a crate
-    #[structopt(name = "open")]
-    Open(Open),
-
-    /// Clean a crate source code (eg. after review)
-    #[structopt(name = "clean")]
-    Clean(ReviewOrGotoCommon),
-
-    /// Import proofs, ...
-    #[structopt(name = "import")]
-    Import(Import),
-
-    /// Update data from online sources (proof repositories, crates.io)
-    #[structopt(name = "update", alias = "pull")]
-    Update(Update),
-
-    /// Lookup dependencies from crates.io sorted by review count
-    #[structopt(name = "lookup", alias = "lookup")]
-    Lookup(Lookup),
-
-    /// Diff between two versions of a package
-    #[structopt(name = "diff")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
-    Diff(Diff),
-}
-*/
 
 /// Cargo will pass the name of the `cargo-<tool>`
 /// as first argument, so we just have to match it here.

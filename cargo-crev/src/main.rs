@@ -47,7 +47,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let local = Local::auto_open()?;
                 local.switch_id(&args.id)?
             }
-            opts::Id::Show => {
+            opts::Id::Current => {
                 let local = Local::auto_open()?;
                 local.show_own_ids()?;
             }

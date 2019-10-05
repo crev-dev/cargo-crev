@@ -27,6 +27,11 @@ use std::{
 
 use crev_lib::proofdb::*;
 
+/// Dependency scaner
+///
+/// Offloads dependency scanning to concurrent worker threads.
+//
+// I know the code here is a mess.
 #[derive(Clone)]
 pub struct Scanner {
     db: Arc<ProofDB>,
@@ -39,11 +44,13 @@ pub struct Scanner {
     skip_known_owners: bool,
     recursive: bool,
     crate_info_by_id: HashMap<PackageId, CrateInfo>,
+    // all the packages that we might need to potentially analyse
     all_crates_ids: Vec<PackageId>,
+    // packages that we will have to return to the caller
     selected_crates_ids: HashSet<PackageId>,
     cargo_opts: CargoOpts,
     graph: Arc<crate::repo::Graph>,
-    ready_details: Arc<Mutex<HashMap<PackageId, Option<CrateDetails>>>>,
+    crate_details_by_id: Arc<Mutex<HashMap<PackageId, Option<CrateDetails>>>>,
 }
 
 impl Scanner {
@@ -55,6 +62,7 @@ impl Scanner {
         {
             db.calculate_trust_set(&for_id, &args.common.trust_params.clone().into())
         } else {
+            // when running without an id (explicit, or current), just use an empty trust set
             crev_lib::proofdb::TrustSet::default()
         };
         let ignore_list = cargo_min_ignore_list();
@@ -67,6 +75,7 @@ impl Scanner {
         let repo = Repo::auto_open_cwd(args.common.cargo_opts.clone())?;
 
         if args.common.crate_.unrelated {
+            // we would have to create a ephemeral workspace, etc.
             bail!("Unrealated crates are currently not supported");
         }
 
@@ -120,7 +129,7 @@ impl Scanner {
             selected_crates_ids,
             cargo_opts: args.common.cargo_opts.clone(),
             graph: Arc::new(graph),
-            ready_details: Default::default(),
+            crate_details_by_id: Default::default(),
         })
     }
 
@@ -168,10 +177,11 @@ impl Scanner {
                         .map(move |pkg_id: PackageId| {
                             if self_clone.recursive {
                                 let graph = &self_clone.graph;
-                                let ready_details = self_clone.ready_details.lock().unwrap();
+                                let crate_details_by_id =
+                                    self_clone.crate_details_by_id.lock().unwrap();
 
                                 for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
-                                    if !ready_details.contains_key(&dep_pkg_id) {
+                                    if !crate_details_by_id.contains_key(&dep_pkg_id) {
                                         if let Some(pending_tx) =
                                             pending_tx.lock().unwrap().as_mut()
                                         {
@@ -186,8 +196,9 @@ impl Scanner {
 
                             let details = self_clone.get_crate_details(&info);
                             {
-                                let mut ready_details = self_clone.ready_details.lock().unwrap();
-                                ready_details
+                                let mut crate_details_by_id =
+                                    self_clone.crate_details_by_id.lock().unwrap();
+                                crate_details_by_id
                                     .insert(info.id, details.as_ref().ok().and_then(|d| d.clone()));
                             }
 
@@ -326,14 +337,14 @@ impl Scanner {
         let mut accumulative = accumulative_own.clone();
 
         if self.recursive {
-            let ready_details = self.ready_details.lock().expect("lock works");
+            let crate_details_by_id = self.crate_details_by_id.lock().expect("lock works");
 
             for dep_pkg_id in self
                 .graph
                 .get_recursive_dependencies_of(info.id)
                 .into_iter()
             {
-                match ready_details
+                match crate_details_by_id
                     .get(&dep_pkg_id)
                     .expect("dependency already calculated")
                 {
