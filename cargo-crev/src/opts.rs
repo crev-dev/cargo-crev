@@ -226,15 +226,15 @@ pub struct RepoFetchUrl {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoFetch {
-    #[structopt(name = "trusted")]
+    #[structopt(name = "trusted", alias = "t")]
     /// Fetch updates from trusted Ids
     Trusted(TrustDistanceParams),
 
-    #[structopt(name = "url")]
+    #[structopt(name = "url", alias = "u")]
     /// Fetch from a single public proof repository
     Url(RepoFetchUrl),
 
-    #[structopt(name = "all")]
+    #[structopt(name = "all", alias = "a")]
     /// Fetch all previously retrieved public proof repositories
     All,
 }
@@ -242,19 +242,19 @@ pub enum RepoFetch {
 #[derive(Debug, StructOpt, Clone)]
 pub enum IdQuery {
     /// Show current Id
-    #[structopt(name = "current")]
+    #[structopt(name = "current", alias = "c")]
     Current,
 
     /// Show all known Ids
-    #[structopt(name = "all")]
+    #[structopt(name = "all", alias = "a")]
     All,
 
     /// Show own Ids
-    #[structopt(name = "own")]
+    #[structopt(name = "own", alias = "o")]
     Own,
 
     /// List trusted ids
-    #[structopt(name = "trusted")]
+    #[structopt(name = "trusted", alias = "t")]
     Trusted {
         #[structopt(flatten)]
         trust_params: TrustDistanceParams,
@@ -298,26 +298,26 @@ pub struct CrateDir {
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoQuery {
     /// Query reviews
-    #[structopt(name = "review")]
+    #[structopt(name = "review", alias = "r")]
     Review(RepoQueryReview),
 
     /// Query applicable advisories
-    #[structopt(name = "advisory")]
+    #[structopt(name = "advisory", alias = "a")]
     Advisory(RepoQueryAdvisory),
 
     /// Query applicable issues
-    #[structopt(name = "issue")]
+    #[structopt(name = "issue", alias = "i")]
     Issue(RepoQueryIssue),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoEdit {
     /// Edit your README.md file
-    #[structopt(name = "readme")]
+    #[structopt(name = "readme", alias = "r")]
     Readme,
 
     /// Edit your KNOWN_CRATE_OWNERS.md file
-    #[structopt(name = "known")]
+    #[structopt(name = "known", alias = "k")]
     Known,
 }
 
@@ -535,7 +535,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Config {
     /// Edit the config file
-    #[structopt(name = "edit")]
+    #[structopt(name = "edit", alias = "e")]
     Edit,
 }
 
