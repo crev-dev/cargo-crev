@@ -126,12 +126,18 @@ pub struct Diff {
     pub args: Vec<OsString>,
 }
 
+#[derive(Debug, StructOpt, Clone, Default)]
+pub struct TrustLevelRequirements {
+    /// Minimum trust level required
+    #[structopt(long = "trust", default_value = "low")]
+    pub trust_level: crev_data::Level,
+}
+
 /// Verification Requirements
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct VerificationRequirements {
-    /// Minimum trust level of the reviewers for reviews
-    #[structopt(long = "trust", default_value = "low")]
-    pub trust_level: crev_data::Level,
+    #[structopt(flatten)]
+    pub trust_level: TrustLevelRequirements,
 
     /// Number of reviews required
     #[structopt(long = "redundancy", default_value = "1")]
@@ -147,7 +153,7 @@ pub struct VerificationRequirements {
 impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
     fn from(req: VerificationRequirements) -> Self {
         crev_lib::VerificationRequirements {
-            trust_level: req.trust_level,
+            trust_level: req.trust_level.trust_level,
             redundancy: req.redundancy,
             understanding: req.understanding_level,
             thoroughness: req.thoroughness_level,
@@ -243,15 +249,27 @@ pub enum RepoFetch {
 pub enum IdQuery {
     /// Show current Id
     #[structopt(name = "current", alias = "c")]
-    Current,
+    Current {
+        #[structopt(flatten)]
+        trust_params: TrustDistanceParams,
+    },
 
     /// Show all known Ids
     #[structopt(name = "all", alias = "a")]
-    All,
+    All {
+        #[structopt(flatten)]
+        trust_params: TrustDistanceParams,
+
+        #[structopt(long = "for-id")]
+        for_id: Option<String>,
+    },
 
     /// Show own Ids
     #[structopt(name = "own", alias = "o")]
-    Own,
+    Own {
+        #[structopt(flatten)]
+        trust_params: TrustDistanceParams,
+    },
 
     /// List trusted ids
     #[structopt(name = "trusted", alias = "t")]
@@ -261,6 +279,9 @@ pub enum IdQuery {
 
         #[structopt(long = "for-id")]
         for_id: Option<String>,
+
+        #[structopt(flatten)]
+        trust_level: TrustLevelRequirements,
     },
 }
 

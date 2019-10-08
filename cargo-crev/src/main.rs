@@ -28,7 +28,25 @@ mod tokei;
 mod tui;
 
 use crate::{repo::*, review::*, shared::*};
+use crev_data::Id;
+use crev_lib::proofdb::{ProofDB, TrustSet};
 use crev_lib::TrustOrDistrust::{self, *};
+
+fn print_ids<'a>(
+    ids: impl Iterator<Item = &'a Id>,
+    trust_set: &TrustSet,
+    db: &ProofDB,
+) -> Result<()> {
+    for id in ids {
+        println!(
+            "{} {:6} {}",
+            id,
+            trust_set.get_effective_trust_level(id),
+            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+        );
+    }
+    Ok(())
+}
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
@@ -75,46 +93,60 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
             }
             opts::Id::Query(cmd) => match cmd {
-                opts::IdQuery::Current => {
+                opts::IdQuery::Current { trust_params } => {
                     let local = Local::auto_open()?;
-                    local.show_current_id()?
+                    if let Some(id) = local.read_current_locked_id_opt()? {
+                        let id = id.to_pubid();
+                        let db = local.load_db()?;
+                        let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
+
+                        print_ids(Some(id.id).as_ref().into_iter(), &trust_set, &db)?;
+                    }
                 }
-                opts::IdQuery::Own => {
+                opts::IdQuery::Own { trust_params } => {
                     let local = Local::auto_open()?;
-                    local.list_own_ids()?
+                    if let Some(id) = local.read_current_locked_id_opt()? {
+                        let id = id.to_pubid();
+                        let db = local.load_db()?;
+                        let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
+                        // local.list_own_ids()?
+                        print_ids(
+                            local.list_ids()?.iter().map(|pub_id| &pub_id.id),
+                            &trust_set,
+                            &db,
+                        )?;
+                    }
                 }
                 opts::IdQuery::Trusted {
-                    for_id,
                     trust_params,
+                    for_id,
+                    trust_level,
                 } => {
                     let local = crev_lib::Local::auto_open()?;
                     let db = local.load_db()?;
                     let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
-                    for id in trust_set.trusted_ids() {
-                        println!(
-                            "{} {:6} {}",
-                            id,
-                            trust_set
-                                .get_effective_trust_level(id)
-                                .expect("Some trust level"),
-                            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
-                        );
-                    }
+                    print_ids(
+                        trust_set.trusted_ids().filter(|id| {
+                            trust_set.get_effective_trust_level(id)
+                                >= trust_level.trust_level.into()
+                        }),
+                        &trust_set,
+                        &db,
+                    )?;
                 }
                 // TODO: move to crev-lib
-                opts::IdQuery::All => {
+                opts::IdQuery::All {
+                    trust_params,
+                    for_id,
+                } => {
                     let local = crev_lib::Local::auto_create_or_open()?;
                     let db = local.load_db()?;
+                    let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
+                    let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
-                    for id in &db.all_known_ids() {
-                        println!(
-                            "{} {}",
-                            id,
-                            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
-                        );
-                    }
+                    print_ids(db.all_known_ids().iter(), &trust_set, &db)?;
                 }
             },
         },

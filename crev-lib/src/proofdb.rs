@@ -400,11 +400,8 @@ impl ProofDB {
         for (review, issue) in self
             .get_pkg_reviews_lte_version(source, name, queried_version)
             .filter(|review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
+                let effective = trust_set.get_effective_trust_level(&review.from.id);
+                effective >= trust_level_required
             })
             .flat_map(move |review| review.issues.iter().map(move |issue| (review, issue)))
             .filter(|(review, issue)| {
@@ -433,11 +430,8 @@ impl ProofDB {
         for (review, advisory) in self
             .get_pkg_reviews_for_name(source, name)
             .filter(|review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
+                let effective = trust_set.get_effective_trust_level(&review.from.id);
+                effective >= trust_level_required
             })
             .flat_map(move |review| {
                 review
@@ -520,11 +514,8 @@ impl ProofDB {
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_for_name(source, name)
             .filter(move |review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
+                let effective = trust_set.get_effective_trust_level(&review.from.id);
+                effective >= trust_level_required
             })
             .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
     }
@@ -537,11 +528,8 @@ impl ProofDB {
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_for_source(source)
             .filter(move |review| {
-                if let Some(effective) = trust_set.get_effective_trust_level(&review.from.id) {
-                    effective >= trust_level_required
-                } else {
-                    false
-                }
+                let effective = trust_set.get_effective_trust_level(&review.from.id);
+                effective >= trust_level_required
             })
             .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
     }
@@ -729,9 +717,7 @@ impl ProofDB {
                 && requirements.understanding <= review.understanding
             {
                 if TrustLevel::from(requirements.trust_level)
-                    <= trust_set
-                        .get_effective_trust_level(matching_reviewer)
-                        .expect("Id should have been there")
+                    <= trust_set.get_effective_trust_level(matching_reviewer)
                 {
                     trust_count += 1;
                 }
@@ -889,7 +875,7 @@ impl ProofDB {
                 let candidate_effective_trust = std::cmp::min(
                     level,
                     visited
-                        .get_effective_trust_level(&current.id)
+                        .get_effective_trust_level_opt(&current.id)
                         .expect("Id should have been inserted to `visited` beforehand"),
                 );
 
@@ -1010,7 +996,12 @@ impl TrustSet {
         }
     }
 
-    pub fn get_effective_trust_level(&self, id: &Id) -> Option<TrustLevel> {
+    pub fn get_effective_trust_level(&self, id: &Id) -> TrustLevel {
+        self.get_effective_trust_level_opt(id)
+            .unwrap_or(TrustLevel::None)
+    }
+
+    pub fn get_effective_trust_level_opt(&self, id: &Id) -> Option<TrustLevel> {
         self.trusted.get(id).map(|details| details.effective_trust)
     }
 }
