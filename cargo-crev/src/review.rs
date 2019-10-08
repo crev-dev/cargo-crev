@@ -9,7 +9,7 @@ use crate::{
     prelude::*,
 };
 use crev_data::proof;
-use crev_lib::TrustOrDistrust;
+use crev_lib::TrustProofType;
 
 use crate::{repo::*, shared::*};
 
@@ -21,7 +21,7 @@ pub fn create_review_proof(
     crate_sel: &CrateSelector,
     report_severity: Option<crev_data::Level>,
     advise_common: Option<opts::AdviseCommon>,
-    trust: TrustOrDistrust,
+    trust: TrustProofType,
     proof_create_opt: &opts::CommonProofCreate,
     diff_version: &Option<Option<Version>>,
     skip_activity_check: bool,
@@ -104,7 +104,9 @@ pub fn create_review_proof(
                 &diff_base_version,
             )
         {
-            review.review = prev_review;
+            if trust != TrustProofType::Untrust {
+                review.review = prev_review;
+            }
             review.comment = prev_comment;
             review.advisories = prev_advisories;
             review.issues = prev_issues;

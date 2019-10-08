@@ -480,6 +480,10 @@ pub enum Id {
     #[structopt(name = "trust", alias = "t")]
     Trust(IdTrust),
 
+    /// Untrust (remove) trust
+    #[structopt(name = "untrust", alias = "u")]
+    Untrust(IdTrust),
+
     /// Distrust an Id
     #[structopt(name = "distrust", alias = "d")]
     Distrust(IdTrust),
@@ -547,6 +551,10 @@ Recursive mode will will calculate most metrics for the crate together with all 
     /// Review a crate (code review, security advisory, flag issues)
     #[structopt(name = "review", alias = "r")]
     Review(CrateReview),
+
+    /// Untrust (remove) trust
+    #[structopt(name = "unreview", alias = "u")]
+    Unreview(CrateReview),
 
     /// Search crates on crates.io sorting by review count
     #[structopt(name = "search", alias = "s")]

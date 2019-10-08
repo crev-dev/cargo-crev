@@ -1,3 +1,4 @@
+use crate::TrustProofType;
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
@@ -525,7 +526,7 @@ impl Local {
         &self,
         from_id: &PubId,
         id_strings: Vec<String>,
-        trust_or_distrust: crate::TrustOrDistrust,
+        trust_or_distrust: TrustProofType,
     ) -> Result<proof::Content> {
         if id_strings.is_empty() {
             bail!("No ids given.");
@@ -551,10 +552,10 @@ impl Local {
 
         let trust = from_id.create_trust_proof(
             &pub_ids,
-            if trust_or_distrust.is_trust() {
-                TrustLevel::Medium
-            } else {
-                TrustLevel::Distrust
+            match trust_or_distrust {
+                TrustProofType::Trust => TrustLevel::Medium,
+                TrustProofType::Distrust => TrustLevel::Distrust,
+                TrustProofType::Untrust => TrustLevel::None,
             },
         )?;
 

@@ -31,34 +31,37 @@ pub trait ProofStore {
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
 }
 
-#[derive(Copy, Clone)]
-pub enum TrustOrDistrust {
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum TrustProofType {
     Trust,
+    Untrust,
     Distrust,
 }
 
-impl fmt::Display for TrustOrDistrust {
+impl fmt::Display for TrustProofType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TrustOrDistrust::Trust => f.write_str("trust"),
-            TrustOrDistrust::Distrust => f.write_str("distrust"),
+            TrustProofType::Trust => f.write_str("trust"),
+            TrustProofType::Distrust => f.write_str("distrust"),
+            TrustProofType::Untrust => f.write_str("untrust"),
         }
     }
 }
 
-impl TrustOrDistrust {
+impl TrustProofType {
     pub fn is_trust(self) -> bool {
-        if let TrustOrDistrust::Trust = self {
+        if let TrustProofType::Trust = self {
             return true;
         }
         false
     }
 
     pub fn to_review(self) -> crev_data::Review {
-        use self::TrustOrDistrust::*;
+        use self::TrustProofType::*;
         match self {
             Trust => crev_data::Review::new_positive(),
             Distrust => crev_data::Review::new_negative(),
+            Untrust => crev_data::Review::new_none(),
         }
     }
 }

@@ -30,7 +30,7 @@ mod tui;
 use crate::{repo::*, review::*, shared::*};
 use crev_data::Id;
 use crev_lib::proofdb::{ProofDB, TrustSet};
-use crev_lib::TrustOrDistrust::{self, *};
+use crev_lib::TrustProofType::{self, *};
 
 fn print_ids<'a>(
     ids: impl Iterator<Item = &'a Id>,
@@ -88,6 +88,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Id::Trust(args) => {
                 create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
+            }
+            opts::Id::Untrust(args) => {
+                create_trust_proof(args.pub_ids, Untrust, &args.common_proof_create)?;
             }
             opts::Id::Distrust(args) => {
                 create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
@@ -206,9 +209,43 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             None
                         },
                         if is_advisory || args.issue {
-                            TrustOrDistrust::Distrust
+                            TrustProofType::Distrust
                         } else {
-                            TrustOrDistrust::Trust
+                            TrustProofType::Trust
+                        },
+                        &args.common_proof_create,
+                        &args.diff,
+                        args.skip_activity_check || is_advisory || args.issue,
+                        args.cargo_opts.clone(),
+                    )
+                })?;
+            }
+            opts::Crate::Unreview(args) => {
+                handle_goto_mode_command(&args.common, |sel| {
+                    let is_advisory = args.advisory
+                        || args.affected.is_some()
+                        || (!args.issue && args.severity.is_some());
+                    create_review_proof(
+                        sel,
+                        if args.issue {
+                            Some(crev_data::Level::Medium)
+                        } else {
+                            None
+                        },
+                        if is_advisory {
+                            Some(opts::AdviseCommon {
+                                severity: args.severity.unwrap_or(crev_data::Level::Medium),
+                                affected: args.affected.unwrap_or(
+                                    crev_data::proof::review::package::VersionRange::Major,
+                                ),
+                            })
+                        } else {
+                            None
+                        },
+                        if is_advisory || args.issue {
+                            TrustProofType::Distrust
+                        } else {
+                            TrustProofType::Untrust
                         },
                         &args.common_proof_create,
                         &args.diff,

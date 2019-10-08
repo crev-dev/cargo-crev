@@ -2,7 +2,7 @@
 //
 use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
 use crev_data::proof;
-use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustOrDistrust};
+use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
 use failure::format_err;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
@@ -594,7 +594,7 @@ where
 
 pub fn create_trust_proof(
     ids: Vec<String>,
-    trust_or_distrust: TrustOrDistrust,
+    trust_or_distrust: TrustProofType,
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     let local = Local::auto_open()?;
