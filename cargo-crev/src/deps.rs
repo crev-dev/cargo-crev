@@ -300,12 +300,14 @@ pub fn crate_mvps(common: CrateVerifyCommon) -> Result<()> {
 
 pub fn verify_deps(args: CrateVerify) -> Result<CommandExitStatus> {
     let mut term = term::Term::new();
-    if term.stderr_is_tty && term.stdout_is_tty {
-        self::print_term::print_header(&mut term, args.verbose);
-    }
 
     let scanner = scan::Scanner::new(&args)?;
     let events = scanner.run();
+
+    // print header, only after `scanner` had a chance to download everything
+    if term.stderr_is_tty && term.stdout_is_tty {
+        self::print_term::print_header(&mut term, args.verbose);
+    }
 
     let deps: Vec<_> = events
         .into_iter()
