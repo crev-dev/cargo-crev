@@ -636,7 +636,9 @@ pub enum Command {
 pub enum MainCommand {
     #[structopt(name = "crev")]
     #[structopt(
-        after_help = "Join Matrix channel for more help: https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org"
+        after_help = r#"Join Matrix channel for more help at https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org
+Read user documentation at https://docs.rs/crate/cargo-crev
+        "#
     )]
     Crev(Command),
 }
