@@ -85,7 +85,7 @@ When installed `cargo-crev` can be run like this:
 
 ```text
 $ cargo crev
-cargo-crev 0.7.0
+cargo-crev 0.9.0
 Dawid Ciężarkiewicz <dpc@dpc.pw>
 Scalable, social, Code REView system that we desperately need - Rust/cargo frontend
 
@@ -97,10 +97,11 @@ FLAGS:
     -V, --version    Prints version information
 
 SUBCOMMANDS:
-    advise      Create advisory urging to upgrade to given package version
-    clean       Clean a crate source code (eg. after review)
-    diff        Diff between two versions of a package
-(...)
+    config    Config
+    crate     Crate related operations (review, verify...)
+    help      Prints this message or the help of the given subcommand(s)
+    id        Id (own and of other users)
+    repo      Proof Repository - store of proofs
 ```
 
 As you can see, by default `cargo crev` displays the built in help. Try it and
@@ -110,16 +111,16 @@ of the available functionality.
 
 ## Verifying
 
-As a user, your goal of using `cargo crev` is verifying that all the dependencies of the current
+As a user, your typical goal of using `cargo crev` is verifying that all the dependencies of the current
 crate are trustworthy and free of serious bugs and flaws.
 
 The list of dependencies and their current trustworthiness status is available
-through `cargo crev verify` command. This is one of the most important and commonly used sub-command.
+through `cargo crev crate verify` command. This is one of the most important and commonly used sub-command.
 
 Let's take a look:
 
 ```text
-$ cargo crev verify
+$ cargo crev crate verify
 status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t
 none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1
 none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9
@@ -128,10 +129,13 @@ none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde            
 (...)
 ```
 
+Note: You can abbreviate most of `cargo-crev` subcommands. So you can
+save some keypresses with: `cargo crev c v`.
+
 The actual output is using color to make the data more accessible.
 
 The meaning of each column, and all the available options are
-described in the output of `cargo crev verify --help` command.
+described in the output of `cargo crev crate verify --help` command.
 
 Right now we will discuss just the most important columns.
 
@@ -159,7 +163,7 @@ The easiest way to verify packages is to see if other people did that before.
 Let's fetch all the *proofs* from the author of `crev`:
 
 ```text
-> cargo crev fetch url https://github.com/dpc/crev-proofs
+> cargo crev repo fetch url https://github.com/dpc/crev-proofs
 Fetching https://github.com/dpc/crev-proofs... OK
 Found proofs from:
       70 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
@@ -169,7 +173,7 @@ This command does a `git fetch` from a publicly available *proof repository* of 
 user, and stores it in a local cache for future use. A *proof repository* is just a
 git repository containing *proofs*.
 
-Go ahead and re-run `cargo crev verify`. Chances are you're using crates
+Go ahead and re-run `cargo crev crate verify`. Chances are you're using crates
 that dpc have already reviewed. The `reviews` column will contain values bigger than zero.
 
 ## Building *trust proofs*
@@ -182,7 +186,7 @@ to trust some people. Let's crate a *trust proof* for dpc. You can always revoke
 later if you wish.
 
 ```text
-$ cargo crev trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
+$ cargo crev id trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
 Error: User config not-initialized. Use `crev id new` to generate CrevID.
 ```
 
@@ -222,7 +226,7 @@ Now, back to creating a *trust proof* for `dpc`.
 
 
 ```text
-$  cargo crev trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
+$  cargo crev id trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
 Enter passphrase to unlock:
 ```
 
@@ -291,7 +295,7 @@ When you are done, have saved the proof and closed the editor, you should be abl
 all the ids you trust.
 
 ```text
-$ cargo crev query id trusted
+$ cargo crev id query trusted
 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE medium https://github.com/dpc/crev-proofs
 YWfa4SGgcW87fIT88uCkkrsRgIbWiGOOYmBbA1AtnKA low    https://github.com/oherrala/crev-proofs
 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA high   https://github.com/YOUR-USERNAME/crev-proofs
@@ -317,46 +321,46 @@ or equal to the direct trust level of `b`.
 Now that your *Web of Trust* (*WoT*) is built, you can fetch *proofs* from all the new and existing trusted users with:
 
 ```text
-$ cargo crev fetch trusted
+$ cargo crev repo fetch trusted
 Fetching https://github.com/oherrala/crev-proofs... OK
 Fetching https://github.com/dpc/crev-proofs... OK
 ```
 
 You can also consider fetching *proofs* from all the users `crev` is aware of - even ones that
-are not par of your *WoT*. Use `cargo crev fetch all` for that.
+are not par of your *WoT*. Use `cargo crev repo fetch all` for that.
 
 
 
 ## Reviewing code
 
 
-Try `cargo crev verify` again.
+Try `cargo crev crate verify` again.
 
 If you are moderately lucky, at least some of the dependencies are now passing the verification.
 
 But ultimately someone has to do the review, and at least sometimes you will have to do it yourself.
 
-Scan the output of `cargo crev verify` and pick a crate with low `lines` count. For your first
+Scan the output of `cargo crev crate verify` and pick a crate with low `lines` count. For your first
 review you want to start small and easy.
 
 
 At the moment of writing this `cargo crev` provides two methods of reviewing crate source code:
 
-* for people preferring the command line and text editors like Vim, there's a `cargo crev goto` command
-* for IDE users `cargo crev open`
+* for people preferring the command line and text editors like Vim, there's a `cargo crev crate goto` command
+* for IDE users `cargo crev crate open`
 
-### Reviewing code using `cargo crev goto`
+### Reviewing code using `cargo crev crate goto`
 
 If you want to review a crate called `default`, you run:
 
 ```text
-$ cargo crev goto default
+$ cargo crev crate goto default
 Opening shell in: /home/YOUR-USERNAME/.cargo/registry/src/github.com-1ecc6299db9ec823/default-0.1.2
 Use `exit` or Ctrl-D to return to the original project.
 Use `review` and `flag` without any arguments to review this crate.
 ```
 
-As the output explains: `cargo crev goto` works by opening a new shell with current working directory
+As the output explains: `cargo crev crate goto` works by opening a new shell with current working directory
 set to a copy of the crate source code stored by `cargo` itself.
 
 You're now free to use `Vim` or any other commands and text editors to investigate the content of the crate.
@@ -368,7 +372,7 @@ yourself too much or let the fear make you not review at all.
 
 When you are done with the actual review, it is time to actually create and sign the *review proof*.
 
-You either call `cargo crev review` (or `cargo crev flag` if results of your review were negative), or exit the
+You either call `cargo crev crate review` (or `cargo crev flag` if results of your review were negative), or exit the
 temporary review-shell and use `cargo crev review <cratename>`.
 
 ### Reviewing code using `cargo crev open`

@@ -609,6 +609,9 @@ pub enum Repo {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+#[structopt(
+    after_help = "Join Matrix channel for more help: https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org"
+)]
 pub enum Command {
     /// Id (own and of other users)
     #[structopt(name = "id", alias = "i")]
@@ -632,11 +635,16 @@ pub enum Command {
 #[derive(Debug, StructOpt, Clone)]
 pub enum MainCommand {
     #[structopt(name = "crev")]
+    #[structopt(
+        after_help = "Join Matrix channel for more help: https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org"
+    )]
     Crev(Command),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(about = "Distributed code review system")]
+// without this the name will be `cargo-crev-crev` because the `crev` main command will be automatically appended
+#[structopt(bin_name = "cargo")]
 #[structopt(raw(global_setting = "structopt::clap::AppSettings::ColoredHelp"))]
 pub struct Opts {
     #[structopt(subcommand)]

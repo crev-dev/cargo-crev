@@ -72,7 +72,7 @@ an arbitrary identity.
 
 
 ```text
-cargo crev verify  --for-id <rootID>
+cargo crev crate verify --for-id <rootID>
 ```
 
 is the basic way to verify review status of all the packages from the perspective

@@ -21,7 +21,7 @@ To address this problem, `cargo-crev` allows reasoning about trustworthinnes
 of crates by the reputation of their autors.
 
 Every crev identity can create and maintain a "known owners" list. Use
-`cargo crev edit known` command to edit it. Each line is crates.io
+`cargo crev config edit known` command to edit it. Each line is crates.io
 username or group name that will be considered somewhat trustwothy.
 
 During dependency verification a `--skip-known-owners` argument can be used
@@ -39,7 +39,7 @@ after code from less reputable sources is reviewed first.
 
 ## Download counters
 
-`cargo crev verify` will display download counts for both specific crate version
+`cargo crev crate verify` will display download counts for both specific crate version
 and total crate downloads, as a quick estimate of crate popularity. Crates and versions
 with particularily low download count at higher risk of introducing serious bugs
 or malicious code.

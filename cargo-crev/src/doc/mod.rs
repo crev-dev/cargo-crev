@@ -13,23 +13,25 @@
 ///
 /// 1. Open
 /// [user documentation source code directory](https://github.com/dpc/crev/tree/master/cargo-crev/src/doc),
-/// 2. open the the affected file,
-/// 3. use *Edit this file* function,
-/// 4. modify the text,
-/// 4. click *Propose file change* button.
+/// 2. Open the the affected file,
+/// 3. Use *Edit this file* function,
+/// 4. Modify the text,
+/// 4. Click *Propose file change* button.
 ///
 /// See the list of modules for the list of documented topis.
 pub mod user {
-    #[doc(include = "doc/glossary.md")]
+    #[doc(include = "glossary.md")]
     pub mod getting_started {}
-    #[doc(include = "doc/glossary.md")]
+    #[doc(include = "glossary.md")]
     pub mod glossary {}
-    #[doc(include = "doc/organizations.md")]
+    #[doc(include = "organizations.md")]
     pub mod organizations {}
-    #[doc(include = "doc/advisories.md")]
+    #[doc(include = "advisories.md")]
     pub mod advisories {}
-    #[doc(include = "doc/trust.md")]
+    #[doc(include = "trust.md")]
     pub mod trust {}
-    #[doc(include = "doc/cargo_specific.md")]
+    #[doc(include = "cargo_specific.md")]
     pub mod cargo_specific {}
+    #[doc(include = "tips_and_tricks.md")]
+    pub mod tips_and_tricks {}
 }
