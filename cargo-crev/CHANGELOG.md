@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/dpc/crev/compare/cargo-crev-v0.9.0...cargo-crev-v0.10.0) - 2019-10-07
+### Changed
+
+* **BREAKING**: `cargo crev <verb> <noun>` was change to `cargo crev <noun> <verb>`
+* Introduces one letter aliases for most (all?) commands
+* Commands quering proofs will now print them as a multi-object yaml document for easier parsing
+* Shortened `=1.2.3` in `latest_t` to just `=`
+
+### Added
+
+* `id untrust` and `crate unreview` to overwrite/clean errnous review/trust proofs
+* `crate mvp` to discovering best reviewers
+* `crate search` for looking up best reviewed dependency candidates
+* `crate verify --recursive`
+* `CREV_PASSPHRASE_CMD` for users of `pass` and similiar
+* Multiple flags and arguments to narrow down `crate verify` scope
+* Handling of `--level <level>` in many commands
+* "Tips and tricks" in user documentation
+
 ## [0.9.0](https://github.com/dpc/crev/compare/cargo-crev-v0.8.0...cargo-crev-v0.9.0) - 2019-08-26
 ### Changed
 
