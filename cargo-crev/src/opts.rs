@@ -541,7 +541,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
     Verify(CrateVerify),
 
     /// Most valuable players (reviewers)
-    #[structopt(name = "mvp")]
+    #[structopt(name = "mvp", alias = "m")]
     Mvp(CrateVerifyCommon),
 
     /// Review a crate (code review, security advisory, flag issues)
