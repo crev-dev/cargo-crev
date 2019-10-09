@@ -155,6 +155,10 @@ impl proof::content::ContentCommon for Package {
     fn proof_type(&self) -> proof::ProofType {
         proof::ProofType::Package
     }
+
+    fn to_draft_string(&self) -> String {
+        PackageDraft::from(self.clone()).to_string()
+    }
 }
 
 impl super::Common for Package {

@@ -41,6 +41,7 @@ pub trait ContentCommon {
         Self: Sized;
 
     fn proof_type(&self) -> ProofType;
+    fn to_draft_string(&self) -> String;
 }
 
 /// Content is an enumerator of possible proof contents

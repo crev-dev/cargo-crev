@@ -136,6 +136,10 @@ impl proof::content::ContentCommon for Code {
     fn proof_type(&self) -> proof::ProofType {
         proof::ProofType::Code
     }
+
+    fn to_draft_string(&self) -> String {
+        CodeDraft::from(self.clone()).to_string()
+    }
 }
 
 impl super::Common for Code {
