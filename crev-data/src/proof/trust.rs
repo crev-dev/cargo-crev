@@ -1,3 +1,4 @@
+use self::super::content;
 use crate::{id, proof, Level, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
@@ -138,7 +139,7 @@ impl Trust {
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 
-impl proof::ContentCommon for Trust {
+impl proof::content::ContentCommon for Trust {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
@@ -185,7 +186,7 @@ impl proof::ContentCommon for Trust {
 
 impl Trust {
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
-        super::Content::from(self).sign_by(id)
+        content::Content::from(self).sign_by(id)
     }
 }
 

@@ -7,8 +7,9 @@ pub mod code;
 pub mod package;
 
 pub use self::{code::*, package::*};
+use super::content::*;
 
-pub trait Common: super::ContentCommon {
+pub trait Common: ContentCommon {
     fn review(&self) -> &Review;
 }
 

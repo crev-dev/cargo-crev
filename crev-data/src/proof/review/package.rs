@@ -95,7 +95,7 @@ impl Package {
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 
-impl proof::ContentCommon for Package {
+impl proof::content::ContentCommon for Package {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
@@ -161,7 +161,7 @@ impl super::Common for Package {
 
 impl Package {
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
-        proof::Content::from(self).sign_by(id)
+        proof::content::Content::from(self).sign_by(id)
     }
 
     pub fn is_advisory_for(&self, version: &Version) -> bool {

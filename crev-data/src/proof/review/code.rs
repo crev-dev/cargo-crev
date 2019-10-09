@@ -93,7 +93,7 @@ impl Code {
     pub(crate) const END_BLOCK: &'static str = END_BLOCK;
 }
 
-impl proof::ContentCommon for Code {
+impl proof::content::ContentCommon for Code {
     fn date(&self) -> &chrono::DateTime<FixedOffset> {
         &self.date
     }
@@ -142,7 +142,7 @@ impl super::Common for Code {
 
 impl Code {
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
-        proof::Content::from(self).sign_by(id)
+        proof::content::Content::from(self).sign_by(id)
     }
 }
 
