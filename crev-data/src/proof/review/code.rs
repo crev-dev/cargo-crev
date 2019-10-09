@@ -118,6 +118,14 @@ impl proof::ContentCommon for Code {
             self.package.version
         )
     }
+
+    fn validate_data(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
 }
 
 impl super::Common for Code {
@@ -127,10 +135,6 @@ impl super::Common for Code {
 }
 
 impl Code {
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
-    }
-
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
         proof::Content::from(self).sign_by(id)
     }

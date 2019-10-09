@@ -118,22 +118,8 @@ impl proof::ContentCommon for Package {
             self.package.name, self.package.version
         )
     }
-}
 
-impl super::Common for Package {
-    fn review(&self) -> &super::Review {
-        &self.review
-    }
-}
-
-impl Package {
-    pub fn parse(s: &str) -> Result<Self> {
-        let s: Self = serde_yaml::from_str(&s)?;
-        s.validate_data()?;
-        Ok(s)
-    }
-
-    pub fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> Result<()> {
         for issue in &self.issues {
             if issue.id.is_empty() {
                 bail!("Issues with an empty `id` field are not allowed");
@@ -154,6 +140,20 @@ impl Package {
         Ok(())
     }
 
+    fn parse(s: &str) -> Result<Self> {
+        let s: Self = serde_yaml::from_str(&s)?;
+        s.validate_data()?;
+        Ok(s)
+    }
+}
+
+impl super::Common for Package {
+    fn review(&self) -> &super::Review {
+        &self.review
+    }
+}
+
+impl Package {
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
         proof::Content::from(self).sign_by(id)
     }

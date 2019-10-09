@@ -167,13 +167,17 @@ impl proof::ContentCommon for Trust {
             ),
         }
     }
+
+    fn validate_data(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
 }
 
 impl Trust {
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
-    }
-
     pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
         super::Content::from(self).sign_by(id)
     }
