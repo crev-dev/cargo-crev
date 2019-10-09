@@ -175,6 +175,12 @@ impl proof::ContentCommon for Trust {
     fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
+
+    fn parse_draft(&self, s: &str) -> Result<Self> {
+        let proof: Trust = self.apply_draft(TrustDraft::parse(&s)?).into();
+        proof.validate_data()?;
+        Ok(proof)
+    }
 }
 
 impl Trust {

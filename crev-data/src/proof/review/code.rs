@@ -126,6 +126,12 @@ impl proof::ContentCommon for Code {
     fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }
+
+    fn parse_draft(&self, s: &str) -> Result<Self> {
+        let proof: Code = self.apply_draft(CodeDraft::parse(&s)?).into();
+        proof.validate_data()?;
+        Ok(proof)
+    }
 }
 
 impl super::Common for Code {

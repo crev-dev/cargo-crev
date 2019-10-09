@@ -48,6 +48,7 @@ pub trait ContentCommon {
     fn draft_title(&self) -> String;
     fn validate_data(&self) -> Result<()>;
     fn parse(s: &str) -> Result<Self> where Self: Sized;
+    fn parse_draft(&self, s: &str) -> Result<Self> where Self: Sized;
 }
 
 #[derive(Copy, Clone, Debug)]

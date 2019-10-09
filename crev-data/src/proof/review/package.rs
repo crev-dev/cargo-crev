@@ -145,6 +145,12 @@ impl proof::ContentCommon for Package {
         s.validate_data()?;
         Ok(s)
     }
+
+    fn parse_draft(&self, s: &str) -> Result<Self> {
+        let proof: Package = self.apply_draft(PackageDraft::parse(&s)?).into();
+        proof.validate_data()?;
+        Ok(proof)
+    }
 }
 
 impl super::Common for Package {
