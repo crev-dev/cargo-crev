@@ -14,13 +14,12 @@ pub type Date = chrono::DateTime<FixedOffset>;
 pub trait ContentCommon {
     fn date(&self) -> &Date;
     fn set_date(&mut self, date: &Date);
-
-    fn author(&self) -> &crate::PubId;
-    fn set_author(&mut self, id: &crate::PubId);
-
     fn date_utc(&self) -> chrono::DateTime<Utc> {
         self.date().with_timezone(&Utc)
     }
+
+    fn author(&self) -> &crate::PubId;
+    fn set_author(&mut self, id: &crate::PubId);
 
     fn author_id(&self) -> crate::Id {
         self.author().id.clone()
