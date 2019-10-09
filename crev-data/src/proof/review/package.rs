@@ -151,6 +151,10 @@ impl proof::content::ContentCommon for Package {
         proof.validate_data()?;
         Ok(proof)
     }
+
+    fn proof_type(&self) -> proof::ProofType {
+        proof::ProofType::Package
+    }
 }
 
 impl super::Common for Package {

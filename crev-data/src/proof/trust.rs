@@ -182,6 +182,10 @@ impl proof::content::ContentCommon for Trust {
         proof.validate_data()?;
         Ok(proof)
     }
+
+    fn proof_type(&self) -> proof::ProofType {
+        proof::ProofType::Trust
+    }
 }
 
 impl Trust {

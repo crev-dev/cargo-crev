@@ -40,6 +40,8 @@ pub trait ContentCommon {
     fn parse_draft(&self, s: &str) -> Result<Self>
     where
         Self: Sized;
+
+    fn proof_type(&self) -> ProofType;
 }
 
 /// Content is an enumerator of possible proof contents

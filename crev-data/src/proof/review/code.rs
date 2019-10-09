@@ -132,6 +132,10 @@ impl proof::content::ContentCommon for Code {
         proof.validate_data()?;
         Ok(proof)
     }
+
+    fn proof_type(&self) -> proof::ProofType {
+        proof::ProofType::Code
+    }
 }
 
 impl super::Common for Code {
