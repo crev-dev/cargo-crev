@@ -68,10 +68,14 @@ impl VcsInfoJson {
 }
 
 /// Ignore things that are commonly added during the review (eg. by RLS)
-pub fn cargo_full_ignore_list() -> HashSet<PathBuf> {
+pub fn cargo_full_ignore_list(ignore_cargo_lock: bool) -> HashSet<PathBuf> {
     let mut ignore_list = HashSet::new();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list.insert(PathBuf::from("target"));
+    if ignore_cargo_lock {
+        ignore_list.insert(PathBuf::from("Cargo.lock"));
+    }
+
     ignore_list
 }
 
@@ -402,8 +406,13 @@ pub fn check_package_clean_state(
 
     let digest_clean =
         crev_lib::get_recursive_digest_for_dir(&crate_root, &cargo_min_ignore_list())?;
-    let digest_reviewed =
-        crev_lib::get_recursive_digest_for_dir(&reviewed_pkg_dir, &cargo_full_ignore_list())?;
+    // if the `Cargo.lock` not exist in the clean package, we can ignore it being created
+    // in the reviewed version; that's normal
+    let ignore_cargo_lock = !crate_root.join("Cargo.lock").exists();
+    let digest_reviewed = crev_lib::get_recursive_digest_for_dir(
+        &reviewed_pkg_dir,
+        &cargo_full_ignore_list(ignore_cargo_lock),
+    )?;
 
     if digest_clean != digest_reviewed {
         eprintln!(
