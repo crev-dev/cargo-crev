@@ -68,4 +68,8 @@ impl Review {
             rating: Rating::Neutral,
         }
     }
+
+    pub fn is_none(&self) -> bool {
+        *self == Self::new_none()
+    }
 }

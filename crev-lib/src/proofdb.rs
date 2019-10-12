@@ -712,7 +712,8 @@ impl ProofDB {
         let mut negative_count = 0;
         for matching_reviewer in matching_reviewers {
             let review = &reviews[matching_reviewer].review;
-            if Rating::Neutral <= review.rating
+            if !review.is_none()
+                && Rating::Neutral <= review.rating
                 && requirements.thoroughness <= review.thoroughness
                 && requirements.understanding <= review.understanding
             {

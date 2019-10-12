@@ -67,7 +67,7 @@ impl TrustProofType {
 }
 
 /// Verification requirements
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VerificationRequirements {
     pub trust_level: crev_data::Level,
     pub understanding: crev_data::Level,
@@ -75,6 +75,16 @@ pub struct VerificationRequirements {
     pub redundancy: u64,
 }
 
+impl Default for VerificationRequirements {
+    fn default() -> Self {
+        VerificationRequirements {
+            trust_level: Default::default(),
+            understanding: Default::default(),
+            thoroughness: Default::default(),
+            redundancy: 1,
+        }
+    }
+}
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.

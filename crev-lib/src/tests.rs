@@ -1,6 +1,6 @@
 use super::*;
 
-use crev_data::{proof::trust::TrustLevel, Digest, OwnId};
+use crev_data::{proof::trust::TrustLevel, Digest, Level, OwnId};
 use default::default;
 use semver::Version;
 use std::str::FromStr;
@@ -218,6 +218,44 @@ fn overwritting_reviews() -> Result<()> {
             1
         );
     }
+
+    Ok(())
+}
+
+#[test]
+fn dont_consider_an_empty_review_as_valid() -> Result<()> {
+    let a = OwnId::generate_for_git_url("https://a");
+    let digest = vec![0; 32];
+    let package = crev_data::proof::PackageInfo {
+        id: None,
+        source: "source".into(),
+        name: "name".into(),
+        version: Version::parse("1.0.0").unwrap(),
+        digest: digest.clone(),
+        digest_type: crev_data::proof::default_digest_type(),
+        revision: "".into(),
+        revision_type: crev_data::proof::default_revision_type(),
+    };
+
+    let review = crev_data::proof::review::Review::new_none();
+
+    let proof1 = a
+        .as_pubid()
+        .create_package_review_proof(package.clone(), review, "a".into())?
+        .sign_by(&a)?;
+
+    let mut trustdb = ProofDB::new();
+    let trust_set = trustdb.calculate_trust_set(&a.id.id, &default());
+    trustdb.import_from_iter(vec![proof1].into_iter());
+    let verification_reqs = VerificationRequirements {
+        thoroughness: Level::None,
+        understanding: Level::None,
+        trust_level: Level::None,
+        redundancy: 1,
+    };
+    assert!(!trustdb
+        .verify_package_digest(&Digest::from_vec(digest), &trust_set, &verification_reqs)
+        .is_verified());
 
     Ok(())
 }
