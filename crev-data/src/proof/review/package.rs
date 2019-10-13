@@ -156,6 +156,10 @@ impl proof::content::ContentCommon for Package {
         proof::ProofType::Package
     }
 
+    fn type_name(&self) -> (&str, Option<&str>) {
+        ("reviews", Some("packages"))
+    }
+
     fn to_draft_string(&self) -> String {
         PackageDraft::from(self.clone()).to_string()
     }

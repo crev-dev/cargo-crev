@@ -41,6 +41,7 @@ pub trait ContentCommon {
         Self: Sized;
 
     fn proof_type(&self) -> ProofType;
+    fn type_name(&self) -> (&str, Option<&str>);
     fn to_draft_string(&self) -> String;
 }
 

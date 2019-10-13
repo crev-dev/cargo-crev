@@ -137,6 +137,10 @@ impl proof::content::ContentCommon for Code {
         proof::ProofType::Code
     }
 
+    fn type_name(&self) -> (&str, Option<&str>) {
+        ("reviews", Some("code"))
+    }
+
     fn to_draft_string(&self) -> String {
         CodeDraft::from(self.clone()).to_string()
     }

@@ -187,6 +187,10 @@ impl proof::content::ContentCommon for Trust {
         proof::ProofType::Trust
     }
 
+    fn type_name(&self) -> (&str, Option<&str>) {
+        ("trust", None)
+    }
+
     fn to_draft_string(&self) -> String {
         TrustDraft::from(self.clone()).to_string()
     }
