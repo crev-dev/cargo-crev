@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.10.0"
+version = "0.10.1"
 description = "Scalable, social, Code REView system that we desperately need - Rust/cargo frontend"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -24,9 +24,9 @@ atty = "0.2"
 cargo = "0.38"
 common_failures = "0.1"
 crates_io_api = "0.5"
-crev-common = { path = "../crev-common", version = "0.10" }
-crev-data = { path = "../crev-data", version = "0.10" }
-crev-lib = { path = "../crev-lib", version = "0.10" }
+crev-common = { path = "../crev-common", version = "0.10.1" }
+crev-data = { path = "../crev-data", version = "0.10.1" }
+crev-lib = { path = "../crev-lib", version = "0.10.1" }
 failure = "0.1"
 geiger = "0.3.2"
 insideout = "0.2"

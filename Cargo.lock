@@ -265,15 +265,15 @@ dependencies = [
 
 [[package]]
 name = "cargo-crev"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "atty 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo 0.38.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crates_io_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.10.0",
- "crev-data 0.10.0",
- "crev-lib 0.10.0",
+ "crev-common 0.10.1",
+ "crev-data 0.10.1",
+ "crev-lib 0.10.1",
  "crossbeam 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossterm 0.9.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -468,7 +468,7 @@ dependencies = [
 
 [[package]]
 name = "crev-common"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -487,11 +487,11 @@ dependencies = [
 
 [[package]]
 name = "crev-data"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "chrono 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.10.0",
+ "crev-common 0.10.1",
  "derive_builder 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 1.0.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -504,12 +504,12 @@ dependencies = [
 
 [[package]]
 name = "crev-lib"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "chrono 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.10.0",
- "crev-data 0.10.0",
+ "crev-common 0.10.1",
+ "crev-data 0.10.1",
  "crev-recursive-digest 0.2.1",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -547,7 +547,7 @@ name = "crevsum"
 version = "0.3.0"
 dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-common 0.10.0",
+ "crev-common 0.10.1",
  "crev-recursive-digest 0.2.1",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
