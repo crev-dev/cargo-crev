@@ -20,18 +20,24 @@
 ///
 /// See the list of modules for the list of documented topis.
 pub mod user {
-    #[doc(include = "glossary.md")]
+    #[doc(include = "getting_started.md")]
     pub mod getting_started {}
+
     #[doc(include = "glossary.md")]
     pub mod glossary {}
+
     #[doc(include = "organizations.md")]
     pub mod organizations {}
+
     #[doc(include = "advisories.md")]
     pub mod advisories {}
+
     #[doc(include = "trust.md")]
     pub mod trust {}
+
     #[doc(include = "cargo_specific.md")]
     pub mod cargo_specific {}
+
     #[doc(include = "tips_and_tricks.md")]
     pub mod tips_and_tricks {}
 }
