@@ -505,7 +505,7 @@ You can access this repository using `cargo crev git` command.
 
 
 ```text
-$ cargo crev git log
+$ cargo crev repo git log
 commit a308421882822bd2256574b6e966a114dd4bfc6e (HEAD -> master)
 Author: You <your_email@example.org>
 Date:   Wed Jun 19 23:44:20 2019 -0700
