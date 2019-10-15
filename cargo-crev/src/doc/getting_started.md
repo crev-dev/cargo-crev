@@ -475,7 +475,7 @@ You should now be able to see your proof in the output of `cargo crev query revi
 
 
 ```text
-$ cargo crev query review default
+$ cargo crev repo query review default
 version: -1
 date: "2019-06-19T23:32:13.683894969-07:00"
 from:
