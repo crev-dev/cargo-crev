@@ -514,7 +514,7 @@ Date:   Wed Jun 19 23:44:20 2019 -0700
 (...)
 ```
 
-When you are ready, you can push your recent *proofs* to your public repository with `cargo crev publish`.
+When you are ready, you can push your recent *proofs* to your public repository with `cargo crev repo publish`.
 
 Now that your work is public, the only thing left is to help other people find it. Until someone creates
 a *trust proof* for your `CrevId` (even with `trust: none` settings), your *proof repository* is not
