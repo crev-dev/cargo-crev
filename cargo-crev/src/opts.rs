@@ -566,6 +566,13 @@ pub enum Config {
     /// Edit the config file
     #[structopt(name = "edit", alias = "e")]
     Edit,
+
+    /// Completions
+    #[structopt(name = "completions")]
+    Completions {
+        #[structopt(long = "shell")]
+        shell: Option<String>,
+    },
 }
 
 #[derive(Debug, StructOpt, Clone)]

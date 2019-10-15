@@ -10,6 +10,7 @@ use self::prelude::*;
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
 use std::io::BufRead;
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -262,6 +263,34 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
                 local.edit_user_config()?;
+            }
+            opts::Config::Completions { shell } => {
+                use structopt::clap::Shell;
+                let shell = match shell
+                    .unwrap_or(
+                        PathBuf::from(std::env::var("SHELL")?)
+                            .file_name()
+                            .ok_or_else(|| format_err!("$SHELL corrupted?"))?
+                            .to_string_lossy()
+                            .to_string(),
+                    )
+                    .as_str()
+                {
+                    "bash" => Shell::Bash,
+                    "zsh" => Shell::Zsh,
+                    "powershell" => Shell::PowerShell,
+                    "elvish" => Shell::Elvish,
+                    "fish" => Shell::Fish,
+                    other => {
+                        bail!("{} shell not supported", other);
+                    }
+                };
+                opts::Opts::clap().gen_completions_to(
+                    // we have to pretend, we're generating for main cargo binary
+                    "cargo",
+                    shell,
+                    &mut std::io::stdout(),
+                );
             }
         },
         opts::Command::Repo(args) => match args {
