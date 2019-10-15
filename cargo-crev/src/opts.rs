@@ -488,7 +488,7 @@ pub enum Id {
     #[structopt(name = "distrust", alias = "d")]
     Distrust(IdTrust),
 
-    /// Distrust an Id
+    /// Query Ids
     #[structopt(name = "query", alias = "q")]
     Query(IdQuery),
 }
