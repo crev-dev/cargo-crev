@@ -475,7 +475,7 @@ You should now be able to see your proof in the output of `cargo crev query revi
 
 
 ```text
-$ cargo crev query review default
+$ cargo crev repo query review default
 version: -1
 date: "2019-06-19T23:32:13.683894969-07:00"
 from:
@@ -505,7 +505,7 @@ You can access this repository using `cargo crev git` command.
 
 
 ```text
-$ cargo crev git log
+$ cargo crev repo git log
 commit a308421882822bd2256574b6e966a114dd4bfc6e (HEAD -> master)
 Author: You <your_email@example.org>
 Date:   Wed Jun 19 23:44:20 2019 -0700
@@ -514,7 +514,7 @@ Date:   Wed Jun 19 23:44:20 2019 -0700
 (...)
 ```
 
-When you are ready, you can push your recent *proofs* to your public repository with `cargo crev publish`.
+When you are ready, you can push your recent *proofs* to your public repository with `cargo crev repo publish`.
 
 Now that your work is public, the only thing left is to help other people find it. Until someone creates
 a *trust proof* for your `CrevId` (even with `trust: none` settings), your *proof repository* is not
