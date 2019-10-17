@@ -53,8 +53,10 @@ report problems and feedback. Thank you!
 
 If you're supportive of the cause, we would appreciate helping to raise awareness of the project. Consider putting the below note in the README of your Rust projects:
 
-> It is recommended to always use [cargo-crev](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev)
+```
+It is recommended to always use [cargo-crev](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev)
 to verify the trustworthiness of each of your dependencies, including this one.
+```
 
 Thank you!
 
