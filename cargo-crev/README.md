@@ -49,6 +49,15 @@ Follow the [`cargo-crev` - Getting Started Guide](https://github.com/crev-dev/ca
 Join our [matrix](https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org) or [gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help,
 report problems and feedback. Thank you!
 
+## Raise awareness
+
+If you're supportive of the cause, we would appreciate helping to raise awareness of the project. Consider putting the below note in the README of your Rust projects:
+
+> It is recommended to always use [cargo-crev](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev)
+to verify the trustworthiness of each of your dependencies, including this one.
+
+Thank you!
+
 ## Changelog
 
 Changelog can be found here: https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/CHANGELOG.md
