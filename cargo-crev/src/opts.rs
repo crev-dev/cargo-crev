@@ -40,18 +40,22 @@ pub struct CargoOpts {
     #[structopt(long = "no-default-features")]
     /// [cargo] Do not activate the `default` feature
     pub no_default_features: bool,
-    #[structopt(long = "target", value_name = "TARGET")]
-    /// [cargo] Set the target triple
-    pub target: Option<String>,
     #[structopt(long = "no-dev-dependencies")]
     /// [cargo] Skip dev dependencies.
     pub no_dev_dependencies: bool,
     #[structopt(long = "manifest-path", value_name = "PATH", parse(from_os_str))]
+
     /// [cargo] Path to Cargo.toml
     pub manifest_path: Option<PathBuf>,
     #[structopt(short = "Z", value_name = "FLAG")]
+
     /// [cargo] Unstable (nightly-only) flags to Cargo
+    #[structopt(long = "unstable-flags")]
     pub unstable_flags: Vec<String>,
+
+    /// [cargo] Skip targets other than specified (no value = autodetect)
+    #[structopt(long = "target")]
+    pub target: Option<Option<String>>,
 }
 
 #[derive(Debug, StructOpt, Clone)]

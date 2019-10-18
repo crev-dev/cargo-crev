@@ -10,7 +10,7 @@ use cargo::{
         InternedString, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
-    util::{important_paths::find_root_manifest_for_wd, CargoResult},
+    util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Cfg, Rustc},
 };
 use crev_common::convert::OptionDeref;
 use crev_lib;
@@ -21,6 +21,7 @@ use std::{
     env,
     path::PathBuf,
     rc::Rc,
+    str::{self, FromStr},
 };
 
 use crate::{crates_io, prelude::*};
@@ -107,6 +108,24 @@ impl Graph {
     }
 }
 
+fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> CargoResult<Option<Vec<Cfg>>> {
+    let mut process = util::process(&rustc.path);
+    process.arg("--print=cfg").env_remove("RUST_LOG");
+    if let Some(ref s) = target {
+        process.arg("--target").arg(s);
+    }
+
+    let output = match process.exec_with_output() {
+        Ok(output) => output,
+        Err(e) => return Err(e),
+    };
+    let output = str::from_utf8(&output.stdout).unwrap();
+    let lines = output.lines();
+    Ok(Some(
+        lines.map(Cfg::from_str).collect::<CargoResult<Vec<_>>>()?,
+    ))
+}
+
 fn our_resolve<'a, 'cfg>(
     registry: &mut PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,
@@ -185,6 +204,8 @@ fn build_graph<'a>(
     resolve: &'a Resolve,
     packages: &'a PackageSet<'_>,
     roots: impl Iterator<Item = PackageId>,
+    target: Option<&str>,
+    cfgs: Option<&[Cfg]>,
 ) -> CargoResult<Graph> {
     let mut graph = Graph {
         graph: petgraph::Graph::new(),
@@ -209,7 +230,12 @@ fn build_graph<'a>(
             let it = pkg
                 .dependencies()
                 .iter()
-                .filter(|d| d.matches_ignoring_source(raw_dep_id));
+                .filter(|d| d.matches_ignoring_source(raw_dep_id))
+                .filter(|d| {
+                    d.platform()
+                        .and_then(|p| target.map(|t| p.matches(t, cfgs)))
+                        .unwrap_or(true)
+                });
 
             let dep_id = match resolve.replacement(raw_dep_id) {
                 Some(id) => id,
@@ -327,7 +353,22 @@ impl Repo {
             self.cargo_opts.no_dev_dependencies,
         )?;
 
-        let graph = build_graph(&resolve, &packages, roots.into_iter())?;
+        let rustc = self.config.load_global_rustc(Some(&workspace))?;
+
+        let target = if let Some(ref target) = self.cargo_opts.target {
+            Some(target.as_ref().unwrap_or(&rustc.host).as_str())
+        } else {
+            None
+        };
+
+        let cfgs = get_cfgs(&rustc, target)?;
+        let graph = build_graph(
+            &resolve,
+            &packages,
+            roots.into_iter(),
+            target,
+            cfgs.as_ref().map(|r| &**r),
+        )?;
 
         Ok(graph)
     }
