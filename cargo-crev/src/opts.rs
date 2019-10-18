@@ -234,7 +234,13 @@ pub struct RepoFetchUrl {
 pub enum RepoFetch {
     #[structopt(name = "trusted", alias = "t")]
     /// Fetch updates from trusted Ids
-    Trusted(TrustDistanceParams),
+    Trusted {
+        #[structopt(flatten)]
+        distance_params: TrustDistanceParams,
+
+        #[structopt(long = "for-id")]
+        for_id: Option<String>,
+    },
 
     #[structopt(name = "url", alias = "u")]
     /// Fetch from a single public proof repository

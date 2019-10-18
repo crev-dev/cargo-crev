@@ -580,19 +580,22 @@ impl Local {
         Ok(())
     }
 
-    pub fn fetch_trusted(&self, trust_params: crate::TrustDistanceParams) -> Result<()> {
+    pub fn fetch_trusted(
+        &self,
+        trust_params: crate::TrustDistanceParams,
+        for_id: Option<&str>,
+    ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
         let mut already_fetched_urls = HashSet::new();
         let mut db = crate::ProofDB::new();
         db.import_from_iter(self.proofs_iter()?);
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
-        let user_config = self.load_user_config()?;
+        let for_id = self.get_for_id_from_str(for_id)?;
 
         let mut something_was_fetched = true;
         while something_was_fetched {
             something_was_fetched = false;
-            let trust_set =
-                db.calculate_trust_set(user_config.get_current_userid()?, &trust_params);
+            let trust_set = db.calculate_trust_set(&for_id, &trust_params);
 
             for id in trust_set.trusted_ids() {
                 if already_fetched_ids.contains(id) {

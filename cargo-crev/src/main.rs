@@ -326,9 +326,12 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 std::process::exit(status.code().unwrap_or(-159));
             }
             opts::Repo::Fetch(cmd) => match cmd {
-                opts::RepoFetch::Trusted(params) => {
+                opts::RepoFetch::Trusted {
+                    distance_params,
+                    for_id,
+                } => {
                     let local = Local::auto_create_or_open()?;
-                    local.fetch_trusted(params.into())?;
+                    local.fetch_trusted(distance_params.into(), OptionDeref::as_deref(&for_id))?;
                 }
                 opts::RepoFetch::Url(params) => {
                     let local = Local::auto_create_or_open()?;
