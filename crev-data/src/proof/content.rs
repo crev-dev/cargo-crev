@@ -1,209 +1,120 @@
-use crate::Url;
 use chrono::{self, prelude::*};
 use failure::bail;
-use std::fmt;
 
-use self::super::review;
-use self::super::trust::{Trust, TrustDraft};
 use crate::proof;
-use crate::proof::{Proof, ProofType};
+use crate::proof::Proof;
 use crate::Result;
+use crev_common::{
+    self,
+    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
+};
+use derive_builder::Builder;
+use serde::{self, Deserialize, Serialize};
+use std::io;
 
 pub type Date = chrono::DateTime<FixedOffset>;
 
-pub trait ContentCommon {
-    fn date(&self) -> &Date;
-    fn set_date(&mut self, date: &Date);
-    fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.date().with_timezone(&Utc)
-    }
-
-    fn author(&self) -> &crate::PubId;
-    fn set_author(&mut self, id: &crate::PubId);
-
-    fn author_id(&self) -> crate::Id {
-        self.author().id.clone()
-    }
-
-    fn author_url(&self) -> Url {
-        self.author().url.clone()
-    }
-
-    fn draft_title(&self) -> String;
-    fn validate_data(&self) -> Result<()>;
-
-    fn parse(s: &str) -> Result<Self>
-    where
-        Self: Sized;
-
-    fn parse_draft(&self, s: &str) -> Result<Self>
-    where
-        Self: Sized;
-
-    fn proof_type(&self) -> ProofType;
-    fn type_name(&self) -> (&str, Option<&str>);
-    fn to_draft_string(&self) -> String;
+/// A `Common` part of every `Content` format
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+pub struct Common {
+    /// A version, to allow future backward-incompatible extensions
+    /// and changes.
+    pub version: i64,
+    #[builder(default = "crev_common::now()")]
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    /// Timestamp of proof creation
+    pub date: chrono::DateTime<FixedOffset>,
+    /// Author of the proof
+    pub from: crate::PubId,
 }
 
-/// Content is an enumerator of possible proof contents
-#[derive(Debug, Clone)]
-pub enum Content {
-    Trust(Trust),
-    Package(Box<review::Package>),
-    Code(Box<review::Code>),
-}
+/// Proof Content
+///
+/// `Content` is a standardized format of a crev proof body
+/// (part that is being signed over).
+///
+/// It is open-ended, and different software
+/// can implement their own formats.
+pub trait Content {
+    const TYPE_NAME: &'static str;
 
-impl fmt::Display for Content {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.fmt(f),
-            Code(code) => code.fmt(f),
-            Package(package) => package.fmt(f),
-        }
-    }
-}
-
-impl From<review::Code> for Content {
-    fn from(review: review::Code) -> Self {
-        Content::Code(Box::new(review))
-    }
-}
-
-impl From<review::Package> for Content {
-    fn from(review: review::Package) -> Self {
-        Content::Package(Box::new(review))
-    }
-}
-
-impl From<Trust> for Content {
-    fn from(review: Trust) -> Self {
-        Content::Trust(review)
-    }
-}
-
-impl Content {
-    pub fn draft_title(&self) -> String {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.draft_title(),
-            Code(review) => review.draft_title(),
-            Package(review) => review.draft_title(),
-        }
+    fn type_name(&self) -> &str {
+        &Self::TYPE_NAME
     }
 
-    pub fn validate_data(&self) -> Result<()> {
-        use self::Content::*;
-        if let Package(review) = self {
-            review.validate_data()?
-        }
+    fn common(&self) -> &Common;
 
+    fn validate_data(&self) -> Result<()> {
+        // typically just OK
         Ok(())
     }
 
-    pub fn parse(s: &str, type_: ProofType) -> Result<Content> {
-        Ok(match type_ {
-            ProofType::Code => review::Code::parse(&s)?.into(),
-            ProofType::Package => review::Package::parse(&s)?.into(),
-            ProofType::Trust => Trust::parse(&s)?.into(),
-        })
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()>;
+}
+
+/// A Proof Content `Draft`
+///
+/// A simplified version of content, used
+/// for user interaction - editing the parts
+/// that are not neccessary for the user to see.
+pub struct Draft {
+    title: String,
+    body: String,
+}
+
+impl Draft {
+    pub fn title(&self) -> &str {
+        &self.title
     }
 
-    pub fn parse_draft(original_proof: &Content, s: &str) -> Result<Content> {
-        let proof: Content = match original_proof {
-            Content::Code(code) => code.apply_draft(review::CodeDraft::parse(&s)?).into(),
-            Content::Package(package) => {
-                package.apply_draft(review::PackageDraft::parse(&s)?).into()
-            }
-            Content::Trust(trust) => trust.apply_draft(TrustDraft::parse(&s)?).into(),
-        };
-        proof.validate_data()?;
-        Ok(proof)
+    pub fn body(&self) -> &str {
+        &self.body
+    }
+}
+
+/// A content with draft support
+///
+/// Draft is a compact, human
+pub trait ContentWithDraft: Content {
+    fn to_draft(&self) -> Draft;
+
+    fn apply_draft(&self, body: &str) -> Result<Self>
+    where
+        Self: Sized;
+}
+
+pub trait ContentExt: Content {
+    fn serialize(&self) -> Result<String> {
+        let mut body = String::new();
+        self.serialize_to(&mut body)?;
+        Ok(body)
     }
 
-    pub fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
-        let body = self.to_string();
+    fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
+        let body = self.serialize()?;
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {
-            digest: crev_common::blake2b256sum(&body.as_bytes()),
+            digest: crev_common::blake2b256sum(body.as_bytes()),
             body,
             signature: crev_common::base64_encode(&signature),
-            content: self.clone(),
+            common_content: self.common().clone(),
+            type_name: self.type_name().to_owned(),
         })
-    }
-
-    pub fn proof_type(&self) -> ProofType {
-        use self::Content::*;
-        match self {
-            Trust(_trust) => ProofType::Trust,
-            Code(_review) => ProofType::Code,
-            Package(_review) => ProofType::Package,
-        }
-    }
-
-    pub fn date(&self) -> &Date {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.date(),
-            Code(review) => review.date(),
-            Package(review) => review.date(),
-        }
-    }
-
-    pub fn author_id(&self) -> crate::Id {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.author_id(),
-            Code(review) => review.author_id(),
-            Package(review) => review.author_id(),
-        }
-    }
-
-    pub fn set_author(&mut self, id: &crate::PubId) {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.set_author(id),
-            Code(review) => review.set_author(id),
-            Package(review) => review.set_author(id),
-        }
-    }
-
-    pub fn set_date(&mut self, date: &Date) {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.set_date(date),
-            Code(review) => review.set_date(date),
-            Package(review) => review.set_date(date),
-        }
-    }
-
-    pub fn author_url(&self) -> Url {
-        use self::Content::*;
-        match self {
-            Trust(trust) => trust.author_url(),
-            Code(review) => review.author_url(),
-            Package(review) => review.author_url(),
-        }
-    }
-
-    pub fn to_draft_string(&self) -> String {
-        use self::Content::*;
-        match self.clone() {
-            Trust(trust) => TrustDraft::from(trust).to_string(),
-            Code(review) => review::CodeDraft::from(*review).to_string(),
-            Package(review) => review::PackageDraft::from(*review).to_string(),
-        }
     }
 
     /// Ensure the proof generated from this `Content` is going to deserialize
-    pub fn ensure_serializes_to_valid_proof(&self) -> Result<()> {
-        let body = self.to_string();
+    fn ensure_serializes_to_valid_proof(&self) -> Result<()> {
+        let body = self.serialize()?;
         let signature = "somefakesignature";
         let proof = proof::Proof {
             digest: crev_common::blake2b256sum(&body.as_bytes()),
             body,
             signature: crev_common::base64_encode(&signature),
-            content: self.clone(),
+            type_name: self.type_name().to_owned(),
+            common_content: self.common().to_owned(),
         };
         let parsed = proof::Proof::parse(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 
@@ -213,4 +124,19 @@ impl Content {
 
         Ok(())
     }
+
+    fn deserialize_from<T>(io: &mut T) -> Result<Self>
+    where
+        T: io::Read,
+        Self: Sized,
+        Self: serde::de::DeserializeOwned + Content,
+    {
+        let s: Self = serde_yaml::from_reader(io)?;
+
+        s.validate_data()?;
+
+        Ok(s)
+    }
 }
+
+impl<T> ContentExt for T where T: Content {}

@@ -1,19 +1,11 @@
-use self::super::content;
-use crate::{id, proof, Level, Result};
-use chrono::{self, prelude::*};
-use crev_common::{
-    self,
-    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
-};
+use crate::proof::{self, Content};
+use crate::{Level, Result};
+use crev_common::{self};
 use derive_builder::Builder;
 use failure::bail;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::fmt;
-
-const BEGIN_BLOCK: &str = "-----BEGIN CREV TRUST -----";
-const BEGIN_SIGNATURE: &str = "-----BEGIN CREV TRUST SIGNATURE-----";
-const END_BLOCK: &str = "-----END CREV TRUST-----";
 
 const CURRENT_TRUST_PROOF_SERIALIZATION_VERSION: i64 = -1;
 
@@ -78,15 +70,8 @@ impl TrustLevel {
 /// Body of a Trust Proof
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
-    #[builder(default = "cur_version()")]
-    version: i64,
-    #[builder(default = "crev_common::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    pub date: chrono::DateTime<FixedOffset>,
-    pub from: crate::PubId,
+    #[serde(flatten)]
+    pub common: proof::ContentCommon,
     pub ids: Vec<crate::PubId>,
     #[builder(default = "Default::default()")]
     pub trust: TrustLevel,
@@ -95,29 +80,19 @@ pub struct Trust {
     comment: String,
 }
 
-impl Trust {
-    pub fn apply_draft(&self, draft: TrustDraft) -> Trust {
-        let mut copy = self.clone();
-        copy.trust = draft.trust;
-        copy.comment = draft.comment;
-        copy
-    }
-}
-
-/// Like `Trust` but serializes for interactive editing
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TrustDraft {
-    pub trust: TrustLevel,
-    #[serde(default = "Default::default")]
-    comment: String,
-}
-
-impl From<Trust> for TrustDraft {
-    fn from(trust: Trust) -> Self {
-        TrustDraft {
-            trust: trust.trust,
-            comment: trust.comment,
+impl TrustBuilder {
+    pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
+        let mut new = self;
+        if let Some(ref mut common) = self.common {
+            common.from = value.into();
+        } else {
+            new.common = Some(proof::ContentCommon {
+                version: cur_version(),
+                date: crev_common::now(),
+                from: value.into(),
+            });
         }
+        new
     }
 }
 
@@ -127,35 +102,41 @@ impl fmt::Display for Trust {
     }
 }
 
-impl fmt::Display for TrustDraft {
+/// Like `Trust` but serializes for interactive editing
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Draft {
+    pub trust: TrustLevel,
+    #[serde(default = "Default::default")]
+    comment: String,
+}
+
+impl From<Trust> for Draft {
+    fn from(trust: Trust) -> Self {
+        Draft {
+            trust: trust.trust,
+            comment: trust.comment,
+        }
+    }
+}
+
+impl fmt::Display for Draft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
     }
 }
 
-impl Trust {
-    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
+impl proof::Content for Trust {
+    const TYPE_NAME: &'static str = "code review";
+    fn common(&self) -> &proof::ContentCommon {
+        &self.common
+    }
+
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
+        Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+    }
 }
 
-impl proof::content::ContentCommon for Trust {
-    fn date(&self) -> &chrono::DateTime<FixedOffset> {
-        &self.date
-    }
-
-    fn set_date(&mut self, date: &chrono::DateTime<FixedOffset>) {
-        self.date = *date;
-    }
-
-    fn author(&self) -> &crate::PubId {
-        &self.from
-    }
-
-    fn set_author(&mut self, id: &crate::PubId) {
-        self.from = id.clone();
-    }
-
+impl Trust {
     fn draft_title(&self) -> String {
         match self.ids.len() {
             0 => "Trust for noone?!".into(),
@@ -168,41 +149,29 @@ impl proof::content::ContentCommon for Trust {
             ),
         }
     }
+}
 
-    fn validate_data(&self) -> Result<()> {
-        Ok(())
+impl proof::ContentWithDraft for Trust {
+    fn to_draft(&self) -> proof::Draft {
+        proof::Draft {
+            title: self.draft_title(),
+            body: Draft::from(self.clone()).to_string(),
+        }
     }
 
-    fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
-    }
+    fn apply_draft(&self, s: &str) -> Result<Self> {
+        let draft = Draft::parse(&s)?;
 
-    fn parse_draft(&self, s: &str) -> Result<Self> {
-        let proof: Trust = self.apply_draft(TrustDraft::parse(&s)?).into();
-        proof.validate_data()?;
-        Ok(proof)
-    }
+        let mut copy = self.clone();
+        copy.trust = draft.trust;
+        copy.comment = draft.comment;
 
-    fn proof_type(&self) -> proof::ProofType {
-        proof::ProofType::Trust
-    }
-
-    fn type_name(&self) -> (&str, Option<&str>) {
-        ("trust", None)
-    }
-
-    fn to_draft_string(&self) -> String {
-        TrustDraft::from(self.clone()).to_string()
+        copy.validate_data()?;
+        Ok(copy)
     }
 }
 
-impl Trust {
-    pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
-        content::Content::from(self).sign_by(id)
-    }
-}
-
-impl TrustDraft {
+impl Draft {
     pub fn parse(s: &str) -> Result<Self> {
         Ok(serde_yaml::from_str(&s)?)
     }

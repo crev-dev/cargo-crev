@@ -1,3 +1,4 @@
+use crate::proof::ContentExt;
 use crate::{proof, Result, Url};
 use crev_common::{
     self,

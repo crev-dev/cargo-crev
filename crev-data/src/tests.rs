@@ -1,6 +1,6 @@
 use crate::{
     id::OwnId,
-    proof::{self, Proof, Serialized},
+    proof::{self, ContentExt, Proof},
     Result, Url,
 };
 use failure::format_err;
@@ -17,7 +17,7 @@ sig
 -----END CODE REVIEW-----
 "#;
 
-    let proofs = Serialized::parse(s.as_bytes())?;
+    let proofs = Proof::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 1);
     assert_eq!(proofs[0].body, "foo\n");
     assert_eq!(proofs[0].signature, "sig\n");
@@ -39,7 +39,7 @@ sig2
 -----END CODE REVIEW-----
 "#;
 
-    let proofs = Serialized::parse(s.as_bytes())?;
+    let proofs = Proof::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");
@@ -65,7 +65,7 @@ foo2
 sig2
 -----END CODE REVIEW-----"#;
 
-    let proofs = Serialized::parse(s.as_bytes())?;
+    let proofs = Proof::parse(s.as_bytes())?;
     assert_eq!(proofs.len(), 2);
     assert_eq!(proofs[0].body, "foo1\n");
     assert_eq!(proofs[0].signature, "sig1\n");
@@ -152,12 +152,8 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
         Default::default(),
         "a".into(),
     )?;
-    assert!(proof::Content::from(package.clone())
-        .ensure_serializes_to_valid_proof()
-        .is_ok());
+    assert!(package.ensure_serializes_to_valid_proof().is_ok());
     package.comment = std::iter::repeat("a").take(32_000).collect::<String>();
-    assert!(proof::Content::from(package)
-        .ensure_serializes_to_valid_proof()
-        .is_err());
+    assert!(package.ensure_serializes_to_valid_proof().is_err());
     Ok(())
 }

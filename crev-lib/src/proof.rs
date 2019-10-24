@@ -2,14 +2,6 @@ use chrono::prelude::*;
 use crev_data::proof::Content;
 use std::path::PathBuf;
 
-fn type_name(content: &Content) -> (&str, Option<&str>) {
-    match content {
-        Content::Trust(_) => ("trust", None),
-        Content::Code(_) => ("reviews", Some("code")),
-        Content::Package(_) => ("reviews", Some("packages")),
-    }
-}
-
 /// The path to use under package `.crev/`
 pub(crate) fn rel_package_path(content: &Content, host_salt: &[u8]) -> PathBuf {
     rel_store_path(content, host_salt)
