@@ -8,7 +8,7 @@ use crate::{
     opts::{CargoOpts, CrateSelector},
     prelude::*,
 };
-use crev_data::proof;
+use crev_data::proof::{self, ContentExt};
 use crev_lib::TrustProofType;
 
 use crate::{repo::*, shared::*};
@@ -127,7 +127,7 @@ pub fn create_review_proof(
         review.review.rating = Rating::Negative;
     }
     let review = crev_lib::util::edit_proof_content_iteractively(
-        &review.into(),
+        &review,
         previous_date.as_ref(),
         diff_base_version.as_ref(),
     )?;
@@ -159,7 +159,7 @@ pub fn find_previous_review_data(
         db.get_pkg_review(PROJECT_SOURCE_CRATES_IO, name, crate_version, &id.id)
     {
         return Some((
-            Some(previous_review.date),
+            Some(previous_review.common.date),
             previous_review.review.to_owned(),
             previous_review.advisories.to_owned(),
             previous_review.issues.to_owned(),

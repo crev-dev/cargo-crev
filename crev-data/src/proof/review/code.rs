@@ -31,15 +31,15 @@ pub struct File {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Code {
     #[serde(flatten)]
-    common: proof::ContentCommon,
+    pub common: proof::ContentCommon,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
     #[serde(flatten)]
     #[builder(default = "Default::default()")]
-    review: super::Review,
+    pub review: super::Review,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
-    comment: String,
+    pub comment: String,
     #[serde(
         skip_serializing_if = "std::vec::Vec::is_empty",
         default = "std::vec::Vec::new"
@@ -50,17 +50,16 @@ pub struct Code {
 
 impl CodeBuilder {
     pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
-        let mut new = self;
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            new.common = Some(proof::ContentCommon {
+            self.common = Some(proof::ContentCommon {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
             });
         }
-        new
+        self
     }
 }
 impl fmt::Display for Code {
@@ -92,8 +91,16 @@ impl From<Code> for Draft {
     }
 }
 
+impl proof::ContentWithReview for Code {
+    fn review(&self) -> &super::Review {
+        &self.review
+    }
+}
+
 impl proof::content::Content for Code {
-    const TYPE_NAME: &'static str = "code review";
+    fn type_name(&self) -> &str {
+        "code review"
+    }
 
     fn common(&self) -> &proof::ContentCommon {
         &self.common

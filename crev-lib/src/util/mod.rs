@@ -2,7 +2,7 @@ pub mod git;
 
 use crate::prelude::*;
 use crev_common;
-use crev_data::proof;
+use crev_data::proof::{self, ContentExt};
 use failure::bail;
 use git2;
 use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io, io::Write, path::Path};
@@ -81,20 +81,20 @@ pub fn edit_file(path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn get_documentation_for(content: &proof::Content) -> &'static str {
-    use crev_data::proof::Content;
-    match content {
-        Content::Trust(_) => include_str!("../../rc/doc/editing-trust.md"),
-        Content::Code(_) => include_str!("../../rc/doc/editing-code-review.md"),
-        Content::Package(_) => include_str!("../../rc/doc/editing-package-review.md"),
+pub fn get_documentation_for(content: &impl proof::Content) -> &'static str {
+    match content.type_name() {
+        "trust" => include_str!("../../rc/doc/editing-trust.md"),
+        "code review" => include_str!("../../rc/doc/editing-code-review.md"),
+        "package review" => include_str!("../../rc/doc/editing-package-review.md"),
+        _ => "unknown proof type",
     }
 }
 
-pub fn edit_proof_content_iteractively(
-    content: &proof::Content,
+pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
+    content: &C,
     previous_date: Option<&proof::Date>,
     base_version: Option<&semver::Version>,
-) -> Result<proof::Content> {
+) -> Result<C> {
     let mut text = String::new();
     if let Some(date) = previous_date {
         text.write_str(&format!(
@@ -102,19 +102,20 @@ pub fn edit_proof_content_iteractively(
             date.to_rfc3339()
         ))?;
     }
+    let draft = content.to_draft();
 
-    text.write_str(&format!("# {}\n", content.draft_title()))?;
+    text.write_str(&format!("# {}\n", draft.title()))?;
     if let Some(base_version) = base_version {
         text.write_str(&format!("# Diff base version: {}\n", base_version))?;
     }
-    text.write_str(&content.to_draft_string())?;
+    text.write_str(&draft.body())?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
         text.write_fmt(format_args!("# {}\n", line))?;
     }
     loop {
         text = edit_text_iteractively_until_writen_to(&text)?;
-        match proof::Content::parse_draft(content, &text) {
+        match content.apply_draft(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {}", e);
                 crev_common::try_again_or_cancel()?;

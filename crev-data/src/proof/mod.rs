@@ -17,6 +17,8 @@ pub mod trust;
 
 pub use self::{package_info::*, revision::*, trust::*};
 pub use crate::proof::content::Common as ContentCommon;
+pub use crate::proof::content::ContentDeserialize;
+pub use crate::proof::content::WithReview as ContentWithReview;
 pub use crate::proof::content::{Content, ContentExt, ContentWithDraft, Draft};
 pub use review::*;
 
@@ -30,25 +32,76 @@ pub type Date = chrono::DateTime<FixedOffset>;
 ///
 /// A signed proof containing some signed `Content`
 #[derive(Debug, Clone)]
-pub(crate) struct Proof {
+pub struct Proof {
     /// Serialized content
-    pub body: String,
+    body: String,
+
     /// Signature over the body
-    pub signature: String,
+    signature: String,
+
     /// Type of the `body` (`Content`)
-    pub type_name: String,
+    type_name: String,
 
     /// Common informations that should be in any  proof
-    pub common_content: ContentCommon,
+    common_content: ContentCommon,
 
-    /// Digest, lazily calculated
-    pub digest: Vec<u8>,
+    /// Digest
+    digest: Vec<u8>,
+}
+
+impl Proof {
+    pub fn from_parts(body: String, signature: String, type_name: String) -> Result<Self> {
+        let common_content = serde_yaml::from_str(&body)?;
+        let digest = crev_common::blake2b256sum(&body.as_bytes());
+        let signature = signature.trim().to_owned();
+        Ok(Self {
+            body,
+            signature,
+            type_name,
+            common_content,
+            digest,
+        })
+    }
+
+    pub fn body(&self) -> &str {
+        self.body.as_str()
+    }
+
+    pub fn signature(&self) -> &str {
+        self.signature.as_str()
+    }
+
+    pub fn type_name(&self) -> &str {
+        self.type_name.as_str()
+    }
+
+    pub fn digest(&self) -> &[u8] {
+        self.digest.as_slice()
+    }
+
+    pub fn parse_content<T: ContentDeserialize>(&self) -> Result<T> {
+        Ok(T::deserialize_from(self.body.as_bytes())?)
+    }
+
+    pub fn date(&self) -> &chrono::DateTime<chrono::offset::FixedOffset> {
+        &self.common_content.date
+    }
+
+    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
+        self.common_content.date_utc()
+    }
+
+    pub fn author_id(&self) -> &crate::Id {
+        self.common_content.author_id()
+    }
 }
 
 const PROOF_HEADER_PREFIX: &str = "-----BEGIN CREV ";
 const PROOF_HEADER_SUFFIX: &str = "-----";
-const PROOF_SIGNATURE_PREFIX: &str = "-----BEGIN CREV PACKAGE ";
-const PROOF_SIGNATURE_SUFFIX: &str = "-----";
+// There was a bug ... :D ... https://github.com/dpc/crev-proofs/blob/3ea7e440f1ed84f5a333741e71a90e2067fe9cfc/FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE/trust/2019-10-GkN7aw.proof.crev#L1
+const PROOF_HEADER_SUFFIX_ALT: &str = " -----";
+const PROOF_SIGNATURE_PREFIX: &str = "-----BEGIN CREV ";
+const PROOF_SIGNATURE_SUFFIX: &str = " SIGNATURE-----";
 const PROOF_FOOTER_PREFIX: &str = "-----END CREV ";
 const PROOF_FOOTER_SUFFIX: &str = "-----";
 
@@ -58,6 +111,12 @@ fn is_header_line(line: &str) -> Option<String> {
     if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX) {
         let type_name = &trimmed[PROOF_HEADER_PREFIX.len()..];
         let type_name = &type_name[..(type_name.len() - PROOF_HEADER_SUFFIX.len())];
+
+        Some(type_name.to_lowercase())
+    } else if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX_ALT)
+    {
+        let type_name = &trimmed[PROOF_HEADER_PREFIX.len()..];
+        let type_name = &type_name[..(type_name.len() - PROOF_HEADER_SUFFIX_ALT.len())];
 
         Some(type_name.to_lowercase())
     } else {
@@ -97,7 +156,7 @@ impl fmt::Display for Proof {
         f.write_fmt(format_args!(
             "{}{}{}",
             PROOF_HEADER_PREFIX, type_upper, PROOF_HEADER_SUFFIX
-        ));
+        ))?;
         f.write_str("\n")?;
         f.write_str(&self.body)?;
         f.write_fmt(format_args!(
@@ -118,7 +177,7 @@ impl fmt::Display for Proof {
 }
 
 impl Proof {
-    pub fn parse(reader: impl io::Read) -> Result<Vec<Self>> {
+    pub fn parse_from(reader: impl io::Read) -> Result<Vec<Self>> {
         let reader = std::io::BufReader::new(reader);
 
         #[derive(PartialEq, Eq)]
@@ -162,6 +221,7 @@ impl Proof {
                         if line.is_empty() {
                         } else if let Some(type_name) = is_header_line(line) {
                             self.type_name = Some(type_name);
+                            self.stage = Stage::Body;
                         } else {
                             bail!("Parsing error when looking for start of code review proof");
                         }
@@ -182,20 +242,16 @@ impl Proof {
                     }
                     Stage::Signature => {
                         if let Some(type_name) = is_footer_line(line) {
-                            if Some(type_name) != self.type_name {
+                            if Some(&type_name) != self.type_name.as_ref() {
                                 bail!("Parsing error: type name mismatch in the footer");
                             }
                             self.stage = Stage::None;
                             self.type_name = None;
-                            let common_content = serde_yaml::from_str(&self.body)?;
-                            let digest = crev_common::blake2b256sum(&self.body.as_bytes());
-                            self.proofs.push(Proof {
-                                body: mem::replace(&mut self.body, String::new()),
-                                signature: mem::replace(&mut self.signature, String::new()),
+                            self.proofs.push(Proof::from_parts(
+                                mem::replace(&mut self.body, String::new()),
+                                mem::replace(&mut self.signature, String::new()),
                                 type_name,
-                                common_content,
-                                digest,
-                            });
+                            )?);
                         } else {
                             self.signature += line;
                             self.signature += "\n";
@@ -225,16 +281,8 @@ impl Proof {
         state.finish()
     }
 
-    pub fn signature(&self) -> &str {
-        self.signature.trim()
-    }
-
-    pub fn digest(&self) -> &[u8] {
-        self.digest.as_slice()
-    }
-
     pub fn verify(&self) -> Result<()> {
-        let pubkey = self.common_content.from.id;
+        let pubkey = &self.common_content.from.id;
         pubkey.verify_signature(self.body.as_bytes(), self.signature())?;
 
         Ok(())

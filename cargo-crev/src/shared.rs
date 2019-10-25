@@ -1,7 +1,7 @@
 // Here are the structs and functions which still need to be sorted
 //
 use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
-use crev_data::proof;
+use crev_data::proof::{self, ContentExt};
 use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
 use failure::format_err;
 use insideout::InsideOutIter;
@@ -700,7 +700,7 @@ pub fn maybe_store(
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
     if proof_create_opt.print_unsigned {
-        print!("{}", proof.body);
+        print!("{}", proof.body());
     }
 
     if proof_create_opt.print_signed {

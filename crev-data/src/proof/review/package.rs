@@ -44,17 +44,22 @@ pub struct Package {
 
 impl PackageBuilder {
     pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
-        let mut new = self;
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            new.common = Some(proof::ContentCommon {
+            self.common = Some(proof::ContentCommon {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
             });
         }
-        new
+        self
+    }
+}
+
+impl proof::ContentWithReview for Package {
+    fn review(&self) -> &super::Review {
+        &self.review
     }
 }
 
@@ -88,7 +93,9 @@ impl From<Package> for Draft {
 }
 
 impl proof::Content for Package {
-    const TYPE_NAME: &'static str = "package review";
+    fn type_name(&self) -> &str {
+        "package review"
+    }
 
     fn common(&self) -> &ContentCommon {
         &self.common

@@ -1,6 +1,9 @@
 use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
 use crev_common::convert::OptionDeref;
-use crev_data::{proof, Digest};
+use crev_data::{
+    proof::{self, ContentExt},
+    Digest,
+};
 use failure::{bail, format_err, Fail};
 use git2;
 use serde::{Deserialize, Serialize};
@@ -151,7 +154,7 @@ impl Repo {
 
     pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
         // TODO: What about the merge conflicts, etc? https://github.com/dpc/crev/issues/153
-        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof.content, &[]));
+        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof, &[]));
         unimplemented!();
     }
 
@@ -261,7 +264,7 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review = util::edit_proof_content_iteractively(&review.into(), None, None)?;
+        let review = util::edit_proof_content_iteractively(&review, None, None)?;
 
         let proof = review.sign_by(&id)?;
 
@@ -290,7 +293,7 @@ impl Repo {
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        let review = util::edit_proof_content_iteractively(&review.into(), None, None)?;
+        let review = util::edit_proof_content_iteractively(&review, None, None)?;
 
         let proof = review.sign_by(&id)?;
 

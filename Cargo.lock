@@ -517,6 +517,7 @@ dependencies = [
  "git2 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ifmt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "insideout 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "miscreant 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "resiter 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",

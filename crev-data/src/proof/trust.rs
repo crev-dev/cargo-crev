@@ -77,22 +77,21 @@ pub struct Trust {
     pub trust: TrustLevel,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
-    comment: String,
+    pub comment: String,
 }
 
 impl TrustBuilder {
     pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
-        let mut new = self;
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            new.common = Some(proof::ContentCommon {
+            self.common = Some(proof::ContentCommon {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
             });
         }
-        new
+        self
     }
 }
 
@@ -126,7 +125,10 @@ impl fmt::Display for Draft {
 }
 
 impl proof::Content for Trust {
-    const TYPE_NAME: &'static str = "code review";
+    fn type_name(&self) -> &str {
+        "trust"
+    }
+
     fn common(&self) -> &proof::ContentCommon {
         &self.common
     }

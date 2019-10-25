@@ -31,6 +31,20 @@ pub struct Common {
     pub from: crate::PubId,
 }
 
+impl Common {
+    pub fn author_id(&self) -> &crate::Id {
+        &self.from.id
+    }
+
+    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
+        self.date.with_timezone(&Utc)
+    }
+}
+
+pub trait WithReview {
+    fn review(&self) -> &super::Review;
+}
+
 /// Proof Content
 ///
 /// `Content` is a standardized format of a crev proof body
@@ -39,11 +53,7 @@ pub struct Common {
 /// It is open-ended, and different software
 /// can implement their own formats.
 pub trait Content {
-    const TYPE_NAME: &'static str;
-
-    fn type_name(&self) -> &str {
-        &Self::TYPE_NAME
-    }
+    fn type_name(&self) -> &str;
 
     fn common(&self) -> &Common;
 
@@ -55,14 +65,36 @@ pub trait Content {
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()>;
 }
 
+pub trait ContentDeserialize: Content + Sized {
+    fn deserialize_from<IO>(io: IO) -> Result<Self>
+    where
+        IO: io::Read;
+}
+
+impl<T> ContentDeserialize for T
+where
+    T: serde::de::DeserializeOwned + Content + Sized,
+{
+    fn deserialize_from<IO>(io: IO) -> Result<Self>
+    where
+        IO: io::Read,
+    {
+        let s: Self = serde_yaml::from_reader(io)?;
+
+        s.validate_data()?;
+
+        Ok(s)
+    }
+}
+
 /// A Proof Content `Draft`
 ///
 /// A simplified version of content, used
 /// for user interaction - editing the parts
 /// that are not neccessary for the user to see.
 pub struct Draft {
-    title: String,
-    body: String,
+    pub(crate) title: String,
+    pub(crate) body: String,
 }
 
 impl Draft {
@@ -116,7 +148,7 @@ pub trait ContentExt: Content {
             type_name: self.type_name().to_owned(),
             common_content: self.common().to_owned(),
         };
-        let parsed = proof::Proof::parse(std::io::Cursor::new(proof.to_string().as_bytes()))?;
+        let parsed = proof::Proof::parse_from(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 
         if parsed.len() != 1 {
             bail!("Serialized to {} proofs", parsed.len());
@@ -125,6 +157,7 @@ pub trait ContentExt: Content {
         Ok(())
     }
 
+    /*
     fn deserialize_from<T>(io: &mut T) -> Result<Self>
     where
         T: io::Read,
@@ -137,6 +170,7 @@ pub trait ContentExt: Content {
 
         Ok(s)
     }
+    */
 }
 
 impl<T> ContentExt for T where T: Content {}
