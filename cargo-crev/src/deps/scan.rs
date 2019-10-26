@@ -13,6 +13,7 @@ use crate::{
 };
 use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
+use crev_data::proof::CommonOps;
 use crev_lib;
 use crossbeam::{
     self,
@@ -375,7 +376,7 @@ impl Scanner {
             digest,
             trusted_reviewers: version_reviews
                 .into_iter()
-                .map(|pkg_review| pkg_review.common.from.to_owned())
+                .map(|pkg_review| pkg_review.from().to_owned())
                 .filter(|id| {
                     self.trust_set.get_effective_trust_level(&id.id)
                         >= self.requirements.trust_level.into()
