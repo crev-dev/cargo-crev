@@ -63,6 +63,12 @@ impl proof::ContentWithReview for Package {
     }
 }
 
+impl proof::CommonOps for Package {
+    fn common(&self) -> &ContentCommon {
+        &self.common
+    }
+}
+
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Draft {

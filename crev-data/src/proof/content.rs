@@ -31,13 +31,30 @@ pub struct Common {
     pub from: crate::PubId,
 }
 
-impl Common {
-    pub fn author_id(&self) -> &crate::Id {
-        &self.from.id
+/// Common operations on types containing `Common`
+pub trait CommonOps {
+    fn common(&self) -> &Common;
+
+    fn from(&self) -> &crate::PubId {
+        &self.common().from
     }
 
-    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.date.with_timezone(&Utc)
+    fn date(&self) -> &chrono::DateTime<chrono::offset::FixedOffset> {
+        &self.common().date
+    }
+
+    fn date_utc(&self) -> chrono::DateTime<Utc> {
+        self.common().date_utc()
+    }
+
+    fn author_id(&self) -> &crate::Id {
+        self.common().author_id()
+    }
+}
+
+impl CommonOps for Common {
+    fn common(&self) -> &Common {
+        self
     }
 }
 
@@ -123,6 +140,10 @@ pub trait ContentExt: Content {
         let mut body = String::new();
         self.serialize_to(&mut body)?;
         Ok(body)
+    }
+
+    fn from(&self) -> &crate::PubId {
+        &self.common().from
     }
 
     fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {

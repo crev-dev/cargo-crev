@@ -17,8 +17,8 @@ pub mod trust;
 
 pub use self::{package_info::*, revision::*, trust::*};
 pub use crate::proof::content::Common as ContentCommon;
-pub use crate::proof::content::ContentDeserialize;
 pub use crate::proof::content::WithReview as ContentWithReview;
+pub use crate::proof::content::{CommonOps, ContentDeserialize};
 pub use crate::proof::content::{Content, ContentExt, ContentWithDraft, Draft};
 pub use review::*;
 
@@ -82,17 +82,11 @@ impl Proof {
     pub fn parse_content<T: ContentDeserialize>(&self) -> Result<T> {
         Ok(T::deserialize_from(self.body.as_bytes())?)
     }
+}
 
-    pub fn date(&self) -> &chrono::DateTime<chrono::offset::FixedOffset> {
-        &self.common_content.date
-    }
-
-    pub fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.common_content.date_utc()
-    }
-
-    pub fn author_id(&self) -> &crate::Id {
-        self.common_content.author_id()
+impl CommonOps for Proof {
+    fn common(&self) -> &ContentCommon {
+        &self.common_content
     }
 }
 

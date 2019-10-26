@@ -62,9 +62,16 @@ impl CodeBuilder {
         self
     }
 }
+
 impl fmt::Display for Code {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         crev_common::serde::write_as_headerless_yaml(self, f)
+    }
+}
+
+impl proof::CommonOps for Code {
+    fn common(&self) -> &proof::ContentCommon {
+        &self.common
     }
 }
 

@@ -1,4 +1,4 @@
-use crev_data::proof::{self};
+use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
 fn proof_store_names(proof: &proof::Proof) -> (&str, Option<&str>) {

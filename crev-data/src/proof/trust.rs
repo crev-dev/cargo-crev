@@ -101,6 +101,12 @@ impl fmt::Display for Trust {
     }
 }
 
+impl proof::CommonOps for Trust {
+    fn common(&self) -> &proof::ContentCommon {
+        &self.common
+    }
+}
+
 /// Like `Trust` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Draft {

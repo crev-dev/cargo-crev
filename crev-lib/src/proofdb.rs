@@ -7,7 +7,7 @@ use crev_data::{
         self,
         review::{self, Rating},
         trust::TrustLevel,
-        Content,
+        CommonOps, Content,
     },
     Digest, Id, Level, Url,
 };
@@ -51,17 +51,17 @@ type TimestampedReview = Timestamped<review::Review>;
 impl From<proof::Trust> for TimestampedTrustLevel {
     fn from(trust: proof::Trust) -> Self {
         TimestampedTrustLevel {
-            date: trust.common.date.with_timezone(&Utc),
+            date: trust.date_utc(),
             value: trust.trust,
         }
     }
 }
 
-impl<'a, T: proof::ContentWithReview + Content> From<&'a T> for TimestampedReview {
+impl<'a, T: proof::ContentWithReview + Content + CommonOps> From<&'a T> for TimestampedReview {
     fn from(review: &T) -> Self {
         TimestampedReview {
             value: review.review().to_owned(),
-            date: review.common().date.with_timezone(&Utc),
+            date: review.date_utc(),
         }
     }
 }
@@ -88,7 +88,7 @@ type TimestampedSignature = Timestamped<Signature>;
 impl From<review::Package> for PkgReviewId {
     fn from(review: review::Package) -> Self {
         PkgReviewId {
-            from: review.common.from.id,
+            from: review.from().id.clone(),
             source: review.package.source,
             name: review.package.name,
             version: review.package.version,
@@ -99,7 +99,7 @@ impl From<review::Package> for PkgReviewId {
 impl From<&review::Package> for PkgReviewId {
     fn from(review: &review::Package) -> Self {
         PkgReviewId {
-            from: review.common.from.id.to_owned(),
+            from: review.from().id.to_owned(),
             source: review.package.source.to_owned(),
             name: review.package.name.to_owned(),
             version: review.package.version.to_owned(),
@@ -283,7 +283,7 @@ impl ProofDB {
         id: &Id,
     ) -> Option<&proof::review::Package> {
         self.get_pkg_reviews_for_version(source, name, version)
-            .find(|pkg_review| pkg_review.common.from.id == *id)
+            .find(|pkg_review| pkg_review.from().id == *id)
     }
 
     pub fn get_advisories<'a, 'b, 'c: 'a, 'd: 'a>(
@@ -403,7 +403,7 @@ impl ProofDB {
         for (review, issue) in self
             .get_pkg_reviews_lte_version(source, name, queried_version)
             .filter(|review| {
-                let effective = trust_set.get_effective_trust_level(&review.common.from.id);
+                let effective = trust_set.get_effective_trust_level(&review.from().id);
                 effective >= trust_level_required
             })
             .flat_map(move |review| review.issues.iter().map(move |issue| (review, issue)))
@@ -433,7 +433,7 @@ impl ProofDB {
         for (review, advisory) in self
             .get_pkg_reviews_for_name(source, name)
             .filter(|review| {
-                let effective = trust_set.get_effective_trust_level(&review.common.from.id);
+                let effective = trust_set.get_effective_trust_level(&review.from().id);
                 effective >= trust_level_required
             })
             .flat_map(move |review| {
@@ -517,7 +517,7 @@ impl ProofDB {
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_for_name(source, name)
             .filter(move |review| {
-                let effective = trust_set.get_effective_trust_level(&review.common.from.id);
+                let effective = trust_set.get_effective_trust_level(&review.from().id);
                 effective >= trust_level_required
             })
             .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
@@ -531,7 +531,7 @@ impl ProofDB {
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_for_source(source)
             .filter(move |review| {
-                let effective = trust_set.get_effective_trust_level(&review.common.from.id);
+                let effective = trust_set.get_effective_trust_level(&review.from().id);
                 effective >= trust_level_required
             })
             .filter(|review| !review.issues.is_empty() || !review.advisories.is_empty())
@@ -548,24 +548,23 @@ impl ProofDB {
     }
 
     fn add_code_review(&mut self, review: &review::Code) {
-        let from = &review.common().from;
-        self.record_url_from_from_field(&review.common().date_utc(), &from);
+        let from = &review.from();
+        self.record_url_from_from_field(&review.date_utc(), &from);
         for _file in &review.files {
             // not implemented right now; just ignore
         }
     }
 
     fn add_package_review(&mut self, review: &review::Package, signature: &str) {
-        let from = &review.common().from;
-        self.record_url_from_from_field(&review.common().date_utc(), &from);
+        let from = &review.from();
+        self.record_url_from_from_field(&review.date_utc(), &from);
 
         self.package_review_by_signature
             .entry(signature.to_owned())
             .or_insert_with(|| review.to_owned());
 
         let pkg_review_id = PkgReviewId::from(review);
-        let timestamp_signature =
-            TimestampedSignature::from((&review.common.date, signature.to_owned()));
+        let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
 
         self.package_review_signatures_by_package_digest
             .entry(review.package.digest.to_owned())
@@ -627,7 +626,7 @@ impl ProofDB {
             .cloned()
             .collect();
 
-        proofs.sort_by(|a, b| a.common.date_utc().cmp(&b.common.date_utc()));
+        proofs.sort_by(|a, b| a.date_utc().cmp(&b.date_utc()));
 
         proofs
     }
@@ -643,13 +642,13 @@ impl ProofDB {
     }
 
     fn add_trust(&mut self, trust: &proof::Trust) {
-        let from = &trust.common.from;
-        self.record_url_from_from_field(&trust.common.date_utc(), &from);
+        let from = &trust.from();
+        self.record_url_from_from_field(&trust.date_utc(), &from);
         for to in &trust.ids {
-            self.add_trust_raw(&from.id, &to.id, trust.common.date_utc(), trust.trust);
+            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
         for to in &trust.ids {
-            self.record_url_from_to_field(&trust.common.date_utc(), &to)
+            self.record_url_from_to_field(&trust.date_utc(), &to)
         }
     }
 
@@ -706,7 +705,7 @@ impl ProofDB {
     ) -> VerificationStatus {
         let reviews: HashMap<Id, review::Package> = self
             .get_package_reviews_by_digest(digest)
-            .map(|review| (review.common().from.id.clone(), review))
+            .map(|review| (review.from().id.clone(), review))
             .collect();
         // Faster somehow maybe?
         let reviews_by: HashSet<Id, _> = reviews.keys().cloned().collect();
