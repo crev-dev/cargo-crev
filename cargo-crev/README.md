@@ -20,7 +20,7 @@
 
 ## Introduction
 
-[Crev](https://github.com/dpc/crev/) is a language and ecosystem agnostic, distributed **c**ode **rev**iew system.
+[Crev](https://github.com/crev-dev/crev/) is a language and ecosystem agnostic, distributed **c**ode **rev**iew system.
 
 `cargo-crev` is an implementation of Crev as a command line tool integrated with `cargo`. This tool helps Rust users evaluate the quality and trustworthiness of their package dependencies.
 
