@@ -1,20 +1,13 @@
-use crate::{id, proof, Level, Result};
-use chrono::{self, prelude::*};
-use crev_common::{
-    self, is_equal_default, is_vec_empty,
-    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
-};
+use crate::{proof, Level, Result};
+use crev_common::{self, is_equal_default, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
+use proof::Content;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{default::Default, fmt, mem};
 use typed_builder::TypedBuilder;
-
-const BEGIN_BLOCK: &str = "-----BEGIN CREV PACKAGE REVIEW-----";
-const BEGIN_SIGNATURE: &str = "-----BEGIN CREV PACKAGE REVIEW SIGNATURE-----";
-const END_BLOCK: &str = "-----END CREV PACKAGE REVIEW-----";
 
 const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
 
@@ -26,15 +19,8 @@ fn cur_version() -> i64 {
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Package {
-    #[builder(default = "cur_version()")]
-    version: i64,
-    #[builder(default = "crev_common::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    pub date: crate::proof::Date,
-    pub from: crate::PubId,
+    #[serde(flatten)]
+    pub common: proof::Common,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
@@ -55,20 +41,36 @@ pub struct Package {
     pub comment: String,
 }
 
-impl Package {
-    pub fn apply_draft(&self, draft: PackageDraft) -> Package {
-        let mut copy = self.clone();
-        copy.review = draft.review;
-        copy.comment = draft.comment;
-        copy.advisories = draft.advisories;
-        copy.issues = draft.issues;
-        copy
+impl PackageBuilder {
+    pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
+        if let Some(ref mut common) = self.common {
+            common.from = value.into();
+        } else {
+            self.common = Some(proof::Common {
+                version: cur_version(),
+                date: crev_common::now(),
+                from: value.into(),
+            });
+        }
+        self
+    }
+}
+
+impl proof::WithReview for Package {
+    fn review(&self) -> &super::Review {
+        &self.review
+    }
+}
+
+impl proof::CommonOps for Package {
+    fn common(&self) -> &proof::Common {
+        &self.common
     }
 }
 
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PackageDraft {
+pub struct Draft {
     review: super::Review,
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub advisories: Vec<Advisory>,
@@ -78,9 +80,15 @@ pub struct PackageDraft {
     comment: String,
 }
 
-impl From<Package> for PackageDraft {
+impl Draft {
+    pub fn parse(s: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(&s)?)
+    }
+}
+
+impl From<Package> for Draft {
     fn from(package: Package) -> Self {
-        PackageDraft {
+        Draft {
             review: package.review,
             advisories: package.advisories,
             issues: package.issues,
@@ -89,51 +97,12 @@ impl From<Package> for PackageDraft {
     }
 }
 
-impl Package {
-    pub(crate) const BEGIN_BLOCK: &'static str = BEGIN_BLOCK;
-    pub(crate) const BEGIN_SIGNATURE: &'static str = BEGIN_SIGNATURE;
-    pub(crate) const END_BLOCK: &'static str = END_BLOCK;
-}
-
-impl proof::ContentCommon for Package {
-    fn date(&self) -> &chrono::DateTime<FixedOffset> {
-        &self.date
+impl proof::Content for Package {
+    fn type_name(&self) -> &str {
+        "package review"
     }
 
-    fn set_date(&mut self, date: &chrono::DateTime<FixedOffset>) {
-        self.date = *date;
-    }
-
-    fn author(&self) -> &crate::PubId {
-        &self.from
-    }
-
-    fn set_author(&mut self, id: &crate::PubId) {
-        self.from = id.clone();
-    }
-
-    fn draft_title(&self) -> String {
-        format!(
-            "Package Review of {} {}",
-            self.package.name, self.package.version
-        )
-    }
-}
-
-impl super::Common for Package {
-    fn review(&self) -> &super::Review {
-        &self.review
-    }
-}
-
-impl Package {
-    pub fn parse(s: &str) -> Result<Self> {
-        let s: Self = serde_yaml::from_str(&s)?;
-        s.validate_data()?;
-        Ok(s)
-    }
-
-    pub fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> Result<()> {
         for issue in &self.issues {
             if issue.id.is_empty() {
                 bail!("Issues with an empty `id` field are not allowed");
@@ -154,10 +123,37 @@ impl Package {
         Ok(())
     }
 
-    pub fn sign_by(self, id: &id::OwnId) -> Result<proof::Proof> {
-        proof::Content::from(self).sign_by(id)
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
+        Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+    }
+}
+
+impl proof::ContentWithDraft for Package {
+    fn to_draft(&self) -> proof::Draft {
+        proof::Draft {
+            title: format!(
+                "Package Review of {} {}",
+                self.package.name, self.package.version
+            ),
+            body: Draft::from(self.clone()).to_string(),
+        }
     }
 
+    fn apply_draft(&self, s: &str) -> Result<Self> {
+        let draft = Draft::parse(&s)?;
+
+        let mut copy = self.clone();
+        copy.review = draft.review;
+        copy.comment = draft.comment;
+        copy.advisories = draft.advisories;
+        copy.issues = draft.issues;
+
+        copy.validate_data()?;
+        Ok(copy)
+    }
+}
+
+impl Package {
     pub fn is_advisory_for(&self, version: &Version) -> bool {
         for advisory in &self.advisories {
             if advisory.is_for_version_when_reported_in_version(version, &self.package.version) {
@@ -165,12 +161,6 @@ impl Package {
             }
         }
         false
-    }
-}
-
-impl PackageDraft {
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
     }
 }
 
@@ -197,7 +187,7 @@ impl fmt::Display for Package {
     }
 }
 
-impl fmt::Display for PackageDraft {
+impl fmt::Display for Draft {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Remove comment for manual formatting
         let mut clone = self.clone();

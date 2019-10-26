@@ -1,31 +1,26 @@
-use chrono::prelude::*;
-use crev_data::proof::Content;
+use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
-fn type_name(content: &Content) -> (&str, Option<&str>) {
-    match content {
-        Content::Trust(_) => ("trust", None),
-        Content::Code(_) => ("reviews", Some("code")),
-        Content::Package(_) => ("reviews", Some("packages")),
+fn proof_store_names(proof: &proof::Proof) -> (&str, Option<&str>) {
+    match proof.type_name() {
+        "code review" => ("reviews", Some("code")),
+        "package review" => ("reviews", Some("package")),
+        "trust" => ("trust", None),
+        _ => ("other", None),
     }
 }
-
 /// The path to use under package `.crev/`
-pub(crate) fn rel_package_path(content: &Content, host_salt: &[u8]) -> PathBuf {
+pub(crate) fn rel_package_path(content: &proof::Proof, host_salt: &[u8]) -> PathBuf {
     rel_store_path(content, host_salt)
 }
 
 /// The path to use under user store
-pub(crate) fn rel_store_path(content: &Content, host_salt: &[u8]) -> PathBuf {
-    let (type_name, type_subname) = type_name(content);
-    let date = content
-        .date()
-        .with_timezone(&Utc)
-        .format("%Y-%m")
-        .to_string();
-    let path = PathBuf::from(content.author_id().to_string()).join(type_name);
+pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf {
+    let (type_name, type_subname) = proof_store_names(proof);
+    let date = proof.date_utc().format("%Y-%m").to_string();
+    let path = PathBuf::from(proof.author_id().to_string()).join(type_name);
     let mut host_full_id = host_salt.to_vec();
-    host_full_id.append(&mut content.author_id().to_bytes());
+    host_full_id.append(&mut proof.author_id().to_bytes());
     let host_plus_id_digest = crev_common::blake2b256sum(&host_full_id);
 
     path.join(if let Some(type_subname) = type_subname {

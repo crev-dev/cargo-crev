@@ -19,6 +19,7 @@ pub mod doc;
 
 mod crates_io;
 mod deps;
+mod dyn_proof;
 mod opts;
 mod prelude;
 mod repo;
@@ -367,17 +368,24 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
                 let s = load_stdin_with_prompt()?;
-                let proofs = crev_data::proof::Proof::parse(s.as_slice())?;
+                let proofs = crev_data::proof::Proof::parse_from(s.as_slice())?;
                 let commit_msg = "Import proofs";
 
                 for proof in proofs {
-                    let mut content = proof.content;
-                    if args.reset_date {
-                        content.set_date(&crev_common::now());
+                    let now = crev_common::now();
+                    match self::dyn_proof::parse_dyn_content(&proof) {
+                        Ok(mut content) => {
+                            if args.reset_date {
+                                content.set_date(&now);
+                            }
+                            content.set_author(&id.as_pubid());
+                            let proof = content.sign_by(&id)?;
+                            maybe_store(&local, &proof, &commit_msg, &args.common)?;
+                        }
+                        Err(e) => {
+                            eprintln!("Ignoried unknwon proof - {}", e);
+                        }
                     }
-                    content.set_author(&id.as_pubid());
-                    let proof = content.sign_by(&id)?;
-                    maybe_store(&local, &proof, &commit_msg, &args.common)?;
                 }
             }
         },

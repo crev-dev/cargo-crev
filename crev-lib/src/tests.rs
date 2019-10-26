@@ -1,5 +1,6 @@
 use super::*;
 
+use crev_data::proof::ContentExt;
 use crev_data::{proof::trust::TrustLevel, Digest, Level, OwnId};
 use default::default;
 use semver::Version;
@@ -86,7 +87,7 @@ NtGu3z1Jtnj6wx8INBrVujcOPz61BiGmJS-UoAOe0XQutatFsEbgAcAo7rBvZz4Q-ccNXIFZtKnXhBDM
 -----END CREV PACKAGE REVIEW-----
 "#;
 
-    let proofs = crev_data::proof::Proof::parse(yaml.as_bytes())?;
+    let proofs = crev_data::proof::Proof::parse_from(yaml.as_bytes())?;
     assert_eq!(proofs.len(), 1);
 
     proofs[0].verify()?;

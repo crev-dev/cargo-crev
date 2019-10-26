@@ -474,7 +474,7 @@ impl Local {
 
     // Get path relative to `get_proofs_dir_path` to store the `proof`
     fn get_proof_rel_store_path(&self, proof: &proof::Proof, host_salt: &[u8]) -> PathBuf {
-        crate::proof::rel_store_path(&proof.content, host_salt)
+        crate::proof::rel_store_path(&proof, host_salt)
     }
 
     fn get_cur_url(&self) -> Result<Option<Url>> {
@@ -527,7 +527,7 @@ impl Local {
         from_id: &PubId,
         id_strings: Vec<String>,
         trust_or_distrust: TrustProofType,
-    ) -> Result<proof::Content> {
+    ) -> Result<proof::trust::Trust> {
         if id_strings.is_empty() {
             bail!("No ids given.");
         }
@@ -1008,7 +1008,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         });
 
     let proofs_iter = file_iter
-        .and_then_ok(|path| Ok(proof::Proof::parse_from(&path)?))
+        .and_then_ok(|path| Ok(proof::Proof::parse_from(std::fs::File::open(&path)?)?))
         .flatten_ok()
         .and_then_ok(|proof| {
             proof.verify()?;

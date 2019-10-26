@@ -99,7 +99,7 @@ impl MyTryFromBytes for Vec<u8> {
 /// This is how a lot of stuff in `Crev` is serialized
 pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
     t: &T,
-    f: &mut fmt::Formatter<'_>,
+    f: &mut dyn fmt::Write,
 ) -> fmt::Result {
     // TODO: Don't serialize to string, and instead serialize to writer
     let yaml_document = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;

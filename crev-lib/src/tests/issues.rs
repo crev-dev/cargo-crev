@@ -35,7 +35,7 @@ fn build_proof_with_advisories(
 ) -> proof::Proof {
     let package_info = proof::PackageInfo {
         id: None,
-        source: "SOURCE_ID".to_owned(),
+        source: SOURCE.into(),
         name: NAME.into(),
         version: version,
         digest: vec![0, 1, 2, 3],
@@ -51,9 +51,7 @@ fn build_proof_with_advisories(
         .build()
         .unwrap();
 
-    let proof = review.sign_by(&id).unwrap();
-
-    proof
+    review.sign_by(&id).unwrap()
 }
 
 fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> proof::Proof {
@@ -75,10 +73,9 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
         .build()
         .unwrap();
 
-    let proof = review.sign_by(&id).unwrap();
-
-    proof
+    review.sign_by(&id).unwrap()
 }
+
 #[test]
 fn advisories_sanity() -> Result<()> {
     let id = OwnId::generate_for_git_url("https://a");
@@ -89,29 +86,31 @@ fn advisories_sanity() -> Result<()> {
         vec![build_advisory("someid", VersionRange::Major)],
     );
 
-    let mut trustdb = ProofDB::new();
-    trustdb.import_from_iter(vec![proof].into_iter());
+    let mut proofdb = ProofDB::new();
+    proofdb.import_from_iter(vec![proof].into_iter());
+
+    assert_eq!(proofdb.get_pkg_reviews_for_source(SOURCE).count(), 1);
 
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.2").unwrap())
             .count(),
         1
     );
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.2.3").unwrap())
             .count(),
         0
     );
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
             .count(),
         0
     );
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
             .count(),
         0
@@ -122,22 +121,22 @@ fn advisories_sanity() -> Result<()> {
         vec![build_advisory("someid", VersionRange::All)],
     );
 
-    trustdb.import_from_iter(vec![proof].into_iter());
+    proofdb.import_from_iter(vec![proof].into_iter());
 
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("0.1.0").unwrap())
             .count(),
         1
     );
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("1.3.0").unwrap())
             .count(),
         0
     );
     assert_eq!(
-        trustdb
+        proofdb
             .get_advisories_for_version(SOURCE, NAME, &Version::parse("2.3.0").unwrap())
             .count(),
         0
