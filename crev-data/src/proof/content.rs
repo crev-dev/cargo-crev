@@ -44,7 +44,7 @@ pub trait CommonOps {
     }
 
     fn date_utc(&self) -> chrono::DateTime<Utc> {
-        self.common().date_utc()
+        self.date().with_timezone(&Utc)
     }
 
     fn author_id(&self) -> &crate::Id {
@@ -69,10 +69,8 @@ pub trait WithReview {
 ///
 /// It is open-ended, and different software
 /// can implement their own formats.
-pub trait Content {
+pub trait Content: CommonOps {
     fn type_name(&self) -> &str;
-
-    fn common(&self) -> &Common;
 
     fn validate_data(&self) -> Result<()> {
         // typically just OK
@@ -140,10 +138,6 @@ pub trait ContentExt: Content {
         let mut body = String::new();
         self.serialize_to(&mut body)?;
         Ok(body)
-    }
-
-    fn from(&self) -> &crate::PubId {
-        &self.common().from
     }
 
     fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {

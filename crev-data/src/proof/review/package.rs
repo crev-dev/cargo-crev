@@ -102,10 +102,6 @@ impl proof::Content for Package {
         "package review"
     }
 
-    fn common(&self) -> &proof::Common {
-        &self.common
-    }
-
     fn validate_data(&self) -> Result<()> {
         for issue in &self.issues {
             if issue.id.is_empty() {

@@ -102,15 +102,14 @@ const PROOF_FOOTER_SUFFIX: &str = "-----";
 fn is_header_line(line: &str) -> Option<String> {
     let trimmed = line.trim();
 
-    if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX) {
-        let type_name = &trimmed[PROOF_HEADER_PREFIX.len()..];
-        let type_name = &type_name[..(type_name.len() - PROOF_HEADER_SUFFIX.len())];
-
-        Some(type_name.to_lowercase())
-    } else if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX_ALT)
-    {
+    if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX_ALT) {
         let type_name = &trimmed[PROOF_HEADER_PREFIX.len()..];
         let type_name = &type_name[..(type_name.len() - PROOF_HEADER_SUFFIX_ALT.len())];
+
+        Some(type_name.to_lowercase())
+    } else if trimmed.starts_with(PROOF_HEADER_PREFIX) && trimmed.ends_with(PROOF_HEADER_SUFFIX) {
+        let type_name = &trimmed[PROOF_HEADER_PREFIX.len()..];
+        let type_name = &type_name[..(type_name.len() - PROOF_HEADER_SUFFIX.len())];
 
         Some(type_name.to_lowercase())
     } else {
@@ -276,7 +275,7 @@ impl Proof {
     }
 
     pub fn verify(&self) -> Result<()> {
-        let pubkey = &self.common_content.from.id;
+        let pubkey = &self.from().id;
         pubkey.verify_signature(self.body.as_bytes(), self.signature())?;
 
         Ok(())

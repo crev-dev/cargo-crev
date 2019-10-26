@@ -135,10 +135,6 @@ impl proof::Content for Trust {
         "trust"
     }
 
-    fn common(&self) -> &proof::Common {
-        &self.common
-    }
-
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
         Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
     }
