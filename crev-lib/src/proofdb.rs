@@ -57,7 +57,7 @@ impl From<proof::Trust> for TimestampedTrustLevel {
     }
 }
 
-impl<'a, T: proof::ContentWithReview + Content + CommonOps> From<&'a T> for TimestampedReview {
+impl<'a, T: proof::WithReview + Content + CommonOps> From<&'a T> for TimestampedReview {
     fn from(review: &T) -> Self {
         TimestampedReview {
             value: review.review().to_owned(),

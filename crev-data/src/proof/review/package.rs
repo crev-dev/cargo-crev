@@ -1,4 +1,3 @@
-use crate::proof::ContentCommon;
 use crate::{proof, Level, Result};
 use crev_common::{self, is_equal_default, is_vec_empty};
 use derive_builder::Builder;
@@ -21,7 +20,7 @@ fn cur_version() -> i64 {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Package {
     #[serde(flatten)]
-    pub common: ContentCommon,
+    pub common: proof::Common,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
@@ -47,7 +46,7 @@ impl PackageBuilder {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            self.common = Some(proof::ContentCommon {
+            self.common = Some(proof::Common {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -57,14 +56,14 @@ impl PackageBuilder {
     }
 }
 
-impl proof::ContentWithReview for Package {
+impl proof::WithReview for Package {
     fn review(&self) -> &super::Review {
         &self.review
     }
 }
 
 impl proof::CommonOps for Package {
-    fn common(&self) -> &ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 }
@@ -103,7 +102,7 @@ impl proof::Content for Package {
         "package review"
     }
 
-    fn common(&self) -> &ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 

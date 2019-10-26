@@ -177,21 +177,6 @@ pub trait ContentExt: Content {
 
         Ok(())
     }
-
-    /*
-    fn deserialize_from<T>(io: &mut T) -> Result<Self>
-    where
-        T: io::Read,
-        Self: Sized,
-        Self: serde::de::DeserializeOwned + Content,
-    {
-        let s: Self = serde_yaml::from_reader(io)?;
-
-        s.validate_data()?;
-
-        Ok(s)
-    }
-    */
 }
 
 impl<T> ContentExt for T where T: Content {}

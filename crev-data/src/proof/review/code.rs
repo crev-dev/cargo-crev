@@ -31,7 +31,7 @@ pub struct File {
 // TODO: https://github.com/colin-kiegel/rust-derive-builder/issues/136
 pub struct Code {
     #[serde(flatten)]
-    pub common: proof::ContentCommon,
+    pub common: proof::Common,
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
     #[serde(flatten)]
@@ -53,7 +53,7 @@ impl CodeBuilder {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            self.common = Some(proof::ContentCommon {
+            self.common = Some(proof::Common {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -70,7 +70,7 @@ impl fmt::Display for Code {
 }
 
 impl proof::CommonOps for Code {
-    fn common(&self) -> &proof::ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 }
@@ -98,7 +98,7 @@ impl From<Code> for Draft {
     }
 }
 
-impl proof::ContentWithReview for Code {
+impl proof::WithReview for Code {
     fn review(&self) -> &super::Review {
         &self.review
     }
@@ -109,7 +109,7 @@ impl proof::content::Content for Code {
         "code review"
     }
 
-    fn common(&self) -> &proof::ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 

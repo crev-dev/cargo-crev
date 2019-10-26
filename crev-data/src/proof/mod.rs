@@ -16,8 +16,8 @@ pub mod revision;
 pub mod trust;
 
 pub use self::{package_info::*, revision::*, trust::*};
-pub use crate::proof::content::Common as ContentCommon;
-pub use crate::proof::content::WithReview as ContentWithReview;
+pub use crate::proof::content::Common;
+pub use crate::proof::content::WithReview;
 pub use crate::proof::content::{CommonOps, ContentDeserialize};
 pub use crate::proof::content::{Content, ContentExt, ContentWithDraft, Draft};
 pub use review::*;
@@ -43,7 +43,7 @@ pub struct Proof {
     type_name: String,
 
     /// Common informations that should be in any  proof
-    common_content: ContentCommon,
+    common_content: Common,
 
     /// Digest
     digest: Vec<u8>,
@@ -85,7 +85,7 @@ impl Proof {
 }
 
 impl CommonOps for Proof {
-    fn common(&self) -> &ContentCommon {
+    fn common(&self) -> &Common {
         &self.common_content
     }
 }

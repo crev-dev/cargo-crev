@@ -71,7 +71,7 @@ impl TrustLevel {
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Trust {
     #[serde(flatten)]
-    pub common: proof::ContentCommon,
+    pub common: proof::Common,
     pub ids: Vec<crate::PubId>,
     #[builder(default = "Default::default()")]
     pub trust: TrustLevel,
@@ -85,7 +85,7 @@ impl TrustBuilder {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
-            self.common = Some(proof::ContentCommon {
+            self.common = Some(proof::Common {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -102,7 +102,7 @@ impl fmt::Display for Trust {
 }
 
 impl proof::CommonOps for Trust {
-    fn common(&self) -> &proof::ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 }
@@ -135,7 +135,7 @@ impl proof::Content for Trust {
         "trust"
     }
 
-    fn common(&self) -> &proof::ContentCommon {
+    fn common(&self) -> &proof::Common {
         &self.common
     }
 
