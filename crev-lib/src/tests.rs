@@ -1,7 +1,9 @@
 use super::*;
 
-use crev_data::proof::ContentExt;
-use crev_data::{proof::trust::TrustLevel, Digest, Level, OwnId};
+use crev_data::{
+    proof::{trust::TrustLevel, ContentExt},
+    Digest, Level, OwnId,
+};
 use default::default;
 use semver::Version;
 use std::str::FromStr;

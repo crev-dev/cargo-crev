@@ -9,8 +9,7 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::io::BufRead;
-use std::path::PathBuf;
+use std::{io::BufRead, path::PathBuf};
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -31,8 +30,10 @@ mod tui;
 
 use crate::{repo::*, review::*, shared::*};
 use crev_data::Id;
-use crev_lib::proofdb::{ProofDB, TrustSet};
-use crev_lib::TrustProofType::{self, *};
+use crev_lib::{
+    proofdb::{ProofDB, TrustSet},
+    TrustProofType::{self, *},
+};
 
 fn print_ids<'a>(
     ids: impl Iterator<Item = &'a Id>,

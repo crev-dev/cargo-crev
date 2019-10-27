@@ -1,9 +1,7 @@
 use chrono::{self, prelude::*};
 use failure::bail;
 
-use crate::proof;
-use crate::proof::Proof;
-use crate::Result;
+use crate::{proof, proof::Proof, Result};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},

@@ -1,6 +1,8 @@
-use crate::proof::{self, Content};
-use crate::{Level, Result};
-use crev_common::{self};
+use crate::{
+    proof::{self, Content},
+    Level, Result,
+};
+use crev_common::self;
 use derive_builder::Builder;
 use failure::bail;
 use serde::{Deserialize, Serialize};

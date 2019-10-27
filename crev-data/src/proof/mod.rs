@@ -16,10 +16,9 @@ pub mod revision;
 pub mod trust;
 
 pub use self::{package_info::*, revision::*, trust::*};
-pub use crate::proof::content::Common;
-pub use crate::proof::content::WithReview;
-pub use crate::proof::content::{CommonOps, ContentDeserialize};
-pub use crate::proof::content::{Content, ContentExt, ContentWithDraft, Draft};
+pub use crate::proof::content::{
+    Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
+};
 pub use review::*;
 
 use crate::Result;

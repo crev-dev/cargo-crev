@@ -1,5 +1,4 @@
-use crate::proof::ContentExt;
-use crate::{proof, Result, Url};
+use crate::{proof, proof::ContentExt, Result, Url};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},

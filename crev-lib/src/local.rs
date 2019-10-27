@@ -1,9 +1,8 @@
-use crate::TrustProofType;
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
     prelude::*,
-    util, ProofDB, ProofStore,
+    util, ProofDB, ProofStore, TrustProofType,
 };
 use crev_common::{
     self, sanitize_name_for_fs, sanitize_url_for_fs,
