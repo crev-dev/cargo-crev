@@ -1,13 +1,17 @@
 use common_failures::Result;
+use crev_data::proof::CommonOps;
 use crev_data::{
     proof::{self, ContentExt},
     OwnId, PubId,
 };
+use failure::bail;
 
 pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {
-    Ok(match proof.type_name() {
-        "code review" => Box::new(proof.parse_content::<proof::review::Code>()?),
-        _ => unimplemented!(),
+    Ok(match proof.kind() {
+        proof::CodeReview::KIND => Box::new(proof.parse_content::<proof::review::Code>()?),
+        proof::PackageReview::KIND => Box::new(proof.parse_content::<proof::review::Package>()?),
+        proof::Trust::KIND => Box::new(proof.parse_content::<proof::Trust>()?),
+        kind => bail!("Unsupported proof kind: {}", kind),
     })
 }
 

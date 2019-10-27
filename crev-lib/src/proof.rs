@@ -2,10 +2,10 @@ use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
 fn proof_store_names(proof: &proof::Proof) -> (&str, Option<&str>) {
-    match proof.type_name() {
-        "code review" => ("reviews", Some("code")),
-        "package review" => ("reviews", Some("package")),
-        "trust" => ("trust", None),
+    match proof.kind() {
+        proof::CodeReview::KIND => ("reviews", Some("code")),
+        proof::PackageReview::KIND => ("reviews", Some("package")),
+        proof::Trust::KIND => ("trust", None),
         _ => ("other", None),
     }
 }

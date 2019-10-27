@@ -2,7 +2,7 @@ use crate::{proof, Level, Result};
 use crev_common::{self, is_equal_default, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
-use proof::Content;
+use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
@@ -47,6 +47,7 @@ impl PackageBuilder {
             common.from = value.into();
         } else {
             self.common = Some(proof::Common {
+                kind: Package::KIND.into(),
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -98,11 +99,8 @@ impl From<Package> for Draft {
 }
 
 impl proof::Content for Package {
-    fn type_name(&self) -> &str {
-        "package review"
-    }
-
     fn validate_data(&self) -> Result<()> {
+        self.ensure_kind_is(Self::KIND)?;
         for issue in &self.issues {
             if issue.id.is_empty() {
                 bail!("Issues with an empty `id` field are not allowed");
@@ -154,6 +152,8 @@ impl proof::ContentWithDraft for Package {
 }
 
 impl Package {
+    pub const KIND: &'static str = "package review";
+
     pub fn is_advisory_for(&self, version: &Version) -> bool {
         for advisory in &self.advisories {
             if advisory.is_for_version_when_reported_in_version(version, &self.package.version) {

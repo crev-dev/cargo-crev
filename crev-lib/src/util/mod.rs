@@ -82,10 +82,10 @@ pub fn edit_file(path: &Path) -> Result<()> {
 }
 
 pub fn get_documentation_for(content: &impl proof::Content) -> &'static str {
-    match content.type_name() {
-        "trust" => include_str!("../../rc/doc/editing-trust.md"),
-        "code review" => include_str!("../../rc/doc/editing-code-review.md"),
-        "package review" => include_str!("../../rc/doc/editing-package-review.md"),
+    match content.kind() {
+        proof::Trust::KIND => include_str!("../../rc/doc/editing-trust.md"),
+        proof::CodeReview::KIND => include_str!("../../rc/doc/editing-code-review.md"),
+        proof::PackageReview::KIND => include_str!("../../rc/doc/editing-package-review.md"),
         _ => "unknown proof type",
     }
 }

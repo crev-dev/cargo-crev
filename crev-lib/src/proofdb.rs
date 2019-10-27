@@ -784,10 +784,12 @@ impl ProofDB {
         proof
             .verify()
             .expect("All proofs were supposed to be valid here");
-        match proof.type_name() {
-            "code review" => self.add_code_review(&proof.parse_content()?),
-            "package review" => self.add_package_review(&proof.parse_content()?, proof.signature()),
-            "trust" => self.add_trust(&proof.parse_content()?),
+        match proof.kind() {
+            proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?),
+            proof::PackageReview::KIND => {
+                self.add_package_review(&proof.parse_content()?, proof.signature())
+            }
+            proof::Trust::KIND => self.add_trust(&proof.parse_content()?),
             other => bail!("Unknown proof type: {}", other),
         }
 

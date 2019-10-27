@@ -15,6 +15,7 @@ pub type Date = chrono::DateTime<FixedOffset>;
 /// A `Common` part of every `Content` format
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 pub struct Common {
+    pub kind: String,
     /// A version, to allow future backward-incompatible extensions
     /// and changes.
     pub version: i64,
@@ -29,9 +30,44 @@ pub struct Common {
     pub from: crate::PubId,
 }
 
+/// Legacy version of `Common` where `kind` wasn't there
+///
+/// Used only to parse old versions of proofs and convert
+/// them to new version.
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+pub struct LegacyCommon {
+    pub version: i64,
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    pub date: chrono::DateTime<FixedOffset>,
+    pub from: crate::PubId,
+}
+
+impl LegacyCommon {
+    pub fn into_common(self, kind: String) -> Common {
+        let Self {
+            version,
+            date,
+            from,
+        } = self;
+        Common {
+            kind,
+            version,
+            date,
+            from,
+        }
+    }
+}
+
 /// Common operations on types containing `Common`
 pub trait CommonOps {
     fn common(&self) -> &Common;
+
+    fn kind(&self) -> &str {
+        &self.common().kind
+    }
 
     fn from(&self) -> &crate::PubId {
         &self.common().from
@@ -47,6 +83,13 @@ pub trait CommonOps {
 
     fn author_id(&self) -> &crate::Id {
         self.common().author_id()
+    }
+
+    fn ensure_kind_is(&self, kind: &str) -> Result<()> {
+        if self.kind() != kind {
+            bail!("Invalid kind: {}, expected: {}", self.kind(), kind);
+        }
+        Ok(())
     }
 }
 
@@ -68,8 +111,6 @@ pub trait WithReview {
 /// It is open-ended, and different software
 /// can implement their own formats.
 pub trait Content: CommonOps {
-    fn type_name(&self) -> &str;
-
     fn validate_data(&self) -> Result<()> {
         // typically just OK
         Ok(())
@@ -146,7 +187,6 @@ pub trait ContentExt: Content {
             body,
             signature: crev_common::base64_encode(&signature),
             common_content: self.common().clone(),
-            type_name: self.type_name().to_owned(),
         })
     }
 
@@ -158,7 +198,6 @@ pub trait ContentExt: Content {
             digest: crev_common::blake2b256sum(&body.as_bytes()),
             body,
             signature: crev_common::base64_encode(&signature),
-            type_name: self.type_name().to_owned(),
             common_content: self.common().to_owned(),
         };
         let parsed = proof::Proof::parse_from(std::io::Cursor::new(proof.to_string().as_bytes()))?;

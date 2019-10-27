@@ -4,7 +4,7 @@ use crev_common::{
     serde::{as_base64, from_base64},
 };
 use derive_builder::Builder;
-use proof::Content;
+use proof::{CommonOps, Content};
 use serde::{Deserialize, Serialize};
 use std::{self, default::Default, fmt, path::PathBuf};
 
@@ -50,12 +50,17 @@ pub struct Code {
     pub files: Vec<File>,
 }
 
+impl Code {
+    pub const KIND: &'static str = "code review";
+}
+
 impl CodeBuilder {
     pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {
             self.common = Some(proof::Common {
+                kind: Code::KIND.into(),
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -107,10 +112,10 @@ impl proof::WithReview for Code {
 }
 
 impl proof::content::Content for Code {
-    fn type_name(&self) -> &str {
-        "code review"
+    fn validate_data(&self) -> Result<()> {
+        self.ensure_kind_is(Code::KIND)?;
+        Ok(())
     }
-
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
         Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
     }

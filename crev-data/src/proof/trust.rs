@@ -2,7 +2,7 @@ use crate::{
     proof::{self, Content},
     Level, Result,
 };
-use crev_common::self;
+use crev_common;
 use derive_builder::Builder;
 use failure::bail;
 use serde::{Deserialize, Serialize};
@@ -88,6 +88,7 @@ impl TrustBuilder {
             common.from = value.into();
         } else {
             self.common = Some(proof::Common {
+                kind: Trust::KIND.into(),
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -107,6 +108,10 @@ impl proof::CommonOps for Trust {
     fn common(&self) -> &proof::Common {
         &self.common
     }
+}
+
+impl Trust {
+    pub const KIND: &'static str = "trust";
 }
 
 /// Like `Trust` but serializes for interactive editing
@@ -133,10 +138,6 @@ impl fmt::Display for Draft {
 }
 
 impl proof::Content for Trust {
-    fn type_name(&self) -> &str {
-        "trust"
-    }
-
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
         Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
     }

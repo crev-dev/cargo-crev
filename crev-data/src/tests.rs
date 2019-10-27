@@ -209,11 +209,7 @@ pub fn sign_proof_review() -> Result<()> {
 pub fn verify_works() -> Result<()> {
     let (_id, proof) = generate_id_and_proof()?;
 
-    let proof = Proof::from_parts(
-        proof.body().to_owned() + "\n",
-        proof.signature().to_owned(),
-        proof.type_name().to_owned(),
-    )?;
+    let proof = Proof::from_parts(proof.body().to_owned() + "\n", proof.signature().to_owned())?;
 
     assert!(proof.verify().is_err());
 
