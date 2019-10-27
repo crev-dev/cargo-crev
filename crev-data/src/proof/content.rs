@@ -12,61 +12,17 @@ use std::io;
 
 pub type Date = chrono::DateTime<FixedOffset>;
 
-/// A `Common` part of every `Content` format
-#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
-pub struct Common {
-    pub kind: String,
-    /// A version, to allow future backward-incompatible extensions
-    /// and changes.
-    pub version: i64,
-    #[builder(default = "crev_common::now()")]
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    /// Timestamp of proof creation
-    pub date: chrono::DateTime<FixedOffset>,
-    /// Author of the proof
-    pub from: crate::PubId,
-}
-
-/// Legacy version of `Common` where `kind` wasn't there
-///
-/// Used only to parse old versions of proofs and convert
-/// them to new version.
-#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
-pub struct LegacyCommon {
-    pub version: i64,
-    #[serde(
-        serialize_with = "as_rfc3339_fixed",
-        deserialize_with = "from_rfc3339_fixed"
-    )]
-    pub date: chrono::DateTime<FixedOffset>,
-    pub from: crate::PubId,
-}
-
-impl LegacyCommon {
-    pub fn into_common(self, kind: String) -> Common {
-        let Self {
-            version,
-            date,
-            from,
-        } = self;
-        Common {
-            kind,
-            version,
-            date,
-            from,
-        }
-    }
-}
-
 /// Common operations on types containing `Common`
 pub trait CommonOps {
+    // until we support legacy, we have to stick to `Common` here
     fn common(&self) -> &Common;
 
     fn kind(&self) -> &str {
-        &self.common().kind
+        &self
+            .common()
+            .kind
+            .as_ref()
+            .expect("Common types are expected to always have the `kind` field backfilled")
     }
 
     fn from(&self) -> &crate::PubId {
@@ -91,6 +47,24 @@ pub trait CommonOps {
         }
         Ok(())
     }
+}
+
+/// A `Common` part of every `Content` format
+#[derive(Clone, Builder, Debug, Serialize, Deserialize)]
+pub struct Common {
+    pub kind: Option<String>,
+    /// A version, to allow future backward-incompatible extensions
+    /// and changes.
+    pub version: i64,
+    #[builder(default = "crev_common::now()")]
+    #[serde(
+        serialize_with = "as_rfc3339_fixed",
+        deserialize_with = "from_rfc3339_fixed"
+    )]
+    /// Timestamp of proof creation
+    pub date: chrono::DateTime<FixedOffset>,
+    /// Author of the proof
+    pub from: crate::PubId,
 }
 
 impl CommonOps for Common {

@@ -60,7 +60,7 @@ impl CodeBuilder {
             common.from = value.into();
         } else {
             self.common = Some(proof::Common {
-                kind: Code::KIND.into(),
+                kind: Some(Code::KIND.into()),
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -79,6 +79,15 @@ impl fmt::Display for Code {
 impl proof::CommonOps for Code {
     fn common(&self) -> &proof::Common {
         &self.common
+    }
+
+    fn kind(&self) -> &str {
+        // Backfill the `kind` if it is empty (legacy format)
+        self.common
+            .kind
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or(Self::KIND)
     }
 }
 
@@ -116,8 +125,16 @@ impl proof::content::Content for Code {
         self.ensure_kind_is(Code::KIND)?;
         Ok(())
     }
+
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        if self.common.kind.is_none() {
+            // backfill during serialization
+            let mut copy = self.clone();
+            copy.common.kind = Some(Self::KIND.into());
+            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        } else {
+            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        }
     }
 }
 

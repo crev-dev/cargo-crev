@@ -1,5 +1,5 @@
 use crate::{
-    proof::{self, Content},
+    proof::{self, CommonOps, Content},
     Level, Result,
 };
 use crev_common;
@@ -88,7 +88,7 @@ impl TrustBuilder {
             common.from = value.into();
         } else {
             self.common = Some(proof::Common {
-                kind: Trust::KIND.into(),
+                kind: Some(Trust::KIND.into()),
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
@@ -107,6 +107,15 @@ impl fmt::Display for Trust {
 impl proof::CommonOps for Trust {
     fn common(&self) -> &proof::Common {
         &self.common
+    }
+
+    fn kind(&self) -> &str {
+        // Backfill the `kind` if it is empty (legacy format)
+        self.common
+            .kind
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or(Self::KIND)
     }
 }
 
@@ -139,7 +148,19 @@ impl fmt::Display for Draft {
 
 impl proof::Content for Trust {
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        if self.common.kind.is_none() {
+            // backfill during serialization
+            let mut copy = self.clone();
+            copy.common.kind = Some(Self::KIND.into());
+            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        } else {
+            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        }
+    }
+
+    fn validate_data(&self) -> Result<()> {
+        self.ensure_kind_is(Self::KIND)?;
+        Ok(())
     }
 }
 

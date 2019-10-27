@@ -50,7 +50,10 @@ pub struct Proof {
 
 impl Proof {
     pub fn from_parts(body: String, signature: String) -> Result<Self> {
-        let common_content = serde_yaml::from_str(&body)?;
+        let common_content: Common = serde_yaml::from_str(&body)?;
+        if common_content.kind.is_none() {
+            bail!("`kind` field missing");
+        }
         let digest = crev_common::blake2b256sum(&body.as_bytes());
         let signature = signature.trim().to_owned();
         Ok(Self {
@@ -63,13 +66,18 @@ impl Proof {
 
     pub fn from_legacy_parts(body: String, signature: String, type_name: String) -> Result<Self> {
         #[allow(deprecated)]
-        let legacy_common_content: content::LegacyCommon = serde_yaml::from_str(&body)?;
+        let mut legacy_common_content: content::Common = serde_yaml::from_str(&body)?;
+        if let Some(kind) = legacy_common_content.kind {
+            bail!("Unexpected `kind` value in a legacy format: {}", kind);
+        }
+
+        legacy_common_content.kind = Some(type_name);
         let digest = crev_common::blake2b256sum(&body.as_bytes());
         let signature = signature.trim().to_owned();
         Ok(Self {
             body,
             signature,
-            common_content: legacy_common_content.into_common(type_name),
+            common_content: legacy_common_content,
             digest,
         })
     }
