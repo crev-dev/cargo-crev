@@ -118,6 +118,7 @@ pub struct AccumulativeCrateDetails {
     pub loc: Option<usize>,
     pub geiger_count: Option<u64>,
     pub has_custom_build: bool,
+    pub is_unmaintained: bool,
     pub owner_set: OwnerSetSet,
 }
 
@@ -143,6 +144,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
             loc: sum_options(self.loc, other.loc),
             geiger_count: sum_options(self.geiger_count, other.geiger_count),
             has_custom_build: self.has_custom_build || other.has_custom_build,
+            is_unmaintained: self.is_unmaintained || other.is_unmaintained,
             owner_set: self.owner_set + other.owner_set,
         }
     }
@@ -238,6 +240,14 @@ impl CrateStats {
             .map(|a| a.has_custom_build)
     }
 
+    pub fn is_unmaintained(&self) -> Option<bool> {
+        self.details
+            .as_ref()
+            .ok()
+            .and_then(|d| d.as_ref())
+            .map(|d| &d.accumulative)
+            .map(|a| a.is_unmaintained)
+    }
     pub fn details(&self) -> Option<&CrateDetails> {
         if let Ok(Some(ref details)) = self.details {
             Some(details)

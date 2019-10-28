@@ -1,11 +1,12 @@
 use crate::{proof, Level, Result};
-use crev_common::{self, is_equal_default, is_vec_empty};
+use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
+use std::collections::HashSet;
 use std::{default::Default, fmt, mem};
 use typed_builder::TypedBuilder;
 
@@ -13,6 +14,35 @@ const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
 
 fn cur_version() -> i64 {
     CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION
+}
+
+/// Possible flags to mark on the package
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct Flags {
+    #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
+    pub unmaintained: bool,
+}
+
+impl From<FlagsDraft> for Flags {
+    fn from(flags: FlagsDraft) -> Self {
+        Self {
+            unmaintained: flags.unmaintained,
+        }
+    }
+}
+/// Like `Flags` but serializes all fields every time
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct FlagsDraft {
+    #[serde(default = "Default::default")]
+    unmaintained: bool,
+}
+
+impl From<Flags> for FlagsDraft {
+    fn from(flags: Flags) -> Self {
+        Self {
+            unmaintained: flags.unmaintained,
+        }
+    }
 }
 
 /// Body of a Package Review Proof
@@ -36,12 +66,15 @@ pub struct Package {
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
     pub advisories: Vec<Advisory>,
+    #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
+    #[builder(default = "Default::default()")]
+    pub flags: Flags,
+    #[builder(default = "Default::default()")]
+    #[serde(skip_serializing_if = "is_set_empty", default = "Default::default")]
+    pub alternatives: HashSet<proof::PackageId>,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
-    #[builder(default = "Default::default()")]
-    #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
-    pub alternatives: Vec<proof::PackageId>,
 }
 
 impl PackageBuilder {
@@ -84,6 +117,7 @@ impl proof::CommonOps for Package {
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Draft {
+    #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
     review: super::Review,
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub advisories: Vec<Advisory>,
@@ -91,8 +125,10 @@ pub struct Draft {
     pub issues: Vec<Issue>,
     #[serde(default = "Default::default", skip_serializing_if = "String::is_empty")]
     comment: String,
-    #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
-    pub alternatives: Vec<proof::PackageId>,
+    #[serde(default = "Default::default")]
+    pub flags: FlagsDraft,
+    #[serde(default = "Default::default", skip_serializing_if = "is_set_empty")]
+    pub alternatives: HashSet<proof::PackageId>,
 }
 
 impl Draft {
@@ -108,7 +144,19 @@ impl From<Package> for Draft {
             advisories: package.advisories,
             issues: package.issues,
             comment: package.comment,
-            alternatives: package.alternatives,
+            alternatives: if package.alternatives.is_empty() {
+                // To give user a convenient template, we pre-fill with the same `source`,
+                // and an empty `name`. If undedited, this entry will be deleted on parsing.
+                vec![proof::PackageId {
+                    source: package.package.id.id.source,
+                    name: "".into(),
+                }]
+                .into_iter()
+                .collect()
+            } else {
+                package.alternatives
+            },
+            flags: package.flags.into(),
         }
     }
 }
@@ -181,6 +229,7 @@ impl proof::ContentWithDraft for Package {
             .into_iter()
             .filter(|a| !a.name.is_empty())
             .collect();
+        package.flags = draft.flags.into();
 
         package.validate_data()?;
         Ok(package)

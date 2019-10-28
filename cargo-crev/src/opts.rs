@@ -548,6 +548,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
 - geiger     - Geiger score: number of `unsafe` lines
 - flgs       - Flags for specific types of packages
   - CB         - Custom Build
+  - UM         - Crate Unmaintained
 - name       - Crate name
 - version    - Crate version
 - latest_t   - Latest trusted version"

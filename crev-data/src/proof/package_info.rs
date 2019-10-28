@@ -5,13 +5,13 @@ use derive_builder::Builder;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Hash, Eq)]
 pub struct PackageId {
     pub source: String,
     pub name: String,
 }
 
-#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Hash, Eq)]
 pub struct PackageVersionId {
     #[serde(flatten)]
     pub id: PackageId,

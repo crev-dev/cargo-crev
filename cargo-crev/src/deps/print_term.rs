@@ -139,10 +139,19 @@ pub fn print_dep(
             }
             term.print(
                 format_args!(
-                    " {:4}",
+                    " {:2}{:2}",
                     if let Some(has_custom_build) = stats.has_custom_build() {
                         if has_custom_build {
                             "CB"
+                        } else {
+                            ""
+                        }
+                    } else {
+                        "?"
+                    },
+                    if let Some(is_unmaintained) = stats.is_unmaintained() {
+                        if is_unmaintained {
+                            "UM"
                         } else {
                             ""
                         }

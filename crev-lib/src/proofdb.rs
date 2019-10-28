@@ -43,10 +43,25 @@ impl<T> Timestamped<T> {
     }
 }
 
+impl<T, Tz> From<(&DateTime<Tz>, T)> for Timestamped<T>
+where
+    Tz: chrono::TimeZone,
+{
+    fn from(from: (&DateTime<Tz>, T)) -> Self {
+        Timestamped {
+            date: from.0.with_timezone(&Utc),
+            value: from.1,
+        }
+    }
+}
+
 pub type Signature = String;
 type TimestampedUrl = Timestamped<Url>;
 type TimestampedTrustLevel = Timestamped<TrustLevel>;
 type TimestampedReview = Timestamped<review::Review>;
+type TimestampedSignature = Timestamped<Signature>;
+type TimestampedAlternatives = Timestamped<HashSet<proof::PackageId>>;
+type TimestampedFlags = Timestamped<proof::Flags>;
 
 impl From<proof::Trust> for TimestampedTrustLevel {
     fn from(trust: proof::Trust) -> Self {
@@ -76,22 +91,39 @@ impl<'a, T: proof::WithReview + Content + CommonOps> From<&'a T> for Timestamped
 /// * pkg name
 /// * pkg version
 #[derive(Hash, Debug, Clone, PartialEq, Eq)]
-pub struct PkgReviewId {
+pub struct PkgVersionReviewId {
     from: Id,
-    source: String,
-    name: String,
-    version: Version,
+    package_version_id: proof::PackageVersionId,
 }
 
-type TimestampedSignature = Timestamped<Signature>;
+impl From<review::Package> for PkgVersionReviewId {
+    fn from(review: review::Package) -> Self {
+        PkgVersionReviewId {
+            from: review.from().id.clone(),
+            package_version_id: review.package.id,
+        }
+    }
+}
 
+impl From<&review::Package> for PkgVersionReviewId {
+    fn from(review: &review::Package) -> Self {
+        PkgVersionReviewId {
+            from: review.from().id.to_owned(),
+            package_version_id: review.package.id.clone(),
+        }
+    }
+}
+
+#[derive(Hash, Debug, Clone, PartialEq, Eq)]
+pub struct PkgReviewId {
+    from: Id,
+    package_id: proof::PackageId,
+}
 impl From<review::Package> for PkgReviewId {
     fn from(review: review::Package) -> Self {
         PkgReviewId {
             from: review.from().id.clone(),
-            source: review.package.id.id.source,
-            name: review.package.id.id.name,
-            version: review.package.id.version,
+            package_id: review.package.id.id,
         }
     }
 }
@@ -100,21 +132,7 @@ impl From<&review::Package> for PkgReviewId {
     fn from(review: &review::Package) -> Self {
         PkgReviewId {
             from: review.from().id.to_owned(),
-            source: review.package.id.id.source.to_owned(),
-            name: review.package.id.id.name.to_owned(),
-            version: review.package.id.version.to_owned(),
-        }
-    }
-}
-
-impl<Tz> From<(&DateTime<Tz>, String)> for TimestampedSignature
-where
-    Tz: chrono::TimeZone,
-{
-    fn from(args: (&DateTime<Tz>, String)) -> Self {
-        Self {
-            date: args.0.with_timezone(&Utc),
-            value: args.1,
+            package_id: review.package.id.id.clone(),
         }
     }
 }
@@ -142,11 +160,15 @@ pub struct ProofDB {
 
     // we can get the to the review through the signature from these two
     package_review_signatures_by_package_digest:
-        HashMap<Vec<u8>, HashMap<PkgReviewId, TimestampedSignature>>,
-    package_review_signatures_by_pkg_review_id: HashMap<PkgReviewId, TimestampedSignature>,
+        HashMap<Vec<u8>, HashMap<PkgVersionReviewId, TimestampedSignature>>,
+    package_review_signatures_by_pkg_review_id: HashMap<PkgVersionReviewId, TimestampedSignature>,
 
     // pkg_review_id by package information, nicely grouped
-    package_reviews: BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgReviewId>>>>,
+    package_reviews:
+        BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
+
+    package_alternatives: HashMap<proof::PackageId, HashMap<Id, TimestampedAlternatives>>,
+    package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
 }
 
 impl Default for ProofDB {
@@ -159,6 +181,8 @@ impl Default for ProofDB {
             package_review_signatures_by_pkg_review_id: default(),
             package_review_by_signature: default(),
             package_reviews: default(),
+            package_alternatives: default(),
+            package_flags: default(),
         }
     }
 }
@@ -167,14 +191,60 @@ impl Default for ProofDB {
 pub struct IssueDetails {
     pub severity: Level,
     /// Reviews that reported a given issue by `issues` field
-    pub issues: HashSet<PkgReviewId>,
+    pub issues: HashSet<PkgVersionReviewId>,
     /// Reviews that reported a given issue by `advisories` field
-    pub advisories: HashSet<PkgReviewId>,
+    pub advisories: HashSet<PkgVersionReviewId>,
 }
 
 impl ProofDB {
     pub fn new() -> Self {
         default()
+    }
+
+    pub fn get_pkg_alternatives_by_author<'s, 'a>(
+        &'s self,
+        from: &'a Id,
+        pkg_id: &'a proof::PackageId,
+    ) -> impl Iterator<Item = &'s proof::PackageId> {
+        let from = from.to_owned();
+        self.package_alternatives
+            .get(pkg_id)
+            .into_iter()
+            .flat_map(move |i| i.get(&from))
+            .flat_map(move |timestampted| &timestampted.value)
+    }
+
+    pub fn get_pkg_alternatives<'s, 'a>(
+        &'s self,
+        pkg_id: &'a proof::PackageId,
+    ) -> impl Iterator<Item = (&Id, &'s proof::PackageId)> {
+        self.package_alternatives
+            .get(pkg_id)
+            .into_iter()
+            .flat_map(move |i| i.iter())
+            .flat_map(move |(id, timestampted)| timestampted.value.iter().map(move |v| (id, v)))
+    }
+    pub fn get_pkg_flags_by_author<'s, 'a>(
+        &'s self,
+        from: &'a Id,
+        pkg_id: &'a proof::PackageId,
+    ) -> Option<&'s proof::Flags> {
+        let from = from.to_owned();
+        self.package_flags
+            .get(pkg_id)
+            .and_then(move |i| i.get(&from))
+            .map(move |timestampted| &timestampted.value)
+    }
+
+    pub fn get_pkg_flags<'s, 'a>(
+        &'s self,
+        pkg_id: &'a proof::PackageId,
+    ) -> impl Iterator<Item = (&Id, &'s proof::Flags)> {
+        self.package_flags
+            .get(pkg_id)
+            .into_iter()
+            .flat_map(move |i| i.iter())
+            .map(|(id, flags)| (id, &flags.value))
     }
 
     pub fn get_pkg_reviews_for_source<'a, 'b>(
@@ -266,7 +336,7 @@ impl ProofDB {
 
     pub fn get_pkg_review_by_pkg_review_id(
         &self,
-        uniq: &PkgReviewId,
+        uniq: &PkgVersionReviewId,
     ) -> Option<&proof::review::Package> {
         let signature = &self
             .package_review_signatures_by_pkg_review_id
@@ -418,7 +488,7 @@ impl ProofDB {
                 .entry(issue.id.clone())
                 .or_default()
                 .issues
-                .insert(PkgReviewId::from(review));
+                .insert(PkgVersionReviewId::from(review));
         }
 
         // Now the complicated part. We go through all the advisories for all the versions
@@ -453,7 +523,7 @@ impl ProofDB {
                         .entry(id.clone())
                         .or_default()
                         .issues
-                        .insert(PkgReviewId::from(review));
+                        .insert(PkgVersionReviewId::from(review));
                 }
             }
 
@@ -564,8 +634,11 @@ impl ProofDB {
             .entry(signature.to_owned())
             .or_insert_with(|| review.to_owned());
 
-        let pkg_review_id = PkgReviewId::from(review);
+        let pkg_review_id = PkgVersionReviewId::from(review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
+        let timestamp_alternatives =
+            TimestampedAlternatives::from((review.date(), review.alternatives.clone()));
+        let timestamp_flags = TimestampedFlags::from((review.date(), review.flags.clone()));
 
         self.package_review_signatures_by_package_digest
             .entry(review.package.digest.to_owned())
@@ -587,6 +660,20 @@ impl ProofDB {
             .entry(review.package.id.version.clone())
             .or_default()
             .insert(pkg_review_id);
+
+        self.package_alternatives
+            .entry(review.package.id.id.clone())
+            .or_default()
+            .entry(review.from().id.clone())
+            .and_modify(|a| a.update_to_more_recent(&timestamp_alternatives))
+            .or_insert_with(|| timestamp_alternatives);
+
+        self.package_flags
+            .entry(review.package.id.id.clone())
+            .or_default()
+            .entry(review.from().id.clone())
+            .and_modify(|f| f.update_to_more_recent(&timestamp_flags))
+            .or_insert_with(|| timestamp_flags);
     }
 
     pub fn get_package_review_count(

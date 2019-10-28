@@ -13,7 +13,7 @@ use crate::{
 };
 use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
-use crev_data::proof::CommonOps;
+use crev_data::proof::{self, CommonOps};
 use crev_lib;
 use crossbeam::{
     self,
@@ -244,6 +244,11 @@ impl Scanner {
 
     fn get_crate_details(&mut self, info: &CrateInfo) -> Result<Option<CrateDetails>> {
         let pkg_name = info.id.name();
+        let proof_pkg_id = proof::PackageId {
+            source: "https://crates.io".into(),
+            name: pkg_name.to_string(),
+        };
+
         let pkg_version = info.id.version();
         info.download_if_needed(self.cargo_opts.clone())?;
         let geiger_count = get_geiger_count(&info.root).ok();
@@ -338,6 +343,11 @@ impl Scanner {
             &self.requirements,
         );
 
+        let is_unmaintained = self
+            .db
+            .get_pkg_flags(&proof_pkg_id)
+            .any(|(id, flags)| self.trust_set.contains_trusted(id) && flags.unmaintained);
+
         let owner_set = OwnerSetSet::new(info.id, owner_list.unwrap_or_else(|| vec![]));
 
         let accumulative_own = AccumulativeCrateDetails {
@@ -347,6 +357,7 @@ impl Scanner {
             loc,
             verified,
             has_custom_build: info.has_custom_build,
+            is_unmaintained,
             owner_set,
         };
 

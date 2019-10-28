@@ -38,7 +38,11 @@ pub trait CommonOps {
     }
 
     fn author_id(&self) -> &crate::Id {
-        self.common().author_id()
+        &self.common().from.id
+    }
+
+    fn author_pub_id(&self) -> &crate::PubId {
+        &self.common().from
     }
 
     fn ensure_kind_is(&self, kind: &str) -> Result<()> {

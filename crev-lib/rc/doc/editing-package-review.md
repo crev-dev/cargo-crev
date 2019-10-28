@@ -16,10 +16,12 @@ While there is no explicit or implicity legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 
+By creating and publishing proofs, you implicitly agree to other people freely using them.
 
 ## Data fields
 
-* `review` - review details
+* `review` - review of particular version of the crate; all fields set to `none`
+  mean that no review took place; whole section can be deleted for the same effect;
   * `digest` - recursive digest of the whole project content
   * `thoroughness` - time and effort spent on the review
     * `high` - long, deep, focused review - possibly as a part of a formal
@@ -54,8 +56,18 @@ your other work, etc.
 * `issues` - issues report a problem in a release (list)
     * `id` - an ID of an issue
     * `severity` - same as in the `advisories` section
+* `alternatives` - potential alternatives, similiar or better; elements
+  of the list with an empty `name` will be automatically ignored and removed
+* `flags` - additional flags
+  * `unmaintained` - package is not maintained or abandoned; **NOTE**: this
+    flag applies to the whole package, not only current version, like in most
+    other data fields
 * `comment` - human-readable information about this review
               (e.g. why it was done, how, and `rating` explanation)
+
+# Other information
+
+More recent proofs overwrite older ones.
 
 ## Further reading
 

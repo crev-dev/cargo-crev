@@ -17,6 +17,8 @@ While there is no explicit or implicity legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 
+By creating and publishing proofs, you implicitly agree to other people freely using them.
+
 ## Data fields
 
 * `trust` - trust level; possible values:
@@ -30,6 +32,10 @@ your other work, etc.
   * `distrust` - "I distrust this person and so should you"
 * `comment` - human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)
+
+# Other information
+
+More recent proofs overwrite older ones.
 
 ## Further reading
 

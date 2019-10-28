@@ -29,6 +29,7 @@ use crate::Result;
 const MAX_PROOF_BODY_LENGTH: usize = 32_000;
 
 pub type Date = chrono::DateTime<FixedOffset>;
+pub type DateUtc = chrono::DateTime<Utc>;
 
 /// Serialized Proof
 ///

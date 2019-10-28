@@ -128,6 +128,17 @@ pub fn create_review_proof(
         review.issues.push(report);
         review.review.rating = Rating::Negative;
     }
+
+    review.flags = db
+        .get_pkg_flags_by_author(&id.id.id, &review.package.id.id)
+        .cloned()
+        .unwrap_or_default();
+
+    review.alternatives = db
+        .get_pkg_alternatives_by_author(&id.id.id, &review.package.id.id)
+        .cloned()
+        .collect();
+
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review,
         previous_date.as_ref(),

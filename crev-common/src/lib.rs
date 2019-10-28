@@ -16,6 +16,7 @@ use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
 use rpassword;
 use rprompt;
+use std::collections::HashSet;
 use std::{
     env,
     ffi::OsString,
@@ -146,6 +147,10 @@ pub fn is_equal_default<T: Default + PartialEq>(t: &T) -> bool {
 }
 
 pub fn is_vec_empty<T>(t: &[T]) -> bool {
+    t.is_empty()
+}
+
+pub fn is_set_empty<T>(t: &HashSet<T>) -> bool {
     t.is_empty()
 }
 
