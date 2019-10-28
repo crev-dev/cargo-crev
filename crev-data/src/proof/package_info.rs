@@ -6,12 +6,31 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
-pub struct PackageInfo {
-    #[serde(flatten)]
-    pub id: Option<crate::id::PubId>,
+pub struct PackageId {
     pub source: String,
     pub name: String,
+}
+
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
+pub struct PackageVersionId {
+    #[serde(flatten)]
+    pub id: PackageId,
     pub version: Version,
+}
+
+impl PackageVersionId {
+    pub fn new(source: String, name: String, version: Version) -> Self {
+        Self {
+            id: PackageId { source, name },
+            version,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq)]
+pub struct PackageInfo {
+    #[serde(flatten)]
+    pub id: PackageVersionId,
 
     #[serde(skip_serializing_if = "proof::equals_default", default)]
     pub revision: String,

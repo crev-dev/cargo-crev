@@ -89,9 +89,9 @@ impl From<review::Package> for PkgReviewId {
     fn from(review: review::Package) -> Self {
         PkgReviewId {
             from: review.from().id.clone(),
-            source: review.package.source,
-            name: review.package.name,
-            version: review.package.version,
+            source: review.package.id.id.source,
+            name: review.package.id.id.name,
+            version: review.package.id.version,
         }
     }
 }
@@ -100,9 +100,9 @@ impl From<&review::Package> for PkgReviewId {
     fn from(review: &review::Package) -> Self {
         PkgReviewId {
             from: review.from().id.to_owned(),
-            source: review.package.source.to_owned(),
-            name: review.package.name.to_owned(),
-            version: review.package.version.to_owned(),
+            source: review.package.id.id.source.to_owned(),
+            name: review.package.id.id.name.to_owned(),
+            version: review.package.id.version.to_owned(),
         }
     }
 }
@@ -410,7 +410,7 @@ impl ProofDB {
             .filter(|(review, issue)| {
                 issue.is_for_version_when_reported_in_version(
                     queried_version,
-                    &review.package.version,
+                    &review.package.id.version,
                 )
             })
         {
@@ -444,9 +444,10 @@ impl ProofDB {
             })
         {
             // Add new issue reports created by the advisory
-            if advisory
-                .is_for_version_when_reported_in_version(&queried_version, &review.package.version)
-            {
+            if advisory.is_for_version_when_reported_in_version(
+                &queried_version,
+                &review.package.id.version,
+            ) {
                 for id in &advisory.ids {
                     issue_reports_by_id
                         .entry(id.clone())
@@ -473,8 +474,8 @@ impl ProofDB {
                                 .get(signature)
                                 .expect("review for this pkg_review_id");
                             !advisory.is_for_version_when_reported_in_version(
-                                &issue_review.package.version,
-                                &review.package.version,
+                                &issue_review.package.id.version,
+                                &review.package.id.version,
                             )
                         })
                         .collect();
@@ -502,7 +503,7 @@ impl ProofDB {
                     || review.advisories.iter().any(|advi| {
                         advi.is_for_version_when_reported_in_version(
                             &queried_version,
-                            &review.package.version,
+                            &review.package.id.version,
                         )
                     })
             })
@@ -579,11 +580,11 @@ impl ProofDB {
             .or_insert_with(|| timestamp_signature.clone());
 
         self.package_reviews
-            .entry(review.package.source.clone())
+            .entry(review.package.id.id.source.clone())
             .or_default()
-            .entry(review.package.name.clone())
+            .entry(review.package.id.id.name.clone())
             .or_default()
-            .entry(review.package.version.clone())
+            .entry(review.package.id.version.clone())
             .or_default()
             .insert(pkg_review_id);
     }
@@ -755,8 +756,8 @@ impl ProofDB {
                 )
                 .is_verified()
             })
-            .max_by(|a, b| a.package.version.cmp(&b.package.version))
-            .map(|review| review.package.version.clone())
+            .max_by(|a, b| a.package.id.version.cmp(&b.package.id.version))
+            .map(|review| review.package.id.version.clone())
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {

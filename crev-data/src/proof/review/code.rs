@@ -144,8 +144,8 @@ impl proof::ContentWithDraft for Code {
             title: format!(
                 "Code Review of {} files of {} {}",
                 self.files.len(),
-                self.package.name,
-                self.package.version
+                self.package.id.id.name,
+                self.package.id.version
             ),
             body: Draft::from(self.clone()).to_string(),
         }

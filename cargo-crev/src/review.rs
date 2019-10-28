@@ -57,10 +57,11 @@ pub fn create_review_proof(
             check_package_clean_state(&repo, &crate_root, &crate_.name(), &diff_base_version)?;
 
         Some(proof::PackageInfo {
-            id: None,
-            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: crate_.name().to_string(),
-            version: diff_base_version.to_owned(),
+            id: proof::PackageVersionId::new(
+                PROJECT_SOURCE_CRATES_IO.to_owned(),
+                crate_.name().to_string(),
+                diff_base_version.to_owned(),
+            ),
             digest: digest.into_vec(),
             digest_type: proof::default_digest_type(),
             revision: vcs_info_to_revision_string(vcs),
@@ -76,10 +77,11 @@ pub fn create_review_proof(
     let mut review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
         .package(proof::PackageInfo {
-            id: None,
-            source: PROJECT_SOURCE_CRATES_IO.to_owned(),
-            name: crate_.name().to_string(),
-            version: effective_crate_version.to_owned(),
+            id: proof::PackageVersionId::new(
+                PROJECT_SOURCE_CRATES_IO.to_owned(),
+                crate_.name().to_string(),
+                effective_crate_version.to_owned(),
+            ),
             digest: digest_clean.into_vec(),
             digest_type: proof::default_digest_type(),
             revision: vcs_info_to_revision_string(vcs),

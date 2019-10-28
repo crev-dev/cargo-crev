@@ -34,10 +34,7 @@ fn build_proof_with_advisories(
     advisories: Vec<Advisory>,
 ) -> proof::Proof {
     let package_info = proof::PackageInfo {
-        id: None,
-        source: SOURCE.into(),
-        name: NAME.into(),
-        version: version,
+        id: proof::PackageVersionId::new(SOURCE.into(), NAME.into(), version),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
         revision: "".into(),
@@ -56,10 +53,7 @@ fn build_proof_with_advisories(
 
 fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> proof::Proof {
     let package_info = proof::PackageInfo {
-        id: None,
-        source: "SOURCE_ID".to_owned(),
-        name: NAME.into(),
-        version: version,
+        id: proof::PackageVersionId::new("SOURCE_ID".to_owned(), NAME.into(), version),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
         revision: "".into(),

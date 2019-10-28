@@ -162,10 +162,11 @@ pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
     let id = OwnId::generate(Url::new_git("https://mypage.com/trust.git".into()));
 
     let package_info = proof::PackageInfo {
-        id: None,
-        source: "SOURCE_ID".to_owned(),
-        name: "name".into(),
-        version: Version::parse("1.0.0").unwrap(),
+        id: proof::PackageVersionId::new(
+            "SOURCE_ID".to_owned(),
+            "name".into(),
+            Version::parse("1.0.0").unwrap(),
+        ),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
         revision: "".into(),
@@ -221,10 +222,11 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = proof::PackageInfo {
-        id: None,
-        source: "source".into(),
-        name: "name".into(),
-        version: Version::parse("1.0.0").unwrap(),
+        id: proof::PackageVersionId::new(
+            "source".into(),
+            "name".into(),
+            Version::parse("1.0.0").unwrap(),
+        ),
         digest: digest.clone(),
         digest_type: proof::default_digest_type(),
         revision: "".into(),

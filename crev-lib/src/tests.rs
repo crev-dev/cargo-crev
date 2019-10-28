@@ -1,7 +1,7 @@
 use super::*;
 
 use crev_data::{
-    proof::{trust::TrustLevel, ContentExt},
+    proof::{self, trust::TrustLevel, ContentExt},
     Digest, Level, OwnId,
 };
 use default::default;
@@ -162,10 +162,11 @@ fn overwritting_reviews() -> Result<()> {
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
-        id: None,
-        source: "source".into(),
-        name: "name".into(),
-        version: Version::parse("1.0.0").unwrap(),
+        id: proof::PackageVersionId::new(
+            "source".into(),
+            "name".into(),
+            Version::parse("1.0.0").unwrap(),
+        ),
         digest: digest.clone(),
         digest_type: crev_data::proof::default_digest_type(),
         revision: "".into(),
@@ -201,22 +202,26 @@ fn overwritting_reviews() -> Result<()> {
         assert_eq!(
             trustdb
                 .get_package_reviews_for_package(
-                    &package.source,
-                    Some(&package.name),
-                    Some(&package.version)
+                    &package.id.id.source,
+                    Some(&package.id.id.name),
+                    Some(&package.id.version)
                 )
                 .count(),
             1
         );
         assert_eq!(
             trustdb
-                .get_package_reviews_for_package(&package.source, Some(&package.name), None)
+                .get_package_reviews_for_package(
+                    &package.id.id.source,
+                    Some(&package.id.id.name),
+                    None
+                )
                 .count(),
             1
         );
         assert_eq!(
             trustdb
-                .get_package_reviews_for_package(&package.source, None, None)
+                .get_package_reviews_for_package(&package.id.id.source, None, None)
                 .count(),
             1
         );
@@ -230,10 +235,11 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
-        id: None,
-        source: "source".into(),
-        name: "name".into(),
-        version: Version::parse("1.0.0").unwrap(),
+        id: proof::PackageVersionId::new(
+            "source".into(),
+            "name".into(),
+            Version::parse("1.0.0").unwrap(),
+        ),
         digest: digest.clone(),
         digest_type: crev_data::proof::default_digest_type(),
         revision: "".into(),
