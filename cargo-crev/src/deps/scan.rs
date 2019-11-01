@@ -217,9 +217,8 @@ impl Scanner {
 
                                 let stats = CrateStats { info, details };
 
-                                ready_tx
-                                    .send(stats)
-                                    .expect("channel will be there waiting for the pool");
+                                // ignore any problems if the receiver decided not to listen anymore
+                                let _ = ready_tx.send(stats);
 
                                 if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
                                     == total_crates_len

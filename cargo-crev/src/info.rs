@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use std::io;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename-all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub struct Details {
     pub verified: bool,
     pub loc: Option<usize>,
@@ -33,7 +33,7 @@ impl From<AccumulativeCrateDetails> for Details {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename-all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub struct CrateInfoOutput {
     pub package: proof::PackageVersionId,
     pub details: Details,
@@ -111,6 +111,7 @@ pub fn get_crate_info(
 pub fn print_crate_info(root_crate: CrateSelector, args: CrateVerifyCommon) -> Result<()> {
     let info = get_crate_info(root_crate, args)?;
     serde_yaml::to_writer(io::stdout(), &info)?;
+    println!("");
 
     Ok(())
 }
