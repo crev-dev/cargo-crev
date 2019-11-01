@@ -1,5 +1,6 @@
 //! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
 //!
+#![type_length_limit = "1932159"]
 #![cfg_attr(
     feature = "documentation",
     doc = "See [user documentation module](./doc/user/index.html)."
@@ -19,6 +20,7 @@ pub mod doc;
 mod crates_io;
 mod deps;
 mod dyn_proof;
+mod info;
 mod opts;
 mod prelude;
 mod repo;
@@ -29,11 +31,30 @@ mod tokei;
 mod tui;
 
 use crate::{repo::*, review::*, shared::*};
-use crev_data::Id;
+use crev_data::{proof, Id};
 use crev_lib::{
     proofdb::{ProofDB, TrustSet},
     TrustProofType::{self, *},
 };
+
+pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> String {
+    let s = source_id.into_url().to_string();
+    if &s == "registry+https://github.com/rust-lang/crates.io-index" {
+        crate::PROJECT_SOURCE_CRATES_IO.into()
+    } else {
+        s
+    }
+}
+
+pub fn cargo_pkg_id_to_crev_pkg_id(id: &cargo::core::PackageId) -> proof::PackageVersionId {
+    proof::PackageVersionId {
+        id: proof::PackageId {
+            source: cargo_registry_to_crev_source_id(&id.source_id()),
+            name: id.name().to_string(),
+        },
+        version: id.version().to_owned(),
+    }
+}
 
 fn print_ids<'a>(
     ids: impl Iterator<Item = &'a Id>,
@@ -162,15 +183,18 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let status = run_diff(&args)?;
                 std::process::exit(status.code().unwrap_or(-159));
             }
-            opts::Crate::Verify(args) => {
-                return if args.interactive {
-                    tui::verify_deps(args)
+            opts::Crate::Verify { crate_, opts } => {
+                return if opts.interactive {
+                    tui::verify_deps(crate_, opts)
                 } else {
-                    deps::verify_deps(args)
+                    deps::verify_deps(crate_, opts)
                 };
             }
-            opts::Crate::Mvp(args) => {
-                deps::crate_mvps(args)?;
+            opts::Crate::Mvp { crate_, opts } => {
+                deps::crate_mvps(crate_, opts)?;
+            }
+            opts::Crate::Info { crate_, opts } => {
+                info::print_crate_info(crate_, opts)?;
             }
             opts::Crate::Goto(args) => {
                 goto_crate_src(&args.crate_)?;

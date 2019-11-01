@@ -185,9 +185,6 @@ pub struct CrateVerifyCommon {
 
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
-
-    #[structopt(flatten)]
-    pub crate_: CrateSelector,
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
@@ -553,11 +550,22 @@ Recursive mode will will calculate most metrics for the crate together with all 
 - version    - Crate version
 - latest_t   - Latest trusted version"
     )]
-    Verify(CrateVerify),
+    Verify {
+        #[structopt(flatten)]
+        opts: CrateVerify,
+
+        #[structopt(flatten)]
+        crate_: CrateSelector,
+    },
 
     /// Most valuable players (reviewers)
     #[structopt(name = "mvp", alias = "m")]
-    Mvp(CrateVerifyCommon),
+    Mvp {
+        #[structopt(flatten)]
+        opts: CrateVerifyCommon,
+        #[structopt(flatten)]
+        crate_: CrateSelector,
+    },
 
     /// Review a crate (code review, security advisory, flag issues)
     #[structopt(name = "review", alias = "r")]
@@ -570,6 +578,15 @@ Recursive mode will will calculate most metrics for the crate together with all 
     /// Search crates on crates.io sorting by review count
     #[structopt(name = "search", alias = "s")]
     Search(CrateSearch),
+
+    /// Display rich info about the given crate
+    #[structopt(name = "info", alias = "i")]
+    Info {
+        #[structopt(flatten)]
+        opts: CrateVerifyCommon,
+        #[structopt(flatten)]
+        crate_: CrateSelector,
+    },
 }
 
 #[derive(Debug, StructOpt, Clone)]

@@ -7,6 +7,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::collections::HashSet;
+use std::ops;
 use std::{default::Default, fmt, mem};
 use typed_builder::TypedBuilder;
 
@@ -21,6 +22,15 @@ fn cur_version() -> i64 {
 pub struct Flags {
     #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
     pub unmaintained: bool,
+}
+
+impl ops::Add<Flags> for Flags {
+    type Output = Self;
+    fn add(self, other: Flags) -> Self {
+        Self {
+            unmaintained: self.unmaintained || other.unmaintained,
+        }
+    }
 }
 
 impl From<FlagsDraft> for Flags {

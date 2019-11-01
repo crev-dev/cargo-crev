@@ -179,7 +179,7 @@ pub fn edit_known_owners_list() -> Result<()> {
 }
 
 pub fn clean_all_unclean_crates() -> Result<()> {
-    let scanner = scan::Scanner::new(&opts::CrateVerify::default())?;
+    let scanner = scan::Scanner::new(CrateSelector::default(), &opts::CrateVerify::default())?;
     let events = scanner.run();
 
     for stats in events.into_iter() {

@@ -1,7 +1,7 @@
 use semver::Version;
 use std::path::PathBuf;
 
-use crev_data::*;
+use crev_data::{proof, Digest, PubId};
 use crev_lib::*;
 
 use crate::{opts::*, prelude::*, shared::*, term};
@@ -159,8 +159,11 @@ pub struct CrateDetails {
     pub version_reviews: CountWithTotal,
     pub version_downloads: Option<CountWithTotal>,
     pub known_owners: Option<CountWithTotal>,
+    pub dependencies: Vec<proof::PackageVersionId>,
+    pub rev_dependencies: Vec<proof::PackageVersionId>,
     pub unclean_digest: bool,
     pub accumulative_own: AccumulativeCrateDetails,
+    pub accumulative_recursive: AccumulativeCrateDetails,
     pub accumulative: AccumulativeCrateDetails,
 }
 
@@ -217,6 +220,7 @@ impl Eq for CrateInfo {}
 /// A dependency, as returned by the computer. It may
 ///  contain (depending on success/slipping) the computed
 ///  dep.
+#[derive(Debug)]
 pub struct CrateStats {
     pub info: CrateInfo,
     pub details: Result<Option<CrateDetails>>,
@@ -282,11 +286,11 @@ pub fn latest_trusted_version_string(
     }
 }
 
-pub fn crate_mvps(common: CrateVerifyCommon) -> Result<()> {
+pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()> {
     let mut args = CrateVerify::default();
     args.common = common;
 
-    let scanner = scan::Scanner::new(&args)?;
+    let scanner = scan::Scanner::new(crate_, &args)?;
     let events = scanner.run();
 
     let mut mvps: HashMap<PubId, u64> = HashMap::new();
@@ -308,10 +312,10 @@ pub fn crate_mvps(common: CrateVerifyCommon) -> Result<()> {
     Ok(())
 }
 
-pub fn verify_deps(args: CrateVerify) -> Result<CommandExitStatus> {
+pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandExitStatus> {
     let mut term = term::Term::new();
 
-    let scanner = scan::Scanner::new(&args)?;
+    let scanner = scan::Scanner::new(crate_, &args)?;
     let events = scanner.run();
 
     // print header, only after `scanner` had a chance to download everything

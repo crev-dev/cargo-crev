@@ -3,7 +3,7 @@ use crate::{
     deps::{
         AccumulativeCrateDetails, CountWithTotal, CrateDetails, CrateInfo, CrateStats, OwnerSetSet,
     },
-    opts::{CargoOpts, CrateVerify},
+    opts::{CargoOpts, CrateSelector, CrateVerify},
     prelude::*,
     repo::Repo,
     shared::{
@@ -55,7 +55,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(args: &CrateVerify) -> Result<Scanner> {
+    pub fn new(root_crate: CrateSelector, args: &CrateVerify) -> Result<Scanner> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set = if let Some(for_id) =
@@ -75,12 +75,12 @@ impl Scanner {
         let skip_known_owners = args.skip_known_owners;
         let repo = Repo::auto_open_cwd(args.common.cargo_opts.clone())?;
 
-        if args.common.crate_.unrelated {
+        if root_crate.unrelated {
             // we would have to create a ephemeral workspace, etc.
             bail!("Unrealated crates are currently not supported");
         }
 
-        let roots = repo.find_roots_by_crate_selector(&args.common.crate_)?;
+        let roots = repo.find_roots_by_crate_selector(&root_crate)?;
         let roots_set: HashSet<_> = roots.iter().cloned().collect();
 
         let (all_pkgs_set, _resolve) = repo.get_package_set()?;
@@ -176,7 +176,7 @@ impl Scanner {
                     pending_rx
                         .into_iter()
                         .map(move |pkg_id: PackageId| {
-                            if self_clone.recursive {
+                            {
                                 let graph = &self_clone.graph;
                                 let crate_details_by_id =
                                     self_clone.crate_details_by_id.lock().unwrap();
@@ -361,9 +361,9 @@ impl Scanner {
             owner_set,
         };
 
-        let mut accumulative = accumulative_own.clone();
+        let mut accumulative_recursive = accumulative_own.clone();
 
-        if self.recursive {
+        {
             let crate_details_by_id = self.crate_details_by_id.lock().expect("lock works");
 
             for dep_pkg_id in self
@@ -376,7 +376,8 @@ impl Scanner {
                     .expect("dependency already calculated")
                 {
                     Some(dep_details) => {
-                        accumulative = accumulative + dep_details.accumulative_own.clone()
+                        accumulative_recursive =
+                            accumulative_recursive + dep_details.accumulative_own.clone()
                     }
                     None => bail!("Dependency {} failed", dep_pkg_id),
                 }
@@ -398,8 +399,24 @@ impl Scanner {
             version_downloads,
             known_owners,
             unclean_digest,
+            accumulative: if self.recursive {
+                accumulative_recursive.clone()
+            } else {
+                accumulative_own.clone()
+            },
             accumulative_own,
-            accumulative,
+            accumulative_recursive,
+            dependencies: self
+                .graph
+                .get_dependencies_of(info.id)
+                .map(|c| crate::cargo_pkg_id_to_crev_pkg_id(&c))
+                .collect(),
+            rev_dependencies: self
+                .graph
+                .get_reverse_dependencies_of(info.id)
+                .into_iter()
+                .map(|c| crate::cargo_pkg_id_to_crev_pkg_id(&c))
+                .collect(),
         }))
     }
 }
