@@ -3,7 +3,7 @@
 set -x
 
 export CRATE_NAME=cargo-crev
-name="$TRAVIS_TAG-$TARGET"
+name="$CRATE_NAME-$TRAVIS_TAG-$TARGET"
 mkdir -p "$name"
 cp "target/$TARGET/release/$CRATE_NAME" "$name/"
 cp cargo-crev/README.md LICENSE* "$name/"
