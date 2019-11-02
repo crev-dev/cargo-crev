@@ -27,16 +27,11 @@ matrix:
   allow_failures:
     - rust: nightly
 
-before_script:
-  - export EXTRA_FEATURES=
-  - if [[ "${TRAVIS_RUST_VERSION}" = "nightly" ]]; then export EXTRA_FEATURES="$EXTRA_FEATURES unstable"; fi
-  - if [[ "${DIST_SCCACHE}" = "1" ]]; then export EXTRA_FEATURES="$EXTRA_FEATURES dist-client dist-server"; fi
-
 script:
-  - cargo build --release --verbose --features="all ${EXTRA_FEATURES}"
+  - cargo build --release --verbose
   - RUST_BACKTRACE=1 cargo test --release --all --verbose
   # Requires PR #321
-  #- if [[ "${DIST_SCCACHE}" = "1" ]]; then RUST_BACKTRACE=1 cargo test --all --verbose --features="all dist-tests ${EXTRA_FEATURES}" test_dist_ -- --test-threads 1; fi
+  #- if [[ "${DIST_SCCACHE}" = "1" ]]; then RUST_BACKTRACE=1 cargo test --all --verbose test_dist_ -- --test-threads 1; fi
 
 before_deploy:
   - "./ci/prep_deploy.sh"
