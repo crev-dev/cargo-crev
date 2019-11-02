@@ -34,8 +34,7 @@ before_script:
 
 script:
   - cargo build --release --verbose --features="all ${EXTRA_FEATURES}"
-  - RUST_BACKTRACE=1 cargo test --release --all --verbose --no-default-features --features="${EXTRA_FEATURES}"
-  - RUST_BACKTRACE=1 cargo test --release --all --verbose --features="all ${EXTRA_FEATURES}"
+  - RUST_BACKTRACE=1 cargo test --release --all --verbose
   # Requires PR #321
   #- if [[ "${DIST_SCCACHE}" = "1" ]]; then RUST_BACKTRACE=1 cargo test --all --verbose --features="all dist-tests ${EXTRA_FEATURES}" test_dist_ -- --test-threads 1; fi
 
