@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "crev-data"
-version = "0.10.1"
+version = "0.11.0"
 description = "Scalable, social, Code REView system that we desperately need - data types library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -14,7 +14,7 @@ readme = "../README.md"
 [dependencies]
 chrono = "0.4"
 common_failures = "0.1"
-crev-common = { path = "../crev-common", version = "0.10.1" }
+crev-common = { path = "../crev-common", version = "0.11.0" }
 derive_builder = "0.7"
 typed-builder = "0.3"
 ed25519-dalek = "1.0.0-pre.2"

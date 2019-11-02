@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "crev-lib"
-version = "0.10.1"
+version = "0.11.0"
 description = "Scalable, social, Code REView system that we desperately need - core library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -14,8 +14,8 @@ readme = "../README.md"
 [dependencies]
 chrono = "0.4"
 common_failures = "0.1"
-crev-common = { path = "../crev-common", version = "0.10.1" }
-crev-data = { path = "../crev-data", version = "0.10.1" }
+crev-common = { path = "../crev-common", version = "0.11.0" }
+crev-data = { path = "../crev-data", version = "0.11.0" }
 crev-recursive-digest = { path = "../recursive-digest", version = "0.2.1" }
 default = "0.1"
 directories = "2"
