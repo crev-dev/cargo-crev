@@ -28,13 +28,19 @@ pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf 
             "{}-{}-{}",
             date,
             type_subname,
-            crev_common::base64_encode(&host_plus_id_digest[..4])
+            // this used to be `[..4]`, but temporarily change it
+            // to accomodate a new proof format. old clients will
+            // fail to parse a whole file if it contains a new proof
+            // format, so this makes sure new proofs are only
+            // in separate files; this can be reverted back after
+            // some time
+            crev_common::base64_encode(&host_plus_id_digest[1..5])
         )
     } else {
         format!(
             "{}-{}",
             date,
-            crev_common::base64_encode(&host_plus_id_digest[..4])
+            crev_common::base64_encode(&host_plus_id_digest[1..5])
         )
     })
     .with_extension("proof.crev")
