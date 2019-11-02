@@ -23,8 +23,7 @@ test_script:
 
 for:
 
--
-  branches:
+- branches:
     only:
       - master
   environment:
@@ -42,8 +41,7 @@ for:
         target: x86_64-pc-windows-msvc
         RELEASE: --release
 
--
-  branches:
+- branches:
     only:
       - /v\d+\.\d+\.\d+/
       - master
