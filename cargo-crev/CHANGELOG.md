@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/dpc/crev/compare/cargo-crev-v0.10.1...cargo-crev-v0.11.0) - 2019-11-01
+# Changed
+* Change the proof format to simplify it and allow 3rd party "kinds" of them. The main goal is to
+  support `git-crev` project: https://github.com/crev-dev/git-crev
+* Tune tokei line counts to exclude tests and examples
+
+## Added
+* Ability report the crate as unmaintained and/or list alternatives to it
+* `--target` to `crate verify` to ignore crates not compiled on the given (default: current) target
+* `--for-id` for `cargo crev repo fetch trusted`
+* Autocompletion generation with `config completions`
+* `crate info` subcommand to get some detailed info for a single dependency
+
+### Fixed
+* Stale old-syntax commands in documentation
+* Minor help messages
+
 ## [0.10.1](https://github.com/dpc/crev/compare/cargo-crev-v0.10.0...cargo-crev-v0.10.1) - 2019-10-13
 # Changed
 * Fixed "Getting Started" documentation module
