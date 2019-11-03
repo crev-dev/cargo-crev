@@ -601,12 +601,15 @@ pub enum Config {
         #[structopt(long = "shell")]
         shell: Option<String>,
     },
+
+    /// Print the dir containing config files
+    #[structopt(name = "dir", alias = "d")]
+    Dir,
 }
 
 #[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Repo {
-    // TODO: `Dir`
     /// Publish to remote repository
     #[structopt(name = "publish", alias = "p")]
     Publish,
@@ -641,6 +644,10 @@ pub enum Repo {
     /// Fetch proofs from external sources
     #[structopt(name = "fetch", alias = "f")]
     Fetch(RepoFetch),
+
+    /// Print the dir containing local copy of the proof repository
+    #[structopt(name = "dir", alias = "d")]
+    Dir,
 }
 
 #[derive(Debug, StructOpt, Clone)]

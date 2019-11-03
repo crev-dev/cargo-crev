@@ -137,6 +137,10 @@ impl Local {
         })
     }
 
+    pub fn get_root_path(&self) -> &Path {
+        &self.root_path
+    }
+
     pub fn get_root_cache_dir(&self) -> &Path {
         &self.cache_path
     }

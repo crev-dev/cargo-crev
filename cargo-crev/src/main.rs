@@ -286,6 +286,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Config(args) => match args {
+            opts::Config::Dir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.get_root_path().display());
+            }
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
                 local.edit_user_config()?;
@@ -320,6 +324,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Repo(args) => match args {
+            opts::Repo::Dir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.get_proofs_dir_path()?.display());
+            }
             opts::Repo::Git(git) => {
                 let local = Local::auto_open()?;
                 let status = local.run_git(git.args)?;
