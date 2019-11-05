@@ -70,12 +70,6 @@ impl CodeBuilder {
     }
 }
 
-impl fmt::Display for Code {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
-    }
-}
-
 impl proof::CommonOps for Code {
     fn common(&self) -> &proof::Common {
         &self.common
@@ -88,6 +82,12 @@ impl proof::CommonOps for Code {
             .as_ref()
             .map(|s| s.as_str())
             .unwrap_or(Self::KIND)
+    }
+}
+
+impl fmt::Display for Code {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.serialize_to(f).map_err(|_| fmt::Error)
     }
 }
 
@@ -131,7 +131,7 @@ impl proof::content::Content for Code {
             // backfill during serialization
             let mut copy = self.clone();
             copy.common.kind = Some(Self::KIND.into());
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+            Ok(crev_common::serde::write_as_headerless_yaml(&copy, fmt)?)
         } else {
             Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
         }

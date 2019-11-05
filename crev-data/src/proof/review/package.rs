@@ -103,6 +103,12 @@ impl PackageBuilder {
     }
 }
 
+impl fmt::Display for Package {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.serialize_to(f).map_err(|_| fmt::Error)
+    }
+}
+
 impl proof::WithReview for Package {
     fn review(&self) -> &super::Review {
         &self.review
@@ -204,14 +210,19 @@ impl proof::Content for Package {
     }
 
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        if self.common.kind.is_none() {
-            // backfill during serialization
-            let mut copy = self.clone();
-            copy.common.kind = Some(Self::KIND.into());
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
-        } else {
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+        // Remove comment for manual formatting
+        let mut clone = self.clone();
+        let mut comment = String::new();
+        mem::swap(&mut comment, &mut clone.comment);
+
+        if clone.common.kind.is_none() {
+            clone.common.kind = Some(Self::KIND.into());
         }
+
+        crev_common::serde::write_as_headerless_yaml(&clone, fmt)?;
+        write_comment(comment.as_str(), fmt)?;
+
+        Ok(())
     }
 }
 
@@ -259,7 +270,7 @@ impl Package {
     }
 }
 
-fn write_comment(comment: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+fn write_comment(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
     writeln!(f, "comment: |")?;
     for line in comment.lines() {
         writeln!(f, "  {}", line)?;
@@ -268,18 +279,6 @@ fn write_comment(comment: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "  ")?;
     }
     Ok(())
-}
-
-impl fmt::Display for Package {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Remove comment for manual formatting
-        let mut clone = self.clone();
-        let mut comment = String::new();
-        mem::swap(&mut comment, &mut clone.comment);
-
-        crev_common::serde::write_as_headerless_yaml(&clone, f)?;
-        write_comment(comment.as_str(), f)
-    }
 }
 
 impl fmt::Display for Draft {

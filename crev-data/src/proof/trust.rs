@@ -100,7 +100,7 @@ impl TrustBuilder {
 
 impl fmt::Display for Trust {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
+        self.serialize_to(f).map_err(|_| fmt::Error)
     }
 }
 
@@ -152,7 +152,7 @@ impl proof::Content for Trust {
             // backfill during serialization
             let mut copy = self.clone();
             copy.common.kind = Some(Self::KIND.into());
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
+            Ok(crev_common::serde::write_as_headerless_yaml(&copy, fmt)?)
         } else {
             Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
         }
