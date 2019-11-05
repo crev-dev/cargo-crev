@@ -48,6 +48,10 @@ pub fn get_crate_info(
     root_crate: CrateSelector,
     common_opts: CrateVerifyCommon,
 ) -> Result<CrateInfoOutput> {
+    if root_crate.unrelated {
+        bail!("Unrelated crates are currently not supported");
+    }
+
     if root_crate.name.is_none() {
         bail!("Crate selector required");
     }
@@ -111,7 +115,7 @@ pub fn get_crate_info(
 pub fn print_crate_info(root_crate: CrateSelector, args: CrateVerifyCommon) -> Result<()> {
     let info = get_crate_info(root_crate, args)?;
     serde_yaml::to_writer(io::stdout(), &info)?;
-    println!("");
+    println!();
 
     Ok(())
 }
