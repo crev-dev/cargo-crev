@@ -1,4 +1,5 @@
 use crate::{proof, Level, Result};
+use crate::{serde_content_serialize, serde_draft_serialize};
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
@@ -8,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::collections::HashSet;
 use std::ops;
-use std::{default::Default, fmt, mem};
+use std::{default::Default, fmt};
 use typed_builder::TypedBuilder;
 
 const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
@@ -210,18 +211,7 @@ impl proof::Content for Package {
     }
 
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        // Remove comment for manual formatting
-        let mut clone = self.clone();
-        let mut comment = String::new();
-        mem::swap(&mut comment, &mut clone.comment);
-
-        if clone.common.kind.is_none() {
-            clone.common.kind = Some(Self::KIND.into());
-        }
-
-        crev_common::serde::write_as_headerless_yaml(&clone, fmt)?;
-        write_comment_proof(comment.as_str(), fmt)?;
-
+        serde_content_serialize!(self, fmt);
         Ok(())
     }
 }
@@ -270,37 +260,10 @@ impl Package {
     }
 }
 
-fn write_comment_proof(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
-    if comment.is_empty() {
-        return Ok(());
-    }
-    writeln!(f, "comment: |-")?;
-    for line in comment.lines() {
-        writeln!(f, "  {}", line)?;
-    }
-    Ok(())
-}
-
-fn write_comment_draft(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
-    writeln!(f, "comment: |-")?;
-    for line in comment.lines() {
-        writeln!(f, "  {}", line)?;
-    }
-    if comment.is_empty() {
-        writeln!(f, "  ")?;
-    }
-    Ok(())
-}
-
 impl fmt::Display for Draft {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Remove comment for manual formatting
-        let mut clone = self.clone();
-        let mut comment = String::new();
-        mem::swap(&mut comment, &mut clone.comment);
-
-        crev_common::serde::write_as_headerless_yaml(&clone, f)?;
-        write_comment_draft(comment.as_str(), f)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        serde_draft_serialize!(self, fmt);
+        Ok(())
     }
 }
 

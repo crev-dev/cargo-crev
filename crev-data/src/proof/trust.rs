@@ -2,6 +2,7 @@ use crate::{
     proof::{self, CommonOps, Content},
     Level, Result,
 };
+use crate::{serde_content_serialize, serde_draft_serialize};
 use crev_common;
 use derive_builder::Builder;
 use failure::bail;
@@ -141,21 +142,16 @@ impl From<Trust> for Draft {
 }
 
 impl fmt::Display for Draft {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        serde_draft_serialize!(self, fmt);
+        Ok(())
     }
 }
 
 impl proof::Content for Trust {
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        if self.common.kind.is_none() {
-            // backfill during serialization
-            let mut copy = self.clone();
-            copy.common.kind = Some(Self::KIND.into());
-            Ok(crev_common::serde::write_as_headerless_yaml(&copy, fmt)?)
-        } else {
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
-        }
+        serde_content_serialize!(self, fmt);
+        Ok(())
     }
 
     fn validate_data(&self) -> Result<()> {

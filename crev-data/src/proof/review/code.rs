@@ -1,4 +1,5 @@
 use crate::{proof, Result};
+use crate::{serde_content_serialize, serde_draft_serialize};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
@@ -127,14 +128,8 @@ impl proof::content::Content for Code {
     }
 
     fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
-        if self.common.kind.is_none() {
-            // backfill during serialization
-            let mut copy = self.clone();
-            copy.common.kind = Some(Self::KIND.into());
-            Ok(crev_common::serde::write_as_headerless_yaml(&copy, fmt)?)
-        } else {
-            Ok(crev_common::serde::write_as_headerless_yaml(&self, fmt)?)
-        }
+        serde_content_serialize!(self, fmt);
+        Ok(())
     }
 }
 
@@ -164,7 +159,8 @@ impl proof::ContentWithDraft for Code {
 }
 
 impl fmt::Display for Draft {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crev_common::serde::write_as_headerless_yaml(self, f)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        serde_draft_serialize!(self, fmt);
+        Ok(())
     }
 }
