@@ -220,7 +220,7 @@ impl proof::Content for Package {
         }
 
         crev_common::serde::write_as_headerless_yaml(&clone, fmt)?;
-        write_comment(comment.as_str(), fmt)?;
+        write_comment_proof(comment.as_str(), fmt)?;
 
         Ok(())
     }
@@ -270,8 +270,19 @@ impl Package {
     }
 }
 
-fn write_comment(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
-    writeln!(f, "comment: |")?;
+fn write_comment_proof(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
+    if comment.is_empty() {
+        return Ok(());
+    }
+    writeln!(f, "comment: |-")?;
+    for line in comment.lines() {
+        writeln!(f, "  {}", line)?;
+    }
+    Ok(())
+}
+
+fn write_comment_draft(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
+    writeln!(f, "comment: |-")?;
     for line in comment.lines() {
         writeln!(f, "  {}", line)?;
     }
@@ -289,7 +300,7 @@ impl fmt::Display for Draft {
         mem::swap(&mut comment, &mut clone.comment);
 
         crev_common::serde::write_as_headerless_yaml(&clone, f)?;
-        write_comment(comment.as_str(), f)
+        write_comment_draft(comment.as_str(), f)
     }
 }
 
