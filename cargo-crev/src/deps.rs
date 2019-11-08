@@ -347,7 +347,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     if nb_unclean_digests > 0 {
         println!(
-            "{} unclean package{} detected. Use `cargo crev clean <crate>` to wipe the local source.",
+            "{} unclean package{} detected. Use `cargo crev crate clean <name>` to wipe the local source.",
             nb_unclean_digests,
             if nb_unclean_digests > 1 { "s" } else { "" },
         );
