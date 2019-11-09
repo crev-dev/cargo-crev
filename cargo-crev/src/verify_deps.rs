@@ -41,7 +41,7 @@ pub fn run(args: Verify) -> Result<()> {
         print!("Unclean crate {} {}\n", name, version);
     }
     if !unclean_digests.is_empty() {
-        bail!("Unclean packages detected. Use `cargo crev clean` to wipe all unclean crates.");
+        bail!("Unclean packages detected. Use `cargo crev crate clean` to wipe all unclean crates.");
     }
 
     Ok(())
