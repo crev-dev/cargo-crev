@@ -75,15 +75,11 @@ pub fn print_details(
             None,
         )?;
     } else {
-        if let Some(owners) = &cdep.known_owners {
-            term.print(
-                format_args!(" {:>2}", owners.count),
-                term::known_owners_count_color(owners.count),
-            )?;
-            term.print(format_args!("/{:<2}", owners.total), None)?;
-        } else {
-            println!(" ???");
-        }
+        term.print(
+            format_args!(" {:>2}", cdep.known_owners.count),
+            term::known_owners_count_color(cdep.known_owners.count),
+        )?;
+        term.print(format_args!("/{:<2}", cdep.known_owners.total), None)?;
     }
 
     term.print(
@@ -125,52 +121,26 @@ pub fn print_dep(
     verbose: bool,
     recursive_mode: bool,
 ) -> Result<()> {
-    match &stats.details {
-        Err(_) => {
-            print_stats_crate_id(stats, term);
-            println!(" -- computation failed");
-        }
-        Ok(None) => { /* just skip */ }
-        Ok(Some(details)) => {
-            print_details(&details, term, verbose, recursive_mode)?;
-            match details.accumulative.geiger_count {
-                Some(geiger_count) => print!(" {:>7}", geiger_count),
-                None => print!(" {:>7}", "err"),
-            }
-            term.print(
-                format_args!(
-                    " {:2}{:2}",
-                    if let Some(has_custom_build) = stats.has_custom_build() {
-                        if has_custom_build {
-                            "CB"
-                        } else {
-                            ""
-                        }
-                    } else {
-                        "?"
-                    },
-                    if let Some(is_unmaintained) = stats.is_unmaintained() {
-                        if is_unmaintained {
-                            "UM"
-                        } else {
-                            ""
-                        }
-                    } else {
-                        "?"
-                    }
-                ),
-                ::term::color::YELLOW,
-            )?;
-            print_stats_crate_id(stats, term);
-            print!(
-                " {}",
-                latest_trusted_version_string(
-                    &stats.info.id.version(),
-                    &details.latest_trusted_version
-                )
-            );
-            println!();
-        }
+    let details = stats.details();
+
+    print_details(&details, term, verbose, recursive_mode)?;
+    match details.accumulative.geiger_count {
+        Some(geiger_count) => print!(" {:>7}", geiger_count),
+        None => print!(" {:>7}", "err"),
     }
+    term.print(
+        format_args!(
+            " {:2}{:2}",
+            if stats.has_custom_build() { "CB" } else { "" },
+            if stats.is_unmaintained() { "UM" } else { "" }
+        ),
+        ::term::color::YELLOW,
+    )?;
+    print_stats_crate_id(stats, term);
+    print!(
+        " {}",
+        latest_trusted_version_string(&stats.info.id.version(), &details.latest_trusted_version)
+    );
+    println!();
     Ok(())
 }

@@ -158,12 +158,15 @@ pub struct CrateDetails {
     pub trusted_reviewers: HashSet<PubId>,
     pub version_reviews: CountWithTotal,
     pub version_downloads: Option<CountWithTotal>,
-    pub known_owners: Option<CountWithTotal>,
+    pub known_owners: CountWithTotal,
     pub dependencies: Vec<proof::PackageVersionId>,
     pub rev_dependencies: Vec<proof::PackageVersionId>,
     pub unclean_digest: bool,
+    // own accumulative stats only
     pub accumulative_own: AccumulativeCrateDetails,
+    // total recursive stats
     pub accumulative_recursive: AccumulativeCrateDetails,
+    // in recursive mode this is the same as `accumulative_recursive` otherwise `accumulative_own`
     pub accumulative: AccumulativeCrateDetails,
 }
 
@@ -217,47 +220,28 @@ impl PartialEq for CrateInfo {
 
 impl Eq for CrateInfo {}
 
-/// A dependency, as returned by the computer. It may
-///  contain (depending on success/slipping) the computed
-///  dep.
+/// A dependency, as returned by the scanner
 #[derive(Debug)]
 pub struct CrateStats {
     pub info: CrateInfo,
-    pub details: Result<Option<CrateDetails>>,
+    pub details: CrateDetails,
 }
 
 impl CrateStats {
     pub fn is_digest_unclean(&self) -> bool {
-        self.details().map_or(false, |d| d.unclean_digest)
+        self.details().unclean_digest
     }
 
-    pub fn has_details(&self) -> bool {
-        self.details().is_some()
+    pub fn has_custom_build(&self) -> bool {
+        self.details.accumulative.has_custom_build
     }
 
-    pub fn has_custom_build(&self) -> Option<bool> {
-        self.details
-            .as_ref()
-            .ok()
-            .and_then(|d| d.as_ref())
-            .map(|d| &d.accumulative)
-            .map(|a| a.has_custom_build)
+    pub fn is_unmaintained(&self) -> bool {
+        self.details.accumulative.is_unmaintained
     }
 
-    pub fn is_unmaintained(&self) -> Option<bool> {
-        self.details
-            .as_ref()
-            .ok()
-            .and_then(|d| d.as_ref())
-            .map(|d| &d.accumulative)
-            .map(|a| a.is_unmaintained)
-    }
-    pub fn details(&self) -> Option<&CrateDetails> {
-        if let Ok(Some(ref details)) = self.details {
-            Some(details)
-        } else {
-            None
-        }
+    pub fn details(&self) -> &CrateDetails {
+        &self.details
     }
 }
 
@@ -296,7 +280,7 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
     let mut mvps: HashMap<PubId, u64> = HashMap::new();
 
     for stats in events {
-        for reviewer in &stats.details?.expect("some").trusted_reviewers {
+        for reviewer in &stats.details.trusted_reviewers {
             *mvps.entry(reviewer.to_owned()).or_default() += 1;
         }
     }
@@ -325,6 +309,8 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let deps: Vec<_> = events
         .into_iter()
+        .filter(|stats| !args.skip_known_owners || stats.details.known_owners.count == 0)
+        .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
             print_term::print_dep(&stats, &mut term, args.verbose, args.recursive)?;
             Ok(stats)
@@ -335,7 +321,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut nb_unverified = 0;
     for dep in &deps {
         if dep.is_digest_unclean() {
-            let details = dep.details().unwrap();
+            let details = dep.details();
             if details.unclean_digest {
                 nb_unclean_digests += 1;
             }

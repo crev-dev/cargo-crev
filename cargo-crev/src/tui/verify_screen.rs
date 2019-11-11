@@ -5,9 +5,7 @@ use termimad::{
 };
 
 use crate::{
-    deps::{
-        latest_trusted_version_string, AccumulativeCrateDetails, CrateDetails, CrateStats, Progress,
-    },
+    deps::{latest_trusted_version_string, CrateStats, Progress},
     opts::CargoOpts,
     prelude::*,
     repo::Repo,
@@ -112,22 +110,12 @@ impl<'t> VerifyScreen<'t> {
                 "trust",
                 6,
                 6,
-                Box::new(|dep: &CrateStats| {
-                    if let Some(details) = dep.details() {
-                        match details.accumulative.trust {
-                            VerificationStatus::Verified => {
-                                ListViewCell::new("pass".to_owned(), &TS.good)
-                            }
-                            VerificationStatus::Insufficient => {
-                                ListViewCell::new("none".to_owned(), &TS.none)
-                            }
-                            VerificationStatus::Negative => {
-                                ListViewCell::new("fail".to_owned(), &TS.bad)
-                            }
-                        }
-                    } else {
-                        ListViewCell::new("?".to_string(), &TS.medium)
+                Box::new(|dep: &CrateStats| match dep.details.accumulative.trust {
+                    VerificationStatus::Verified => ListViewCell::new("pass".to_owned(), &TS.good),
+                    VerificationStatus::Insufficient => {
+                        ListViewCell::new("none".to_owned(), &TS.none)
                     }
+                    VerificationStatus::Negative => ListViewCell::new("fail".to_owned(), &TS.bad),
                 }),
             ),
             ListViewColumn::new(
@@ -136,12 +124,10 @@ impl<'t> VerifyScreen<'t> {
                 16,
                 Box::new(|dep: &CrateStats| {
                     ListViewCell::new(
-                        dep.details().map_or("?".to_owned(), |cdep| {
-                            latest_trusted_version_string(
-                                &dep.info.id.version(),
-                                &cdep.latest_trusted_version,
-                            )
-                        }),
+                        latest_trusted_version_string(
+                            &dep.info.id.version(),
+                            &dep.details().latest_trusted_version,
+                        ),
                         &TS.std,
                     )
                 }),
@@ -152,12 +138,7 @@ impl<'t> VerifyScreen<'t> {
                 3,
                 3,
                 Box::new(|dep: &CrateStats| {
-                    ListViewCell::new(
-                        dep.details().map_or("?".to_owned(), |cdep| {
-                            u64_to_str(cdep.version_reviews.count)
-                        }),
-                        &TS.std,
-                    )
+                    ListViewCell::new(u64_to_str(dep.details().version_reviews.count), &TS.std)
                 }),
             )
             .with_align(Alignment::Center),
@@ -166,12 +147,7 @@ impl<'t> VerifyScreen<'t> {
                 3,
                 3,
                 Box::new(|dep: &CrateStats| {
-                    ListViewCell::new(
-                        dep.details().map_or("?".to_owned(), |cdep| {
-                            u64_to_str(cdep.version_reviews.total)
-                        }),
-                        &TS.std,
-                    )
+                    ListViewCell::new(u64_to_str(dep.details().version_reviews.total), &TS.std)
                 }),
             )
             .with_align(Alignment::Center),
@@ -179,23 +155,16 @@ impl<'t> VerifyScreen<'t> {
                 "downloads",
                 6,
                 6,
-                Box::new(|dep: &CrateStats| {
-                    if let Some(CrateDetails {
-                        version_downloads: Some(downloads),
-                        ..
-                    }) = dep.details()
-                    {
-                        ListViewCell::new(
-                            u64_to_str(downloads.count),
-                            if downloads.count < 1000 {
-                                &TS.medium
-                            } else {
-                                &TS.std
-                            },
-                        )
-                    } else {
-                        ListViewCell::new("".to_string(), &TS.std)
-                    }
+                Box::new(|dep: &CrateStats| match dep.details().version_downloads {
+                    Some(downloads) => ListViewCell::new(
+                        u64_to_str(downloads.count),
+                        if downloads.count < 1000 {
+                            &TS.medium
+                        } else {
+                            &TS.std
+                        },
+                    ),
+                    None => ListViewCell::new("".to_string(), &TS.std),
                 }),
             )
             .with_align(Alignment::Right),
@@ -204,11 +173,7 @@ impl<'t> VerifyScreen<'t> {
                 6,
                 6,
                 Box::new(|dep: &CrateStats| {
-                    if let Some(CrateDetails {
-                        version_downloads: Some(downloads),
-                        ..
-                    }) = dep.details()
-                    {
+                    if let Some(downloads) = dep.details().version_downloads {
                         ListViewCell::new(
                             u64_to_str(downloads.total),
                             if downloads.total < 1000 {
@@ -227,14 +192,12 @@ impl<'t> VerifyScreen<'t> {
                 "owners",
                 2,
                 2,
-                Box::new(|dep: &CrateStats| match dep.details() {
-                    Some(CrateDetails {
-                        known_owners: Some(owners),
-                        ..
-                    }) if owners.count > 0 => {
-                        ListViewCell::new(format!("{}", owners.count), &TS.good)
+                Box::new(|dep: &CrateStats| {
+                    if dep.details().known_owners.count > 0 {
+                        ListViewCell::new(format!("{}", dep.details().known_owners.count), &TS.good)
+                    } else {
+                        ListViewCell::new("".to_owned(), &TS.std)
                     }
-                    _ => ListViewCell::new("".to_owned(), &TS.std),
                 }),
             )
             .with_align(Alignment::Right),
@@ -244,12 +207,10 @@ impl<'t> VerifyScreen<'t> {
                 3,
                 Box::new(|dep: &CrateStats| {
                     ListViewCell::new(
-                        match dep.details() {
-                            Some(CrateDetails {
-                                known_owners: Some(owners),
-                                ..
-                            }) if owners.total > 0 => format!("{}", owners.total),
-                            _ => "".to_owned(),
+                        if dep.details().known_owners.total > 0 {
+                            format!("{}", dep.details().known_owners.total)
+                        } else {
+                            "".to_owned()
                         },
                         &TS.std,
                     )
@@ -260,13 +221,15 @@ impl<'t> VerifyScreen<'t> {
                 "issues",
                 2,
                 2,
-                Box::new(|dep: &CrateStats| match dep.details() {
-                    Some(CrateDetails { accumulative, .. })
-                        if accumulative.trusted_issues.count > 0 =>
-                    {
-                        ListViewCell::new(format!("{}", accumulative.trusted_issues.count), &TS.bad)
+                Box::new(|dep: &CrateStats| {
+                    if dep.details().accumulative.trusted_issues.count > 0 {
+                        ListViewCell::new(
+                            format!("{}", dep.details().accumulative.trusted_issues.count),
+                            &TS.bad,
+                        )
+                    } else {
+                        ListViewCell::new("".to_owned(), &TS.std)
                     }
-                    _ => ListViewCell::new("".to_owned(), &TS.std),
                 }),
             )
             .with_align(Alignment::Right),
@@ -274,16 +237,15 @@ impl<'t> VerifyScreen<'t> {
                 "issues",
                 3,
                 3,
-                Box::new(|dep: &CrateStats| match dep.details() {
-                    Some(CrateDetails { accumulative, .. })
-                        if accumulative.trusted_issues.total > 0 =>
-                    {
+                Box::new(|dep: &CrateStats| {
+                    if dep.details().accumulative.trusted_issues.total > 0 {
                         ListViewCell::new(
-                            format!("{}", accumulative.trusted_issues.total),
+                            format!("{}", dep.details().accumulative.trusted_issues.total),
                             &TS.medium,
                         )
+                    } else {
+                        ListViewCell::new("".to_owned(), &TS.std)
                     }
-                    _ => ListViewCell::new("".to_owned(), &TS.std),
                 }),
             )
             .with_align(Alignment::Right),
@@ -293,11 +255,8 @@ impl<'t> VerifyScreen<'t> {
                 6,
                 Box::new(|dep: &CrateStats| {
                     ListViewCell::new(
-                        match dep.details() {
-                            Some(CrateDetails {
-                                accumulative: AccumulativeCrateDetails { loc: Some(loc), .. },
-                                ..
-                            }) => u64_to_str(*loc as u64),
+                        match dep.details().accumulative.loc {
+                            Some(loc) => u64_to_str(loc as u64),
                             _ => "".to_string(),
                         },
                         &TS.std,

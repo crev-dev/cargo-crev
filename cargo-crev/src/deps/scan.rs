@@ -41,8 +41,6 @@ pub struct Scanner {
     crates_io: Arc<crates_io::Client>,
     known_owners: HashSet<String>,
     requirements: crev_lib::VerificationRequirements,
-    skip_verified: bool,
-    skip_known_owners: bool,
     recursive: bool,
     crate_info_by_id: HashMap<PackageId, CrateInfo>,
     // all the packages that we might need to potentially analyse
@@ -51,7 +49,7 @@ pub struct Scanner {
     selected_crates_ids: HashSet<PackageId>,
     cargo_opts: CargoOpts,
     graph: Arc<crate::repo::Graph>,
-    crate_details_by_id: Arc<Mutex<HashMap<PackageId, Option<CrateDetails>>>>,
+    crate_details_by_id: Arc<Mutex<HashMap<PackageId, CrateDetails>>>,
 }
 
 impl Scanner {
@@ -71,8 +69,6 @@ impl Scanner {
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
         let requirements =
             crev_lib::VerificationRequirements::from(args.common.requirements.clone());
-        let skip_verified = args.skip_verified;
-        let skip_known_owners = args.skip_known_owners;
         let repo = Repo::auto_open_cwd(args.common.cargo_opts.clone())?;
 
         if root_crate.unrelated {
@@ -122,8 +118,6 @@ impl Scanner {
             crates_io: Arc::new(crates_io),
             known_owners,
             requirements,
-            skip_verified,
-            skip_known_owners,
             recursive: args.recursive,
             crate_info_by_id,
             all_crates_ids,
@@ -195,26 +189,16 @@ impl Scanner {
 
                             let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
 
-                            let details = self_clone.get_crate_details(&info);
+                            let details = self_clone
+                                .get_crate_details(&info)
+                                .expect("Unable to scan crate");
                             {
                                 let mut crate_details_by_id =
                                     self_clone.crate_details_by_id.lock().unwrap();
-                                crate_details_by_id
-                                    .insert(info.id, details.as_ref().ok().and_then(|d| d.clone()));
+                                crate_details_by_id.insert(info.id, details.clone());
                             }
 
                             if self_clone.selected_crates_ids.contains(&pkg_id) {
-                                let details = if let Ok(Some(details)) = details {
-                                    if details.accumulative_own.verified && self_clone.skip_verified
-                                    {
-                                        Ok(None)
-                                    } else {
-                                        Ok(Some(details))
-                                    }
-                                } else {
-                                    details
-                                };
-
                                 let stats = CrateStats { info, details };
 
                                 // ignore any problems if the receiver decided not to listen anymore
@@ -241,7 +225,7 @@ impl Scanner {
         ready_rx
     }
 
-    fn get_crate_details(&mut self, info: &CrateInfo) -> Result<Option<CrateDetails>> {
+    fn get_crate_details(&mut self, info: &CrateInfo) -> Result<CrateDetails> {
         let pkg_name = info.id.name();
         let proof_pkg_id = proof::PackageId {
             source: "https://crates.io".into(),
@@ -257,9 +241,6 @@ impl Scanner {
             .db
             .verify_package_digest(&digest, &self.trust_set, &self.requirements);
         let verified = result.is_verified();
-        if verified && self.skip_verified && !self.recursive {
-            return Ok(None);
-        }
 
         let pkg_name = info.id.name().to_string();
 
@@ -289,27 +270,15 @@ impl Scanner {
             Err(_) => None,
         };
 
-        let (known_owners, owner_list) = match self.crates_io.get_owners(&pkg_name) {
-            Ok(owners) => {
-                let total_owners_count = owners.len();
-                let known_owners_count = owners
-                    .iter()
-                    .filter(|o| self.known_owners.contains(o.as_str()))
-                    .count();
-                // these combinations of `recursive` and `--skip-x` are annoying
-                // some refactoring of how all this stuff is calculated would be great
-                if known_owners_count > 0 && self.skip_known_owners && !self.recursive {
-                    return Ok(None);
-                }
-                (
-                    Some(CountWithTotal {
-                        count: known_owners_count as u64,
-                        total: total_owners_count as u64,
-                    }),
-                    Some(owners),
-                )
-            }
-            Err(_) => (None, None),
+        let owner_list = self.crates_io.get_owners(&pkg_name)?;
+        let total_owners_count = owner_list.len();
+        let known_owners_count = owner_list
+            .iter()
+            .filter(|o| self.known_owners.contains(o.as_str()))
+            .count();
+        let known_owners = CountWithTotal {
+            count: known_owners_count as u64,
+            total: total_owners_count as u64,
         };
 
         let issues_from_trusted = self.db.get_open_issues_for_version(
@@ -347,7 +316,7 @@ impl Scanner {
             .get_pkg_flags(&proof_pkg_id)
             .any(|(id, flags)| self.trust_set.contains_trusted(id) && flags.unmaintained);
 
-        let owner_set = OwnerSetSet::new(info.id, owner_list.unwrap_or_else(|| vec![]));
+        let owner_set = OwnerSetSet::new(info.id, owner_list);
 
         let accumulative_own = AccumulativeCrateDetails {
             trust: result,
@@ -370,20 +339,16 @@ impl Scanner {
                 .get_recursive_dependencies_of(info.id)
                 .into_iter()
             {
-                match crate_details_by_id
-                    .get(&dep_pkg_id)
-                    .expect("dependency already calculated")
-                {
-                    Some(dep_details) => {
-                        accumulative_recursive =
-                            accumulative_recursive + dep_details.accumulative_own.clone()
-                    }
-                    None => bail!("Dependency {} failed", dep_pkg_id),
-                }
+                accumulative_recursive = accumulative_recursive
+                    + crate_details_by_id
+                        .get(&dep_pkg_id)
+                        .expect("dependency already calculated")
+                        .accumulative_own
+                        .clone()
             }
         }
 
-        Ok(Some(CrateDetails {
+        Ok(CrateDetails {
             digest,
             trusted_reviewers: version_reviews
                 .into_iter()
@@ -416,6 +381,6 @@ impl Scanner {
                 .into_iter()
                 .map(|c| crate::cargo_pkg_id_to_crev_pkg_id(&c))
                 .collect(),
-        }))
+        })
     }
 }

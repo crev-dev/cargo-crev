@@ -82,22 +82,10 @@ pub fn get_crate_info(
 
     Ok(CrateInfoOutput {
         package: crate::cargo_pkg_id_to_crev_pkg_id(&stats.info.id),
-        details: stats
-            .details()
-            .as_ref()
-            .unwrap()
-            .accumulative_own
-            .clone()
-            .into(),
-        recursive_details: stats
-            .details()
-            .as_ref()
-            .unwrap()
-            .accumulative_recursive
-            .clone()
-            .into(),
-        dependencies: stats.details().as_ref().unwrap().dependencies.clone(),
-        rev_dependencies: stats.details().as_ref().unwrap().rev_dependencies.clone(),
+        details: stats.details().accumulative_own.clone().into(),
+        recursive_details: stats.details().accumulative_recursive.clone().into(),
+        dependencies: stats.details().dependencies.clone(),
+        rev_dependencies: stats.details().rev_dependencies.clone(),
         alternatives: db
             .get_pkg_alternatives(&crev_pkg_id.id)
             .filter(|(author, _)| trust_set.contains_trusted(author))

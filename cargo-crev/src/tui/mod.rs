@@ -39,9 +39,7 @@ pub fn verify_deps(crate_: CrateSelector, opts: CrateVerify) -> Result<CommandEx
     ) {
         *crate_count += 1;
         screen.set_computation_status(*crate_count);
-        if crate_stats.has_details() {
-            screen.add_dep(crate_stats);
-        }
+        screen.add_dep(crate_stats);
     }
 
     fn handle_user_action(
