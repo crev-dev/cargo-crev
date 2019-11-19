@@ -29,6 +29,7 @@ By creating and publishing proofs, you implicitly agree to other people freely u
   * `low` - "I have some reservations about trusting this entity"
   * `none` - "I don't actually trust this entity"; use to revoke trust
              (or distrust) from a previously issued Trust Proof
+             and/or just advertise user's existance
   * `distrust` - "I distrust this person and so should you"
 * `comment` - human-readable information about this trust relationship,
              (eg. who are these entities, why do you trust them)
