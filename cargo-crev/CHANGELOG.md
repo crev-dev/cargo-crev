@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/dpc/crev/compare/cargo-crev-v0.11.0...cargo-crev-v0.12.0) - 2019-11-19
+# Changed
+
+* Comment field handling in proofs and drafts
+
+## Fixed
+
+* Documentation here and there
+* Backfill `kind` field when deserializing old-format content
+* `--skip-known-owners` and `--skip-verified` returning errors
+
+## Added
+
+* Add `config dir` and `repo dir`
+
 ## [0.11.0](https://github.com/dpc/crev/compare/cargo-crev-v0.10.1...cargo-crev-v0.11.0) - 2019-11-01
 # Changed
 * Change the proof format to simplify it and allow 3rd party "kinds" of them. The main goal is to
