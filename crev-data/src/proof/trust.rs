@@ -128,7 +128,7 @@ impl Trust {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Draft {
     pub trust: TrustLevel,
-    #[serde(default = "Default::default")]
+    #[serde(default = "Default::default", skip_serializing_if = "String::is_empty")]
     comment: String,
 }
 
