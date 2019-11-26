@@ -7,8 +7,8 @@ use crate::{
     prelude::*,
     repo::Repo,
     shared::{
-        cargo_min_ignore_list, get_geiger_count, is_digest_clean, read_known_owners_list,
-        PROJECT_SOURCE_CRATES_IO,
+        cargo_full_ignore_list, cargo_min_ignore_list, get_geiger_count, is_digest_clean,
+        read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
     },
 };
 use cargo::core::PackageId;
@@ -37,7 +37,8 @@ use crev_lib::proofdb::*;
 pub struct Scanner {
     db: Arc<ProofDB>,
     trust_set: TrustSet,
-    ignore_list: HashSet<PathBuf>,
+    min_ignore_list: HashSet<PathBuf>,
+    full_ignore_list: HashSet<PathBuf>,
     crates_io: Arc<crates_io::Client>,
     known_owners: HashSet<String>,
     requirements: crev_lib::VerificationRequirements,
@@ -50,6 +51,7 @@ pub struct Scanner {
     cargo_opts: CargoOpts,
     graph: Arc<crate::repo::Graph>,
     crate_details_by_id: Arc<Mutex<HashMap<PackageId, CrateDetails>>>,
+    pub roots: Vec<cargo::core::PackageId>,
 }
 
 impl Scanner {
@@ -64,7 +66,8 @@ impl Scanner {
             // when running without an id (explicit, or current), just use an empty trust set
             crev_lib::proofdb::TrustSet::default()
         };
-        let ignore_list = cargo_min_ignore_list();
+        let min_ignore_list = cargo_min_ignore_list();
+        let full_ignore_list = cargo_full_ignore_list(false);
         let crates_io = crates_io::Client::new(&local)?;
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
         let requirements =
@@ -88,7 +91,6 @@ impl Scanner {
         let crate_info_by_id: HashMap<PackageId, CrateInfo> = all_pkgs_set
             .get_many(all_pkgs_ids)?
             .into_iter()
-            .filter(|pkg| pkg.summary().source_id().is_registry())
             .map(|pkg| (pkg.package_id(), CrateInfo::from_pkg(pkg)))
             .collect();
 
@@ -114,7 +116,8 @@ impl Scanner {
         Ok(Scanner {
             db: Arc::new(db),
             trust_set,
-            ignore_list,
+            min_ignore_list,
+            full_ignore_list,
             crates_io: Arc::new(crates_io),
             known_owners,
             requirements,
@@ -125,6 +128,7 @@ impl Scanner {
             cargo_opts: args.common.cargo_opts.clone(),
             graph: Arc::new(graph),
             crate_details_by_id: Default::default(),
+            roots,
         })
     }
 
@@ -235,12 +239,22 @@ impl Scanner {
         let pkg_version = info.id.version();
         info.download_if_needed(self.cargo_opts.clone())?;
         let geiger_count = get_geiger_count(&info.root).ok();
-        let digest = crev_lib::get_dir_digest(&info.root, &self.ignore_list)?;
+        let is_local_source_code = !info.id.source_id().is_registry();
+        let ignore_list = if is_local_source_code {
+            &self.min_ignore_list
+        } else {
+            &self.full_ignore_list
+        };
+        let digest = crev_lib::get_dir_digest(&info.root, ignore_list)?;
         let unclean_digest = !is_digest_clean(&self.db, &pkg_name, &pkg_version, &digest);
-        let result = self
-            .db
-            .verify_package_digest(&digest, &self.trust_set, &self.requirements);
-        let verified = result.is_verified();
+        let verification_result =
+            self.db
+                .verify_package_digest(&digest, &self.trust_set, &self.requirements);
+        let verified = if is_local_source_code {
+            true
+        } else {
+            verification_result.is_verified()
+        };
 
         let pkg_name = info.id.name().to_string();
 
@@ -319,7 +333,7 @@ impl Scanner {
         let owner_set = OwnerSetSet::new(info.id, owner_list);
 
         let accumulative_own = AccumulativeCrateDetails {
-            trust: result,
+            trust: verification_result,
             trusted_issues: issues,
             geiger_count,
             loc,
@@ -327,6 +341,7 @@ impl Scanner {
             has_custom_build: info.has_custom_build,
             is_unmaintained,
             owner_set,
+            is_local_source_code,
         };
 
         let mut accumulative_recursive = accumulative_own.clone();

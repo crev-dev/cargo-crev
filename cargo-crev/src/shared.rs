@@ -183,6 +183,9 @@ pub fn clean_all_unclean_crates() -> Result<()> {
     let events = scanner.run();
 
     for stats in events.into_iter() {
+        if stats.details.accumulative_own.is_local_source_code {
+            continue;
+        }
         if stats.is_digest_unclean() {
             clean_crate(&CrateSelector {
                 name: Some(stats.info.id.name().to_string()),
@@ -200,8 +203,10 @@ pub fn clean_crate(selector: &CrateSelector) -> Result<()> {
     let repo = Repo::auto_open_cwd_default()?;
     let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
     let crate_ = repo.get_crate(&crate_id)?;
+    assert!(crate_.package_id().source_id().is_registry());
     let crate_root = crate_.root();
 
+    assert!(crate_root.is_absolute());
     assert!(!crate_root.starts_with(std::env::current_dir()?));
 
     if crate_root.is_dir() {

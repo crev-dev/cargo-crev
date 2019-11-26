@@ -120,6 +120,7 @@ pub struct AccumulativeCrateDetails {
     pub has_custom_build: bool,
     pub is_unmaintained: bool,
     pub owner_set: OwnerSetSet,
+    pub is_local_source_code: bool,
 }
 
 fn sum_options<T>(a: Option<T>, b: Option<T>) -> Option<T::Output>
@@ -146,6 +147,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
             has_custom_build: self.has_custom_build || other.has_custom_build,
             is_unmaintained: self.is_unmaintained || other.is_unmaintained,
             owner_set: self.owner_set + other.owner_set,
+            is_local_source_code: self.is_local_source_code || other.is_local_source_code,
         }
     }
 }

@@ -9,10 +9,6 @@ fn proof_store_names(proof: &proof::Proof) -> (&str, Option<&str>) {
         _ => ("other", None),
     }
 }
-/// The path to use under package `.crev/`
-pub(crate) fn rel_package_path(content: &proof::Proof, host_salt: &[u8]) -> PathBuf {
-    rel_store_path(content, host_salt)
-}
 
 /// The path to use under user store
 pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf {

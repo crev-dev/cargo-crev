@@ -36,10 +36,14 @@ pub fn print_details(
     if verbose {
         print!("{:43} ", cdep.digest);
     }
-    term.print(
-        format_args!("{:6}", cdep.accumulative.trust),
-        term::verification_status_color(cdep.accumulative.trust),
-    )?;
+    if cdep.accumulative.is_local_source_code {
+        term.print(format_args!("{:6}", "local"), None)?;
+    } else {
+        term.print(
+            format_args!("{:6}", cdep.accumulative.trust),
+            term::verification_status_color(cdep.accumulative.trust),
+        )?;
+    }
     print!(
         " {:2} {:2}",
         cdep.version_reviews.count, cdep.version_reviews.total
@@ -111,7 +115,15 @@ fn print_stats_crate_id(stats: &CrateStats, _term: &mut Term) {
     print!(
         " {:<20} {:<15}",
         stats.info.id.name(),
-        pad_left_manually(stats.info.id.version().to_string(), 15)
+        pad_left_manually(
+            stats.info.id.version().to_string()
+                + if stats.info.id.source_id().is_registry() {
+                    ""
+                } else {
+                    "*"
+                },
+            15
+        )
     );
 }
 

@@ -152,9 +152,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn get_proof_rel_store_path(&self, proof: &proof::Proof) -> PathBuf {
-        // TODO: What about the merge conflicts, etc? https://github.com/dpc/crev/issues/153
-        PathBuf::from("proofs").join(crate::proof::rel_package_path(&proof, &[]));
+    pub fn get_proof_rel_store_path(&self, _proof: &proof::Proof) -> PathBuf {
         unimplemented!();
     }
 
