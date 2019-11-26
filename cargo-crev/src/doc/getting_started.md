@@ -471,7 +471,7 @@ makes the document format easily extendable in the future.
 
 Time to save the document and exit the editor.
 
-You should now be able to see your proof in the output of `cargo crev query review <cratename>`:
+You should now be able to see your proof in the output of `cargo crev repo query review <cratename>`:
 
 
 ```text
