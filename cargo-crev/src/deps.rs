@@ -322,14 +322,12 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut nb_unclean_digests = 0;
     let mut nb_unverified = 0;
     for dep in &deps {
-        if dep.is_digest_unclean() {
-            let details = dep.details();
-            if details.unclean_digest {
-                nb_unclean_digests += 1;
-            }
-            if !details.accumulative.verified {
-                nb_unverified += 1;
-            }
+        let details = dep.details();
+        if details.unclean_digest {
+            nb_unclean_digests += 1;
+        }
+        if !details.accumulative.verified {
+            nb_unverified += 1;
         }
     }
 
