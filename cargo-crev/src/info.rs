@@ -34,24 +34,49 @@ impl From<AccumulativeCrateDetails> for Details {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct CrateInfoOutput {
-    pub package: proof::PackageVersionId,
+pub struct CrateInfoDepOutput {
     pub details: Details,
     pub recursive_details: Details,
     pub dependencies: Vec<proof::PackageVersionId>,
     pub rev_dependencies: Vec<proof::PackageVersionId>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct CrateInfoOutput {
+    pub package: proof::PackageVersionId,
+    #[serde(flatten)]
+    pub deps: Option<CrateInfoDepOutput>,
     pub alternatives: HashSet<proof::PackageId>,
     // pub flags: proof::Flags,
+}
+
+pub fn get_crate_deps_info(
+    pkg_id: cargo::core::PackageId,
+    common_opts: CrateVerifyCommon,
+) -> Result<CrateInfoDepOutput> {
+    let mut args = CrateVerify::default();
+    args.common = common_opts;
+    let scanner = scan::Scanner::new(CrateSelector::default(), &args)?;
+    let events = scanner.run();
+
+    let stats = events
+        .into_iter()
+        .find(|stats| stats.info.id == pkg_id)
+        .expect("result");
+
+    Ok(CrateInfoDepOutput {
+        details: stats.details().accumulative_own.clone().into(),
+        recursive_details: stats.details().accumulative_recursive.clone().into(),
+        dependencies: stats.details().dependencies.clone(),
+        rev_dependencies: stats.details().rev_dependencies.clone(),
+    })
 }
 
 pub fn get_crate_info(
     root_crate: CrateSelector,
     common_opts: CrateVerifyCommon,
 ) -> Result<CrateInfoOutput> {
-    if root_crate.unrelated {
-        bail!("Unrelated crates are currently not supported");
-    }
-
     if root_crate.name.is_none() {
         bail!("Crate selector required");
     }
@@ -66,26 +91,17 @@ pub fn get_crate_info(
         // when running without an id (explicit, or current), just use an empty trust set
         crev_lib::proofdb::TrustSet::default()
     };
+
     let repo = Repo::auto_open_cwd(common_opts.cargo_opts.clone())?;
     let pkg_id = repo.find_pkgid_by_crate_selector(&root_crate)?;
     let crev_pkg_id = crate::cargo_pkg_id_to_crev_pkg_id(&pkg_id);
-
-    let mut args = CrateVerify::default();
-    args.common = common_opts;
-    let scanner = scan::Scanner::new(CrateSelector::default(), &args)?;
-    let events = scanner.run();
-
-    let stats = events
-        .into_iter()
-        .find(|stats| stats.info.id == pkg_id)
-        .expect("result");
-
     Ok(CrateInfoOutput {
-        package: crate::cargo_pkg_id_to_crev_pkg_id(&stats.info.id),
-        details: stats.details().accumulative_own.clone().into(),
-        recursive_details: stats.details().accumulative_recursive.clone().into(),
-        dependencies: stats.details().dependencies.clone(),
-        rev_dependencies: stats.details().rev_dependencies.clone(),
+        package: crev_pkg_id.clone(),
+        deps: if root_crate.unrelated {
+            None
+        } else {
+            Some(get_crate_deps_info(pkg_id, common_opts)?)
+        },
         alternatives: db
             .get_pkg_alternatives(&crev_pkg_id.id)
             .filter(|(author, _)| trust_set.contains_trusted(author))
