@@ -134,10 +134,7 @@ pub fn create_review_proof(
         .cloned()
         .unwrap_or_default();
 
-    review.alternatives = db
-        .get_pkg_alternatives_by_author(&id.id.id, &review.package.id.id)
-        .cloned()
-        .collect();
+    review.alternatives = db.get_pkg_alternatives_by_author(&id.id.id, &review.package.id.id);
 
     let review = crev_lib::util::edit_proof_content_iteractively(
         &review,

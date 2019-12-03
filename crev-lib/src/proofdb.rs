@@ -16,6 +16,7 @@ use failure::bail;
 use log::debug;
 use semver::Version;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::sync;
 
 /// A `T` with a timestamp
 ///
@@ -60,7 +61,6 @@ type TimestampedUrl = Timestamped<Url>;
 type TimestampedTrustLevel = Timestamped<TrustLevel>;
 type TimestampedReview = Timestamped<review::Review>;
 type TimestampedSignature = Timestamped<Signature>;
-type TimestampedAlternatives = Timestamped<HashSet<proof::PackageId>>;
 type TimestampedFlags = Timestamped<proof::Flags>;
 
 impl From<proof::Trust> for TimestampedTrustLevel {
@@ -140,6 +140,57 @@ impl From<&review::Package> for PkgReviewId {
 pub type Source = String;
 pub type Name = String;
 
+/// Alternatives relationship
+///
+/// Derived from the data in the proofs
+#[derive(Default)]
+struct AlternativesData {
+    derived_recalculation_counter: usize,
+    for_pkg: HashMap<proof::PackageId, HashMap<Id, HashSet<proof::PackageId>>>,
+    reported_by: HashMap<(proof::PackageId, proof::PackageId), HashMap<Id, Signature>>,
+}
+
+impl AlternativesData {
+    fn new() -> Self {
+        Default::default()
+    }
+
+    fn wipe(&mut self) {
+        *self = Self::new();
+    }
+
+    fn record_from_proof(&mut self, review: &review::Package, signature: &Signature) {
+        for alternative in &review.alternatives {
+            let a = &review.package.id.id;
+            let b = alternative;
+            let id = &review.from().id;
+            self.for_pkg
+                .entry(a.clone())
+                .or_default()
+                .entry(id.clone())
+                .or_default()
+                .insert(b.clone());
+
+            self.for_pkg
+                .entry(b.clone())
+                .or_default()
+                .entry(id.clone())
+                .or_default()
+                .insert(a.clone());
+
+            self.reported_by
+                .entry((a.clone(), b.clone()))
+                .or_default()
+                .insert(id.clone(), signature.clone());
+
+            self.reported_by
+                .entry((b.clone(), a.clone()))
+                .or_default()
+                .insert(id.clone(), signature.clone());
+        }
+    }
+}
+
 /// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effcttive trust set, etc.
@@ -167,8 +218,21 @@ pub struct ProofDB {
     package_reviews:
         BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
 
-    package_alternatives: HashMap<proof::PackageId, HashMap<Id, TimestampedAlternatives>>,
     package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
+
+    // original data about pkg alternatives
+    // for every package_id, we store a map of ids that had alternatives for it,
+    // and a timestamped signature of the proof, so we keep track of only
+    // the newest alternatives list for a `(PackageId, reporting Id)` pair
+    package_alternatives: HashMap<proof::PackageId, HashMap<Id, TimestampedSignature>>,
+
+    // derived data about pkg alternatives
+    // it is hard to keep track of some data when proofs are being added
+    // which can override previously stored information; because of that
+    // we don't keep track of it, until needed, and only then we just lazily
+    // recalculate it
+    insertion_counter: usize,
+    derived_alternatives: sync::RwLock<AlternativesData>,
 }
 
 impl Default for ProofDB {
@@ -183,6 +247,9 @@ impl Default for ProofDB {
             package_reviews: default(),
             package_alternatives: default(),
             package_flags: default(),
+
+            insertion_counter: 0,
+            derived_alternatives: sync::RwLock::new(AlternativesData::new()),
         }
     }
 }
@@ -201,29 +268,70 @@ impl ProofDB {
         default()
     }
 
+    fn get_derived_alternatives<'s>(&'s self) -> sync::RwLockReadGuard<'s, AlternativesData> {
+        {
+            let read = self.derived_alternatives.read().expect("lock to work");
+
+            if read.derived_recalculation_counter == self.insertion_counter {
+                return read;
+            }
+        }
+
+        {
+            let mut write = self.derived_alternatives.write().expect("lock to work");
+
+            write.wipe();
+
+            for (_, alt) in &self.package_alternatives {
+                for (_, signature) in alt {
+                    write.record_from_proof(
+                        &self.package_review_by_signature[&signature.value],
+                        &signature.value,
+                    );
+                }
+            }
+
+            write.derived_recalculation_counter = self.insertion_counter;
+        }
+
+        self.derived_alternatives.read().expect("lock to work")
+    }
+
     pub fn get_pkg_alternatives_by_author<'s, 'a>(
         &'s self,
         from: &'a Id,
         pkg_id: &'a proof::PackageId,
-    ) -> impl Iterator<Item = &'s proof::PackageId> {
+    ) -> HashSet<proof::PackageId> {
         let from = from.to_owned();
-        self.package_alternatives
+
+        let alternatives = self.get_derived_alternatives();
+        alternatives
+            .for_pkg
             .get(pkg_id)
             .into_iter()
             .flat_map(move |i| i.get(&from))
-            .flat_map(move |timestampted| &timestampted.value)
+            .flat_map(move |pkg_ids| pkg_ids)
+            .cloned()
+            .collect()
     }
 
     pub fn get_pkg_alternatives<'s, 'a>(
         &'s self,
         pkg_id: &'a proof::PackageId,
-    ) -> impl Iterator<Item = (&Id, &'s proof::PackageId)> {
-        self.package_alternatives
+    ) -> HashSet<(Id, proof::PackageId)> {
+        let alternatives = self.get_derived_alternatives();
+
+        alternatives
+            .for_pkg
             .get(pkg_id)
             .into_iter()
             .flat_map(move |i| i.iter())
-            .flat_map(move |(id, timestampted)| timestampted.value.iter().map(move |v| (id, v)))
+            .flat_map(move |(id, pkg_ids)| {
+                pkg_ids.iter().map(move |v| (id.to_owned(), v.to_owned()))
+            })
+            .collect()
     }
+
     pub fn get_pkg_flags_by_author<'s, 'a>(
         &'s self,
         from: &'a Id,
@@ -627,6 +735,8 @@ impl ProofDB {
     }
 
     fn add_package_review(&mut self, review: &review::Package, signature: &str) {
+        self.insertion_counter += 1;
+
         let from = &review.from();
         self.record_url_from_from_field(&review.date_utc(), &from);
 
@@ -636,8 +746,6 @@ impl ProofDB {
 
         let pkg_review_id = PkgVersionReviewId::from(review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
-        let timestamp_alternatives =
-            TimestampedAlternatives::from((review.date(), review.alternatives.clone()));
         let timestamp_flags = TimestampedFlags::from((review.date(), review.flags.clone()));
 
         self.package_review_signatures_by_package_digest
@@ -665,8 +773,8 @@ impl ProofDB {
             .entry(review.package.id.id.clone())
             .or_default()
             .entry(review.from().id.clone())
-            .and_modify(|a| a.update_to_more_recent(&timestamp_alternatives))
-            .or_insert_with(|| timestamp_alternatives);
+            .and_modify(|a| a.update_to_more_recent(&timestamp_signature))
+            .or_insert_with(|| timestamp_signature);
 
         self.package_flags
             .entry(review.package.id.id.clone())

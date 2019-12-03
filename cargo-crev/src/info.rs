@@ -104,6 +104,7 @@ pub fn get_crate_info(
         },
         alternatives: db
             .get_pkg_alternatives(&crev_pkg_id.id)
+            .iter()
             .filter(|(author, _)| trust_set.contains_trusted(author))
             .map(|(_, id)| id)
             .cloned()
