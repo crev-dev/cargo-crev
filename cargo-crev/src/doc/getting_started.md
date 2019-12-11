@@ -390,7 +390,7 @@ $ cargo crev open <crate> --cmd "code --wait -n" --cmd-save
 repeated every time. The exact `--cmd` to use for each IDE can vary, and you can ask for help in figuring it out
 on the `crev`'s gitter channel. 
 
-After reviewing the code use the standard `cargo crev review <cratename>` to create the *review proof*.
+After reviewing the code use the standard `cargo crev crate review <cratename>` to create the *review proof*.
 
 ### Editing *review proof*
 
