@@ -15,8 +15,7 @@ pub mod review;
 pub mod revision;
 pub mod trust;
 
-pub use self::review::Code as CodeReview;
-pub use self::review::Package as PackageReview;
+pub use self::review::{Code as CodeReview, Package as PackageReview};
 
 pub use self::{package_info::*, revision::*, trust::*};
 pub use crate::proof::content::{

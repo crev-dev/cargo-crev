@@ -17,9 +17,9 @@ common_failures = "0.1"
 crev-common = { path = "../crev-common", version = "0.13.0" }
 derive_builder = "0.7"
 typed-builder = "0.3"
-ed25519-dalek = "1.0.0-pre.2"
+ed25519-dalek = "=1.0.0-pre.3"
 failure = "0.1"
-rand = "0.6"
+rand = "0.7"
 semver = { version = "0.9", features = [ "serde" ] }
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.8"

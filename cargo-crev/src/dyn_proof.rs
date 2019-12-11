@@ -1,7 +1,6 @@
 use common_failures::Result;
-use crev_data::proof::CommonOps;
 use crev_data::{
-    proof::{self, ContentExt},
+    proof::{self, CommonOps, ContentExt},
     OwnId, PubId,
 };
 use failure::bail;

@@ -15,8 +15,10 @@ use default::default;
 use failure::bail;
 use log::debug;
 use semver::Version;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::sync;
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    sync,
+};
 
 /// A `T` with a timestamp
 ///

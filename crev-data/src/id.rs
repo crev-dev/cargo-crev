@@ -183,8 +183,7 @@ impl OwnId {
     }
 
     pub fn generate(url: Url) -> Self {
-        let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
+        let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
         Self {
             id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
             keypair,
