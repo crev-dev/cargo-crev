@@ -1,14 +1,14 @@
-use crate::deps::scan;
-use crate::deps::AccumulativeCrateDetails;
-use crate::opts::{CrateSelector, CrateVerify, CrateVerifyCommon};
-use crate::Repo;
+use crate::{
+    deps::{scan, AccumulativeCrateDetails},
+    opts::{CrateSelector, CrateVerify, CrateVerifyCommon},
+    Repo,
+};
 use common_failures::Result;
 use crev_common::convert::OptionDeref;
 use crev_data::proof;
 use failure::bail;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::io;
+use std::{collections::HashSet, io};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

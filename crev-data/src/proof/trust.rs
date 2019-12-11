@@ -1,8 +1,7 @@
 use crate::{
     proof::{self, CommonOps, Content},
-    Level, Result,
+    serde_content_serialize, serde_draft_serialize, Level, Result,
 };
-use crate::{serde_content_serialize, serde_draft_serialize};
 use crev_common;
 use derive_builder::Builder;
 use failure::bail;

@@ -1,5 +1,4 @@
-use crate::{proof, Level, Result};
-use crate::{serde_content_serialize, serde_draft_serialize};
+use crate::{proof, serde_content_serialize, serde_draft_serialize, Level, Result};
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
 use failure::bail;
@@ -7,9 +6,7 @@ use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::collections::HashSet;
-use std::ops;
-use std::{default::Default, fmt};
+use std::{collections::HashSet, default::Default, fmt, ops};
 use typed_builder::TypedBuilder;
 
 const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;

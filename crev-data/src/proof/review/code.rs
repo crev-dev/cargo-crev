@@ -1,5 +1,4 @@
-use crate::{proof, Result};
-use crate::{serde_content_serialize, serde_draft_serialize};
+use crate::{proof, serde_content_serialize, serde_draft_serialize, Result};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},

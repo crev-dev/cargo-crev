@@ -16,8 +16,8 @@ use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
 use rpassword;
 use rprompt;
-use std::collections::HashSet;
 use std::{
+    collections::HashSet,
     env,
     ffi::OsString,
     io::{self, BufRead, Read, Write},
