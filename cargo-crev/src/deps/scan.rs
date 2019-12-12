@@ -15,6 +15,7 @@ use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
 use crev_data::proof::{self, CommonOps};
 use crev_lib;
+use crev_lib::VerificationStatus;
 use crossbeam::{
     self,
     channel::{unbounded, Receiver},
@@ -171,52 +172,47 @@ impl Scanner {
             let ready_tx_count_clone = ready_tx_count.clone();
             std::thread::spawn({
                 move || {
-                    pending_rx
-                        .into_iter()
-                        .map(move |pkg_id: PackageId| {
-                            {
-                                let graph = &self_clone.graph;
-                                let crate_details_by_id =
-                                    self_clone.crate_details_by_id.lock().unwrap();
+                    pending_rx.into_iter().for_each(move |pkg_id: PackageId| {
+                        {
+                            let graph = &self_clone.graph;
+                            let crate_details_by_id =
+                                self_clone.crate_details_by_id.lock().unwrap();
 
-                                for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
-                                    if !crate_details_by_id.contains_key(&dep_pkg_id) {
-                                        if let Some(pending_tx) =
-                                            pending_tx.lock().unwrap().as_mut()
-                                        {
-                                            pending_tx.send(pkg_id).unwrap();
-                                        }
-                                        return;
+                            for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
+                                if !crate_details_by_id.contains_key(&dep_pkg_id) {
+                                    if let Some(pending_tx) = pending_tx.lock().unwrap().as_mut() {
+                                        pending_tx.send(pkg_id).unwrap();
                                     }
+                                    return;
                                 }
                             }
+                        }
 
-                            let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
+                        let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
 
-                            let details = self_clone
-                                .get_crate_details(&info)
-                                .expect("Unable to scan crate");
+                        let details = self_clone
+                            .get_crate_details(&info)
+                            .expect("Unable to scan crate");
+                        {
+                            let mut crate_details_by_id =
+                                self_clone.crate_details_by_id.lock().unwrap();
+                            crate_details_by_id.insert(info.id, details.clone());
+                        }
+
+                        if self_clone.selected_crates_ids.contains(&pkg_id) {
+                            let stats = CrateStats { info, details };
+
+                            // ignore any problems if the receiver decided not to listen anymore
+                            let _ = ready_tx.send(stats);
+
+                            if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
+                                == total_crates_len
                             {
-                                let mut crate_details_by_id =
-                                    self_clone.crate_details_by_id.lock().unwrap();
-                                crate_details_by_id.insert(info.id, details.clone());
+                                // we processed all the crates, let all the workers terminate
+                                *pending_tx.lock().unwrap() = None;
                             }
-
-                            if self_clone.selected_crates_ids.contains(&pkg_id) {
-                                let stats = CrateStats { info, details };
-
-                                // ignore any problems if the receiver decided not to listen anymore
-                                let _ = ready_tx.send(stats);
-
-                                if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
-                                    == total_crates_len
-                                {
-                                    // we processed all the crates, let all the workers terminate
-                                    *pending_tx.lock().unwrap() = None;
-                                }
-                            }
-                        })
-                        .count();
+                        }
+                    });
 
                     assert_eq!(
                         ready_tx_count_clone.load(atomic::Ordering::SeqCst),
@@ -245,16 +241,22 @@ impl Scanner {
         } else {
             &self.full_ignore_list
         };
-        let digest = crev_lib::get_dir_digest(&info.root, ignore_list)?;
-        let unclean_digest = !is_digest_clean(&self.db, &pkg_name, &pkg_version, &digest);
-        let verification_result =
-            self.db
-                .verify_package_digest(&digest, &self.trust_set, &self.requirements);
-        let verified = if is_local_source_code {
-            true
+        let digest = if !is_local_source_code {
+            Some(crev_lib::get_dir_digest(&info.root, ignore_list)?)
         } else {
-            verification_result.is_verified()
+            None
         };
+        let unclean_digest = digest
+            .as_ref()
+            .map(|digest| !is_digest_clean(&self.db, &pkg_name, &pkg_version, &digest))
+            .unwrap_or(false);
+        let verification_result = if let Some(digest) = digest.as_ref() {
+            self.db
+                .verify_package_digest(&digest, &self.trust_set, &self.requirements)
+        } else {
+            VerificationStatus::Local
+        };
+        let verified = verification_result.is_verified();
 
         let pkg_name = info.id.name().to_string();
 

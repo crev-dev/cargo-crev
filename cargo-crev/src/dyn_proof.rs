@@ -22,7 +22,7 @@ pub trait DynContent {
 
 impl DynContent for proof::review::Code {
     fn set_date(&mut self, date: &proof::Date) {
-        self.common.date = date.clone();
+        self.common.date = *date;
     }
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();
@@ -33,7 +33,7 @@ impl DynContent for proof::review::Code {
 }
 impl DynContent for proof::review::Package {
     fn set_date(&mut self, date: &proof::Date) {
-        self.common.date = date.clone();
+        self.common.date = *date;
     }
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();
@@ -44,7 +44,7 @@ impl DynContent for proof::review::Package {
 }
 impl DynContent for proof::trust::Trust {
     fn set_date(&mut self, date: &proof::Date) {
-        self.common.date = date.clone();
+        self.common.date = *date;
     }
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();

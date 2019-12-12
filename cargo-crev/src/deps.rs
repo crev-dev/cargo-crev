@@ -155,7 +155,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
 /// Crate statistics - details
 #[derive(Clone, Debug)]
 pub struct CrateDetails {
-    pub digest: Digest,
+    pub digest: Option<Digest>,
     pub latest_trusted_version: Option<Version>,
     pub trusted_reviewers: HashSet<PubId>,
     pub version_reviews: CountWithTotal,

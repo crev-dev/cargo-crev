@@ -34,7 +34,13 @@ pub fn print_details(
     recursive_mode: bool,
 ) -> Result<()> {
     if verbose {
-        print!("{:43} ", cdep.digest);
+        print!(
+            "{:43} ",
+            cdep.digest
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "-".into())
+        );
     }
     if cdep.accumulative.is_local_source_code {
         term.print(format_args!("{:6}", "local"), None)?;

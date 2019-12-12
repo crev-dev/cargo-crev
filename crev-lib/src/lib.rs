@@ -93,6 +93,7 @@ pub enum VerificationStatus {
     Negative,
     Insufficient,
     Verified,
+    Local,
 }
 
 impl VerificationStatus {
@@ -117,6 +118,7 @@ impl VerificationStatus {
 impl fmt::Display for VerificationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            VerificationStatus::Local => f.pad("locl"),
             VerificationStatus::Verified => f.pad("pass"),
             VerificationStatus::Insufficient => f.pad("none"),
             VerificationStatus::Negative => f.pad("warn"),

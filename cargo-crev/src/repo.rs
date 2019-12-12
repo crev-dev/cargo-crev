@@ -537,7 +537,7 @@ impl Repo {
 
         match ret.len() {
             0 => Ok(None),
-            1 => Ok(Some(ret[0].clone())),
+            1 => Ok(Some(ret[0])),
             n => bail!(
                 "Ambiguous selection: {} matches found: {}",
                 n,

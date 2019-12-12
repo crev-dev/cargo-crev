@@ -10,10 +10,11 @@ use term::{
 };
 
 pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> {
+    use VerificationStatus::*;
     match s {
-        VerificationStatus::Verified => Some(term::color::GREEN),
-        VerificationStatus::Insufficient => None,
-        VerificationStatus::Negative => Some(term::color::YELLOW),
+        Verified | Local => Some(term::color::GREEN),
+        Insufficient => None,
+        Negative => Some(term::color::YELLOW),
     }
 }
 

@@ -111,6 +111,7 @@ impl<'t> VerifyScreen<'t> {
                 6,
                 6,
                 Box::new(|dep: &CrateStats| match dep.details.accumulative.trust {
+                    VerificationStatus::Local => ListViewCell::new("locl".to_owned(), &TS.good),
                     VerificationStatus::Verified => ListViewCell::new("pass".to_owned(), &TS.good),
                     VerificationStatus::Insufficient => {
                         ListViewCell::new("none".to_owned(), &TS.none)
