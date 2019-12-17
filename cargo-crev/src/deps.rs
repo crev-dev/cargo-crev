@@ -160,7 +160,7 @@ pub struct CrateDetails {
     pub trusted_reviewers: HashSet<PubId>,
     pub version_reviews: CountWithTotal,
     pub version_downloads: Option<CountWithTotal>,
-    pub known_owners: CountWithTotal,
+    pub known_owners: Option<CountWithTotal>,
     pub dependencies: Vec<proof::PackageVersionId>,
     pub rev_dependencies: Vec<proof::PackageVersionId>,
     pub unclean_digest: bool,
@@ -311,7 +311,14 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let deps: Vec<_> = events
         .into_iter()
-        .filter(|stats| !args.skip_known_owners || stats.details.known_owners.count == 0)
+        .filter(|stats| {
+            !args.skip_known_owners
+                || stats
+                    .details
+                    .known_owners
+                    .map(|it| it.count == 0)
+                    .unwrap_or(false)
+        })
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
             print_term::print_dep(&stats, &mut term, args.verbose, args.recursive)?;

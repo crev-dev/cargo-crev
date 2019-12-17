@@ -194,8 +194,12 @@ impl<'t> VerifyScreen<'t> {
                 2,
                 2,
                 Box::new(|dep: &CrateStats| {
-                    if dep.details().known_owners.count > 0 {
-                        ListViewCell::new(format!("{}", dep.details().known_owners.count), &TS.good)
+                    if let Some(known_owners) = &dep.details().known_owners {
+                        if known_owners.count > 0 {
+                            ListViewCell::new(format!("{}", known_owners.count), &TS.good)
+                        } else {
+                            ListViewCell::new("".to_owned(), &TS.std)
+                        }
                     } else {
                         ListViewCell::new("".to_owned(), &TS.std)
                     }
@@ -208,8 +212,12 @@ impl<'t> VerifyScreen<'t> {
                 3,
                 Box::new(|dep: &CrateStats| {
                     ListViewCell::new(
-                        if dep.details().known_owners.total > 0 {
-                            format!("{}", dep.details().known_owners.total)
+                        if let Some(known_owners) = &dep.details().known_owners {
+                            if known_owners.total > 0 {
+                                format!("{}", known_owners.total)
+                            } else {
+                                "".to_owned()
+                            }
                         } else {
                             "".to_owned()
                         },
