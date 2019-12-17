@@ -286,7 +286,10 @@ impl Scanner {
             Err(_) => None,
         };
 
-        let owner_list = self.crates_io.get_owners(&pkg_name)?;
+        let owner_list = self
+            .crates_io
+            .get_owners(&pkg_name)
+            .unwrap_or_else(|_| vec![]);
         let total_owners_count = owner_list.len();
         let known_owners_count = owner_list
             .iter()
