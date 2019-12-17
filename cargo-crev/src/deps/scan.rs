@@ -286,18 +286,20 @@ impl Scanner {
             Err(_) => None,
         };
 
-        let owner_list = self
-            .crates_io
-            .get_owners(&pkg_name)
-            .unwrap_or_else(|_| vec![]);
-        let total_owners_count = owner_list.len();
-        let known_owners_count = owner_list
-            .iter()
-            .filter(|o| self.known_owners.contains(o.as_str()))
-            .count();
-        let known_owners = CountWithTotal {
-            count: known_owners_count as u64,
-            total: total_owners_count as u64,
+        let owner_list = self.crates_io.get_owners(&pkg_name).ok();
+        let known_owners = match &owner_list {
+            Some(owner_list) => {
+                let total_owners_count = owner_list.len();
+                let known_owners_count = owner_list
+                    .iter()
+                    .filter(|o| self.known_owners.contains(o.as_str()))
+                    .count();
+                Some(CountWithTotal {
+                    count: known_owners_count as u64,
+                    total: total_owners_count as u64,
+                })
+            }
+            None => None,
         };
 
         let issues_from_trusted = self.db.get_open_issues_for_version(
@@ -335,7 +337,7 @@ impl Scanner {
             .get_pkg_flags(&proof_pkg_id)
             .any(|(id, flags)| self.trust_set.contains_trusted(id) && flags.unmaintained);
 
-        let owner_set = OwnerSetSet::new(info.id, owner_list);
+        let owner_set = OwnerSetSet::new(info.id, owner_list.into_iter().flatten());
 
         let accumulative_own = AccumulativeCrateDetails {
             trust: verification_result,

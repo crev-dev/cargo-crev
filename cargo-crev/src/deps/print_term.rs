@@ -72,7 +72,7 @@ pub fn print_details(
             },
         )?;
     } else {
-        println!(" {:>8} {:>9}", "?", "?");
+        term.print(format_args!(" {:>8} {:>9}", "?", "?"), None)?;
     }
 
     if recursive_mode {
@@ -85,11 +85,19 @@ pub fn print_details(
             None,
         )?;
     } else {
-        term.print(
-            format_args!(" {:>2}", cdep.known_owners.count),
-            term::known_owners_count_color(cdep.known_owners.count),
-        )?;
-        term.print(format_args!("/{:<2}", cdep.known_owners.total), None)?;
+        if let Some(known_owners) = &cdep.known_owners {
+            term.print(
+                format_args!(" {:>2}", known_owners.count),
+                term::known_owners_count_color(known_owners.count),
+            )?;
+            term.print(format_args!("/{:<2}", known_owners.total), None)?;
+        } else {
+            term.print(
+                format_args!(" {:>2}", "?"),
+                term::known_owners_count_color(0),
+            )?;
+            term.print(format_args!("/{:<2}", "?"), None)?;
+        }
     }
 
     term.print(
