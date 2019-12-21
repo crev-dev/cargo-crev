@@ -188,13 +188,50 @@ pub struct CrateVerifyCommon {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
+pub struct CrateVerifyColumns {
+    #[structopt(long = "--show-digest")]
+    /// Show crate content digest
+    pub show_digest: bool,
+
+    #[structopt(long = "--show-leftpad-index")]
+    /// Show crate leftpad index (recent downloads / loc)
+    pub show_leftpad_index: bool,
+
+    #[structopt(long = "--show-downloads")]
+    /// Show crate download counts
+    pub show_downloads: bool,
+
+    #[structopt(long = "--show-owners")]
+    /// Show crate owners counts
+    pub show_owners: bool,
+
+    #[structopt(long = "--show-latest-trusted")]
+    /// Show latest trusted version
+    pub show_latest_trusted: bool,
+
+    #[structopt(long = "--show-reviews")]
+    /// Show reviews count
+    pub show_reviews: bool,
+}
+
+impl CrateVerifyColumns {
+    pub fn any_selected(self) -> bool {
+        self.show_digest
+            || self.show_leftpad_index
+            || self.show_downloads
+            || self.show_owners
+            || self.show_latest_trusted
+            || self.show_reviews
+    }
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateVerify {
     #[structopt(flatten)]
     pub common: CrateVerifyCommon,
 
-    #[structopt(long = "verbose", short = "v")]
-    /// Display more informations about the crates
-    pub verbose: bool,
+    #[structopt(flatten)]
+    pub columns: CrateVerifyColumns,
 
     #[structopt(long = "interactive", short = "i")]
     pub interactive: bool,

@@ -278,13 +278,10 @@ impl Scanner {
             total: total_reviews_count as u64,
         };
 
-        let version_downloads = match self.crates_io.get_downloads_count(&pkg_name, &pkg_version) {
-            Ok((version, total)) => Some(CountWithTotal {
-                count: version,
-                total,
-            }),
-            Err(_) => None,
-        };
+        let downloads = self
+            .crates_io
+            .get_downloads_count(&pkg_name, &pkg_version)
+            .ok();
 
         let owner_list = self.crates_io.get_owners(&pkg_name).ok();
         let known_owners = match &owner_list {
@@ -343,7 +340,7 @@ impl Scanner {
             trust: verification_result,
             trusted_issues: issues,
             geiger_count,
-            loc,
+            loc: loc.map(|l| l as u64),
             verified,
             has_custom_build: info.has_custom_build,
             is_unmaintained,
@@ -382,9 +379,12 @@ impl Scanner {
                 .collect(),
             latest_trusted_version,
             version_reviews: version_review_count,
-            version_downloads,
+            downloads,
             known_owners,
             unclean_digest,
+            leftpad_idx: downloads
+                .and_then(|d| d.recent.checked_div(accumulative_own.loc.unwrap_or(0)))
+                .unwrap_or(0),
             accumulative: if self.recursive {
                 accumulative_recursive.clone()
             } else {

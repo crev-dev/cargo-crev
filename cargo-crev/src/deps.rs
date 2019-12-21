@@ -54,6 +54,24 @@ where
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct DownloadsStats {
+    pub version: u64,
+    pub total: u64,
+    pub recent: u64,
+}
+
+impl Add<DownloadsStats> for DownloadsStats {
+    type Output = DownloadsStats;
+
+    fn add(self, other: DownloadsStats) -> Self::Output {
+        DownloadsStats {
+            version: self.version + other.version,
+            total: self.total + other.total,
+            recent: self.recent + other.recent,
+        }
+    }
+}
 /// A set of set of owners
 #[derive(Clone, Debug)]
 pub struct OwnerSetSet(HashMap<PackageId, HashSet<String>>);
@@ -115,7 +133,7 @@ pub struct AccumulativeCrateDetails {
     pub trust: VerificationStatus,
     pub trusted_issues: CountWithTotal,
     pub verified: bool,
-    pub loc: Option<usize>,
+    pub loc: Option<u64>,
     pub geiger_count: Option<u64>,
     pub has_custom_build: bool,
     pub is_unmaintained: bool,
@@ -159,8 +177,9 @@ pub struct CrateDetails {
     pub latest_trusted_version: Option<Version>,
     pub trusted_reviewers: HashSet<PubId>,
     pub version_reviews: CountWithTotal,
-    pub version_downloads: Option<CountWithTotal>,
+    pub downloads: Option<DownloadsStats>,
     pub known_owners: Option<CountWithTotal>,
+    pub leftpad_idx: u64,
     pub dependencies: Vec<proof::PackageVersionId>,
     pub rev_dependencies: Vec<proof::PackageVersionId>,
     pub unclean_digest: bool,
@@ -306,7 +325,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     // print header, only after `scanner` had a chance to download everything
     if term.stderr_is_tty && term.stdout_is_tty {
-        self::print_term::print_header(&mut term, args.verbose);
+        self::print_term::print_header(&mut term, &args.columns);
     }
 
     let deps: Vec<_> = events
@@ -321,7 +340,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         })
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
-            print_term::print_dep(&stats, &mut term, args.verbose, args.recursive)?;
+            print_term::print_dep(&stats, &mut term, &args.columns, args.recursive)?;
             Ok(stats)
         })
         .collect::<Result<_>>()?;
@@ -339,7 +358,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     }
 
     if nb_unclean_digests > 0 {
-        println!(
+        eprintln!(
             "{} unclean package{} detected. Use `cargo crev crate clean <name>` to wipe the local source.",
             nb_unclean_digests,
             if nb_unclean_digests > 1 { "s" } else { "" },
@@ -355,6 +374,12 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
                     ::term::color::RED,
                 )?;
             }
+        }
+    }
+
+    if term.stderr_is_tty && term.stdout_is_tty {
+        if !args.columns.any_selected() {
+            eprintln!("Use one or more `--show-xyz` options to print more details.");
         }
     }
 

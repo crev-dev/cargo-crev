@@ -1,3 +1,4 @@
+use crate::deps::DownloadsStats;
 use crate::prelude::*;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
@@ -44,15 +45,17 @@ impl Cacheable for crates_io_api::Owners {
     }
 }
 
-fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &Version) -> (u64, u64) {
-    (
-        resp.versions
+fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &Version) -> DownloadsStats {
+    DownloadsStats {
+        version: resp
+            .versions
             .iter()
             .find(|v| v.num == version.to_string())
             .map(|v| v.downloads)
             .unwrap_or(0),
-        resp.crate_data.downloads,
-    )
+        total: resp.crate_data.downloads,
+        recent: resp.crate_data.recent_downloads.unwrap_or(0),
+    }
 }
 
 impl Client {
@@ -116,7 +119,7 @@ impl Client {
         }
     }
 
-    pub fn get_downloads_count(&self, crate_: &str, version: &Version) -> Result<(u64, u64)> {
+    pub fn get_downloads_count(&self, crate_: &str, version: &Version) -> Result<DownloadsStats> {
         Ok(get_downloads_stats(
             &self.get::<crates_io_api::CrateResponse>(crate_, &version.to_string())?,
             version,

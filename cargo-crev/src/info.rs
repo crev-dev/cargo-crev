@@ -14,7 +14,7 @@ use std::{collections::HashSet, io};
 #[serde(rename_all = "kebab-case")]
 pub struct Details {
     pub verified: bool,
-    pub loc: Option<usize>,
+    pub loc: Option<u64>,
     pub geiger_count: Option<u64>,
     pub has_custom_build: bool,
     pub unmaintained: bool,

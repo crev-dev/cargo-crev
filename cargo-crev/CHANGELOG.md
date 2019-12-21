@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `crate verify` no longer hangs on unpublished local crates
 
+## Changed
+
+* Make most columns in `crate verify` optional with `--show-xyz` options
+
 ## [0.14.0](https://github.com/dpc/crev/compare/cargo-crev-v0.13.0...cargo-crev-v0.14.0) - 2019-12-16
 ## Fixed
 

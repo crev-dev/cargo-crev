@@ -156,10 +156,10 @@ impl<'t> VerifyScreen<'t> {
                 "downloads",
                 6,
                 6,
-                Box::new(|dep: &CrateStats| match dep.details().version_downloads {
+                Box::new(|dep: &CrateStats| match dep.details().downloads {
                     Some(downloads) => ListViewCell::new(
-                        u64_to_str(downloads.count),
-                        if downloads.count < 1000 {
+                        u64_to_str(downloads.version),
+                        if downloads.version < 1000 {
                             &TS.medium
                         } else {
                             &TS.std
@@ -174,7 +174,7 @@ impl<'t> VerifyScreen<'t> {
                 6,
                 6,
                 Box::new(|dep: &CrateStats| {
-                    if let Some(downloads) = dep.details().version_downloads {
+                    if let Some(downloads) = dep.details().downloads {
                         ListViewCell::new(
                             u64_to_str(downloads.total),
                             if downloads.total < 1000 {
