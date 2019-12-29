@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 
 * `crate verify` no longer hangs on unpublished local crates
+* Use effective instead of direct trust in WoT graph calculations
 
 ## Changed
 

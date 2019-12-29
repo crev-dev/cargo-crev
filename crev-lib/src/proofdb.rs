@@ -1054,10 +1054,22 @@ impl ProofDB {
         visited.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
         while let Some(current) = pending.iter().next().cloned() {
+            debug!("Traversing id: {:?}", current);
             pending.remove(&current);
 
-            for (level, candidate_id) in self.get_trust_list_of_id(&&current.id) {
-                if level == TrustLevel::Distrust {
+            for (direct_trust, candidate_id) in self.get_trust_list_of_id(&&current.id) {
+                debug!(
+                    "{} trusts {} - level: {}",
+                    current.id, candidate_id, direct_trust
+                );
+
+                if visited.distrusted.contains_key(candidate_id) {
+                    debug!("{} is distrusted", candidate_id);
+                    continue;
+                }
+
+                if direct_trust == TrustLevel::Distrust {
+                    debug!("Adding {} to distrusted list", candidate_id);
                     visited
                         .distrusted
                         .entry(candidate_id.clone())
@@ -1066,45 +1078,61 @@ impl ProofDB {
                     continue;
                 }
 
-                let candidate_distance_from_current =
-                    if let Some(v) = params.distance_by_level(level) {
-                        v
-                    } else {
-                        continue;
-                    };
-
-                if visited.distrusted.contains_key(candidate_id) {
-                    continue;
-                }
-                let candidate_total_distance = current.distance + candidate_distance_from_current;
-
-                if candidate_total_distance > params.max_distance {
-                    continue;
-                }
-
-                let candidate_effective_trust = std::cmp::min(
-                    level,
+                let effective_trust = std::cmp::min(
+                    direct_trust,
                     visited
                         .get_effective_trust_level_opt(&current.id)
                         .expect("Id should have been inserted to `visited` beforehand"),
                 );
+                debug!("Effective trust for {} {}", candidate_id, effective_trust);
 
-                if candidate_effective_trust < TrustLevel::None {
+                if effective_trust < TrustLevel::None {
                     unreachable!(
                         "this should not happen: candidate_effective_trust < TrustLevel::None"
                     );
+                }
+
+                let candidate_distance_from_current =
+                    if let Some(v) = params.distance_by_level(effective_trust) {
+                        v
+                    } else {
+                        debug!("Not traversing {}: trust too low", candidate_id);
+                        continue;
+                    };
+
+                let candidate_total_distance = current.distance + candidate_distance_from_current;
+
+                debug!(
+                    "Distance of {} from {}: {}. Total distance from root: {}.",
+                    candidate_id,
+                    current.id,
+                    candidate_distance_from_current,
+                    candidate_total_distance
+                );
+
+                if candidate_total_distance > params.max_distance {
+                    debug!(
+                        "Total distance of {}: {} higher than max_distance: {}.",
+                        candidate_id, candidate_total_distance, params.max_distance
+                    );
+                    continue;
                 }
 
                 if visited.record_trusted_id(
                     candidate_id.clone(),
                     current.id.clone(),
                     candidate_total_distance,
-                    candidate_effective_trust,
+                    effective_trust,
                 ) {
-                    pending.insert(Visit {
+                    let visit = Visit {
                         distance: candidate_total_distance,
                         id: candidate_id.to_owned(),
-                    });
+                    };
+                    if pending.insert(visit.clone()) {
+                        debug!("{:?} inserted for visit", visit);
+                    } else {
+                        debug!("{:?} alreading pending", visit);
+                    }
                 }
             }
         }

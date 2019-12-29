@@ -29,7 +29,7 @@ impl fmt::Display for IdType {
 ///
 /// Right now it's only native CrevID, but in future at least GPG
 /// should be supported.
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "id-type")]
 pub enum Id {
     #[serde(rename = "crev")]
@@ -37,6 +37,22 @@ pub enum Id {
         #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
         id: Vec<u8>,
     },
+}
+
+impl fmt::Debug for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Id::Crev { id } => f.write_str(&crev_common::base64_encode(id)),
+        }
+    }
+}
+
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Id::Crev { id } => f.write_str(&crev_common::base64_encode(id)),
+        }
+    }
 }
 
 impl Id {
@@ -63,14 +79,6 @@ impl Id {
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Id::Crev { id } => id.clone(),
-        }
-    }
-}
-
-impl fmt::Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Id::Crev { id } => f.write_str(&crev_common::base64_encode(id)),
         }
     }
 }
