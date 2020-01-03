@@ -35,10 +35,13 @@ pub fn print_header(_term: &mut Term, columns: &CrateVerifyColumns) {
     }
 
     eprint!(
-        "{:>6} {:>6} {:>6} {:>4} ",
-        "issues", "lines", "geiger", "flgs"
+        "{:>6} {:>6} {:>6} ",
+        "issues", "lines", "geiger",
     );
 
+    if columns.show_flags {
+        eprint!("{:>4} ", "flgs");
+    }
     if columns.show_leftpad_index {
         eprint!("{:>5} ", "lpidx");
     }
@@ -184,6 +187,7 @@ pub fn print_dep(
         Some(geiger_count) => print!("{:>6} ", geiger_count),
         None => print!("{:>6} ", "err"),
     }
+    if columns.show_flags {
     term.print(
         format_args!(
             "{:2}{:2} ",
@@ -192,6 +196,7 @@ pub fn print_dep(
         ),
         ::term::color::YELLOW,
     )?;
+    }
 
     if columns.show_leftpad_index {
         print!("{:>5} ", stats.details.leftpad_idx);

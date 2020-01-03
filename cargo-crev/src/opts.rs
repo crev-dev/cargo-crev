@@ -212,6 +212,10 @@ pub struct CrateVerifyColumns {
     #[structopt(long = "--show-reviews")]
     /// Show reviews count
     pub show_reviews: bool,
+
+    #[structopt(long = "--show-flags")]
+    /// Show crate flags
+    pub show_flags: bool,
 }
 
 impl CrateVerifyColumns {
