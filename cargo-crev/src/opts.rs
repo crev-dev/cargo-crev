@@ -187,46 +187,86 @@ pub struct CrateVerifyCommon {
     pub cargo_opts: CargoOpts,
 }
 
-#[derive(Debug, StructOpt, Clone, Default)]
+#[derive(Debug, StructOpt, Clone, Copy, Default)]
 pub struct CrateVerifyColumns {
     #[structopt(long = "--show-digest")]
     /// Show crate content digest
-    pub show_digest: bool,
+    pub show_digest: Option<bool>,
 
     #[structopt(long = "--show-leftpad-index")]
     /// Show crate leftpad index (recent downloads / loc)
-    pub show_leftpad_index: bool,
+    pub show_leftpad_index: Option<bool>,
 
     #[structopt(long = "--show-downloads")]
     /// Show crate download counts
-    pub show_downloads: bool,
+    pub show_downloads: Option<bool>,
 
     #[structopt(long = "--show-owners")]
     /// Show crate owners counts
-    pub show_owners: bool,
+    pub show_owners: Option<bool>,
 
     #[structopt(long = "--show-latest-trusted")]
     /// Show latest trusted version
-    pub show_latest_trusted: bool,
+    pub show_latest_trusted: Option<bool>,
 
     #[structopt(long = "--show-reviews")]
     /// Show reviews count
-    pub show_reviews: bool,
+    pub show_reviews: Option<bool>,
+
+    #[structopt(long = "--show-loc")]
+    /// Show Lines of Code
+    pub show_loc: Option<bool>,
+
+    #[structopt(long = "--show-issues")]
+    /// Show count of issues reported
+    pub show_issues: Option<bool>,
+
+    #[structopt(long = "--show-geiger")]
+    /// Show geiger (unsafe lines) count
+    pub show_geiger: Option<bool>,
 
     #[structopt(long = "--show-flags")]
     /// Show crate flags
-    pub show_flags: bool,
+    pub show_flags: Option<bool>,
+
+    #[structopt(long = "--show-all")]
+    /// Show all
+    pub show_all: bool,
+}
+
+macro_rules! show_x {
+    ($name:ident, $default:expr) => {
+        pub fn $name(self) -> bool {
+            self.show_all || self.$name.unwrap_or($default)
+        }
+    }
 }
 
 impl CrateVerifyColumns {
     pub fn any_selected(self) -> bool {
-        self.show_digest
-            || self.show_leftpad_index
-            || self.show_downloads
-            || self.show_owners
-            || self.show_latest_trusted
-            || self.show_reviews
+        self.show_digest.is_some()
+            || self.show_leftpad_index.is_some()
+            || self.show_downloads.is_some()
+            || self.show_owners.is_some()
+            || self.show_reviews.is_some()
+            || self.show_latest_trusted.is_some()
+            || self.show_flags.is_some()
+            || self.show_issues.is_some()
+            || self.show_loc.is_some()
+            || self.show_geiger.is_some()
+            || self.show_all
     }
+
+    show_x!(show_digest, false);
+    show_x!(show_reviews, false);
+    show_x!(show_leftpad_index, false);
+    show_x!(show_downloads, false);
+    show_x!(show_latest_trusted, true);
+    show_x!(show_flags, true);
+    show_x!(show_owners, false);
+    show_x!(show_issues, true);
+    show_x!(show_loc, false);
+    show_x!(show_geiger, false);
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]

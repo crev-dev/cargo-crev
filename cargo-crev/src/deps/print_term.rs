@@ -16,38 +16,45 @@ fn pad_left_manually(s: String, width: usize) -> String {
 }
 
 pub fn print_header(_term: &mut Term, columns: &CrateVerifyColumns) {
-    if columns.show_digest {
+    if columns.show_digest() {
         eprint!("{:<43} ", "digest");
     }
 
     eprint!("{:>6} ", "status");
 
-    if columns.show_reviews {
+    if columns.show_reviews() {
         eprint!("{:>7} ", "reviews");
     }
 
-    if columns.show_downloads {
+    if columns.show_downloads() {
         eprint!("{:^18} ", "downloads");
     }
 
-    if columns.show_owners {
+    if columns.show_owners() {
         eprint!("{:>6} ", "owner");
     }
 
-    eprint!(
-        "{:>6} {:>6} {:>6} ",
-        "issues", "lines", "geiger",
-    );
+    if columns.show_issues() {
+        eprint!("{:>6} ", "issues");
+    }
 
-    if columns.show_flags {
+    if columns.show_loc() {
+        eprint!("{:>6} ", "loc");
+    }
+
+    if columns.show_geiger() {
+        eprint!("{:>6} ", "geiger");
+    }
+
+    if columns.show_flags() {
         eprint!("{:>4} ", "flgs");
     }
-    if columns.show_leftpad_index {
+    if columns.show_leftpad_index() {
         eprint!("{:>5} ", "lpidx");
     }
     eprintln!("{:<20} {:<15} ", "crate", "version");
 
-    if columns.show_latest_trusted {
+    if columns.show_latest_trusted() {
         eprintln!("{:<15}", "latest_t");
     }
 }
@@ -59,7 +66,7 @@ pub fn print_details(
     columns: &CrateVerifyColumns,
     recursive_mode: bool,
 ) -> Result<()> {
-    if columns.show_digest {
+    if columns.show_digest() {
         print!(
             "{:43} ",
             cdep.digest
@@ -77,14 +84,14 @@ pub fn print_details(
         )?;
     }
 
-    if columns.show_reviews {
+    if columns.show_reviews() {
         print!(
             "{:3} {:3} ",
             cdep.version_reviews.count, cdep.version_reviews.total
         );
     }
 
-    if columns.show_downloads {
+    if columns.show_downloads() {
         if let Some(downloads) = &cdep.downloads {
             term.print(
                 format_args!("{:>8} ", downloads.version),
@@ -107,7 +114,7 @@ pub fn print_details(
         }
     }
 
-    if columns.show_owners {
+    if columns.show_owners() {
         if recursive_mode {
             term.print(
                 format_args!(
@@ -134,25 +141,30 @@ pub fn print_details(
         }
     }
 
-    term.print(
-        format_args!("{:2} ", cdep.accumulative.trusted_issues.count),
-        if cdep.accumulative.trusted_issues.count > 0 {
-            Some(::term::color::RED)
-        } else {
-            None
-        },
-    )?;
-    term.print(
-        format_args!("{:3} ", cdep.accumulative.trusted_issues.total),
-        if cdep.accumulative.trusted_issues.total > 0 {
-            Some(::term::color::YELLOW)
-        } else {
-            None
-        },
-    )?;
-    match cdep.accumulative.loc {
-        Some(loc) => print!("{:>6} ", loc),
-        None => print!("{:>6} ", "err"),
+    if columns.show_issues() {
+        term.print(
+            format_args!("{:2} ", cdep.accumulative.trusted_issues.count),
+            if cdep.accumulative.trusted_issues.count > 0 {
+                Some(::term::color::RED)
+            } else {
+                None
+            },
+        )?;
+        term.print(
+            format_args!("{:3} ", cdep.accumulative.trusted_issues.total),
+            if cdep.accumulative.trusted_issues.total > 0 {
+                Some(::term::color::YELLOW)
+            } else {
+                None
+            },
+        )?;
+    }
+
+    if columns.show_loc() {
+        match cdep.accumulative.loc {
+            Some(loc) => print!("{:>6} ", loc),
+            None => print!("{:>6} ", "err"),
+        }
     }
 
     Ok(())
@@ -183,28 +195,35 @@ pub fn print_dep(
     let details = stats.details();
 
     print_details(&details, term, columns, recursive_mode)?;
-    match details.accumulative.geiger_count {
-        Some(geiger_count) => print!("{:>6} ", geiger_count),
-        None => print!("{:>6} ", "err"),
-    }
-    if columns.show_flags {
-    term.print(
-        format_args!(
-            "{:2}{:2} ",
-            if stats.has_custom_build() { "CB" } else { "" },
-            if stats.is_unmaintained() { "UM" } else { "" }
-        ),
-        ::term::color::YELLOW,
-    )?;
+    if columns.show_geiger() {
+        match details.accumulative.geiger_count {
+            Some(geiger_count) => print!("{:>6} ", geiger_count),
+            None => print!("{:>6} ", "err"),
+        }
     }
 
-    if columns.show_leftpad_index {
+    if columns.show_flags() {
+        if stats.has_custom_build() {
+            print!("CB");
+        } else {
+            print!("__");
+        }
+
+        if stats.is_unmaintained() {
+            term.print(format_args!("UM"), ::term::color::YELLOW)?;
+        } else {
+            print!("__");
+        }
+        print!(" ");
+    }
+
+    if columns.show_leftpad_index() {
         print!("{:>5} ", stats.details.leftpad_idx);
     }
 
     print_stats_crate_id(stats, term);
 
-    if columns.show_latest_trusted {
+    if columns.show_latest_trusted() {
         print!(
             " {}",
             latest_trusted_version_string(
