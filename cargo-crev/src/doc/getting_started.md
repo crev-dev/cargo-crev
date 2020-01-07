@@ -522,7 +522,7 @@ easily discoverable.
 
 You can ask other people to include them in their *WoT* by publishing a blog-post, sending a tweet, sending message on
 [`crev's` gitter channel](https://gitter.im/dpc/crev) or adding it to the
-[official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/dpc/crev/wiki/List-of-Proof-Repositories)
+[official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/crev-dev/cargo-crev/wiki/List-of-Proof-Repositories)
 
 You can also use these places to find more *proof repositories* of other people.
 
