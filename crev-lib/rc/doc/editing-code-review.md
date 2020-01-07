@@ -49,6 +49,6 @@ your other work, etc.
 
 ## Further reading
 
-See https://github.com/dpc/crev/wiki/Howto:-Create-Review-Proofs wiki
+See https://github.com/crev-dev/cargo-crev/wiki/Howto:-Create-Review-Proofs wiki
 page for more information and Frequently Asked Questions, or join
 https://gitter.im/dpc/crev discussion channel.

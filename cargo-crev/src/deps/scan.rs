@@ -14,8 +14,7 @@ use crate::{
 use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
 use crev_data::proof::{self, CommonOps};
-use crev_lib;
-use crev_lib::VerificationStatus;
+use crev_lib::{self, VerificationStatus};
 use crossbeam::{
     self,
     channel::{unbounded, Receiver},

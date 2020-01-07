@@ -168,7 +168,7 @@ impl LockedId {
                 config.lanes = lanes;
             } else {
                 eprintln!(
-                    "`lanes` not configured. Old bug. See: https://github.com/dpc/crev/issues/151"
+                    "`lanes` not configured. Old bug. See: https://github.com/crev-dev/cargo-crev/issues/151"
                 );
                 eprintln!("Using `lanes: {}`", config.lanes);
             }

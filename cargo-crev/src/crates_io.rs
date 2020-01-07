@@ -1,5 +1,4 @@
-use crate::deps::DownloadsStats;
-use crate::prelude::*;
+use crate::{deps::DownloadsStats, prelude::*};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     fs,

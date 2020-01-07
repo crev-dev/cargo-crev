@@ -2,8 +2,8 @@
 
 ## Introduction
 
-The goal of this guide is to introduce you to the [`crev`](https://github.com/dpc/crev)
-review system, the [`cargo crev`](https://github.com/dpc/crev/tree/master/cargo-crev) command,
+The goal of this guide is to introduce you to the [`crev`](https://github.com/crev-dev/cargo-crev)
+review system, the [`cargo crev`](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev) command,
 ideas behind them and describe the basic workflows that will allow you to start using them.
 
 Please remember that `crev` project is still largely a work in progress,
@@ -35,7 +35,7 @@ available, the recommended way to install it is installing from source.
 
 ### Using static binaries
 
-Static binaries build by CI pipeline are available on [crev's releases](https://github.com/dpc/crev/releases) GitHub page.
+Static binaries build by CI pipeline are available on [crev's releases](https://github.com/crev-dev/cargo-crev/releases) GitHub page.
 
 ### Building from source
 
@@ -68,7 +68,7 @@ cargo install cargo-crev
 In case you'd like to try latest features from the master branch, try:
 
 ```text
-cargo install --git https://github.com/dpc/crev/ cargo-crev
+cargo install --git https://github.com/crev-dev/cargo-crev/ cargo-crev
 ```
 
 If you need help installing Rust compiler & `cargo`, consider using [rustup.rs page](https://rustup.rs/)
@@ -277,7 +277,7 @@ comment: ""
 # 
 # ## Further reading
 # 
-# See https://github.com/dpc/crev/wiki/Howto:-Create-Review-Proofs wiki
+# See https://github.com/crev-dev/cargo-crev/wiki/Howto:-Create-Review-Proofs wiki
 # page for more information and Frequently Asked Questions, or join
 # https://gitter.im/dpc/crev discussion channel.
 ```
@@ -522,7 +522,7 @@ easily discoverable.
 
 You can ask other people to include them in their *WoT* by publishing a blog-post, sending a tweet, sending message on
 [`crev's` gitter channel](https://gitter.im/dpc/crev) or adding it to the
-[official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/dpc/crev/wiki/List-of-Proof-Repositories)
+[official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/crev-dev/cargo-crev/wiki/List-of-Proof-Repositories)
 
 You can also use these places to find more *proof repositories* of other people.
 

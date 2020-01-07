@@ -12,7 +12,7 @@
 /// mistakes or ways to improve it:
 ///
 /// 1. Open
-/// [user documentation source code directory](https://github.com/dpc/crev/tree/master/cargo-crev/src/doc),
+/// [user documentation source code directory](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev/src/doc),
 /// 2. Open the the affected file,
 /// 3. Use *Edit this file* function,
 /// 4. Modify the text,
