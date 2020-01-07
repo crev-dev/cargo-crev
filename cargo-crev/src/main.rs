@@ -79,7 +79,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let local = Local::auto_create_or_open()?;
                 let res = local.generate_id(args.url, args.github_username, args.use_https_push);
                 if res.is_err() {
-                    eprintln!("Visit https://github.com/crev-dev/crev/wiki/Proof-Repository for help.");
+                    eprintln!(
+                        "Visit https://github.com/crev-dev/crev/wiki/Proof-Repository for help."
+                    );
                 }
                 let local = crev_lib::Local::auto_open()?;
                 let _ = ensure_known_owners_list_exists(&local);
