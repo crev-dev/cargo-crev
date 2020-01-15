@@ -328,6 +328,8 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         self::print_term::print_header(&mut term, &args.columns);
     }
 
+    let mut crates_with_issues = false;
+
     let deps: Vec<_> = events
         .into_iter()
         .filter(|stats| {
@@ -355,6 +357,10 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         if !details.accumulative.verified {
             nb_unverified += 1;
         }
+
+        if details.accumulative_own.trusted_issues.count > 0 {
+            crates_with_issues = true;
+        }
     }
 
     if nb_unclean_digests > 0 {
@@ -380,6 +386,10 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     if term.stderr_is_tty && term.stdout_is_tty {
         if !args.columns.any_selected() {
             eprintln!("Use one or more `--show-xyz` options to print more details.");
+        }
+
+        if crates_with_issues {
+            eprintln!("Crates with issues found. Use `cargo crev repo query issue <crate> [<version>]` for details.");
         }
     }
 
