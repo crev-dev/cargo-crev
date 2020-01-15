@@ -52,11 +52,13 @@ pub fn print_header(_term: &mut Term, columns: &CrateVerifyColumns) {
     if columns.show_leftpad_index() {
         eprint!("{:>5} ", "lpidx");
     }
-    eprintln!("{:<20} {:<15} ", "crate", "version");
+    eprint!("{:<20} {:<15} ", "crate", "version");
 
     if columns.show_latest_trusted() {
-        eprintln!("{:<15}", "latest_t");
+        eprint!("{:<15}", "latest_t");
     }
+
+    eprintln!();
 }
 
 #[allow(clippy::collapsible_if)]
