@@ -189,47 +189,47 @@ pub struct CrateVerifyCommon {
 
 #[derive(Debug, StructOpt, Clone, Copy, Default)]
 pub struct CrateVerifyColumns {
-    #[structopt(long = "--show-digest")]
+    #[structopt(long = "show-digest")]
     /// Show crate content digest
-    pub show_digest: Option<bool>,
+    pub show_digest: Option<Option<bool>>,
 
-    #[structopt(long = "--show-leftpad-index")]
+    #[structopt(long = "show-leftpad-index")]
     /// Show crate leftpad index (recent downloads / loc)
-    pub show_leftpad_index: Option<bool>,
+    pub show_leftpad_index: Option<Option<bool>>,
 
-    #[structopt(long = "--show-downloads")]
+    #[structopt(long = "show-downloads")]
     /// Show crate download counts
-    pub show_downloads: Option<bool>,
+    pub show_downloads: Option<Option<bool>>,
 
-    #[structopt(long = "--show-owners")]
+    #[structopt(long = "show-owners")]
     /// Show crate owners counts
-    pub show_owners: Option<bool>,
+    pub show_owners: Option<Option<bool>>,
 
-    #[structopt(long = "--show-latest-trusted")]
+    #[structopt(long = "show-latest-trusted")]
     /// Show latest trusted version
-    pub show_latest_trusted: Option<bool>,
+    pub show_latest_trusted: Option<Option<bool>>,
 
-    #[structopt(long = "--show-reviews")]
+    #[structopt(long = "show-reviews")]
     /// Show reviews count
-    pub show_reviews: Option<bool>,
+    pub show_reviews: Option<Option<bool>>,
 
-    #[structopt(long = "--show-loc")]
+    #[structopt(long = "show-loc")]
     /// Show Lines of Code
-    pub show_loc: Option<bool>,
+    pub show_loc: Option<Option<bool>>,
 
-    #[structopt(long = "--show-issues")]
+    #[structopt(long = "show-issues")]
     /// Show count of issues reported
-    pub show_issues: Option<bool>,
+    pub show_issues: Option<Option<bool>>,
 
-    #[structopt(long = "--show-geiger")]
+    #[structopt(long = "show-geiger")]
     /// Show geiger (unsafe lines) count
-    pub show_geiger: Option<bool>,
+    pub show_geiger: Option<Option<bool>>,
 
-    #[structopt(long = "--show-flags")]
+    #[structopt(long = "show-flags")]
     /// Show crate flags
-    pub show_flags: Option<bool>,
+    pub show_flags: Option<Option<bool>>,
 
-    #[structopt(long = "--show-all")]
+    #[structopt(long = "show-all")]
     /// Show all
     pub show_all: bool,
 }
@@ -237,7 +237,7 @@ pub struct CrateVerifyColumns {
 macro_rules! show_x {
     ($name:ident, $default:expr) => {
         pub fn $name(self) -> bool {
-            self.show_all || self.$name.unwrap_or($default)
+            self.show_all || self.$name.unwrap_or(Some($default)).unwrap_or(true)
         }
     }
 }
