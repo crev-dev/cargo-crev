@@ -15,11 +15,11 @@ matrix:
 
     # deployments
     - env: DEPLOY=1 TARGET=x86_64-apple-darwin OPENSSL_STATIC=yes
-      script: cargo build --release --target $TARGET
+      script: cargo build --locked --release --target $TARGET
       os: osx
     - env: DEPLOY=1 TARGET=x86_64-unknown-linux-musl OPENSSL_DIR=$HOME/openssl-musl
       before_script: ./ci/travis-musl-openssl.sh
-      script: cargo build --release --target $TARGET
+      script: cargo build --locked --release --target $TARGET
       addons:
         apt:
           packages:
@@ -28,8 +28,8 @@ matrix:
     - rust: nightly
 
 script:
-  - cargo build --release --verbose
-  - RUST_BACKTRACE=1 cargo test --release --all --verbose
+  - cargo build --release --locked --verbose
+  - RUST_BACKTRACE=1 cargo test --release --locked --all --verbose
   # Requires PR #321
   #- if [[ "${DIST_SCCACHE}" = "1" ]]; then RUST_BACKTRACE=1 cargo test --all --verbose test_dist_ -- --test-threads 1; fi
 
