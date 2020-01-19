@@ -65,6 +65,7 @@ fn repo_update(args: opts::Update) -> Result<()> {
     if !status.success() {
         std::process::exit(status.code().unwrap_or(-159));
     }
+    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
     let repo = Repo::auto_open_cwd(args.cargo_opts)?;
     repo.update_source()?;
     repo.update_counts()?;
