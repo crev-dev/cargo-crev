@@ -37,6 +37,76 @@ use crev_lib::{
     TrustProofType::{self, *},
 };
 
+pub fn repo_publish() -> Result<()> {
+    let local = Local::auto_open()?;
+    let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
+
+    if status.code().unwrap_or(-2) == 1 {
+        status = local.run_git(vec![
+            "commit".into(),
+            "-a".into(),
+            "-m".into(),
+            "auto-commit on `crev publish`".into(),
+        ])?;
+    }
+
+    if status.code().unwrap_or(-1) == 0 {
+        status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+    }
+    if status.code().unwrap_or(-1) == 0 {
+        status = local.run_git(vec!["push".into()])?;
+    }
+    std::process::exit(status.code().unwrap_or(-159));
+}
+
+fn repo_update(args: opts::Update) -> Result<()> {
+    let local = Local::auto_open()?;
+    let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(-159));
+    }
+    let repo = Repo::auto_open_cwd(args.cargo_opts)?;
+    repo.update_source()?;
+    repo.update_counts()?;
+    Ok(())
+}
+
+fn crate_review(args: opts::CrateReview) -> Result<()> {
+    handle_goto_mode_command(&args.common, |sel| {
+        let is_advisory =
+            args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
+        create_review_proof(
+            sel,
+            if args.issue {
+                Some(crev_data::Level::Medium)
+            } else {
+                None
+            },
+            if is_advisory {
+                Some(opts::AdviseCommon {
+                    severity: args.severity.unwrap_or(crev_data::Level::Medium),
+                    affected: args
+                        .affected
+                        .unwrap_or(crev_data::proof::review::package::VersionRange::Major),
+                })
+            } else {
+                None
+            },
+            if is_advisory || args.issue {
+                TrustProofType::Distrust
+            } else {
+                TrustProofType::Trust
+            },
+            &args.common_proof_create,
+            &args.diff,
+            args.skip_activity_check || is_advisory || args.issue,
+            args.cargo_opts.clone(),
+        )
+    })?;
+
+    Ok(())
+}
+
 pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> String {
     let s = source_id.into_url().to_string();
     if &s == "registry+https://github.com/rust-lang/crates.io-index" {
@@ -215,40 +285,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_)?,
 
-            opts::Crate::Review(args) => {
-                handle_goto_mode_command(&args.common, |sel| {
-                    let is_advisory = args.advisory
-                        || args.affected.is_some()
-                        || (!args.issue && args.severity.is_some());
-                    create_review_proof(
-                        sel,
-                        if args.issue {
-                            Some(crev_data::Level::Medium)
-                        } else {
-                            None
-                        },
-                        if is_advisory {
-                            Some(opts::AdviseCommon {
-                                severity: args.severity.unwrap_or(crev_data::Level::Medium),
-                                affected: args.affected.unwrap_or(
-                                    crev_data::proof::review::package::VersionRange::Major,
-                                ),
-                            })
-                        } else {
-                            None
-                        },
-                        if is_advisory || args.issue {
-                            TrustProofType::Distrust
-                        } else {
-                            TrustProofType::Trust
-                        },
-                        &args.common_proof_create,
-                        &args.diff,
-                        args.skip_activity_check || is_advisory || args.issue,
-                        args.cargo_opts.clone(),
-                    )
-                })?;
-            }
+            opts::Crate::Review(args) => crate_review(args)?,
             opts::Crate::Unreview(args) => {
                 handle_goto_mode_command(&args.common, |sel| {
                     let is_advisory = args.advisory
@@ -340,27 +377,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 opts::RepoQuery::Advisory(args) => list_advisories(&args.crate_)?,
                 opts::RepoQuery::Issue(args) => list_issues(&args)?,
             },
-            opts::Repo::Publish => {
-                let local = Local::auto_open()?;
-                let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
-
-                if status.code().unwrap_or(-2) == 1 {
-                    status = local.run_git(vec![
-                        "commit".into(),
-                        "-a".into(),
-                        "-m".into(),
-                        "auto-commit on `crev publish`".into(),
-                    ])?;
-                }
-
-                if status.code().unwrap_or(-1) == 0 {
-                    status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-                }
-                if status.code().unwrap_or(-1) == 0 {
-                    status = local.run_git(vec!["push".into()])?;
-                }
-                std::process::exit(status.code().unwrap_or(-159));
-            }
+            opts::Repo::Publish => repo_publish()?,
             opts::Repo::Fetch(cmd) => match cmd {
                 opts::RepoFetch::Trusted {
                     distance_params,
@@ -378,16 +395,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     local.fetch_all()?;
                 }
             },
-            opts::Repo::Update(args) => {
-                let local = Local::auto_open()?;
-                let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
-                if !status.success() {
-                    std::process::exit(status.code().unwrap_or(-159));
-                }
-                let repo = Repo::auto_open_cwd(args.cargo_opts)?;
-                repo.update_source()?;
-                repo.update_counts()?;
-            }
+            opts::Repo::Update(args) => repo_update(args)?,
             opts::Repo::Edit(cmd) => match cmd {
                 opts::RepoEdit::Readme => {
                     let local = crev_lib::Local::auto_open()?;
@@ -424,6 +432,25 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
         },
+        opts::Command::Goto(args) => {
+            goto_crate_src(&args.crate_)?;
+        }
+        opts::Command::Open(args) => {
+            handle_goto_mode_command(&args.common.clone(), |sel| {
+                crate_open(sel, args.cmd, args.cmd_save)
+            })?;
+        }
+        opts::Command::Publish => repo_publish()?,
+        opts::Command::Review(args) => crate_review(args)?,
+        opts::Command::Update(args) => repo_update(args)?,
+
+        opts::Command::Verify { crate_, opts } => {
+            return if opts.interactive {
+                tui::verify_deps(crate_, opts)
+            } else {
+                deps::verify_deps(crate_, opts)
+            };
+        }
     }
 
     Ok(CommandExitStatus::Success)

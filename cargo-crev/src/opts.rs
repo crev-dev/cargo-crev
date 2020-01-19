@@ -5,7 +5,6 @@ use semver::Version;
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 
-
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateSelector {
     /// This crate is not neccesarily a dependency of the current cargo project
@@ -316,7 +315,7 @@ pub struct RepoFetchUrl {
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoFetch {
     /// Fetch updates from trusted Ids
-    #[structopt(name="trusted")]
+    #[structopt(name = "trusted")]
     Trusted {
         #[structopt(flatten)]
         distance_params: TrustDistanceParams,
@@ -598,8 +597,8 @@ pub enum Crate {
 
     /// Diff between two versions of a package
     #[structopt(name = "diff")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
+    #[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
+    #[structopt(setting = structopt::clap::AppSettings::AllowLeadingHyphen)]
     Diff(Diff),
 
     /// Query source directory of a package
@@ -702,8 +701,8 @@ pub enum Repo {
 
     /// Run raw git commands in the local proof repository
     #[structopt(name = "git")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
+    #[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
+    #[structopt(setting = structopt::clap::AppSettings::AllowLeadingHyphen)]
     Git(RepoGit),
 
     /// Edit README.md of the current Id, ...
@@ -733,25 +732,54 @@ pub enum Repo {
 }
 
 #[derive(Debug, StructOpt, Clone)]
-#[structopt(
-    after_help = "Join Matrix channel for more help: https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org"
-)]
+#[structopt(setting = structopt::clap::AppSettings::DeriveDisplayOrder)]
+#[structopt(setting = structopt::clap::AppSettings::DisableHelpSubcommand)]
 pub enum Command {
-    /// Id (own and of other users)
-    #[structopt(name = "id")]
-    Id(Id),
+    /// Local config
+    #[structopt(name = "config")]
+    Config(Config),
 
     /// Crate related operations (review, verify...)
     #[structopt(name = "crate")]
     Crate(Crate),
 
+    /// Id (own and of other users)
+    #[structopt(name = "id")]
+    Id(Id),
+
     /// Proof Repository - store of proofs
     #[structopt(name = "repo")]
     Repo(Repo),
 
-    /// Config
-    #[structopt(name = "config")]
-    Config(Config),
+    /// Shortcut for `crate goto`
+    #[structopt(name = "goto")]
+    Goto(ReviewOrGotoCommon),
+
+    /// Shortcut for `crate open`
+    #[structopt(name = "open")]
+    Open(CrateOpen),
+
+    /// Shortcut for `repo publish`
+    #[structopt(name = "publish")]
+    Publish,
+
+    /// Shortcut for `crate review`
+    #[structopt(name = "review")]
+    Review(CrateReview),
+
+    /// Shortcut for `repo update`
+    #[structopt(name = "update")]
+    Update(Update),
+
+    /// Shortcut for `crate verify`
+    #[structopt(name = "verify")]
+    Verify {
+        #[structopt(flatten)]
+        opts: CrateVerify,
+
+        #[structopt(flatten)]
+        crate_: CrateSelector,
+    },
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`
@@ -759,11 +787,11 @@ pub enum Command {
 #[derive(Debug, StructOpt, Clone)]
 pub enum MainCommand {
     #[structopt(name = "crev")]
-    #[structopt(
-        after_help = r#"Join Matrix channel for more help at https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org
+    #[structopt(after_help = r#"All commands can be abbreviated.
+
+Join Matrix channel for more help at https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org
 Read user documentation at https://docs.rs/crate/cargo-crev
-        "#
-    )]
+        "#)]
     Crev(Command),
 }
 
@@ -771,8 +799,8 @@ Read user documentation at https://docs.rs/crate/cargo-crev
 #[structopt(about = "Distributed code review system")]
 // without this the name will be `cargo-crev-crev` because the `crev` main command will be automatically appended
 #[structopt(bin_name = "cargo")]
-#[structopt(raw(global_setting = "structopt::clap::AppSettings::ColoredHelp"))]
-#[structopt(raw(global_setting = "structopt::clap::AppSettings::InferSubcommands"))]
+#[structopt(global_setting = structopt::clap::AppSettings::ColoredHelp)]
+#[structopt(global_setting = structopt::clap::AppSettings::InferSubcommands)]
 pub struct Opts {
     #[structopt(subcommand)]
     pub command: MainCommand,
