@@ -5,6 +5,7 @@ use semver::Version;
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 
+
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateSelector {
     /// This crate is not neccesarily a dependency of the current cargo project
@@ -314,8 +315,8 @@ pub struct RepoFetchUrl {
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoFetch {
-    #[structopt(name = "trusted", alias = "t")]
     /// Fetch updates from trusted Ids
+    #[structopt(name="trusted")]
     Trusted {
         #[structopt(flatten)]
         distance_params: TrustDistanceParams,
@@ -324,11 +325,11 @@ pub enum RepoFetch {
         for_id: Option<String>,
     },
 
-    #[structopt(name = "url", alias = "u")]
+    #[structopt(name = "url")]
     /// Fetch from a single public proof repository
     Url(RepoFetchUrl),
 
-    #[structopt(name = "all", alias = "a")]
+    #[structopt(name = "all")]
     /// Fetch all previously retrieved public proof repositories
     All,
 }
@@ -336,14 +337,14 @@ pub enum RepoFetch {
 #[derive(Debug, StructOpt, Clone)]
 pub enum IdQuery {
     /// Show current Id
-    #[structopt(name = "current", alias = "c")]
+    #[structopt(name = "current")]
     Current {
         #[structopt(flatten)]
         trust_params: TrustDistanceParams,
     },
 
     /// Show all known Ids
-    #[structopt(name = "all", alias = "a")]
+    #[structopt(name = "all")]
     All {
         #[structopt(flatten)]
         trust_params: TrustDistanceParams,
@@ -353,14 +354,14 @@ pub enum IdQuery {
     },
 
     /// Show own Ids
-    #[structopt(name = "own", alias = "o")]
+    #[structopt(name = "own")]
     Own {
         #[structopt(flatten)]
         trust_params: TrustDistanceParams,
     },
 
     /// List trusted ids
-    #[structopt(name = "trusted", alias = "t")]
+    #[structopt(name = "trusted")]
     Trusted {
         #[structopt(flatten)]
         trust_params: TrustDistanceParams,
@@ -407,26 +408,26 @@ pub struct CrateDir {
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoQuery {
     /// Query reviews
-    #[structopt(name = "review", alias = "r")]
+    #[structopt(name = "review")]
     Review(RepoQueryReview),
 
     /// Query applicable advisories
-    #[structopt(name = "advisory", alias = "a")]
+    #[structopt(name = "advisory")]
     Advisory(RepoQueryAdvisory),
 
     /// Query applicable issues
-    #[structopt(name = "issue", alias = "i")]
+    #[structopt(name = "issue")]
     Issue(RepoQueryIssue),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum RepoEdit {
     /// Edit your README.md file
-    #[structopt(name = "readme", alias = "r")]
+    #[structopt(name = "readme")]
     Readme,
 
     /// Edit your KNOWN_CRATE_OWNERS.md file
-    #[structopt(name = "known", alias = "k")]
+    #[structopt(name = "known")]
     Known,
 }
 
@@ -545,58 +546,58 @@ pub struct RepoImport {
 #[derive(Debug, StructOpt, Clone)]
 pub enum Id {
     /// Create a new Id
-    #[structopt(name = "new", alias = "n")]
+    #[structopt(name = "new")]
     New(IdNew),
 
     /// Export your own Id
-    #[structopt(name = "export", alias = "e")]
+    #[structopt(name = "export")]
     Export(IdExport),
 
     /// Import an Id as your own
-    #[structopt(name = "import", alias = "i")]
+    #[structopt(name = "import")]
     Import,
 
     /// Show your current Id
-    #[structopt(name = "current", alias = "c")]
+    #[structopt(name = "current")]
     Current,
 
     /// Change current Id
-    #[structopt(name = "switch", alias = "s")]
+    #[structopt(name = "switch")]
     Switch(IdSwitch),
 
     /// Trust an Id
-    #[structopt(name = "trust", alias = "t")]
+    #[structopt(name = "trust")]
     Trust(IdTrust),
 
     /// Untrust (remove) trust
-    #[structopt(name = "untrust", alias = "u")]
+    #[structopt(name = "untrust")]
     Untrust(IdTrust),
 
     /// Distrust an Id
-    #[structopt(name = "distrust", alias = "d")]
+    #[structopt(name = "distrust")]
     Distrust(IdTrust),
 
     /// Query Ids
-    #[structopt(name = "query", alias = "q")]
+    #[structopt(name = "query")]
     Query(IdQuery),
 }
 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Crate {
     /// Start a shell in source directory of a crate under review
-    #[structopt(name = "goto", alias = "g")]
+    #[structopt(name = "goto")]
     Goto(ReviewOrGotoCommon),
 
     /// Open source code of a crate
-    #[structopt(name = "open", alias = "o")]
+    #[structopt(name = "open")]
     Open(CrateOpen),
 
     /// Clean a crate source code (eg. after review)
-    #[structopt(name = "clean", alias = "c")]
+    #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
 
     /// Diff between two versions of a package
-    #[structopt(name = "diff", alias = "d")]
+    #[structopt(name = "diff")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Diff(Diff),
@@ -640,7 +641,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
     },
 
     /// Most valuable players (reviewers)
-    #[structopt(name = "mvp", alias = "m")]
+    #[structopt(name = "mvp")]
     Mvp {
         #[structopt(flatten)]
         opts: CrateVerifyCommon,
@@ -649,19 +650,19 @@ Recursive mode will will calculate most metrics for the crate together with all 
     },
 
     /// Review a crate (code review, security advisory, flag issues)
-    #[structopt(name = "review", alias = "r")]
+    #[structopt(name = "review")]
     Review(CrateReview),
 
     /// Untrust (remove) trust
-    #[structopt(name = "unreview", alias = "u")]
+    #[structopt(name = "unreview")]
     Unreview(CrateReview),
 
     /// Search crates on crates.io sorting by review count
-    #[structopt(name = "search", alias = "s")]
+    #[structopt(name = "search")]
     Search(CrateSearch),
 
     /// Display rich info about the given crate
-    #[structopt(name = "info", alias = "i")]
+    #[structopt(name = "info")]
     Info {
         #[structopt(flatten)]
         opts: CrateVerifyCommon,
@@ -673,7 +674,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
 #[derive(Debug, StructOpt, Clone)]
 pub enum Config {
     /// Edit the config file
-    #[structopt(name = "edit", alias = "e")]
+    #[structopt(name = "edit")]
     Edit,
 
     /// Completions
@@ -684,7 +685,7 @@ pub enum Config {
     },
 
     /// Print the dir containing config files
-    #[structopt(name = "dir", alias = "d")]
+    #[structopt(name = "dir")]
     Dir,
 }
 
@@ -692,25 +693,25 @@ pub enum Config {
 /// Local Proof Repository
 pub enum Repo {
     /// Publish to remote repository
-    #[structopt(name = "publish", alias = "p")]
+    #[structopt(name = "publish")]
     Publish,
 
     /// Update data from online sources (proof repositories, crates.io)
-    #[structopt(name = "update", alias = "pull")]
+    #[structopt(name = "update")]
     Update(Update),
 
     /// Run raw git commands in the local proof repository
-    #[structopt(name = "git", alias = "g")]
+    #[structopt(name = "git")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::TrailingVarArg"))]
     #[structopt(raw(setting = "structopt::clap::AppSettings::AllowLeadingHyphen"))]
     Git(RepoGit),
 
     /// Edit README.md of the current Id, ...
-    #[structopt(name = "edit", alias = "e")]
+    #[structopt(name = "edit")]
     Edit(RepoEdit),
 
     /// Import proofs
-    #[structopt(name = "import", alias = "i")]
+    #[structopt(name = "import")]
     Import(RepoImport),
 
     /*
@@ -719,15 +720,15 @@ pub enum Repo {
     Export,
     */
     /// Query proofs
-    #[structopt(name = "query", alias = "q")]
+    #[structopt(name = "query")]
     Query(RepoQuery),
 
     /// Fetch proofs from external sources
-    #[structopt(name = "fetch", alias = "f")]
+    #[structopt(name = "fetch")]
     Fetch(RepoFetch),
 
     /// Print the dir containing local copy of the proof repository
-    #[structopt(name = "dir", alias = "d")]
+    #[structopt(name = "dir")]
     Dir,
 }
 
@@ -737,19 +738,19 @@ pub enum Repo {
 )]
 pub enum Command {
     /// Id (own and of other users)
-    #[structopt(name = "id", alias = "i")]
+    #[structopt(name = "id")]
     Id(Id),
 
     /// Crate related operations (review, verify...)
-    #[structopt(name = "crate", alias = "c")]
+    #[structopt(name = "crate")]
     Crate(Crate),
 
     /// Proof Repository - store of proofs
-    #[structopt(name = "repo", alias = "r")]
+    #[structopt(name = "repo")]
     Repo(Repo),
 
     /// Config
-    #[structopt(name = "config", alias = "co")]
+    #[structopt(name = "config")]
     Config(Config),
 }
 
@@ -771,6 +772,7 @@ Read user documentation at https://docs.rs/crate/cargo-crev
 // without this the name will be `cargo-crev-crev` because the `crev` main command will be automatically appended
 #[structopt(bin_name = "cargo")]
 #[structopt(raw(global_setting = "structopt::clap::AppSettings::ColoredHelp"))]
+#[structopt(raw(global_setting = "structopt::clap::AppSettings::InferSubcommands"))]
 pub struct Opts {
     #[structopt(subcommand)]
     pub command: MainCommand,
