@@ -385,7 +385,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     if term.stderr_is_tty && term.stdout_is_tty {
         if !args.columns.any_selected() {
-            eprintln!("Use one or more `--show-xyz` options to print more details.");
+            eprintln!("Some columns were hidden. Use one or more `--show-{column}` to print more details. Use `--help` for list of available columns and other options and help. Use `--show-all` to just display everything.");
         }
 
         if crates_with_issues {
