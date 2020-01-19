@@ -746,10 +746,6 @@ pub enum Command {
     #[structopt(name = "id")]
     Id(Id),
 
-    /// Proof
-    #[structopt(name = "repo")]
-    Proof(Proof),
-
     /// Proof Repository
     #[structopt(name = "repo")]
     Repo(Repo),
