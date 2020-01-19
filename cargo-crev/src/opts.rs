@@ -270,6 +270,29 @@ impl CrateVerifyColumns {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
+#[structopt(
+    after_help = r"Recursive mode will calculate most metrics for the crate together with all its transitive dependencies.
+
+Column description:
+
+- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- reviews    - Number of reviews for the specific version and for all available versions (total)
+- downloads  - Download counts from crates.io for the specific version and all versions
+- owner
+  - In non-recursive mode: Owner counts from crates.io (known/all)
+  - In recursive mode:
+    - Total number of owners from crates.io
+    - Total number of owner groups ignoring subsets
+- issues     - Number of issues repored (from trusted sources/all)
+- lines      - Lines of Rust code
+- geiger     - Geiger score: number of `unsafe` lines
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build
+  - UM         - Crate Unmaintained
+- name       - Crate name
+- version    - Crate version
+- latest_t   - Latest trusted version"
+)]
 pub struct CrateVerify {
     #[structopt(flatten)]
     pub common: CrateVerifyCommon,
@@ -587,11 +610,11 @@ pub enum Crate {
     #[structopt(name = "goto")]
     Goto(ReviewOrGotoCommon),
 
-    /// Open source code of a crate
+    /// Open the source code of a crate
     #[structopt(name = "open")]
     Open(CrateOpen),
 
-    /// Clean a crate source code (eg. after review)
+    /// Clean the source code directory of a crate (eg. after review)
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),
 
@@ -601,36 +624,12 @@ pub enum Crate {
     #[structopt(setting = structopt::clap::AppSettings::AllowLeadingHyphen)]
     Diff(Diff),
 
-    /// Query source directory of a package
+    /// Display the path of the source code directory of a crate
     #[structopt(name = "dir")]
     Dir(CrateDir),
 
     /// Verify dependencies
-    #[structopt(
-        name = "verify",
-        alias = "v",
-        after_help = r"This will show the following information:
-
-Recursive mode will will calculate most metrics for the crate together with all its dependencies.
-
-- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
-- reviews    - Number of reviews for the specific version and for all available versions (total)
-- downloads  - Download counts from crates.io for the specific version and all versions
-- owner
-  - In non-recursive mode: Owner counts from crates.io (known/all)
-  - In recursive mode:
-    - Total number of owners from crates.io
-    - Total number of owner groups ignoring subsets
-- issues     - Number of issues repored (from trusted sources/all)
-- lines      - Lines of Rust code
-- geiger     - Geiger score: number of `unsafe` lines
-- flgs       - Flags for specific types of packages
-  - CB         - Custom Build
-  - UM         - Crate Unmaintained
-- name       - Crate name
-- version    - Crate version
-- latest_t   - Latest trusted version"
-    )]
+    #[structopt(name = "verify")]
     Verify {
         #[structopt(flatten)]
         opts: CrateVerify,
@@ -652,7 +651,7 @@ Recursive mode will will calculate most metrics for the crate together with all 
     #[structopt(name = "review")]
     Review(CrateReview),
 
-    /// Untrust (remove) trust
+    /// Unreview (overwrite with an null review)
     #[structopt(name = "unreview")]
     Unreview(CrateReview),
 
