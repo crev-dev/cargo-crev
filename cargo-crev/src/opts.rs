@@ -734,7 +734,7 @@ pub enum Repo {
 #[structopt(setting = structopt::clap::AppSettings::DeriveDisplayOrder)]
 #[structopt(setting = structopt::clap::AppSettings::DisableHelpSubcommand)]
 pub enum Command {
-    /// Local config
+    /// Local configuration
     #[structopt(name = "config")]
     Config(Config),
 
@@ -746,7 +746,11 @@ pub enum Command {
     #[structopt(name = "id")]
     Id(Id),
 
-    /// Proof Repository - store of proofs
+    /// Proof
+    #[structopt(name = "repo")]
+    Proof(Proof),
+
+    /// Proof Repository
     #[structopt(name = "repo")]
     Repo(Repo),
 
