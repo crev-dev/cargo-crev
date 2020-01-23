@@ -14,6 +14,8 @@
   <br>
 </p>
 
+![jesus, that's a lot of unsafe](https://i.imgur.com/nunWPxF.jpg)
+
 # cargo-crev
 
 > A cryptographically verifiable **c**ode **rev**iew system for the cargo (Rust) package manager.
