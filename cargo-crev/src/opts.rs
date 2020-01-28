@@ -30,9 +30,11 @@ impl CrateSelector {
 
     pub fn version(&self) -> Result<Option<&Version>> {
         match (self.version_positional.as_ref(), self.version.as_ref()) {
-            (Some(_p), Some(_np)) => {
-                bail!("Can't use both positional (`{}`) and non-positional (`{}`) version argument")
-            }
+            (Some(p), Some(np)) => bail!(
+                "Can't use both positional (`{}`) and non-positional (`{}`) version argument",
+                p,
+                np
+            ),
             (Some(p), None) => Ok(Some(p)),
             (None, Some(np)) => Ok(Some(np)),
             (None, None) => Ok(None),
