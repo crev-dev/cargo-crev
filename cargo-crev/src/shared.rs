@@ -187,11 +187,11 @@ pub fn clean_all_unclean_crates() -> Result<()> {
             continue;
         }
         if stats.is_digest_unclean() {
-            clean_crate(&CrateSelector {
-                name: Some(stats.info.id.name().to_string()),
-                version: Some(stats.info.id.version().to_owned()),
-                unrelated: false,
-            })?;
+            clean_crate(&CrateSelector::new(
+                Some(stats.info.id.name().to_string()),
+                Some(stats.info.id.version().to_owned()),
+                false,
+            ))?;
         }
     }
 
@@ -446,7 +446,7 @@ pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review
         .get_advisories(
             PROJECT_SOURCE_CRATES_IO,
             crate_.name.as_ref().map(String::as_str),
-            crate_.version.as_ref(),
+            crate_.version()?,
         )
         .cloned()
         .collect())
@@ -555,7 +555,7 @@ pub fn list_issues(args: &opts::RepoQueryIssue) -> Result<()> {
     for review in db.get_pkg_reviews_with_issues_for(
         PROJECT_SOURCE_CRATES_IO,
         args.crate_.name.as_ref().map(String::as_str),
-        args.crate_.version.as_ref(),
+        args.crate_.version()?,
         &trust_set,
         args.trust_level.into(),
     ) {
@@ -592,11 +592,11 @@ where
                 .map_err(|_| format_err!("crate version env var not found"))?;
 
             env::set_current_dir(org_dir)?;
-            f(&CrateSelector {
-                name: Some(name),
-                version: Some(Version::parse(&version)?),
-                unrelated: true,
-            })?;
+            f(&CrateSelector::new(
+                Some(name),
+                Some(Version::parse(&version)?),
+                true,
+            ))?;
         }
     } else {
         args.crate_.ensure_name_given()?;

@@ -617,7 +617,7 @@ impl Repo {
     pub fn find_pkgid_by_crate_selector(&self, sel: &CrateSelector) -> Result<PackageId> {
         sel.ensure_name_given()?;
 
-        let version = sel.version.clone().map(Version::from);
+        let version = sel.version()?.cloned().map(Version::from);
 
         self.find_pkgid(sel.name.as_ref().unwrap(), version.as_ref(), sel.unrelated)
     }

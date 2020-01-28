@@ -11,8 +11,33 @@ pub struct CrateSelector {
     #[structopt(long = "unrelated", short = "u")]
     pub unrelated: bool,
 
+    #[structopt(long = "vers", short = "v")]
+    version: Option<Version>,
+
     pub name: Option<String>,
-    pub version: Option<Version>,
+    version_positional: Option<Version>,
+}
+
+impl CrateSelector {
+    pub fn new(name: Option<String>, version: Option<Version>, unrelated: bool) -> Self {
+        Self {
+            unrelated,
+            name,
+            version,
+            version_positional: None,
+        }
+    }
+
+    pub fn version(&self) -> Result<Option<&Version>> {
+        match (self.version_positional.as_ref(), self.version.as_ref()) {
+            (Some(_p), Some(_np)) => {
+                bail!("Can't use both positional (`{}`) and non-positional (`{}`) version argument")
+            }
+            (Some(p), None) => Ok(Some(p)),
+            (None, Some(np)) => Ok(Some(np)),
+            (None, None) => Ok(None),
+        }
+    }
 }
 
 impl CrateSelector {
@@ -688,6 +713,18 @@ pub enum Config {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct ProofFind {
+    #[structopt(name = "crate", long = "crate")]
+    pub crate_: Option<String>,
+
+    #[structopt(name = "vers", long = "vers")]
+    pub version: Option<Version>,
+
+    #[structopt(name = "author", long = "author")]
+    pub author: Option<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Repo {
     /// Publish to remote repository
@@ -731,6 +768,14 @@ pub enum Repo {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+/// Local Proof Repository
+pub enum Proof {
+    /// Publish to remote repository
+    #[structopt(name = "find")]
+    Find(ProofFind),
+}
+
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(setting = structopt::clap::AppSettings::DeriveDisplayOrder)]
 #[structopt(setting = structopt::clap::AppSettings::DisableHelpSubcommand)]
 pub enum Command {
@@ -745,6 +790,10 @@ pub enum Command {
     /// Id (own and of other users)
     #[structopt(name = "id")]
     Id(Id),
+
+    /// Proofs
+    #[structopt(name = "proof")]
+    Proof(Proof),
 
     /// Proof Repository
     #[structopt(name = "repo")]

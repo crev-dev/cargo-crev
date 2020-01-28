@@ -198,7 +198,7 @@ pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::P
         .get_package_reviews_for_package(
             PROJECT_SOURCE_CRATES_IO,
             crate_.name.as_ref().map(String::as_str),
-            crate_.version.as_ref(),
+            crate_.version()?,
         )
         .cloned()
         .collect())

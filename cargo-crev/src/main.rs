@@ -72,6 +72,30 @@ fn repo_update(args: opts::Update) -> Result<()> {
     Ok(())
 }
 
+pub fn proof_find(args: opts::ProofFind) -> Result<()> {
+    let local = crev_lib::Local::auto_open()?;
+    let db = local.load_db()?;
+    let mut iter = Box::new(db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO))
+        as Box<dyn Iterator<Item = &proof::review::Package>>;
+
+    if let Some(author) = args.author.as_ref() {
+        let id = crev_data::id::Id::crevid_from_str(author)?;
+        iter = Box::new(iter.filter(move |r| r.common.from.id == id));
+    }
+
+    if let Some(crate_) = args.crate_.as_ref() {
+        iter = Box::new(iter.filter(move |r| &r.package.id.id.name == crate_));
+        if let Some(version) = args.version.as_ref() {
+            iter = Box::new(iter.filter(move |r| &r.package.id.version == version));
+        }
+    }
+    for review in iter {
+        println!("---\n{}", review);
+    }
+
+    Ok(())
+}
+
 fn crate_review(args: opts::CrateReview) -> Result<()> {
     handle_goto_mode_command(&args.common, |sel| {
         let is_advisory =
@@ -431,6 +455,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         }
                     }
                 }
+            }
+        },
+        opts::Command::Proof(args) => match args {
+            opts::Proof::Find(args) => {
+                proof_find(args)?;
             }
         },
         opts::Command::Goto(args) => {
