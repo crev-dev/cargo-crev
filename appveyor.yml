@@ -62,7 +62,7 @@ deploy:
     artifact: windep
     auth_token:
       secure: x1b6Wm5JImKLmkZZSGxNvxTiRqTpk5Fi/+ttBL+CHOPg1ChRXbbhmwLwdqXzmlXi
-    description: 'Built by appveyor CI'
+    description: ''
     on:
       APPVEYOR_REPO_TAG: true
       DEPLOY: true
