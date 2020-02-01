@@ -506,7 +506,7 @@ dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.15.0",
  "crev-data 0.15.0",
- "crev-recursive-digest 0.2.1",
+ "crev-recursive-digest 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -529,13 +529,13 @@ dependencies = [
 [[package]]
 name = "crev-recursive-digest"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "blake2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure_derive 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "tempdir 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generic-array 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "walkdir 2.2.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -545,7 +545,7 @@ version = "0.3.0"
 dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.15.0",
- "crev-recursive-digest 0.2.1",
+ "crev-recursive-digest 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2118,18 +2118,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rblake2sum"
-version = "0.2.0"
-dependencies = [
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "blake2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crev-recursive-digest 0.2.1",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "rdrand"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3206,6 +3194,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crates-io 0.26.0 (registry+https://github.com/rust-lang/crates.io-index)" = "30f9f86659da1d2bd4aff186326ce7c1b4c282d81fbdc5651a39011563d8effb"
 "checksum crates_io_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "df5e43da3ff0ea69b6955b26f2820c385a031f0c97d5c01c549b824c988e7edc"
 "checksum crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
+"checksum crev-recursive-digest 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7902cde91068de5e0c34a5887db4b8e1918ccb7abd0dfae76f155a8c8d3042e1"
 "checksum crossbeam 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e"
 "checksum crossbeam-channel 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "c8ec7fcd21571dc78f96cc96243cab8d8f035247c3efd16c687be154c3fa9efa"
 "checksum crossbeam-channel 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "acec9a3b0b3559f15aee4f90746c4e5e293b701c0f7d3925d24e01645267b68c"
