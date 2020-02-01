@@ -21,57 +21,49 @@ build_script:
 test_script:
 - cmd: cargo test --all %RELEASE% --verbose -- --ignored
 
-for:
+branches:
+  only:
+    - master
+    - /v\d+\.\d+\.\d+/
+environment:
+  matrix:
+      # Build a release build on master to make sure it builds.
+    - channel: stable
+      target: x86_64-pc-windows-msvc
+      RELEASE: --release
+      DEPLOY: true
 
-- branches:
-    only:
-      - master
-  environment:
-    matrix:
-      - channel: stable
-        target: x86_64-pc-windows-msvc
-      - channel: beta
-        target: x86_64-pc-windows-msvc
-      - channel: nightly
-        target: x86_64-pc-windows-msvc
-      - channel: 1.36.0 # Oldest supported version. Keep in sync with README.md.
-        target: x86_64-pc-windows-msvc
-        # Build a release build on master to make sure it builds.
-      - channel: stable
-        target: x86_64-pc-windows-msvc
-        RELEASE: --release
+    - channel: stable
+      target: x86_64-pc-windows-msvc
+    - channel: beta
+      target: x86_64-pc-windows-msvc
+    - channel: nightly
+      target: x86_64-pc-windows-msvc
+    - channel: 1.36.0 # Oldest supported version. Keep in sync with README.md.
+      target: x86_64-pc-windows-msvc
 
-- branches:
-    only:
-      - /v\d+\.\d+\.\d+/
-      - master
-  environment:
-    # Only build a release build for releases.
-    channel: stable
-    target: x86_64-pc-windows-msvc
-    RELEASE: --release
+before_deploy:
+  - ps: |
+        $NAME = "cargo-crev-${env:APPVEYOR_REPO_TAG_NAME}-${env:TARGET}"
+        New-Item -Path $NAME -ItemType directory
+        Copy-Item target/release/cargo-crev.exe "${NAME}/"
+        Copy-Item LICENSE-MIT "${NAME}/"
+        Copy-Item LICENSE-MPL2 "${NAME}/"
+        Copy-Item LICENSE-APACHE "${NAME}/"
+        Copy-Item cargo-crev/README.md "${NAME}/"
+        7z a -ttar "${NAME}.tar" "${NAME}"
+        7z a "${NAME}.tar.gz" "${NAME}.tar"
+        (Get-FileHash "${NAME}.tar.gz").Hash | Out-File "${NAME}.tar.gz.sha256" -NoNewline
+        Push-AppveyorArtifact "${NAME}.tar.gz" -DeploymentName windep
+        Push-AppveyorArtifact "${NAME}.tar.gz.sha256" -DeploymentName windep
 
-  before_deploy:
-    - ps: |
-          $NAME = "cargo-crev-${env:APPVEYOR_REPO_TAG_NAME}-${env:TARGET}"
-          New-Item -Path $NAME -ItemType directory
-          Copy-Item target/release/cargo-crev.exe "${NAME}/"
-          Copy-Item LICENSE-MIT "${NAME}/"
-          Copy-Item LICENSE-MPL2 "${NAME}/"
-          Copy-Item LICENSE-APACHE "${NAME}/"
-          Copy-Item cargo-crev/README.md "${NAME}/"
-          7z a -ttar "${NAME}.tar" "${NAME}"
-          7z a "${NAME}.tar.gz" "${NAME}.tar"
-          (Get-FileHash "${NAME}.tar.gz").Hash | Out-File "${NAME}.tar.gz.sha256" -NoNewline
-          Push-AppveyorArtifact "${NAME}.tar.gz" -DeploymentName windep
-          Push-AppveyorArtifact "${NAME}.tar.gz.sha256" -DeploymentName windep
-
-  deploy:
+deploy:
+  - provider: GitHub
     artifact: windep
     auth_token:
       secure: x1b6Wm5JImKLmkZZSGxNvxTiRqTpk5Fi/+ttBL+CHOPg1ChRXbbhmwLwdqXzmlXi
-    description: ''
+    description: 'Built by appveyor CI'
     on:
-      appveyor_repo_tag: true
-    provider: GitHub
+      APPVEYOR_REPO_TAG: true
+      DEPLOY: true
     force_update: true
