@@ -5,13 +5,14 @@ use cargo::{
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
-        resolver::Method,
+        resolver::ResolveOpts,
         source::SourceMap,
         InternedString, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
-    util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Cfg, Rustc},
+    util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
 };
+use cargo_platform::Cfg;
 use crev_common::convert::OptionDeref;
 use crev_lib;
 use failure::format_err;
@@ -108,7 +109,7 @@ impl Graph {
     }
 }
 
-fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> CargoResult<Option<Vec<Cfg>>> {
+fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
     let mut process = util::process(&rustc.path);
     process.arg("--print=cfg").env_remove("RUST_LOG");
     if let Some(ref s) = target {
@@ -121,9 +122,9 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> CargoResult<Option<Vec<Cfg>>
     };
     let output = str::from_utf8(&output.stdout).unwrap();
     let lines = output.lines();
-    Ok(Some(
-        lines.map(Cfg::from_str).collect::<CargoResult<Vec<_>>>()?,
-    ))
+    Ok(lines
+        .map(Cfg::from_str)
+        .collect::<std::result::Result<Vec<_>, cargo_platform::ParseError>>()?)
 }
 
 fn our_resolve<'a, 'cfg>(
@@ -143,7 +144,7 @@ fn our_resolve<'a, 'cfg>(
     // the other methods
     let (packages, resolve) = ops::resolve_ws(workspace)?;
 
-    let method = Method::Required {
+    let resolve_opts = ResolveOpts {
         dev_deps: !no_dev_dependencies,
         features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
         all_features,
@@ -159,7 +160,7 @@ fn our_resolve<'a, 'cfg>(
     let resolve = ops::resolve_with_previous(
         registry,
         workspace,
-        method,
+        resolve_opts,
         Some(&resolve),
         None,
         &specs,
@@ -205,7 +206,7 @@ fn build_graph<'a>(
     packages: &'a PackageSet<'_>,
     roots: impl Iterator<Item = PackageId>,
     target: Option<&str>,
-    cfgs: Option<&[Cfg]>,
+    cfgs: &[Cfg],
 ) -> CargoResult<Graph> {
     let mut graph = Graph {
         graph: petgraph::Graph::new(),
@@ -227,6 +228,7 @@ fn build_graph<'a>(
         let pkg = packages.get_one(pkg_id)?;
 
         for raw_dep_id in resolve.deps_not_replaced(pkg_id) {
+            let raw_dep_id = raw_dep_id.0;
             let it = pkg
                 .dependencies()
                 .iter()
@@ -266,8 +268,6 @@ pub struct Repo {
     manifest_path: PathBuf,
     config: cargo::util::config::Config,
     cargo_opts: opts::CargoOpts,
-    #[allow(unused)]
-    features_set: BTreeSet<InternedString>,
     features_list: Vec<String>,
 }
 
@@ -295,14 +295,21 @@ impl Repo {
             &None,
             &cargo_opts.unstable_flags,
         )?;
-        let features_set =
-            Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
+        // how it used to be; can't find it anywhere anymore
+        // let features_set =
+        //     Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
+        // let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
+        let features_list = cargo_opts
+            .features
+            .clone()
+            .unwrap_or_else(String::new)
+            .split(',')
+            .map(String::from)
+            .collect();
 
-        let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
         Ok(Repo {
             manifest_path,
             config,
-            features_set,
             features_list,
             cargo_opts,
         })
@@ -354,21 +361,16 @@ impl Repo {
         )?;
 
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
+        let host = rustc.host.to_string();
 
         let target = if let Some(ref target) = self.cargo_opts.target {
-            Some(target.as_ref().unwrap_or(&rustc.host).as_str())
+            Some(target.as_ref().unwrap_or(&host).as_str())
         } else {
             None
         };
 
         let cfgs = get_cfgs(&rustc, target)?;
-        let graph = build_graph(
-            &resolve,
-            &packages,
-            roots.into_iter(),
-            target,
-            cfgs.as_ref().map(|r| &**r),
-        )?;
+        let graph = build_graph(&resolve, &packages, roots.into_iter(), target, &cfgs)?;
 
         Ok(graph)
     }
