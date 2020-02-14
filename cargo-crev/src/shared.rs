@@ -132,7 +132,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
 
     eprintln!("Opening shell in: {}", crate_dir.display());
     eprintln!("Use `exit` or Ctrl-D to return to the original project.",);
-    eprintln!("Use `review` and `flag` without any arguments to review this crate.");
+    eprintln!("Use `cargo crev review` without any arguments to review this crate.");
     let mut command = process::Command::new(shell);
     command
         .current_dir(crate_dir)
