@@ -305,6 +305,7 @@ impl Repo {
             .unwrap_or_else(String::new)
             .split(',')
             .map(String::from)
+            .filter(|s| s != "")
             .collect();
 
         Ok(Repo {
