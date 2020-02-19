@@ -897,7 +897,7 @@ impl Local {
 
         eprintln!("");
         eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
-        eprintln!("Make sure to back it up on another device, to prevent loosing it.");
+        eprintln!("Make sure to back it up on another device, to prevent losing it.");
 
         eprintln!("");
         println!("{}", locked);
