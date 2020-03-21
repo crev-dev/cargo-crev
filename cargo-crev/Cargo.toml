@@ -49,6 +49,7 @@ crossbeam = "0.7"
 termimad = "0.6"
 petgraph = "0.4.13"
 num_cpus = "1.10"
+fnv = "1"
 
 [features]
 default = []

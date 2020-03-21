@@ -68,8 +68,8 @@ impl VcsInfoJson {
 }
 
 /// Ignore things that are commonly added during the review (eg. by RLS)
-pub fn cargo_full_ignore_list(ignore_cargo_lock: bool) -> HashSet<PathBuf> {
-    let mut ignore_list = HashSet::new();
+pub fn cargo_full_ignore_list(ignore_cargo_lock: bool) -> fnv::FnvHashSet<PathBuf> {
+    let mut ignore_list = HashSet::default();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list.insert(PathBuf::from("target"));
     if ignore_cargo_lock {
@@ -80,8 +80,8 @@ pub fn cargo_full_ignore_list(ignore_cargo_lock: bool) -> HashSet<PathBuf> {
 }
 
 /// Ignore only the marker added by `cargo` after fully downloading and extracting crate
-pub fn cargo_min_ignore_list() -> HashSet<PathBuf> {
-    let mut ignore_list = HashSet::new();
+pub fn cargo_min_ignore_list() -> fnv::FnvHashSet<PathBuf> {
+    let mut ignore_list = HashSet::default();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
     ignore_list
 }

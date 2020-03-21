@@ -126,64 +126,44 @@ impl fmt::Display for VerificationStatus {
     }
 }
 
-pub fn dir_or_git_repo_verify<H1>(
+pub fn dir_or_git_repo_verify(
     path: &Path,
-    ignore_list: &HashSet<PathBuf, H1>,
+    ignore_list: &fnv::FnvHashSet<PathBuf>,
     db: &ProofDB,
     trusted_set: &TrustSet,
     requirements: &VerificationRequirements,
-) -> Result<crate::VerificationStatus>
-where
-    H1: std::hash::BuildHasher + std::default::Default,
-{
+) -> Result<crate::VerificationStatus> {
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
-            crev_common::Blake2b256,
-            H1,
-        >(path, ignore_list)?)
+        Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?)
     };
 
     Ok(db.verify_package_digest(&digest, trusted_set, requirements))
 }
 
-pub fn dir_verify<H1>(
+pub fn dir_verify(
     path: &Path,
-    ignore_list: &HashSet<PathBuf, H1>,
+    ignore_list: &fnv::FnvHashSet<PathBuf>,
     db: &ProofDB,
     trusted_set: &TrustSet,
     requirements: &VerificationRequirements,
-) -> Result<crate::VerificationStatus>
-where
-    H1: std::hash::BuildHasher + std::default::Default,
-{
-    let digest = Digest::from_vec(crev_recursive_digest::get_recursive_digest_for_dir::<
-        crev_common::Blake2b256,
-        H1,
-    >(path, ignore_list)?);
+) -> Result<crate::VerificationStatus> {
+    let digest = Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?);
     Ok(db.verify_package_digest(&digest, trusted_set, requirements))
 }
 
-pub fn get_dir_digest<H1>(path: &Path, ignore_list: &HashSet<PathBuf, H1>) -> Result<Digest>
-where
-    H1: std::hash::BuildHasher + std::default::Default,
-{
-    Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_dir::<crev_common::Blake2b256, H1>(
-            path,
-            ignore_list,
-        )?,
-    ))
+pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Result<Digest> {
+    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
+        path,
+        ignore_list,
+    )?))
 }
 
-pub fn get_recursive_digest_for_git_dir<H>(
+pub fn get_recursive_digest_for_git_dir(
     root_path: &Path,
-    ignore_list: &HashSet<PathBuf, H>,
-) -> Result<Digest>
-where
-    H: std::hash::BuildHasher + std::default::Default,
-{
+    ignore_list: &fnv::FnvHashSet<PathBuf>,
+) -> Result<Digest> {
     let git_repo = git2::Repository::open(root_path)?;
 
     let mut status_opts = git2::StatusOptions::new();
@@ -204,39 +184,26 @@ where
         paths.insert(entry_path);
     }
 
-    Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_paths::<crev_common::Blake2b256, H>(
-            root_path, paths,
-        )?,
-    ))
+    Ok(Digest::from_vec(util::get_recursive_digest_for_paths(
+        root_path, paths,
+    )?))
 }
 
-pub fn get_recursive_digest_for_paths<H>(
+pub fn get_recursive_digest_for_paths(
     root_path: &Path,
-    paths: HashSet<PathBuf, H>,
-) -> Result<Vec<u8>>
-where
-    H: std::hash::BuildHasher,
-{
-    Ok(crev_recursive_digest::get_recursive_digest_for_paths::<
-        crev_common::Blake2b256,
-        H,
-    >(root_path, paths)?)
+    paths: fnv::FnvHashSet<PathBuf>,
+) -> Result<Vec<u8>> {
+    Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
-pub fn get_recursive_digest_for_dir<H>(
+pub fn get_recursive_digest_for_dir(
     root_path: &Path,
-    rel_path_ignore_list: &HashSet<PathBuf, H>,
-) -> Result<Digest>
-where
-    H: std::hash::BuildHasher,
-{
-    Ok(Digest::from_vec(
-        crev_recursive_digest::get_recursive_digest_for_dir::<crev_common::Blake2b256, H>(
-            root_path,
-            rel_path_ignore_list,
-        )?,
-    ))
+    rel_path_ignore_list: &fnv::FnvHashSet<PathBuf>,
+) -> Result<Digest> {
+    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
+        root_path,
+        rel_path_ignore_list,
+    )?))
 }
 
 #[cfg(test)]

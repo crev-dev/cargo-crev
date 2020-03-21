@@ -5,6 +5,7 @@ use crev_common;
 use crev_data::proof::{self, ContentExt};
 use failure::bail;
 use git2;
+use std::path::PathBuf;
 use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io, io::Write, path::Path};
 use tempdir;
 
@@ -152,4 +153,38 @@ pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
 #[cfg(not(target_family = "unix"))]
 pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
     Ok(())
+}
+
+pub fn get_recursive_digest_for_paths(
+    root_path: &Path,
+    paths: fnv::FnvHashSet<PathBuf>,
+) -> std::result::Result<Vec<u8>, crev_recursive_digest::DigestError> {
+    let h = crev_recursive_digest::RecursiveDigest::<crev_common::Blake2b256, _, _>::new()
+        .filter(|entry| {
+            let rel_path = entry
+                .path()
+                .strip_prefix(&root_path)
+                .expect("must be prefix");
+            paths.contains(rel_path)
+        })
+        .build();
+
+    h.get_digest_of(root_path)
+}
+
+pub fn get_recursive_digest_for_dir(
+    root_path: &Path,
+    rel_path_ignore_list: &fnv::FnvHashSet<PathBuf>,
+) -> std::result::Result<Vec<u8>, crev_recursive_digest::DigestError> {
+    let h = crev_recursive_digest::RecursiveDigest::<crev_common::Blake2b256, _, _>::new()
+        .filter(|entry| {
+            let rel_path = entry
+                .path()
+                .strip_prefix(&root_path)
+                .expect("must be prefix");
+            !rel_path_ignore_list.contains(rel_path)
+        })
+        .build();
+
+    h.get_digest_of(root_path)
 }

@@ -176,7 +176,7 @@ impl Repo {
             } else {
                 TrustSet::default()
             };
-        let ignore_list = HashSet::new();
+        let ignore_list = fnv::FnvHashSet::default();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         Ok(db.verify_package_digest(&digest, &trust_set, requirements))
     }
@@ -186,7 +186,7 @@ impl Repo {
             bail!("Git repository is not in a clean state");
         }
 
-        let ignore_list = HashSet::new();
+        let ignore_list = HashSet::default();
         Ok(crate::get_recursive_digest_for_git_dir(
             &self.root_dir,
             &ignore_list,
@@ -253,7 +253,7 @@ impl Repo {
         let local = Local::auto_open()?;
         let _revision = self.read_revision()?;
 
-        let ignore_list = HashSet::new();
+        let ignore_list = fnv::FnvHashSet::default();
         let _digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         let id = local.read_current_unlocked_id(passphrase_callback)?;
 

@@ -16,7 +16,7 @@ chrono = "0.4"
 common_failures = "0.1"
 crev-common = { path = "../crev-common", version = "0.16.0" }
 crev-data = { path = "../crev-data", version = "0.16.0" }
-crev-recursive-digest = { version = "0.2.1" }
+crev-recursive-digest = { version = "0.3" }
 default = "0.1"
 directories = "2"
 failure = "0.1"
@@ -34,3 +34,5 @@ serde_yaml = "0.8"
 tempdir = "0.3"
 walkdir = "2"
 log = "0.4"
+fnv = "1"
+blake2 = "0.8"

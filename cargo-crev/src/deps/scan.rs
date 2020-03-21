@@ -37,8 +37,8 @@ use crev_lib::proofdb::*;
 pub struct Scanner {
     db: Arc<ProofDB>,
     trust_set: TrustSet,
-    min_ignore_list: HashSet<PathBuf>,
-    full_ignore_list: HashSet<PathBuf>,
+    min_ignore_list: fnv::FnvHashSet<PathBuf>,
+    full_ignore_list: fnv::FnvHashSet<PathBuf>,
     crates_io: Arc<crates_io::Client>,
     known_owners: HashSet<String>,
     requirements: crev_lib::VerificationRequirements,
