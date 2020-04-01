@@ -582,7 +582,7 @@ impl Local {
 
         self.ensure_proofs_root_exists()?;
 
-        match git2::Repository::clone(git_https_url, &proof_dir) {
+        match util::git::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 debug!("{} cloned to {}", git_https_url, proof_dir.display());
                 repo.remote_set_url("origin", &push_url)?;
@@ -968,7 +968,7 @@ impl Local {
             let repo = git2::Repository::open(&dir)?;
             util::git::fetch_and_checkout_git_repo(&repo)?
         } else {
-            git2::Repository::clone(url, &dir)?;
+            util::git::clone(url, &dir)?;
         }
 
         Ok(dir)
