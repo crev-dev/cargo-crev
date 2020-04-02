@@ -571,7 +571,7 @@ dependencies = [
  "common_failures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crev-common 0.16.0",
  "crev-data 0.16.0",
- "crev-recursive-digest 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crev-recursive-digest 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "default 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "crev-recursive-digest"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3323,7 +3323,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crates_io_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "df5e43da3ff0ea69b6955b26f2820c385a031f0c97d5c01c549b824c988e7edc"
 "checksum crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
 "checksum crev-recursive-digest 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7902cde91068de5e0c34a5887db4b8e1918ccb7abd0dfae76f155a8c8d3042e1"
-"checksum crev-recursive-digest 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1233fe7d47fb9e28a9ec9a31ff37b7d236addd80c8c0a94950daa7d3d4f0d875"
+"checksum crev-recursive-digest 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8a2311e13cb92890481e096346c189285b63ca513d1a9735c947e878f15729a9"
 "checksum crossbeam 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e"
 "checksum crossbeam-channel 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "cced8691919c02aac3cb0a1bc2e9b73d89e832bf9a06fc579d4e71b68a2da061"
 "checksum crossbeam-deque 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c3aa945d63861bfe624b55d153a39684da1e8c0bc8fba932f7ee3a3c16cea3ca"
