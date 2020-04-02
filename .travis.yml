@@ -9,7 +9,7 @@ matrix:
 
     # rustc version compat
     - rust: stable
-    - rust: 1.36.0 # oldest supported version, keep in sync with README.md
+    - rust: 1.37.0
     - rust: beta
     - rust: nightly
 
