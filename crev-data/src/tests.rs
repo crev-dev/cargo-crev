@@ -159,7 +159,7 @@ review:
 }
 
 pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
-    let id = OwnId::generate(Url::new_git("https://mypage.com/trust.git".into()));
+    let id = OwnId::generate(Url::new_git("https://mypage.com/trust.git"));
 
     let package_info = proof::PackageInfo {
         id: proof::PackageVersionId::new(
