@@ -17,7 +17,7 @@ use log::debug;
 use semver::Version;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    sync,
+    sync::{self, Arc},
 };
 
 /// A `T` with a timestamp
@@ -205,8 +205,10 @@ pub struct ProofDB {
     /// who -(trusts)-> whom
     trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>,
 
-    url_by_id: HashMap<Id, TimestampedUrl>,
-    url_by_id_secondary: HashMap<Id, TimestampedUrl>,
+    verified_url_by_id: HashMap<Id, TimestampedUrl>,
+
+    /// Untrusted
+    unverified_url_by_id: HashMap<Id, TimestampedUrl>,
 
     // all reviews are here
     package_review_by_signature: HashMap<Signature, review::Package>,
@@ -241,8 +243,8 @@ impl Default for ProofDB {
     fn default() -> Self {
         ProofDB {
             trust_id_to_id: default(),
-            url_by_id: default(),
-            url_by_id_secondary: default(),
+            verified_url_by_id: default(),
+            unverified_url_by_id: default(),
             package_review_signatures_by_package_digest: default(),
             package_review_signatures_by_pkg_review_id: default(),
             package_review_by_signature: default(),
@@ -728,19 +730,19 @@ impl ProofDB {
             .fold(0, |count, (_id, set)| count + set.len())
     }
 
-    fn add_code_review(&mut self, review: &review::Code) {
+    fn add_code_review(&mut self, review: &review::Code, fetched_from: &Url) {
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), &from);
+        self.record_url_for_id(&review.date_utc(), &from, fetched_from);
         for _file in &review.files {
             // not implemented right now; just ignore
         }
     }
 
-    fn add_package_review(&mut self, review: &review::Package, signature: &str) {
+    fn add_package_review(&mut self, review: &review::Package, signature: &str, fetched_from: &Url) {
         self.insertion_counter += 1;
 
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), &from);
+        self.record_url_for_id(&review.date_utc(), &from, fetched_from);
 
         self.package_review_by_signature
             .entry(signature.to_owned())
@@ -839,21 +841,21 @@ impl ProofDB {
             .or_insert_with(|| tl);
     }
 
-    fn add_trust(&mut self, trust: &proof::Trust) {
+    fn add_trust(&mut self, trust: &proof::Trust, fetched_from: &Url) {
         let from = &trust.from();
-        self.record_url_from_from_field(&trust.date_utc(), &from);
+        self.record_url_for_id(&trust.date_utc(), &from, fetched_from);
         for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
         for to in &trust.ids {
-            self.record_url_from_to_field(&trust.date_utc(), &to)
+            self.record_url_for_id(&trust.date_utc(), &to, fetched_from)
         }
     }
 
     pub fn all_known_ids(&self) -> BTreeSet<Id> {
-        self.url_by_id
+        self.verified_url_by_id
             .keys()
-            .chain(self.url_by_id_secondary.keys())
+            .chain(self.unverified_url_by_id.keys())
             .cloned()
             .collect()
     }
@@ -957,47 +959,44 @@ impl ProofDB {
             .map(|review| review.package.id.version.clone())
     }
 
-    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
-        self.url_by_id_secondary
-            .entry(to.id.clone())
-            .or_insert_with(|| TimestampedUrl {
-                value: to.url.clone(),
-                date: *date,
-            });
-    }
-
-    fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId) {
+    /// Record mapping between a PubId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
+    fn record_url_for_id(&mut self, date: &DateTime<Utc>, pubid: &crev_data::PubId, fetched_from: &Url) {
         let tu = TimestampedUrl {
-            value: from.url.clone(),
+            value: pubid.url.clone(),
             date: date.to_owned(),
         };
 
-        self.url_by_id
-            .entry(from.id.clone())
-            .and_modify(|e| e.update_to_more_recent(&tu))
-            .or_insert_with(|| tu);
+        let add_to = if &pubid.url == fetched_from {
+            &mut self.verified_url_by_id
+        } else {
+            &mut self.unverified_url_by_id
+        };
+
+           add_to.entry(pubid.id.clone())
+                .and_modify(|e| e.update_to_more_recent(&tu))
+                .or_insert_with(|| tu);
     }
 
-    fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
+    fn add_proof(&mut self, proof: &proof::Proof, fetched_from: &Url) -> Result<()> {
         proof
             .verify()
             .expect("All proofs were supposed to be valid here");
         match proof.kind() {
-            proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?),
+            proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?, fetched_from),
             proof::PackageReview::KIND => {
-                self.add_package_review(&proof.parse_content()?, proof.signature())
+                self.add_package_review(&proof.parse_content()?, proof.signature(), fetched_from)
             }
-            proof::Trust::KIND => self.add_trust(&proof.parse_content()?),
+            proof::Trust::KIND => self.add_trust(&proof.parse_content()?, fetched_from),
             other => bail!("Unknown proof type: {}", other),
         }
 
         Ok(())
     }
 
-    pub fn import_from_iter(&mut self, i: impl Iterator<Item = proof::Proof>) {
-        for proof in i {
+    pub fn import_from_iter(&mut self, i: impl Iterator<Item = (proof::Proof, Arc<Url>)>) {
+        for (proof, url) in i {
             // ignore errors
-            if let Err(e) = self.add_proof(&proof) {
+            if let Err(e) = self.add_proof(&proof, &url) {
                 debug!("Ignoring proof: {}", e);
             }
         }
@@ -1140,11 +1139,17 @@ impl ProofDB {
         visited
     }
 
-    pub fn lookup_url(&self, id: &Id) -> Option<&Url> {
-        self.url_by_id
+    pub fn lookup_verified_url(&self, id: &Id) -> Option<&Url> {
+        self.verified_url_by_id
             .get(id)
-            .or_else(|| self.url_by_id_secondary.get(id))
             .map(|url| &url.value)
+    }
+
+    pub fn lookup_unverified_url(&self, id: &Id) -> Option<&Url> {
+        self.lookup_verified_url(id).or_else(|| {
+            self.unverified_url_by_id.get(id)
+            .map(|url| &url.value)
+        })
     }
 }
 

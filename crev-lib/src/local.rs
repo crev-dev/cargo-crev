@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
@@ -512,12 +513,18 @@ impl Local {
     }
 
     // Path where the `proofs` are stored under `git` repository
-    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
+    pub fn get_proofs_dir_path_url_opt(&self) -> Result<Option<(PathBuf, Url)>> {
         if let Some(url) = self.get_cur_url()? {
-            Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
+            let path = self.get_proofs_dir_path_for_url(&url)?;
+            Ok(Some((path, url)))
         } else {
             Ok(None)
         }
+    }
+
+    // Path where the `proofs` are stored under `git` repository
+    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
+        self.get_proofs_dir_path_url_opt().map(|r| r.map(|(path, _)| path))
     }
 
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
@@ -536,15 +543,20 @@ impl Local {
         }
 
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        db.import_from_iter(self.proofs_for_current_url()?);
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
         let mut pub_ids = vec![];
 
         for id_string in id_strings {
             let id = Id::crevid_from_str(&id_string)?;
 
-            if let Some(url) = db.lookup_url(&id) {
+            if let Some(url) = db.lookup_verified_url(&id) {
                 pub_ids.push(PubId::new(id, url.to_owned()));
+            } else if let Some(dodgy_url) = db.lookup_unverified_url(&id) {
+                bail!(
+                    "URL not verified for Id {}; Fetch proofs with `fetch url '{}'` first",
+                    dodgy_url.url, id_string
+                )
             } else {
                 bail!(
                     "URL not found for Id {}; Fetch proofs with `fetch url <url>` first",
@@ -574,7 +586,7 @@ impl Local {
         let mut db = self.load_db()?;
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut db = ProofDB::new();
-            db.import_from_iter(proofs_iter_for_path(dir));
+            db.import_from_iter(proofs_iter_for_path(dir, Url::new_git(url)));
             eprintln!("Found proofs from:");
             for (id, count) in db.all_author_ids() {
                 println!("{:>8} {}", count, id);
@@ -591,8 +603,8 @@ impl Local {
         let mut already_fetched_ids = HashSet::new();
         let mut already_fetched_urls = HashSet::new();
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        db.import_from_iter(self.proofs_for_current_url()?);
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
         let for_id = self.get_for_id_from_str(for_id)?;
 
         let mut something_was_fetched = true;
@@ -606,7 +618,8 @@ impl Local {
                 }
                 already_fetched_ids.insert(id.to_owned());
 
-                if let Some(url) = db.lookup_url(id).cloned() {
+                // TODO: This could also allow unverified URL *but* only if they were declared by a trusted person
+                if let Some(url) = db.lookup_verified_url(id).cloned() {
                     let url = url.url;
                     if already_fetched_urls.contains(&url) {
                         continue;
@@ -615,6 +628,8 @@ impl Local {
 
                     self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
                     something_was_fetched = true;
+                } else if let Some(url) = db.lookup_unverified_url(id) {
+                    eprintln!("URL for {} hasn't been fetched before: {}, and therefore it's not trusted yet", id, url.url);
                 } else {
                     eprintln!("No URL for {}", id);
                 }
@@ -639,7 +654,10 @@ impl Local {
                     continue;
                 }
                 already_fetched_ids.insert(id.to_owned());
-                if let Some(url) = db.lookup_url(id).cloned() {
+                // URLs can be trusted only after they've been fetched, but
+                // recursive fetch is used for discovery of new URLs through WoT
+                // so we can't require them all to have been fetched already.
+                if let Some(url) = db.lookup_unverified_url(id).cloned() {
                     let url = url.url;
 
                     if already_fetched_urls.contains(&url) {
@@ -662,7 +680,7 @@ impl Local {
         let old_path = self.cache_remotes_path().join(digest.to_string());
         let new_path = self
             .cache_remotes_path()
-            .join(sanitize_url_for_fs(&url.to_string()));
+            .join(sanitize_url_for_fs(url));
 
         if old_path.exists() {
             // we used to use less human-friendly path format; move directories
@@ -701,7 +719,7 @@ impl Local {
         eprint!("Fetching {}... ", url);
         match self.fetch_remote_git(url) {
             Ok(dir) => {
-                db.import_from_iter(proofs_iter_for_path(dir.clone()));
+                db.import_from_iter(proofs_iter_for_path(dir.clone(), Url::new_git(url)));
 
                 eprint!("OK");
 
@@ -821,8 +839,8 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        db.import_from_iter(self.proofs_for_current_url()?);
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
 
         Ok(db)
     }
@@ -951,6 +969,14 @@ impl Local {
         self.save_locked_id(&id)?;
         Ok(id.to_pubid())
     }
+
+    fn proofs_for_current_url(&self) -> Result<impl Iterator<Item = (proof::Proof, Arc<Url>)>> {
+        Ok(self.get_proofs_dir_path_url_opt()?
+                .into_iter()
+                .flat_map(|(path, url)| {
+                    proofs_iter_for_path(path, url)
+                }))
+    }
 }
 
 impl ProofStore for Local {
@@ -985,15 +1011,39 @@ impl ProofStore for Local {
 
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof>>> {
         Ok(Box::new(
-            self.get_proofs_dir_path_opt()?
-                .into_iter()
-                .flat_map(proofs_iter_for_path),
+            self.proofs_for_current_url()?.map(|(proof, _)| proof)
         ))
     }
 }
 
-fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
+/// Scan a directory of git checkouts
+fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item = (proof::Proof, Arc<Url>)>> {
+    let dir = std::fs::read_dir(&path)?;
+    Ok(dir
+        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            if let Ok(ty) = e.file_type() {
+                if ty.is_dir() {
+                    return Some(e.path());
+                }
+            }
+            None
+        })
+        .filter_map(|path| {
+            let repo = git2::Repository::open(&path).ok()?;
+            let origin = repo.find_remote("origin").ok()?;
+            let url = Url::new_git(origin.url()?);
+            Some(proofs_iter_for_path(path, url))
+        })
+        .flat_map(|iter| iter)
+    )
+}
+
+/// Scan a git checkout or any subdirectory obtained from a known URL
+fn proofs_iter_for_path(path: PathBuf, fetch_url: Url) -> impl Iterator<Item = (proof::Proof, Arc<Url>)> {
     use std::ffi::OsStr;
+
+    let fetch_url = Arc::new(fetch_url);
     let file_iter = walkdir::WalkDir::new(&path)
         .into_iter()
         // skip dotfiles, .git dir
@@ -1043,4 +1093,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
             }
         })
         .flat_map(|iter| iter)
+        .map(move |proof| {
+            (proof, fetch_url.clone())
+        })
 }

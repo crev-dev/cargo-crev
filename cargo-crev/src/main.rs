@@ -161,7 +161,7 @@ fn print_ids<'a>(
             "{} {:6} {}",
             id,
             trust_set.get_effective_trust_level(id),
-            db.lookup_url(id).map(|url| url.url.as_str()).unwrap_or("")
+            db.lookup_verified_url(id).map(|url| url.url.as_str()).unwrap_or("")
         );
     }
     Ok(())
