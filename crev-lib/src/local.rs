@@ -897,7 +897,7 @@ impl Local {
 
         eprintln!("");
         eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
-        eprintln!("Make sure to back it up on another device, to prevent loosing it.");
+        eprintln!("Make sure to back it up on another device, to prevent losing it.");
 
         eprintln!("");
         println!("{}", locked);
@@ -1010,16 +1010,35 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
             }
         });
 
-    let proofs_iter = file_iter
-        .and_then_ok(|path| Ok(proof::Proof::parse_from(std::fs::File::open(&path)?)?))
-        .flatten_ok()
-        .and_then_ok(|proof| {
-            proof.verify()?;
-            Ok(proof)
-        })
-        .on_err(|e| {
-            eprintln!("Failed processing a proof: {}", e);
-        });
+    fn parse_proofs(path: &Path) -> Result<Vec<proof::Proof>> {
+        Ok(proof::Proof::parse_from(std::fs::File::open(&path)?)?)
+    }
 
-    proofs_iter.oks()
+    file_iter
+        .filter_map(|maybe_path| {
+            maybe_path
+                .map_err(|e| eprintln!("Failed scanning for proofs: {}", e))
+                .ok()
+        })
+        .filter_map(|path| match parse_proofs(&path) {
+            Ok(proofs) => Some(proofs.into_iter().filter_map(move |proof| {
+                proof
+                    .verify()
+                    .map_err(|e| {
+                        eprintln!(
+                            "Verification failed for proof signed '{}' in {}: {} ",
+                            proof.signature(),
+                            path.display(),
+                            e
+                        )
+                    })
+                    .ok()
+                    .map(|_| proof)
+            })),
+            Err(e) => {
+                eprintln!("Error parsing proofs in {}: {}", path.display(), e);
+                None
+            }
+        })
+        .flat_map(|iter| iter)
 }
