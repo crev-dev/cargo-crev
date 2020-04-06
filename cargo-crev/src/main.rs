@@ -208,13 +208,25 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Id::Trust(args) => {
-                create_trust_proof(args.pub_ids, Trust, &args.common_proof_create)?;
+                create_trust_proof(
+                    ids_from_string(&args.pub_ids)?,
+                    Trust,
+                    &args.common_proof_create,
+                )?;
             }
             opts::Id::Untrust(args) => {
-                create_trust_proof(args.pub_ids, Untrust, &args.common_proof_create)?;
+                create_trust_proof(
+                    ids_from_string(&args.pub_ids)?,
+                    Untrust,
+                    &args.common_proof_create,
+                )?;
             }
             opts::Id::Distrust(args) => {
-                create_trust_proof(args.pub_ids, Distrust, &args.common_proof_create)?;
+                create_trust_proof(
+                    ids_from_string(&args.pub_ids)?,
+                    Distrust,
+                    &args.common_proof_create,
+                )?;
             }
             opts::Id::Query(cmd) => match cmd {
                 opts::IdQuery::Current { trust_params } => {
@@ -484,6 +496,16 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     }
 
     Ok(CommandExitStatus::Success)
+}
+
+fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {
+    id_strings
+        .iter()
+        .map(|s| match Id::crevid_from_str(&s) {
+            Ok(s) => Ok(s),
+            Err(e) => bail!("'{}' is not a valid crev Id: {}", s, e),
+        })
+        .collect()
 }
 
 fn load_stdin_with_prompt() -> Result<Vec<u8>> {

@@ -56,10 +56,19 @@ impl fmt::Display for Id {
 }
 
 impl Id {
+    pub fn new_crev(bytes: Vec<u8>) -> Result<Self> {
+        if bytes.len() != 32 {
+            failure::bail!(
+                "wrong length of crev id, expected 32 bytes, got {}",
+                bytes.len()
+            );
+        }
+        Ok(Id::Crev { id: bytes })
+    }
+
     pub fn crevid_from_str(s: &str) -> Result<Self> {
         let bytes = crev_common::base64_decode(s)?;
-
-        Ok(Id::Crev { id: bytes })
+        Self::new_crev(bytes)
     }
 
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<()> {
@@ -96,17 +105,17 @@ impl PubId {
         PubId { id, url }
     }
 
-    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Self {
-        PubId {
-            id: Id::Crev { id: v },
+    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self> {
+        Ok(PubId {
+            id: Id::new_crev(v)?,
             url,
-        }
+        })
     }
 
     pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
         let v = crev_common::base64_decode(s)?;
         Ok(PubId {
-            id: Id::Crev { id: v },
+            id: Id::new_crev(v)?,
             url,
         })
     }
@@ -166,7 +175,7 @@ impl OwnId {
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {
-            id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url),
+            id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url)?,
             keypair: ed25519_dalek::Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
@@ -193,7 +202,8 @@ impl OwnId {
     pub fn generate(url: Url) -> Self {
         let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
         Self {
-            id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url),
+            id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
+                .expect("should be valid keypair"),
             keypair,
         }
     }

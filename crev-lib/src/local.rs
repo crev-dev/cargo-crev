@@ -531,25 +531,23 @@ impl Local {
     pub fn build_trust_proof(
         &self,
         from_id: &PubId,
-        id_strings: Vec<String>,
+        ids: Vec<Id>,
         trust_or_distrust: TrustProofType,
     ) -> Result<proof::trust::Trust> {
-        if id_strings.is_empty() {
+        if ids.is_empty() {
             bail!("No ids given.");
         }
 
         let db = self.load_db()?;
-        let mut pub_ids = vec![];
+        let mut pub_ids = Vec::with_capacity(ids.len());
 
-        for id_string in id_strings {
-            let id = Id::crevid_from_str(&id_string)?;
-
+        for id in ids {
             if let Some(url) = db.lookup_unverified_url(&id) {
                 pub_ids.push(PubId::new(id, url.to_owned()));
             } else {
                 bail!(
                     "URL not found for Id {}; Fetch proofs with `fetch url <url>` first",
-                    id_string
+                    id
                 )
             }
         }

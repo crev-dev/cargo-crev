@@ -1,7 +1,10 @@
 // Here are the structs and functions which still need to be sorted
 //
 use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
-use crev_data::proof::{self, ContentExt};
+use crev_data::{
+    proof::{self, ContentExt},
+    Id,
+};
 use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
 use failure::format_err;
 use insideout::InsideOutIter;
@@ -607,7 +610,7 @@ where
 }
 
 pub fn create_trust_proof(
-    ids: Vec<String>,
+    ids: Vec<Id>,
     trust_or_distrust: TrustProofType,
     proof_create_opt: &opts::CommonProofCreate,
 ) -> Result<()> {
@@ -615,13 +618,18 @@ pub fn create_trust_proof(
 
     let own_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
 
-    let trust = local.build_trust_proof(own_id.as_pubid(), ids.clone(), trust_or_distrust)?;
+    let string_ids = ids
+        .iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let trust = local.build_trust_proof(own_id.as_pubid(), ids, trust_or_distrust)?;
 
     let proof = trust.sign_by(&own_id)?;
     let commit_msg = format!(
         "Add {t_or_d} for {ids}",
         t_or_d = trust_or_distrust,
-        ids = ids.join(", ")
+        ids = string_ids
     );
 
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)?;

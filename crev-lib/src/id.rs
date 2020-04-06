@@ -106,6 +106,7 @@ impl LockedId {
 
     pub fn to_pubid(&self) -> PubId {
         PubId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
+            .expect("own id should be valid")
     }
 
     pub fn pub_key_as_base64(&self) -> String {

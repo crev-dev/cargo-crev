@@ -1153,7 +1153,7 @@ impl ProofDB {
 
     /// Can trust that this Id has reported the URL returned
     pub fn lookup_verified_url(&self, id: &Id) -> Option<&Url> {
-        self.url_by_id_self_reported.get(id)
+        self.url_by_id_self_reported.get(id).map(|url| &url.value)
     }
 }
 
