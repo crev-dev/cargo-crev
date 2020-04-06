@@ -511,7 +511,9 @@ impl Local {
         Ok(new_path)
     }
 
-    // Path where the `proofs` are stored under `git` repository
+    /// Path where the `proofs` are stored under `git` repository.
+    ///
+    /// This function derives path from current user's URL
     pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
         if let Some(url) = self.get_cur_url()? {
             Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
@@ -520,6 +522,7 @@ impl Local {
         }
     }
 
+    /// This function derives path from current user's URL
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
         self.get_proofs_dir_path_opt()?
             .ok_or_else(|| format_err!("Current Id not set"))
@@ -535,9 +538,7 @@ impl Local {
             bail!("No ids given.");
         }
 
-        let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        let db = self.load_db()?;
         let mut pub_ids = vec![];
 
         for id_string in id_strings {
@@ -590,9 +591,7 @@ impl Local {
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
         let mut already_fetched_urls = HashSet::new();
-        let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        let mut db = self.load_db()?;
         let for_id = self.get_for_id_from_str(for_id)?;
 
         let mut something_was_fetched = true;
@@ -821,9 +820,8 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_iter()?);
+        db.import_from_iter(self.all_local_proofs());
         db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
-
         Ok(db)
     }
 
@@ -951,6 +949,11 @@ impl Local {
         self.save_locked_id(&id)?;
         Ok(id.to_pubid())
     }
+
+    /// All proofs from all local repos, regardless of current user's URL
+    fn all_local_proofs(&self) -> impl Iterator<Item = proof::Proof> {
+        proofs_iter_for_path(self.user_proofs_path())
+    }
 }
 
 impl ProofStore for Local {
@@ -984,11 +987,7 @@ impl ProofStore for Local {
     }
 
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof>>> {
-        Ok(Box::new(
-            self.get_proofs_dir_path_opt()?
-                .into_iter()
-                .flat_map(proofs_iter_for_path),
-        ))
+        Ok(Box::new(self.all_local_proofs()))
     }
 }
 
