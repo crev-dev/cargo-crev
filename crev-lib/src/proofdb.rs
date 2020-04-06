@@ -849,7 +849,10 @@ impl ProofDB {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
         for to in &trust.ids {
-            self.record_url_for_id(&trust.date_utc(), &to, &fetched_from)
+            // Others should not be making verified claims about this URL,
+            // regardless of where these proofs were fetched from, because only
+            // owner of the Id is authoritative.
+            self.record_url_for_id(&trust.date_utc(), &to, &FetchSource::Unverified)
         }
     }
 
