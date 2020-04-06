@@ -549,17 +549,28 @@ impl Local {
             bail!("No ids given.");
         }
 
-        let db = self.load_db()?;
+        let mut db = self.load_db()?;
         let mut pub_ids = Vec::with_capacity(id_strings.len());
 
         for id_string in id_strings {
             let id = Id::crevid_from_str(&id_string)?;
 
-            pub_ids.push(if let Some(url) = db.lookup_verified_url(&id) {
-                PubId::new(id, url.to_owned())
+            let url = if let Some(url) = db.lookup_verified_url(&id) {
+                Some(url)
+            } else if let Some(url) = db.lookup_unverified_url(&id) {
+                let urlstr = url.url.clone();
+                // Fetching should verify the URL
+                let _ = self.fetch_url_into_db(&urlstr, &mut db);
+                db.lookup_verified_url(&id)
             } else {
-                PubId::new_id_only(id)
-            });
+                None
+            };
+
+            if let Some(url) = url {
+                pub_ids.push(PubId::new(id, url.to_owned()));
+            } else {
+                pub_ids.push(PubId::new_id_only(id));
+            }
         }
 
         let trust = from_id.create_trust_proof(
@@ -581,6 +592,10 @@ impl Local {
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
+        self.fetch_url_into_db(url, &mut db)
+    }
+
+    pub fn fetch_url_into_db(&self, url: &str, mut db: &mut ProofDB) -> Result<()> {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut temp_db = ProofDB::new();
             let url = Url::new_git(url);
