@@ -9,7 +9,7 @@ matrix:
 
     # rustc version compat
     - rust: stable
-    - rust: 1.37.0
+    - rust: 1.40.0
     - rust: beta
     - rust: nightly
 
