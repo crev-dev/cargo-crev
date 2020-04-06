@@ -311,7 +311,7 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
     mvps.sort_by(|a, b| a.1.cmp(&b.1).reverse());
 
     for (id, count) in &mvps {
-        println!("{:>3} {} {}", count, id.id, id.url.url);
+        println!("{:>3} {} {}", count, id.id, id.url_display());
     }
 
     Ok(())

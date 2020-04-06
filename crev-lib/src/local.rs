@@ -550,24 +550,16 @@ impl Local {
         }
 
         let db = self.load_db()?;
-        let mut pub_ids = vec![];
+        let mut pub_ids = Vec::with_capacity(id_strings.len());
 
         for id_string in id_strings {
             let id = Id::crevid_from_str(&id_string)?;
 
-            if let Some(url) = db.lookup_verified_url(&id) {
-                pub_ids.push(PubId::new(id, url.to_owned()));
-            } else if let Some(dodgy_url) = db.lookup_unverified_url(&id) {
-                bail!(
-                    "URL not verified for Id {}; Fetch proofs with `fetch url '{}'` first",
-                    dodgy_url.url, id_string
-                )
+            pub_ids.push(if let Some(url) = db.lookup_verified_url(&id) {
+                PubId::new(id, url.to_owned())
             } else {
-                bail!(
-                    "URL not found for Id {}; Fetch proofs with `fetch url <url>` first",
-                    id_string
-                )
-            }
+                PubId::new_id_only(id)
+            });
         }
 
         let trust = from_id.create_trust_proof(
@@ -902,7 +894,7 @@ impl Local {
     pub fn show_current_id(&self) -> Result<()> {
         if let Some(id) = self.read_current_locked_id_opt()? {
             let id = id.to_pubid();
-            println!("{} {}", id.id, id.url.url);
+            println!("{} {}", id.id, id.url_display());
         }
         Ok(())
     }
@@ -956,7 +948,7 @@ impl Local {
 
     pub fn list_own_ids(&self) -> Result<()> {
         for id in self.list_ids()? {
-            println!("{} {}", id.id, id.url.url);
+            println!("{} {}", id.id, id.url_display());
         }
         Ok(())
     }
@@ -968,7 +960,7 @@ impl Local {
             println!(
                 "{} {}{}",
                 id.id,
-                id.url.url,
+                id.url_display(),
                 if is_current { " (current)" } else { "" }
             );
         }

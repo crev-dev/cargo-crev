@@ -163,11 +163,11 @@ impl Trust {
     fn draft_title(&self) -> String {
         match self.ids.len() {
             0 => "Trust for noone?!".into(),
-            1 => format!("Trust for {} {}", self.ids[0].id, self.ids[0].url.url),
+            1 => format!("Trust for {} {}", self.ids[0].id, self.ids[0].url_display()),
             n => format!(
                 "Trust for {} {} and {} other",
                 self.ids[0].id,
-                self.ids[0].url.url,
+                self.ids[0].url_display(),
                 n - 1
             ),
         }

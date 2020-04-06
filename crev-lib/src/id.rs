@@ -92,7 +92,7 @@ impl LockedId {
             public_key: own_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
             seal_nonce,
-            url: own_id.id.url.clone(),
+            url: own_id.url().clone(),
             pass: PassConfig {
                 salt: pwsalt,
                 iterations: config.time_cost,

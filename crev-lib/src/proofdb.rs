@@ -965,19 +965,21 @@ impl ProofDB {
 
     /// Record mapping between a PubId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
     fn record_url_for_id(&mut self, date: &DateTime<Utc>, pubid: &crev_data::PubId, fetched_from: &FetchSource) {
-        let tu = TimestampedUrl {
-            value: pubid.url.clone(),
-            date: date.to_owned(),
-        };
+        if let Some(pubid_url) = &pubid.url {
+            let tu = TimestampedUrl {
+                value: pubid_url.clone(),
+                date: date.to_owned(),
+            };
 
-        let add_to = match fetched_from {
-            FetchSource::LocalUser => &mut self.verified_url_by_id,
-            FetchSource::Url(url) if **url == pubid.url => &mut self.verified_url_by_id,
-            _ => &mut self.unverified_url_by_id,
-        };
-        add_to.entry(pubid.id.clone())
-            .and_modify(|e| e.update_to_more_recent(&tu))
-            .or_insert_with(|| tu);
+            let add_to = match fetched_from {
+                FetchSource::LocalUser => &mut self.verified_url_by_id,
+                FetchSource::Url(fetched_url) if **fetched_url == *pubid_url => &mut self.verified_url_by_id,
+                _ => &mut self.unverified_url_by_id,
+            };
+            add_to.entry(pubid.id.clone())
+                .and_modify(|e| e.update_to_more_recent(&tu))
+                .or_insert_with(|| tu);
+        }
     }
 
     fn add_proof(&mut self, proof: &proof::Proof, fetched_from: FetchSource) -> Result<()> {
