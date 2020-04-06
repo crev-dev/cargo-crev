@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::local::FetchSource;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
@@ -72,7 +73,7 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
 
 #[test]
 fn advisories_sanity() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://a"));
+    let url = FetchSource::LocalUser;
     let id = OwnId::generate_for_git_url("https://a");
 
     let proof = build_proof_with_advisories(
@@ -142,7 +143,7 @@ fn advisories_sanity() -> Result<()> {
 
 #[test]
 fn issues_sanity() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://a"));
+    let url = FetchSource::LocalUser;
     let id = OwnId::generate_for_git_url("https://a");
     let mut trustdb = ProofDB::new();
     let trust_set = trustdb.calculate_trust_set(id.as_ref(), &TrustDistanceParams::new_no_wot());

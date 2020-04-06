@@ -32,6 +32,15 @@ use std::{
     str::FromStr,
 };
 
+/// Where a proof has been fetched from
+#[derive(Debug, Clone)]
+pub enum FetchSource {
+    /// Remote repository (other people's proof repos)
+    Url(Arc<Url>),
+    /// User's own proof repo, which is assumed to contain verified information
+    LocalUser,
+}
+
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
 fn generete_salt() -> Vec<u8> {
@@ -513,18 +522,12 @@ impl Local {
     }
 
     // Path where the `proofs` are stored under `git` repository
-    pub fn get_proofs_dir_path_url_opt(&self) -> Result<Option<(PathBuf, Url)>> {
+    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
         if let Some(url) = self.get_cur_url()? {
-            let path = self.get_proofs_dir_path_for_url(&url)?;
-            Ok(Some((path, url)))
+            Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
         } else {
             Ok(None)
         }
-    }
-
-    // Path where the `proofs` are stored under `git` repository
-    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
-        self.get_proofs_dir_path_url_opt().map(|r| r.map(|(path, _)| path))
     }
 
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
@@ -586,7 +589,7 @@ impl Local {
         let mut db = self.load_db()?;
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut db = ProofDB::new();
-            db.import_from_iter(proofs_iter_for_path(dir, Url::new_git(url)));
+            db.import_from_iter(proofs_iter_for_path(dir, self.fetch_source_for_url(Url::new_git(url))?));
             eprintln!("Found proofs from:");
             for (id, count) in db.all_author_ids() {
                 println!("{:>8} {}", count, id);
@@ -618,8 +621,9 @@ impl Local {
                 }
                 already_fetched_ids.insert(id.to_owned());
 
-                // TODO: This could also allow unverified URL *but* only if they were declared by a trusted person
-                if let Some(url) = db.lookup_verified_url(id).cloned() {
+                // TODO: requiring verified urls here creates chicken-egg problem,
+                // so verification concept would have to be extended to track trust
+                if let Some(url) = db.lookup_unverified_url(id).cloned() {
                     let url = url.url;
                     if already_fetched_urls.contains(&url) {
                         continue;
@@ -628,8 +632,6 @@ impl Local {
 
                     self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
                     something_was_fetched = true;
-                } else if let Some(url) = db.lookup_unverified_url(id) {
-                    eprintln!("URL for {} hasn't been fetched before: {}, and therefore it's not trusted yet", id, url.url);
                 } else {
                     eprintln!("No URL for {}", id);
                 }
@@ -692,6 +694,15 @@ impl Local {
         Ok(new_path)
     }
 
+    fn fetch_source_for_url(&self, url: Url) -> Result<FetchSource> {
+        if let Some(own_url) = self.get_cur_url()? {
+            if own_url == url {
+                return Ok(FetchSource::LocalUser);
+            }
+        }
+        Ok(FetchSource::Url(Arc::new(url)))
+    }
+
     /// Fetch a git proof repository
     ///
     /// Returns url where it was cloned/fetched
@@ -719,7 +730,8 @@ impl Local {
         eprint!("Fetching {}... ", url);
         match self.fetch_remote_git(url) {
             Ok(dir) => {
-                db.import_from_iter(proofs_iter_for_path(dir.clone(), Url::new_git(url)));
+                let fetch_source = self.fetch_source_for_url(Url::new_git(url)).ok()?;
+                db.import_from_iter(proofs_iter_for_path(dir.clone(), fetch_source));
 
                 eprint!("OK");
 
@@ -970,11 +982,11 @@ impl Local {
         Ok(id.to_pubid())
     }
 
-    fn proofs_for_current_url(&self) -> Result<impl Iterator<Item = (proof::Proof, Arc<Url>)>> {
-        Ok(self.get_proofs_dir_path_url_opt()?
+    fn proofs_for_current_url(&self) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>> {
+        Ok(self.get_proofs_dir_path_opt()?
                 .into_iter()
-                .flat_map(|(path, url)| {
-                    proofs_iter_for_path(path, url)
+                .flat_map(|path| {
+                    proofs_iter_for_path(path, FetchSource::LocalUser)
                 }))
     }
 }
@@ -1016,8 +1028,8 @@ impl ProofStore for Local {
     }
 }
 
-/// Scan a directory of git checkouts
-fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item = (proof::Proof, Arc<Url>)>> {
+/// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
+fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>>{
     let dir = std::fs::read_dir(&path)?;
     Ok(dir
         .filter_map(|e| e.ok())
@@ -1029,21 +1041,20 @@ fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item
             }
             None
         })
-        .filter_map(|path| {
+        .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
-            let url = Url::new_git(origin.url()?);
-            Some(proofs_iter_for_path(path, url))
+            let fetch_source = FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
+            Some(proofs_iter_for_path(path, fetch_source))
         })
         .flat_map(|iter| iter)
     )
 }
 
 /// Scan a git checkout or any subdirectory obtained from a known URL
-fn proofs_iter_for_path(path: PathBuf, fetch_url: Url) -> impl Iterator<Item = (proof::Proof, Arc<Url>)> {
+fn proofs_iter_for_path(path: PathBuf, fetch_source: FetchSource) -> impl Iterator<Item = (proof::Proof, FetchSource)> {
     use std::ffi::OsStr;
 
-    let fetch_url = Arc::new(fetch_url);
     let file_iter = walkdir::WalkDir::new(&path)
         .into_iter()
         // skip dotfiles, .git dir
@@ -1094,6 +1105,6 @@ fn proofs_iter_for_path(path: PathBuf, fetch_url: Url) -> impl Iterator<Item = (
         })
         .flat_map(|iter| iter)
         .map(move |proof| {
-            (proof, fetch_url.clone())
+            (proof, fetch_source.clone())
         })
 }

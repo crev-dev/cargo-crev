@@ -1,5 +1,5 @@
 use super::*;
-
+use crate::local::FetchSource;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
     Digest, Level, OwnId, Url
@@ -102,7 +102,7 @@ NtGu3z1Jtnj6wx8INBrVujcOPz61BiGmJS-UoAOe0XQutatFsEbgAcAo7rBvZz4Q-ccNXIFZtKnXhBDM
 // with the edges distance corresponding to the trust level.
 #[test]
 fn proofdb_distance() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://example.com"));
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://example.com")));
 
     let a = OwnId::generate_for_git_url("https://a");
     let b = OwnId::generate_for_git_url("https://b");
@@ -162,7 +162,7 @@ fn proofdb_distance() -> Result<()> {
 // and counts.
 #[test]
 fn overwritting_reviews() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://a"));
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
@@ -236,7 +236,7 @@ fn overwritting_reviews() -> Result<()> {
 
 #[test]
 fn dont_consider_an_empty_review_as_valid() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://a"));
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
@@ -276,7 +276,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
 
 #[test]
 fn proofdb_distrust() -> Result<()> {
-    let url = Arc::new(Url::new_git("https://a"));
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let b = OwnId::generate_for_git_url("https://b");
     let c = OwnId::generate_for_git_url("https://c");

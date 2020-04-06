@@ -1,3 +1,4 @@
+use crate::local::FetchSource;
 use crate::{VerificationRequirements, VerificationStatus};
 use chrono::{self, offset::Utc, DateTime};
 use common_failures::Result;
@@ -17,7 +18,7 @@ use log::debug;
 use semver::Version;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    sync::{self, Arc},
+    sync,
 };
 
 /// A `T` with a timestamp
@@ -730,19 +731,19 @@ impl ProofDB {
             .fold(0, |count, (_id, set)| count + set.len())
     }
 
-    fn add_code_review(&mut self, review: &review::Code, fetched_from: &Url) {
+    fn add_code_review(&mut self, review: &review::Code, fetched_from: FetchSource) {
         let from = &review.from();
-        self.record_url_for_id(&review.date_utc(), &from, fetched_from);
+        self.record_url_for_id(&review.date_utc(), &from, &fetched_from);
         for _file in &review.files {
             // not implemented right now; just ignore
         }
     }
 
-    fn add_package_review(&mut self, review: &review::Package, signature: &str, fetched_from: &Url) {
+    fn add_package_review(&mut self, review: &review::Package, signature: &str, fetched_from: FetchSource) {
         self.insertion_counter += 1;
 
         let from = &review.from();
-        self.record_url_for_id(&review.date_utc(), &from, fetched_from);
+        self.record_url_for_id(&review.date_utc(), &from, &fetched_from);
 
         self.package_review_by_signature
             .entry(signature.to_owned())
@@ -841,14 +842,14 @@ impl ProofDB {
             .or_insert_with(|| tl);
     }
 
-    fn add_trust(&mut self, trust: &proof::Trust, fetched_from: &Url) {
+    fn add_trust(&mut self, trust: &proof::Trust, fetched_from: FetchSource) {
         let from = &trust.from();
-        self.record_url_for_id(&trust.date_utc(), &from, fetched_from);
+        self.record_url_for_id(&trust.date_utc(), &from, &fetched_from);
         for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
         for to in &trust.ids {
-            self.record_url_for_id(&trust.date_utc(), &to, fetched_from)
+            self.record_url_for_id(&trust.date_utc(), &to, &fetched_from)
         }
     }
 
@@ -960,24 +961,23 @@ impl ProofDB {
     }
 
     /// Record mapping between a PubId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
-    fn record_url_for_id(&mut self, date: &DateTime<Utc>, pubid: &crev_data::PubId, fetched_from: &Url) {
+    fn record_url_for_id(&mut self, date: &DateTime<Utc>, pubid: &crev_data::PubId, fetched_from: &FetchSource) {
         let tu = TimestampedUrl {
             value: pubid.url.clone(),
             date: date.to_owned(),
         };
 
-        let add_to = if &pubid.url == fetched_from {
-            &mut self.verified_url_by_id
-        } else {
-            &mut self.unverified_url_by_id
+        let add_to = match fetched_from {
+            FetchSource::LocalUser => &mut self.verified_url_by_id,
+            FetchSource::Url(url) if **url == pubid.url => &mut self.verified_url_by_id,
+            _ => &mut self.unverified_url_by_id,
         };
-
-           add_to.entry(pubid.id.clone())
-                .and_modify(|e| e.update_to_more_recent(&tu))
-                .or_insert_with(|| tu);
+        add_to.entry(pubid.id.clone())
+            .and_modify(|e| e.update_to_more_recent(&tu))
+            .or_insert_with(|| tu);
     }
 
-    fn add_proof(&mut self, proof: &proof::Proof, fetched_from: &Url) -> Result<()> {
+    fn add_proof(&mut self, proof: &proof::Proof, fetched_from: FetchSource) -> Result<()> {
         proof
             .verify()
             .expect("All proofs were supposed to be valid here");
@@ -993,10 +993,10 @@ impl ProofDB {
         Ok(())
     }
 
-    pub fn import_from_iter(&mut self, i: impl Iterator<Item = (proof::Proof, Arc<Url>)>) {
-        for (proof, url) in i {
+    pub fn import_from_iter(&mut self, i: impl Iterator<Item = (proof::Proof, FetchSource)>) {
+        for (proof, fetch_source) in i {
             // ignore errors
-            if let Err(e) = self.add_proof(&proof, &url) {
+            if let Err(e) = self.add_proof(&proof, fetch_source) {
                 debug!("Ignoring proof: {}", e);
             }
         }
@@ -1139,12 +1139,14 @@ impl ProofDB {
         visited
     }
 
+    /// Find URL belonging to an Id, which has been verified (either by fetching or by trust proof)
     pub fn lookup_verified_url(&self, id: &Id) -> Option<&Url> {
         self.verified_url_by_id
             .get(id)
             .map(|url| &url.value)
     }
 
+    /// Find URL belonging to an Id with a fallback to unverified information from any mention anywhere
     pub fn lookup_unverified_url(&self, id: &Id) -> Option<&Url> {
         self.lookup_verified_url(id).or_else(|| {
             self.unverified_url_by_id.get(id)
