@@ -37,8 +37,10 @@ use std::{
 pub enum FetchSource {
     /// Remote repository (other people's proof repos)
     Url(Arc<Url>),
-    /// User's own proof repo, which is assumed to contain verified information
+    /// One of user's own proof repos, which are assumed to contain only verified information
     LocalUser,
+    /// Some other source that isn't reliably associated with a URL
+    Unverified,
 }
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
@@ -521,7 +523,8 @@ impl Local {
         Ok(new_path)
     }
 
-    // Path where the `proofs` are stored under `git` repository
+    /// Path where the `proofs` are stored under `git` repository.
+    /// Only for current user's URL.
     pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
         if let Some(url) = self.get_cur_url()? {
             Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
@@ -530,6 +533,7 @@ impl Local {
         }
     }
 
+    /// Only for current user's URL.
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
         self.get_proofs_dir_path_opt()?
             .ok_or_else(|| format_err!("Current Id not set"))
@@ -545,9 +549,7 @@ impl Local {
             bail!("No ids given.");
         }
 
-        let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_for_current_url()?);
-        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
+        let db = self.load_db()?;
         let mut pub_ids = vec![];
 
         for id_string in id_strings {
@@ -590,7 +592,8 @@ impl Local {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut temp_db = ProofDB::new();
             let url = Url::new_git(url);
-            temp_db.import_from_iter(proofs_iter_for_path(dir, self.fetch_source_for_url(url.clone())?));
+            let fetch_source = self.fetch_source_for_url(url.clone())?;
+            temp_db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
             eprintln!("Found proofs from:");
             for (id, count) in temp_db.all_author_ids() {
                 let tmp;
@@ -615,9 +618,7 @@ impl Local {
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
         let mut already_fetched_urls = HashSet::new();
-        let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_for_current_url()?);
-        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
+        let mut db = self.load_db()?;
         let for_id = self.get_for_id_from_str(for_id)?;
 
         let mut something_was_fetched = true;
@@ -741,7 +742,7 @@ impl Local {
         match self.fetch_remote_git(url) {
             Ok(dir) => {
                 let fetch_source = self.fetch_source_for_url(Url::new_git(url)).ok()?;
-                db.import_from_iter(proofs_iter_for_path(dir.clone(), fetch_source));
+                db.import_from_iter(proofs_iter_for_path(dir.clone()).map(move |p| (p, fetch_source.clone())));
 
                 eprint!("OK");
 
@@ -861,9 +862,8 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.proofs_for_current_url()?);
+        db.import_from_iter(self.all_local_proofs().map(move |p| (p, FetchSource::LocalUser)));
         db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
-
         Ok(db)
     }
 
@@ -992,12 +992,8 @@ impl Local {
         Ok(id.to_pubid())
     }
 
-    fn proofs_for_current_url(&self) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>> {
-        Ok(self.get_proofs_dir_path_opt()?
-                .into_iter()
-                .flat_map(|path| {
-                    proofs_iter_for_path(path, FetchSource::LocalUser)
-                }))
+    fn all_local_proofs(&self) -> impl Iterator<Item = proof::Proof> {
+        proofs_iter_for_path(self.user_proofs_path())
     }
 }
 
@@ -1032,9 +1028,7 @@ impl ProofStore for Local {
     }
 
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof>>> {
-        Ok(Box::new(
-            self.proofs_for_current_url()?.map(|(proof, _)| proof)
-        ))
+        Ok(Box::new(self.all_local_proofs()))
     }
 }
 
@@ -1055,14 +1049,14 @@ fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
             let fetch_source = FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
-            Some(proofs_iter_for_path(path, fetch_source))
+            Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
         })
         .flat_map(|iter| iter)
     )
 }
 
 /// Scan a git checkout or any subdirectory obtained from a known URL
-fn proofs_iter_for_path(path: PathBuf, fetch_source: FetchSource) -> impl Iterator<Item = (proof::Proof, FetchSource)> {
+fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     use std::ffi::OsStr;
 
     let file_iter = walkdir::WalkDir::new(&path)
@@ -1114,7 +1108,4 @@ fn proofs_iter_for_path(path: PathBuf, fetch_source: FetchSource) -> impl Iterat
             }
         })
         .flat_map(|iter| iter)
-        .map(move |proof| {
-            (proof, fetch_source.clone())
-        })
 }
