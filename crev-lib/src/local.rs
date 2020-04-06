@@ -588,11 +588,21 @@ impl Local {
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
-            let mut db = ProofDB::new();
-            db.import_from_iter(proofs_iter_for_path(dir, self.fetch_source_for_url(Url::new_git(url))?));
+            let mut temp_db = ProofDB::new();
+            let url = Url::new_git(url);
+            temp_db.import_from_iter(proofs_iter_for_path(dir, self.fetch_source_for_url(url.clone())?));
             eprintln!("Found proofs from:");
-            for (id, count) in db.all_author_ids() {
-                println!("{:>8} {}", count, id);
+            for (id, count) in temp_db.all_author_ids() {
+                let tmp;
+                let verified_state = match db.lookup_verified_url(&id) {
+                    Some(verified_url) if verified_url == &url => "verified owner",
+                    Some(verified_url) => {
+                        tmp = format!("copy from {}", verified_url.url);
+                        &tmp
+                    },
+                    None => "copy from another repo",
+                };
+                println!("{:>8} {} ({})", count, id, verified_state);
             }
         }
         Ok(())
