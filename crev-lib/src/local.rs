@@ -538,17 +538,25 @@ impl Local {
             bail!("No ids given.");
         }
 
-        let db = self.load_db()?;
+        let mut db = self.load_db()?;
         let mut pub_ids = Vec::with_capacity(ids.len());
 
         for id in ids {
-            if let Some(url) = db.lookup_unverified_url(&id) {
+            let url = match db.lookup_verified_url(&id) {
+                Some(url) => Some(url),
+                None => match db.lookup_unverified_url(&id) {
+                    Some(maybe_url) => {
+                        let maybe_url = maybe_url.url.clone();
+                        self.fetch_url_into(&maybe_url, &mut db)?;
+                        db.lookup_verified_url(&id)
+                    },
+                    None => None,
+                },
+            };
+            if let Some(url) = url {
                 pub_ids.push(PubId::new(id, url.to_owned()));
             } else {
-                bail!(
-                    "URL not found for Id {}; Fetch proofs with `fetch url <url>` first",
-                    id
-                )
+                pub_ids.push(PubId::new_id_only(id));
             }
         }
 
@@ -571,6 +579,10 @@ impl Local {
 
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
+        self.fetch_url_into(url, &mut db)
+    }
+
+    pub fn fetch_url_into(&self, url: &str, mut db: &mut ProofDB) -> Result<()> {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut db = ProofDB::new();
             db.import_from_iter(proofs_iter_for_path(dir));
