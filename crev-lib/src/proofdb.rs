@@ -205,8 +205,11 @@ pub struct ProofDB {
     /// who -(trusts)-> whom
     trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>,
 
-    url_by_id: HashMap<Id, TimestampedUrl>,
-    url_by_id_secondary: HashMap<Id, TimestampedUrl>,
+    /// Id->URL mapping verified by Id's signature
+    url_by_id_self_reported: HashMap<Id, TimestampedUrl>,
+
+    /// Id->URL relationship reported by someone else that this Id
+    url_by_id_reported_by_others: HashMap<Id, TimestampedUrl>,
 
     // all reviews are here
     package_review_by_signature: HashMap<Signature, review::Package>,
@@ -241,8 +244,8 @@ impl Default for ProofDB {
     fn default() -> Self {
         ProofDB {
             trust_id_to_id: default(),
-            url_by_id: default(),
-            url_by_id_secondary: default(),
+            url_by_id_self_reported: default(),
+            url_by_id_reported_by_others: default(),
             package_review_signatures_by_package_digest: default(),
             package_review_signatures_by_pkg_review_id: default(),
             package_review_by_signature: default(),
@@ -851,9 +854,9 @@ impl ProofDB {
     }
 
     pub fn all_known_ids(&self) -> BTreeSet<Id> {
-        self.url_by_id
+        self.url_by_id_self_reported
             .keys()
-            .chain(self.url_by_id_secondary.keys())
+            .chain(self.url_by_id_reported_by_others.keys())
             .cloned()
             .collect()
     }
@@ -958,7 +961,7 @@ impl ProofDB {
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
-        self.url_by_id_secondary
+        self.url_by_id_reported_by_others
             .entry(to.id.clone())
             .or_insert_with(|| TimestampedUrl {
                 value: to.url.clone(),
@@ -972,7 +975,7 @@ impl ProofDB {
             date: date.to_owned(),
         };
 
-        self.url_by_id
+        self.url_by_id_self_reported
             .entry(from.id.clone())
             .and_modify(|e| e.update_to_more_recent(&tu))
             .or_insert_with(|| tu);
@@ -1140,11 +1143,17 @@ impl ProofDB {
         visited
     }
 
-    pub fn lookup_url(&self, id: &Id) -> Option<&Url> {
-        self.url_by_id
+    /// Returned URL may have been suggested by others, who are not trusted
+    pub fn lookup_unverified_url(&self, id: &Id) -> Option<&Url> {
+        self.url_by_id_self_reported
             .get(id)
-            .or_else(|| self.url_by_id_secondary.get(id))
+            .or_else(|| self.url_by_id_reported_by_others.get(id))
             .map(|url| &url.value)
+    }
+
+    /// Can trust that this Id has reported the URL returned
+    pub fn lookup_verified_url(&self, id: &Id) -> Option<&Url> {
+        self.url_by_id_self_reported.get(id)
     }
 }
 
