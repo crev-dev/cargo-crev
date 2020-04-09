@@ -24,6 +24,7 @@ matrix:
         apt:
           packages:
           - musl-tools
+          - linux-headers-generic
   allow_failures:
     - rust: nightly
 
