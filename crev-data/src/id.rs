@@ -97,18 +97,22 @@ pub struct PubId {
     #[serde(flatten)]
     pub id: Id,
     #[serde(flatten)]
-    pub url: Url,
+    pub url: Option<Url>,
 }
 
 impl PubId {
     pub fn new(id: Id, url: Url) -> Self {
-        PubId { id, url }
+        PubId { id, url: Some(url) }
+    }
+
+    pub fn new_id_only(id: Id) -> Self {
+        PubId { id, url: None }
     }
 
     pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self> {
         Ok(PubId {
             id: Id::new_crev(v)?,
-            url,
+            url: Some(url),
         })
     }
 
@@ -116,7 +120,7 @@ impl PubId {
         let v = crev_common::base64_decode(s)?;
         Ok(PubId {
             id: Id::new_crev(v)?,
-            url,
+            url: Some(url),
         })
     }
 
@@ -146,6 +150,13 @@ impl PubId {
             .comment(comment)
             .build()
             .map_err(|e| format_err!("{}", e))?)
+    }
+
+    pub fn url_display(&self) -> &str {
+        match &self.url {
+            Some(url) => &url.url,
+            None => "(no url)",
+        }
     }
 }
 
@@ -193,6 +204,10 @@ impl OwnId {
 
     pub fn as_pubid(&self) -> &PubId {
         &self.id
+    }
+
+    pub fn url(&self) -> &Url {
+        self.id.url.as_ref().expect("OwnId must have a URL")
     }
 
     pub fn generate_for_git_url(url: &str) -> Self {

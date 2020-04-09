@@ -858,7 +858,7 @@ impl Local {
     pub fn show_current_id(&self) -> Result<()> {
         if let Some(id) = self.read_current_locked_id_opt()? {
             let id = id.to_pubid();
-            println!("{} {}", id.id, id.url.url);
+            println!("{} {}", id.id, id.url_display());
         }
         Ok(())
     }
@@ -912,7 +912,7 @@ impl Local {
 
     pub fn list_own_ids(&self) -> Result<()> {
         for id in self.list_ids()? {
-            println!("{} {}", id.id, id.url.url);
+            println!("{} {}", id.id, id.url_display());
         }
         Ok(())
     }
@@ -924,7 +924,7 @@ impl Local {
             println!(
                 "{} {}{}",
                 id.id,
-                id.url.url,
+                id.url_display(),
                 if is_current { " (current)" } else { "" }
             );
         }

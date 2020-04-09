@@ -961,24 +961,28 @@ impl ProofDB {
     }
 
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
-        self.url_by_id_reported_by_others
-            .entry(to.id.clone())
-            .or_insert_with(|| TimestampedUrl {
-                value: to.url.clone(),
-                date: *date,
-            });
+        if let Some(url) = &to.url {
+            self.url_by_id_reported_by_others
+                .entry(to.id.clone())
+                .or_insert_with(|| TimestampedUrl {
+                    value: url.clone(),
+                    date: *date,
+                });
+        }
     }
 
     fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId) {
-        let tu = TimestampedUrl {
-            value: from.url.clone(),
-            date: date.to_owned(),
-        };
+        if let Some(url) = &from.url {
+            let tu = TimestampedUrl {
+                value: url.clone(),
+                date: date.to_owned(),
+            };
 
-        self.url_by_id_self_reported
-            .entry(from.id.clone())
-            .and_modify(|e| e.update_to_more_recent(&tu))
-            .or_insert_with(|| tu);
+            self.url_by_id_self_reported
+                .entry(from.id.clone())
+                .and_modify(|e| e.update_to_more_recent(&tu))
+                .or_insert_with(|| tu);
+        }
     }
 
     fn add_proof(&mut self, proof: &proof::Proof) -> Result<()> {
