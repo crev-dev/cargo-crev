@@ -543,7 +543,7 @@ impl Local {
         for id_string in id_strings {
             let id = Id::crevid_from_str(&id_string)?;
 
-            if let Some(url) = db.lookup_url(&id) {
+            if let Some(url) = db.lookup_unverified_url(&id) {
                 pub_ids.push(PubId::new(id, url.to_owned()));
             } else {
                 bail!(
@@ -606,7 +606,7 @@ impl Local {
                 }
                 already_fetched_ids.insert(id.to_owned());
 
-                if let Some(url) = db.lookup_url(id).cloned() {
+                if let Some(url) = db.lookup_unverified_url(id).cloned() {
                     let url = url.url;
                     if already_fetched_urls.contains(&url) {
                         continue;
@@ -639,7 +639,7 @@ impl Local {
                     continue;
                 }
                 already_fetched_ids.insert(id.to_owned());
-                if let Some(url) = db.lookup_url(id).cloned() {
+                if let Some(url) = db.lookup_unverified_url(id).cloned() {
                     let url = url.url;
 
                     if already_fetched_urls.contains(&url) {
