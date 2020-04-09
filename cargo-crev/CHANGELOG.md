@@ -5,54 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+* user interface now exposes distinction between URLs self-reported by an owner of a Crev Id,
+  and unverified URLs reported about others.
+    * `id query all` will display URLs in parens if they haven't been signed by their own Crev Id.
+    * `id trust` will propagate only URLs signed by their own Crev Id.
+* `repo fetch url` reports which Crev Ids belong to the repo (have same URL) and which were copied
+  from other repos.
+
 ## [0.16.1](https://github.com/dpc/crev/compare/cargo-crev-v0.16.0...cargo-crev-v0.16.1) - 2020-02-11
-## Fixed
+### Fixed
 
 * Fix default `features` not recognized in some crates
 
 ## [0.16.0](https://github.com/dpc/crev/compare/cargo-crev-v0.15.0...cargo-crev-v0.16.0) - 2020-02-11
-## Fixed
+### Fixed
 
 * Support for new cargo lockfile version
 
 ## [0.15.0](https://github.com/dpc/crev/compare/cargo-crev-v0.14.0...cargo-crev-v0.15.0) - 2020-01-14
-## Fixed
+### Fixed
 
 * `crate verify` no longer hangs on unpublished local crates
 * Use effective instead of direct trust in WoT graph calculations
 
-## Changed
+### Changed
 
 * Make most columns in `crate verify` optional with `--show-xyz` options.
 * Added some helpful informative messages.
 
 ## [0.14.0](https://github.com/dpc/crev/compare/cargo-crev-v0.13.0...cargo-crev-v0.14.0) - 2019-12-16
-## Fixed
+### Fixed
 
 * `crate verify` performance for local crates
 * `cargo install` works without `--locked` flag
 
-## Changed
+### Changed
 
 * `alternatives` are reported in both source and destination
 
 ## [0.13.0](https://github.com/dpc/crev/compare/cargo-crev-v0.12.0...cargo-crev-v0.13.0) - 2019-11-26
-## Changed
+### Changed
 
 * Handle local packages more consistently
 
-## Fixed
+### Fixed
 
 * `comment` field serialization in trust proofs
 * `crate verify` return code
 * Stale documentation
  
 ## [0.12.0](https://github.com/dpc/crev/compare/cargo-crev-v0.11.0...cargo-crev-v0.12.0) - 2019-11-19
-## Changed
+### Changed
 
 * Comment field handling in proofs and drafts
 
-## Fixed
+### Fixed
 
 * Documentation here and there
 * Backfill `kind` field when deserializing old-format content
