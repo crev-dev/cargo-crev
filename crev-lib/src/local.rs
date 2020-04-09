@@ -994,9 +994,11 @@ impl ProofStore for Local {
 
 fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     use std::ffi::OsStr;
-    let file_iter = walkdir::WalkDir::new(path)
+    let file_iter = walkdir::WalkDir::new(&path)
         .into_iter()
-        .map_err(|e| format_err!("Error iterating local ProofStore: {:?}", e))
+        // skip dotfiles, .git dir
+        .filter_entry(|e| e.file_name().to_str().map_or(true, |f| !f.starts_with('.')))
+        .map_err(move |e| format_err!("Error iterating local ProofStore at {}: {}", path.display(), e))
         .filter_map_ok(|entry| {
             let path = entry.path();
             if !path.is_file() {
