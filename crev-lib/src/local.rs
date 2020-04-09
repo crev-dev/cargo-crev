@@ -659,7 +659,7 @@ impl Local {
         let old_path = self.cache_remotes_path().join(digest.to_string());
         let new_path = self
             .cache_remotes_path()
-            .join(sanitize_url_for_fs(&url.to_string()));
+            .join(sanitize_url_for_fs(url));
 
         if old_path.exists() {
             // we used to use less human-friendly path format; move directories
