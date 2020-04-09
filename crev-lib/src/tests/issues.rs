@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::local::FetchSource;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
@@ -72,6 +73,7 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
 
 #[test]
 fn advisories_sanity() -> Result<()> {
+    let url = FetchSource::LocalUser;
     let id = OwnId::generate_for_git_url("https://a");
 
     let proof = build_proof_with_advisories(
@@ -81,7 +83,7 @@ fn advisories_sanity() -> Result<()> {
     );
 
     let mut proofdb = ProofDB::new();
-    proofdb.import_from_iter(vec![proof].into_iter());
+    proofdb.import_from_iter(vec![(proof, url.clone())].into_iter());
 
     assert_eq!(proofdb.get_pkg_reviews_for_source(SOURCE).count(), 1);
 
@@ -115,7 +117,7 @@ fn advisories_sanity() -> Result<()> {
         vec![build_advisory("someid", VersionRange::All)],
     );
 
-    proofdb.import_from_iter(vec![proof].into_iter());
+    proofdb.import_from_iter(vec![(proof, url)].into_iter());
 
     assert_eq!(
         proofdb
@@ -141,6 +143,7 @@ fn advisories_sanity() -> Result<()> {
 
 #[test]
 fn issues_sanity() -> Result<()> {
+    let url = FetchSource::LocalUser;
     let id = OwnId::generate_for_git_url("https://a");
     let mut trustdb = ProofDB::new();
     let trust_set = trustdb.calculate_trust_set(id.as_ref(), &TrustDistanceParams::new_no_wot());
@@ -150,7 +153,7 @@ fn issues_sanity() -> Result<()> {
         Version::parse("1.2.3").unwrap(),
         vec![build_advisory("issueX", VersionRange::Major)],
     );
-    trustdb.import_from_iter(vec![proof].into_iter());
+    trustdb.import_from_iter(vec![(proof, url.clone())].into_iter());
 
     assert_eq!(
         trustdb
@@ -183,7 +186,7 @@ fn issues_sanity() -> Result<()> {
         Version::parse("2.0.1").unwrap(),
         vec![build_advisory("issueY", VersionRange::All)],
     );
-    trustdb.import_from_iter(vec![proof].into_iter());
+    trustdb.import_from_iter(vec![(proof, url.clone())].into_iter());
     assert_eq!(
         trustdb
             .get_open_issues_for_version(
@@ -227,7 +230,7 @@ fn issues_sanity() -> Result<()> {
         Version::parse("3.0.5").unwrap(),
         vec![build_issue("issueX")],
     );
-    trustdb.import_from_iter(vec![proof].into_iter());
+    trustdb.import_from_iter(vec![(proof, url.clone())].into_iter());
 
     assert_eq!(
         trustdb
@@ -273,7 +276,7 @@ fn issues_sanity() -> Result<()> {
         Version::parse("3.1.0").unwrap(),
         vec![build_advisory("issueX", VersionRange::Major)],
     );
-    trustdb.import_from_iter(vec![proof].into_iter());
+    trustdb.import_from_iter(vec![(proof, url)].into_iter());
 
     assert_eq!(
         trustdb
