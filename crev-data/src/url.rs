@@ -13,9 +13,9 @@ pub struct Url {
 }
 
 impl Url {
-    pub fn new_git(url: String) -> Self {
+    pub fn new_git<Stringy: Into<String>>(url: Stringy) -> Self {
         Self {
-            url,
+            url: url.into(),
             url_type: default_url_type(),
         }
     }
