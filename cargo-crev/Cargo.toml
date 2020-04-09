@@ -10,6 +10,7 @@ homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "tool", "distributed", "cargo"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
+default-run = "cargo-crev"
 
 [[bin]]
 name = "cargo-crev"
