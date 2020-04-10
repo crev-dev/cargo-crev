@@ -10,7 +10,7 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{io::BufRead, path::PathBuf};
+use std::{collections::HashMap, io::BufRead, path::PathBuf};
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -295,7 +295,37 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             },
         },
+        opts::Command::Trust(args) => {
+            let (urls, ids): (Vec<_>, Vec<_>) = args
+                .pub_ids_or_urls
+                .into_iter()
+                .partition(|arg| arg.starts_with("https://"));
+            let mut ids = ids_from_string(&ids)?;
 
+            let local = crev_lib::Local::auto_create_or_open()?;
+            let mut db = local.load_db()?;
+
+            // Fetch the URLs
+            for url in &urls {
+                local.fetch_url_into(&url, &mut db)?;
+            }
+
+            // Make reverse lookup for Ids based on their URLs
+            let mut lookup: HashMap<_, _> = db
+                .all_author_ids().into_iter()
+                .filter_map(|(id, _)| {
+                    db.lookup_url(&id).from_self().map(|url| (url.url.as_str(), id))
+                })
+                .collect();
+            for url in &urls {
+                if let Some(id) = lookup.remove(url.as_str()) {
+                    ids.push(id);
+                } else {
+                    eprintln!("warning: Could not find Id for URL {}", url);
+                }
+            }
+            create_trust_proof(ids, Trust, &args.common_proof_create)?;
+        }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {
                 let status = run_diff(&args)?;
