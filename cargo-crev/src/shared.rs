@@ -362,7 +362,7 @@ pub fn crate_review_activity_check(
             }
         }
 
-        if activity.timestamp + time::Duration::days(2) < crev_common::now() {
+        if activity.timestamp + chrono::Duration::days(2) < crev_common::now() {
             bail!(
                 "Last review activity record for {}:{} is too old. \
                  Re-review or use `--skip-activity-check` to override.",

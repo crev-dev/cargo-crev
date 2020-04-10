@@ -10,6 +10,7 @@ use crate::{
         cargo_full_ignore_list, cargo_min_ignore_list, get_geiger_count, is_digest_clean,
         read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
     },
+    to_fail,
 };
 use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
@@ -84,12 +85,13 @@ impl Scanner {
 
         let (all_pkgs_set, _resolve) = repo.get_package_set()?;
 
-        let graph = repo.get_dependency_graph(roots.clone())?;
+        let graph = repo.get_dependency_graph(roots.clone()).map_err(to_fail)?;
 
         let all_pkgs_ids = graph.get_all_pkg_ids();
 
         let crate_info_by_id: HashMap<PackageId, CrateInfo> = all_pkgs_set
-            .get_many(all_pkgs_ids)?
+            .get_many(all_pkgs_ids)
+            .map_err(to_fail)?
             .into_iter()
             .map(|pkg| (pkg.package_id(), CrateInfo::from_pkg(pkg)))
             .collect();

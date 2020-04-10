@@ -1036,8 +1036,7 @@ fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item
             let fetch_source = FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
             Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
         })
-        .flat_map(|iter| iter)
-    )
+        .flat_map(|iter| iter))
 }
 
 /// Scan a git checkout or any subdirectory obtained from a known URL
