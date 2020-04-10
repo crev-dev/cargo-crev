@@ -359,6 +359,15 @@ pub struct IdTrust {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct TrustUrls {
+    /// Public IDs or proof repo URLs to create Trust Proof for
+    pub pub_ids_or_urls: Vec<String>,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct RepoFetchUrl {
     /// URL to public proof repository
     pub url: String,
@@ -724,6 +733,7 @@ pub struct ProofFind {
     #[structopt(name = "vers", long = "vers")]
     pub version: Option<Version>,
 
+    /// Find a proof by a crev Id
     #[structopt(name = "author", long = "author")]
     pub author: Option<String>,
 }
@@ -774,7 +784,7 @@ pub enum Repo {
 #[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Proof {
-    /// Publish to remote repository
+    /// Find a proof
     #[structopt(name = "find")]
     Find(ProofFind),
 }
@@ -795,13 +805,16 @@ pub enum Command {
     #[structopt(name = "id")]
     Id(Id),
 
-    /// Proofs
+    /// Find a proof in the proof repo
     #[structopt(name = "proof")]
     Proof(Proof),
 
     /// Proof Repository
     #[structopt(name = "repo")]
     Repo(Repo),
+
+    /// Add a Trust proof by an Id or a URL
+    Trust(TrustUrls),
 
     /// Shortcut for `crate goto`
     #[structopt(name = "goto")]
