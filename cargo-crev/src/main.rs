@@ -164,7 +164,7 @@ fn print_ids<'a>(
             trust_set.get_effective_trust_level(id),
             match db.lookup_url(id) {
                 UrlOfId::None => "",
-                UrlOfId::FromSelf(url) => &url.url,
+                UrlOfId::FromSelfVerified(url) | UrlOfId::FromSelf(url) => &url.url,
                 UrlOfId::FromOthers(url) => {
                     tmp = format!("({})", url.url);
                     &tmp

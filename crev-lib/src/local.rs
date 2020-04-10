@@ -30,7 +30,17 @@ use std::{
     io::{BufRead, Write},
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
+
+/// Where a proof has been fetched from
+#[derive(Debug, Clone)]
+pub enum FetchSource {
+    /// Remote repository (other people's proof repos)
+    Url(Arc<Url>),
+    /// One of user's own proof repos, which are assumed to contain only verified information
+    LocalUser,
+}
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -544,7 +554,7 @@ impl Local {
 
         for id in ids {
             let url = match db.lookup_url(&id) {
-                UrlOfId::FromSelf(url) => Some(url),
+                UrlOfId::FromSelf(url) | UrlOfId::FromSelfVerified(url) => Some(url),
                 UrlOfId::FromOthers(maybe_url) => {
                     let maybe_url = maybe_url.url.clone();
                     self.fetch_url_into(&maybe_url, &mut db)?;
@@ -584,8 +594,9 @@ impl Local {
     pub fn fetch_url_into(&self, url: &str, mut db: &mut ProofDB) -> Result<()> {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut db = ProofDB::new();
-            db.import_from_iter(proofs_iter_for_path(dir));
             let url = Url::new_git(url);
+            let fetch_source = self.fetch_source_for_url(url.clone())?;
+            db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
             eprintln!("Found proofs from:");
             for (id, count) in db.all_author_ids() {
                 let tmp;
@@ -678,6 +689,15 @@ impl Local {
         Ok(new_path)
     }
 
+    fn fetch_source_for_url(&self, url: Url) -> Result<FetchSource> {
+        if let Some(own_url) = self.get_cur_url()? {
+            if own_url == url {
+                return Ok(FetchSource::LocalUser);
+            }
+        }
+        Ok(FetchSource::Url(Arc::new(url)))
+    }
+
     /// Fetch a git proof repository
     ///
     /// Returns url where it was cloned/fetched
@@ -705,7 +725,8 @@ impl Local {
         eprint!("Fetching {}... ", url);
         match self.fetch_remote_git(url) {
             Ok(dir) => {
-                db.import_from_iter(proofs_iter_for_path(dir.clone()));
+                let fetch_source = self.fetch_source_for_url(Url::new_git(url)).ok()?;
+                db.import_from_iter(proofs_iter_for_path(dir.clone()).map(move |p| (p, fetch_source.clone())));
 
                 eprint!("OK");
 
@@ -825,8 +846,8 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.all_local_proofs());
-        db.import_from_iter(proofs_iter_for_path(self.cache_remotes_path()));
+        db.import_from_iter(self.all_local_proofs().map(move |p| (p, FetchSource::LocalUser)));
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
         Ok(db)
     }
 
@@ -996,6 +1017,30 @@ impl ProofStore for Local {
     }
 }
 
+/// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
+fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>>{
+    let dir = std::fs::read_dir(&path)?;
+    Ok(dir
+        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            if let Ok(ty) = e.file_type() {
+                if ty.is_dir() {
+                    return Some(e.path());
+                }
+            }
+            None
+        })
+        .filter_map(move |path| {
+            let repo = git2::Repository::open(&path).ok()?;
+            let origin = repo.find_remote("origin").ok()?;
+            let fetch_source = FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
+            Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
+        })
+        .flat_map(|iter| iter)
+    )
+}
+
+/// Scan a git checkout or any subdirectory obtained from a known URL
 fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     use std::ffi::OsStr;
     let file_iter = walkdir::WalkDir::new(&path)

@@ -1,12 +1,12 @@
 use super::*;
-
+use crate::local::FetchSource;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
-    Digest, Level, OwnId,
+    Digest, Level, OwnId, Url,
 };
 use default::default;
 use semver::Version;
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 mod issues;
 
@@ -101,6 +101,8 @@ NtGu3z1Jtnj6wx8INBrVujcOPz61BiGmJS-UoAOe0XQutatFsEbgAcAo7rBvZz4Q-ccNXIFZtKnXhBDM
 // with the edges distance corresponding to the trust level.
 #[test]
 fn proofdb_distance() -> Result<()> {
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://example.com")));
+
     let a = OwnId::generate_for_git_url("https://a");
     let b = OwnId::generate_for_git_url("https://b");
     let c = OwnId::generate_for_git_url("https://c");
@@ -121,7 +123,7 @@ fn proofdb_distance() -> Result<()> {
 
     let mut trustdb = ProofDB::new();
 
-    trustdb.import_from_iter(vec![a_to_b, b_to_c, c_to_d, d_to_e].into_iter());
+    trustdb.import_from_iter(vec![a_to_b, b_to_c, c_to_d, d_to_e].into_iter().map(|x| (x, url.clone())));
 
     let trust_set: HashSet<crev_data::Id> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
@@ -137,7 +139,7 @@ fn proofdb_distance() -> Result<()> {
 
     let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
 
-    trustdb.import_from_iter(vec![b_to_d].into_iter());
+    trustdb.import_from_iter(vec![(b_to_d, url.clone())].into_iter());
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
@@ -159,6 +161,7 @@ fn proofdb_distance() -> Result<()> {
 // and counts.
 #[test]
 fn overwritting_reviews() -> Result<()> {
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
@@ -191,7 +194,7 @@ fn overwritting_reviews() -> Result<()> {
         vec![proof2.clone(), proof1.clone()],
     ] {
         let mut trustdb = ProofDB::new();
-        trustdb.import_from_iter(order.into_iter());
+        trustdb.import_from_iter(order.into_iter().map(|x| (x, url.clone())));
         assert_eq!(
             trustdb
                 .get_package_reviews_by_digest(&Digest::from_vec(digest.clone()))
@@ -232,6 +235,7 @@ fn overwritting_reviews() -> Result<()> {
 
 #[test]
 fn dont_consider_an_empty_review_as_valid() -> Result<()> {
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
@@ -255,7 +259,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
 
     let mut trustdb = ProofDB::new();
     let trust_set = trustdb.calculate_trust_set(&a.id.id, &default());
-    trustdb.import_from_iter(vec![proof1].into_iter());
+    trustdb.import_from_iter(vec![proof1].into_iter().map(|x| (x, url.clone())));
     let verification_reqs = VerificationRequirements {
         thoroughness: Level::None,
         understanding: Level::None,
@@ -271,6 +275,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
 
 #[test]
 fn proofdb_distrust() -> Result<()> {
+    let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = OwnId::generate_for_git_url("https://a");
     let b = OwnId::generate_for_git_url("https://b");
     let c = OwnId::generate_for_git_url("https://c");
@@ -292,7 +297,7 @@ fn proofdb_distrust() -> Result<()> {
 
     let mut trustdb = ProofDB::new();
 
-    trustdb.import_from_iter(vec![a_to_bc, b_to_d, d_to_c, c_to_e].into_iter());
+    trustdb.import_from_iter(vec![a_to_bc, b_to_d, d_to_c, c_to_e].into_iter().map(|x| (x, url.clone())));
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
@@ -308,7 +313,7 @@ fn proofdb_distrust() -> Result<()> {
 
     let e_to_d = e.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Distrust)?;
 
-    trustdb.import_from_iter(vec![e_to_d].into_iter());
+    trustdb.import_from_iter(vec![(e_to_d, url.clone())].into_iter());
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
