@@ -2,6 +2,7 @@ use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
     prelude::*,
+    proofdb::UrlOfId,
     util, ProofDB, ProofStore, TrustProofType,
 };
 use crev_common::{
@@ -542,16 +543,14 @@ impl Local {
         let mut pub_ids = Vec::with_capacity(ids.len());
 
         for id in ids {
-            let url = match db.lookup_verified_url(&id) {
-                Some(url) => Some(url),
-                None => match db.lookup_unverified_url(&id) {
-                    Some(maybe_url) => {
-                        let maybe_url = maybe_url.url.clone();
-                        self.fetch_url_into(&maybe_url, &mut db)?;
-                        db.lookup_verified_url(&id)
-                    }
-                    None => None,
-                },
+            let url = match db.lookup_url(&id) {
+                UrlOfId::FromSelf(url) => Some(url),
+                UrlOfId::FromOthers(maybe_url) => {
+                    let maybe_url = maybe_url.url.clone();
+                    self.fetch_url_into(&maybe_url, &mut db)?;
+                    db.lookup_url(&id).from_self()
+                }
+                UrlOfId::None => None,
             };
             if let Some(url) = url {
                 pub_ids.push(PubId::new(id, url.to_owned()));
@@ -590,7 +589,7 @@ impl Local {
             eprintln!("Found proofs from:");
             for (id, count) in db.all_author_ids() {
                 let tmp;
-                let verified_state = match db.lookup_verified_url(&id) {
+                let verified_state = match db.lookup_url(&id).from_self() {
                     Some(verified_url) if verified_url == &url => "verified owner",
                     Some(verified_url) => {
                         tmp = format!("copy from {}", verified_url.url);
@@ -625,13 +624,13 @@ impl Local {
                 }
                 already_fetched_ids.insert(id.to_owned());
 
-                if let Some(url) = db.lookup_unverified_url(id).cloned() {
-                    let url = url.url;
-                    if already_fetched_urls.contains(&url) {
+                if let Some(url) = db.lookup_url(id).any_unverified() {
+                    let url = &url.url;
+                    if already_fetched_urls.contains(url) {
                         continue;
                     }
                     already_fetched_urls.insert(url.clone());
-
+                    let url = url.clone();
                     self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
                     something_was_fetched = true;
                 } else {
@@ -658,13 +657,14 @@ impl Local {
                     continue;
                 }
                 already_fetched_ids.insert(id.to_owned());
-                if let Some(url) = db.lookup_unverified_url(id).cloned() {
-                    let url = url.url;
+                if let Some(url) = db.lookup_url(id).any_unverified() {
+                    let url = &url.url;
 
-                    if already_fetched_urls.contains(&url) {
+                    if already_fetched_urls.contains(url) {
                         continue;
                     }
                     already_fetched_urls.insert(url.clone());
+                    let url = url.clone();
                     self.fetch_proof_repo_import_and_print_counts(&url, db);
                     something_was_fetched = true;
                 } else {

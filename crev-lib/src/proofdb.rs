@@ -1147,17 +1147,47 @@ impl ProofDB {
         visited
     }
 
-    /// Returned URL may have been suggested by others, who are not trusted
-    pub fn lookup_unverified_url(&self, id: &Id) -> Option<&Url> {
+    /// Finds which URL is the latest and claimed to belong to the given Id.
+    /// The result indicates how reliable information this is.
+    pub fn lookup_url(&self, id: &Id) -> UrlOfId<'_> {
         self.url_by_id_self_reported
             .get(id)
-            .or_else(|| self.url_by_id_reported_by_others.get(id))
-            .map(|url| &url.value)
+            .map(|url| UrlOfId::FromSelf(&url.value))
+            .or_else(|| {
+                self.url_by_id_reported_by_others
+                    .get(id)
+                    .map(|url| UrlOfId::FromOthers(&url.value))
+            })
+            .unwrap_or(UrlOfId::None)
+    }
+}
+
+/// Result of URL lookup
+#[derive(Debug, Copy, Clone)]
+pub enum UrlOfId<'a> {
+    /// Self-reported (signed by this Id)
+    FromSelf(&'a Url),
+    /// Reported by someone else (unverified)
+    FromOthers(&'a Url),
+    /// Unknown
+    None,
+}
+
+impl<'a> UrlOfId<'a> {
+    /// Only if this URL has been signed by its Id
+    pub fn from_self(self) -> Option<&'a Url> {
+        match self {
+            Self::FromSelf(url) => Some(url),
+            _ => None,
+        }
     }
 
-    /// Can trust that this Id has reported the URL returned
-    pub fn lookup_verified_url(&self, id: &Id) -> Option<&Url> {
-        self.url_by_id_self_reported.get(id).map(|url| &url.value)
+    /// Any URL available, even if reported by someone else
+    pub fn any_unverified(self) -> Option<&'a Url> {
+        match self {
+            Self::FromSelf(url) | Self::FromOthers(url) => Some(url),
+            _ => None,
+        }
     }
 }
 

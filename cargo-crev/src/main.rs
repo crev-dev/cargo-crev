@@ -33,7 +33,7 @@ mod tui;
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id};
 use crev_lib::{
-    proofdb::{ProofDB, TrustSet},
+    proofdb::{ProofDB, TrustSet, UrlOfId},
     TrustProofType::{self, *},
 };
 
@@ -157,20 +157,19 @@ fn print_ids<'a>(
     db: &ProofDB,
 ) -> Result<()> {
     for id in ids {
-        let mut tmp = String::new();
+        let tmp;
         println!(
             "{} {:6} {}",
             id,
             trust_set.get_effective_trust_level(id),
-            db.lookup_verified_url(id)
-                .map(|url| url.url.as_str())
-                .or_else(|| {
-                    db.lookup_unverified_url(id).map(|url| {
-                        tmp = format!("({})", url.url);
-                        tmp.as_str()
-                    })
-                })
-                .unwrap_or("")
+            match db.lookup_url(id) {
+                UrlOfId::None => "",
+                UrlOfId::FromSelf(url) => &url.url,
+                UrlOfId::FromOthers(url) => {
+                    tmp = format!("({})", url.url);
+                    &tmp
+                }
+            },
         );
     }
     Ok(())
