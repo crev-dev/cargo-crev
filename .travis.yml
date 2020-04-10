@@ -17,8 +17,8 @@ matrix:
     - env: DEPLOY=1 TARGET=x86_64-apple-darwin OPENSSL_STATIC=yes
       script: cargo build --locked --release --target $TARGET
       os: osx
-    - env: DEPLOY=1 TARGET=x86_64-unknown-linux-musl OPENSSL_DIR=$HOME/openssl-musl
-      before_script: ./ci/travis-musl-openssl.sh
+    - env: DEPLOY=1 TARGET=x86_64-unknown-linux-musl OPENSSL_STATIC=yes
+      before_script: rustup target add $TARGET
       script: cargo build --locked --release --target $TARGET
       addons:
         apt:

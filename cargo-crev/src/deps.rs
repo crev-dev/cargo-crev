@@ -1,8 +1,8 @@
-use semver::Version;
-use std::path::PathBuf;
-
+use crate::to_fail;
 use crev_data::{proof, Digest, PubId};
 use crev_lib::*;
+use semver::Version;
+use std::path::PathBuf;
 
 use crate::{opts::*, prelude::*, shared::*, term};
 use cargo::core::PackageId;
@@ -215,7 +215,7 @@ impl CrateInfo {
         if !self.root.exists() {
             let repo = crate::Repo::auto_open_cwd(cargo_opts)?;
             let mut source = repo.load_source()?;
-            source.download(self.id)?;
+            source.download(self.id).map_err(to_fail)?;
         }
         Ok(())
     }

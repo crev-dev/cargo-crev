@@ -20,7 +20,6 @@ default = "0.1"
 directories = "2"
 failure = "0.1"
 ifmt = "0.2"
-git2 = "0.10"
 insideout = "0.2"
 miscreant = { version = "0.4", features = ["soft-aes"] }
 num_cpus = "1"
@@ -36,3 +35,4 @@ log = "0.4"
 fnv = "1"
 blake2 = "0.8"
 crev-data = { path = "../crev-data", version = "0.17.0" }
+git2 = "0.11"
