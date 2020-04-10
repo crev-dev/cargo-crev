@@ -12,14 +12,14 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "../README.md"
 
 [dependencies]
-chrono = "0.4"
-common_failures = "0.1"
 crev-common = { path = "../crev-common", version = "0.16.0" }
-derive_builder = "0.7"
-typed-builder = "0.3"
-ed25519-dalek = "=1.0.0-pre.3"
-failure = "0.1"
-rand = "0.7"
-semver = { version = "0.9", features = [ "serde" ] }
-serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.8"
+chrono = "0.4.11"
+common_failures = "0.1.1"
+derive_builder = "0.9.0"
+ed25519-dalek = "1.0.0-pre.3"
+failure = "0.1.7"
+rand = "0.7.3"
+semver = { version = "0.9.0", features = [ "serde" ] }
+serde = { version = "1.0.106", features = ["derive"] }
+serde_yaml = "0.8.11"
+typed-builder = "0.5.1"
