@@ -37,6 +37,12 @@ pub struct TrustAdd {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct TrustUrlAdd {
+    /// Public IDs or proof repo URLs to create Trust Proof for
+    pub pub_ids_or_urls: Vec<String>,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Trust {
     #[structopt(name = "add")]
     /// Create a new Trust Proof
