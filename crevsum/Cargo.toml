@@ -15,5 +15,5 @@ readme = "README.md"
 common_failures = "0.1"
 crev-common = { path = "../crev-common", version = "0.16.0" }
 crev-recursive-digest = {  version = "0.2.1" }
-hex = "0.3"
-structopt = "0.2"
+hex = "0.4"
+structopt = "0.3"
