@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * user interface now exposes distinction between URLs self-reported by an owner of a Crev Id,
   and unverified URLs reported about others.
-    * `id query all` will display URLs in parens if they haven't been signed by their own Crev Id.
-    * `id trust` will propagate only URLs signed by their own Crev Id.
-* `repo fetch url` reports which Crev Ids belong to the repo (have same URL) and which were copied
+    * `id query all` displays whether URLs have been verified to belong to their Crev Id:
+      `==` signed and verified, `~=` signed but not fetched, `??` reported by others only.
+    * `id trust` propagates only URLs signed by their own Crev Id.
+* `repo fetch url` reports which Crev Ids belong to the repo (have the same URL) and which were copied
   from other repos.
 
 ## [0.16.1](https://github.com/dpc/crev/compare/cargo-crev-v0.16.0...cargo-crev-v0.16.1) - 2020-02-11
@@ -55,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `comment` field serialization in trust proofs
 * `crate verify` return code
 * Stale documentation
- 
+
 ## [0.12.0](https://github.com/dpc/crev/compare/cargo-crev-v0.11.0...cargo-crev-v0.12.0) - 2019-11-19
 ### Changed
 
