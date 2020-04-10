@@ -10,7 +10,7 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{collections::HashMap, io::BufRead, path::PathBuf};
+use std::{collections::{HashMap, HashSet}, io::BufRead, path::PathBuf};
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -309,15 +309,19 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
 
             // Make reverse lookup for Ids based on their URLs
-            let mut lookup: HashMap<_, _> = db
-                .all_author_ids().into_iter()
-                .filter_map(|(id, _)| {
-                    db.lookup_url(&id).from_self().map(|url| (url.url.as_str(), id))
-                })
-                .collect();
+            let mut lookup = HashMap::new();
+            for (id, _) in db.all_author_ids() {
+                if let Some(url) = db.lookup_url(&id).from_self() {
+                    lookup.entry(url.url.as_str())
+                        .or_insert_with(HashSet::new)
+                        .insert(id);
+                }
+            }
             for url in &urls {
-                if let Some(id) = lookup.remove(url.as_str()) {
-                    ids.push(id);
+                if let Some(set) = lookup.remove(url.as_str()) {
+                    for id in set {
+                        ids.push(id);
+                    }
                 } else {
                     eprintln!("warning: Could not find Id for URL {}", url);
                 }
