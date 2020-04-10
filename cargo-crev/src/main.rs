@@ -289,7 +289,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
-                    print_ids(db.all_known_ids().iter(), &trust_set, &db)?;
+                    let mut tmp = db.all_known_ids().into_iter().map(|id| {
+                        let trust = trust_set.get_effective_trust_level(&id);
+                        let url = db.lookup_url(&id).any_unverified().map(|url| url.url.as_str());
+                        (std::cmp::Reverse(trust), url, id)
+                    }).collect::<Vec<_>>();
+                    tmp.sort();
+
+                    print_ids(tmp.iter().map(|(_, _, id)| id), &trust_set, &db)?;
                 }
             },
         },
