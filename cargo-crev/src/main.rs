@@ -157,19 +157,17 @@ fn print_ids<'a>(
     db: &ProofDB,
 ) -> Result<()> {
     for id in ids {
-        let tmp;
+        let (status, url) = match db.lookup_url(id) {
+            UrlOfId::None => ("", ""),
+            UrlOfId::FromSelfVerified(url) => ("==", url.url.as_str()),
+            UrlOfId::FromSelf(url) => ("~=", url.url.as_str()),
+            UrlOfId::FromOthers(url) => ("??", url.url.as_str()),
+        };
         println!(
-            "{} {:6} {}",
+            "{} {:6} {} {}",
             id,
             trust_set.get_effective_trust_level(id),
-            match db.lookup_url(id) {
-                UrlOfId::None => "",
-                UrlOfId::FromSelfVerified(url) | UrlOfId::FromSelf(url) => &url.url,
-                UrlOfId::FromOthers(url) => {
-                    tmp = format!("({})", url.url);
-                    &tmp
-                }
-            },
+            status, url,
         );
     }
     Ok(())
