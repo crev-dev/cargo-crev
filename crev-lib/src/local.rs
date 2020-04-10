@@ -613,29 +613,10 @@ impl Local {
         let mut db = self.load_db()?;
         let for_id = self.get_for_id_from_str(for_id)?;
 
-        let mut something_was_fetched = true;
-        while something_was_fetched {
-            something_was_fetched = false;
+        loop {
             let trust_set = db.calculate_trust_set(&for_id, &trust_params);
-
-            for id in trust_set.trusted_ids() {
-                if already_fetched_ids.contains(id) {
-                    continue;
-                }
-                already_fetched_ids.insert(id.to_owned());
-
-                if let Some(url) = db.lookup_url(id).any_unverified() {
-                    let url = &url.url;
-                    if already_fetched_urls.contains(url) {
-                        continue;
-                    }
-                    already_fetched_urls.insert(url.clone());
-                    let url = url.clone();
-                    self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
-                    something_was_fetched = true;
-                } else {
-                    eprintln!("No URL for {}", id);
-                }
+            if !self.fetch_ids_not_fetched_yet(trust_set.trusted_ids().cloned(), &mut already_fetched_ids, &mut already_fetched_urls, &mut db) {
+                break;
             }
         }
         Ok(())
@@ -648,31 +629,37 @@ impl Local {
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
 
-        let mut something_was_fetched = true;
-        while something_was_fetched {
-            something_was_fetched = false;
-
-            for id in &db.all_known_ids() {
-                if already_fetched_ids.contains(id) {
-                    continue;
-                }
-                already_fetched_ids.insert(id.to_owned());
-                if let Some(url) = db.lookup_url(id).any_unverified() {
-                    let url = &url.url;
-
-                    if already_fetched_urls.contains(url) {
-                        continue;
-                    }
-                    already_fetched_urls.insert(url.clone());
-                    let url = url.clone();
-                    self.fetch_proof_repo_import_and_print_counts(&url, db);
-                    something_was_fetched = true;
-                } else {
-                    eprintln!("No URL for {}", id);
-                }
+        loop {
+            if !self.fetch_ids_not_fetched_yet(db.all_known_ids().into_iter(), &mut already_fetched_ids, &mut already_fetched_urls, db) {
+                break;
             }
         }
         Ok(())
+    }
+
+    /// True if something was fetched
+    fn fetch_ids_not_fetched_yet<'a>(&self, ids: impl Iterator<Item=Id>, already_fetched_ids: &mut HashSet<Id>, already_fetched_urls: &mut HashSet<String>, db: &mut ProofDB) -> bool {
+        let mut something_was_fetched = false;
+        for id in ids {
+            if already_fetched_ids.contains(&id) {
+                continue;
+            }
+            if let Some(url) = db.lookup_url(&id).any_unverified() {
+                let url = &url.url;
+
+                if already_fetched_urls.contains(url) {
+                    continue;
+                }
+                let url = url.clone();
+                self.fetch_proof_repo_import_and_print_counts(&url, db);
+                already_fetched_urls.insert(url);
+                something_was_fetched = true;
+            } else {
+                eprintln!("No URL for {}", id);
+            }
+            already_fetched_ids.insert(id);
+        }
+        something_was_fetched
     }
 
     pub fn get_remote_git_cache_path(&self, url: &str) -> Result<PathBuf> {
