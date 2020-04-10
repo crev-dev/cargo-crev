@@ -264,9 +264,11 @@ pub struct CrateVerifyColumns {
 macro_rules! show_x {
     ($name:ident, $default:expr) => {
         pub fn $name(self) -> bool {
-             self.$name.unwrap_or(Some(self.show_all)).unwrap_or($default)
+            self.$name
+                .unwrap_or(Some(self.show_all))
+                .unwrap_or($default)
         }
-    }
+    };
 }
 
 impl CrateVerifyColumns {

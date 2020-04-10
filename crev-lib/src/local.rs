@@ -549,7 +549,7 @@ impl Local {
                         let maybe_url = maybe_url.url.clone();
                         self.fetch_url_into(&maybe_url, &mut db)?;
                         db.lookup_verified_url(&id)
-                    },
+                    }
                     None => None,
                 },
             };
@@ -595,7 +595,7 @@ impl Local {
                     Some(verified_url) => {
                         tmp = format!("copy from {}", verified_url.url);
                         &tmp
-                    },
+                    }
                     None => "copy from another repo",
                 };
                 println!("{:>8} {} ({})", count, id, verified_state);
@@ -679,9 +679,7 @@ impl Local {
         let digest = crev_common::blake2b256sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
         let old_path = self.cache_remotes_path().join(digest.to_string());
-        let new_path = self
-            .cache_remotes_path()
-            .join(sanitize_url_for_fs(url));
+        let new_path = self.cache_remotes_path().join(sanitize_url_for_fs(url));
 
         if old_path.exists() {
             // we used to use less human-friendly path format; move directories
@@ -1017,7 +1015,13 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         .into_iter()
         // skip dotfiles, .git dir
         .filter_entry(|e| e.file_name().to_str().map_or(true, |f| !f.starts_with('.')))
-        .map_err(move |e| format_err!("Error iterating local ProofStore at {}: {}", path.display(), e))
+        .map_err(move |e| {
+            format_err!(
+                "Error iterating local ProofStore at {}: {}",
+                path.display(),
+                e
+            )
+        })
         .filter_map_ok(|entry| {
             let path = entry.path();
             if !path.is_file() {

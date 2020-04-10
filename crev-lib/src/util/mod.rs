@@ -5,8 +5,13 @@ use crev_common;
 use crev_data::proof::{self, ContentExt};
 use failure::bail;
 use git2;
-use std::path::PathBuf;
-use std::{self, env, ffi, fmt::Write as FmtWrite, fs, io, io::Write, path::Path};
+use std::{
+    self, env, ffi,
+    fmt::Write as FmtWrite,
+    fs, io,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use tempdir;
 
 pub use crev_common::{
