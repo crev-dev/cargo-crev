@@ -539,6 +539,7 @@ impl Local {
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
+    /// Creates new unsigned trust proof object, not edited
     pub fn build_trust_proof(
         &self,
         from_id: &PubId,
@@ -569,14 +570,24 @@ impl Local {
             }
         }
 
-        let trust = from_id.create_trust_proof(
+        from_id.create_trust_proof(
             &pub_ids,
             match trust_or_distrust {
                 TrustProofType::Trust => TrustLevel::Medium,
                 TrustProofType::Distrust => TrustLevel::Distrust,
                 TrustProofType::Untrust => TrustLevel::None,
             },
-        )?;
+        )
+    }
+
+    /// Opens editor with a new trust proof for given Ids
+    pub fn build_trust_proof_interactively(
+        &self,
+        from_id: &PubId,
+        ids: Vec<Id>,
+        trust_or_distrust: TrustProofType,
+    ) -> Result<proof::trust::Trust> {
+        let trust = self.build_trust_proof(from_id, ids, trust_or_distrust)?;
 
         // TODO: Look up previous trust proof?
         Ok(util::edit_proof_content_iteractively(
