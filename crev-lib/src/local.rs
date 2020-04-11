@@ -902,11 +902,13 @@ impl Local {
         Ok(())
     }
 
+    /// The callback should provide a passphrase
     pub fn generate_id(
         &self,
         url: Option<String>,
         github_username: Option<String>,
         use_https_push: bool,
+        read_new_passphrase: impl FnOnce() -> std::io::Result<String>,
     ) -> Result<()> {
         let url = match (url, github_username) {
             (Some(url), None) => url,
@@ -921,10 +923,11 @@ impl Local {
 
         self.clone_proof_dir_from_git(&url, use_https_push)?;
 
-        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         eprintln!("CrevID will be protected by a passphrase.");
         eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
-        let passphrase = crev_common::read_new_passphrase()?;
+        let passphrase = read_new_passphrase()?;
+
+        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         let locked = id::LockedId::from_own_id(&id, &passphrase)?;
 
         self.save_locked_id(&locked)?;
@@ -940,6 +943,16 @@ impl Local {
         self.init_repo_readme_using_template()?;
 
         Ok(())
+    }
+
+    /// Same as generate_id, but asks for a passphrase interactively
+    pub fn generate_id_interactively(
+        &self,
+        url: Option<String>,
+        github_username: Option<String>,
+        use_https_push: bool,
+    ) -> Result<()> {
+        self.generate_id(url, github_username, use_https_push, crev_common::read_new_passphrase)
     }
 
     pub fn switch_id(&self, id_str: &str) -> Result<()> {
