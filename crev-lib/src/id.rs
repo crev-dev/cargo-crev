@@ -104,6 +104,7 @@ impl LockedId {
         })
     }
 
+    /// Extract only the public identity part from all data
     pub fn to_pubid(&self) -> PubId {
         PubId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
             .expect("own id should be valid")
