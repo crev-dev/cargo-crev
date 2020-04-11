@@ -572,6 +572,12 @@ impl Local {
     }
 
     /// Creates new unsigned trust proof object, not edited
+    ///
+    /// Ensures the proof contains valid URLs for Ids where possible.
+    ///
+    /// Currently ignores previous proofs
+    ///
+    /// See `trust.sign_by(ownid)`
     pub fn build_trust_proof(
         &self,
         from_id: &PubId,
@@ -615,6 +621,8 @@ impl Local {
     }
 
     /// Opens editor with a new trust proof for given Ids
+    ///
+    /// Currently ignores previous proofs
     pub fn build_trust_proof_interactively(
         &self,
         from_id: &PubId,
@@ -968,6 +976,10 @@ impl Local {
         Ok(())
     }
 
+    /// Generate a new identity in the local config.
+    ///
+    /// It's OK if the URL contains other identities. A new one will be added.
+    ///
     /// The callback should provide a passphrase
     pub fn generate_id(
         &self,
@@ -987,6 +999,7 @@ impl Local {
         Ok(locked_id)
     }
 
+    /// Set given Id as the current one
     pub fn switch_id(&self, id_str: &str) -> Result<()> {
         let id: Id = Id::crevid_from_str(id_str)?;
         self.save_current_id(&id)?;
