@@ -3,14 +3,12 @@ cache: cargo
 
 matrix:
   include:
-    # OS compat
-    - os: linux
+    # OS compat (stable/nightly are on linux)
     - os: osx
 
     # rustc version compat
     - rust: stable
     - rust: 1.40.0
-    - rust: beta
     - rust: nightly
 
     # deployments
