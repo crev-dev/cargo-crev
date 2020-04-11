@@ -908,7 +908,12 @@ impl Local {
             bail!("URL must start with 'https://");
         }
 
-        self.clone_proof_dir_from_git(&url, use_https_push)?;
+        self.clone_proof_dir_from_git(&url, use_https_push).map_err(|e| {
+            eprintln!("To create your proof repository, fork the template:");
+            eprintln!("https://github.com/crev-dev/crev-proofs/fork");
+            eprintln!();
+            e
+        })?;
 
         let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         eprintln!("CrevID will be protected by a passphrase.");
