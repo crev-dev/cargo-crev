@@ -811,24 +811,17 @@ impl Local {
     }
 
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
-        let orig_dir = std::env::current_dir()?;
         let proof_dir_path = self.get_proofs_dir_path()?;
         if !proof_dir_path.exists() {
             let id = self.read_current_locked_id()?;
             self.clone_proof_dir_from_git(&id.url.url, false)?;
         }
 
-        std::env::set_current_dir(proof_dir_path)
-            .with_context(|_| "Trying to change dir to the current local proof repo")?;
-
-        use std::process::Command;
-
-        let status = Command::new("git")
+        let status = std::process::Command::new("git")
             .args(args)
+            .current_dir(proof_dir_path)
             .status()
             .expect("failed to execute git");
-
-        std::env::set_current_dir(orig_dir)?;
 
         Ok(status)
     }
