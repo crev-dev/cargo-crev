@@ -23,7 +23,9 @@ pub use self::local::Local;
 pub use crate::proofdb::{ProofDB, TrustDistanceParams};
 pub use activity::{ReviewActivity, ReviewMode};
 
-/// Trait representing a place that can keep proofs
+/// Trait representing a place that can keep proofs (all reviews and trust proofs)
+///
+/// See `ProofDb`.
 ///
 /// Typically serialized and persisted.
 pub trait ProofStore {
@@ -126,6 +128,7 @@ impl fmt::Display for VerificationStatus {
     }
 }
 
+/// Check whether code at this path has reviews, and the reviews meet the requirements
 pub fn dir_or_git_repo_verify(
     path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
@@ -142,6 +145,9 @@ pub fn dir_or_git_repo_verify(
     Ok(db.verify_package_digest(&digest, trusted_set, requirements))
 }
 
+/// Check whether code at this path has reviews, and the reviews meet the requirements
+///
+/// Same as `dir_or_git_repo_verify`, except it doesn't handle .git dirs
 pub fn dir_verify(
     path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,

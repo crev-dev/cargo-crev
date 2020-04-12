@@ -609,6 +609,7 @@ where
     Ok(())
 }
 
+/// Creates new trust proof interactively
 pub fn create_trust_proof(
     ids: Vec<Id>,
     trust_or_distrust: TrustProofType,

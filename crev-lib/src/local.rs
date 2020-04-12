@@ -44,6 +44,7 @@ pub enum FetchSource {
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
+/// Random 32 bytes
 fn generete_salt() -> Vec<u8> {
     crev_common::rand::random_vec(32)
 }
@@ -148,14 +149,17 @@ impl Local {
         })
     }
 
+    /// Where the config is stored
     pub fn get_root_path(&self) -> &Path {
         &self.root_path
     }
 
+    /// Where temporary files are stored
     pub fn get_root_cache_dir(&self) -> &Path {
         &self.cache_path
     }
 
+    /// Fails if it doesn't exist. See `auto_create_or_open()`
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
@@ -167,6 +171,7 @@ impl Local {
         Ok(repo)
     }
 
+    /// Fails if it already exists. See `auto_create_or_open()`
     pub fn auto_create() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.root_path)?;
@@ -182,6 +187,7 @@ impl Local {
         Ok(repo)
     }
 
+    /// Load the database from disk, or create one if needed.
     pub fn auto_create_or_open() -> Result<Self> {
         let repo = Self::new()?;
         let config_path = repo.user_config_path();
@@ -192,17 +198,19 @@ impl Local {
         }
     }
 
+    /// Load config, and return Id configured as the current one
     pub fn read_current_id(&self) -> Result<crev_data::Id> {
         Ok(self.load_user_config()?.get_current_userid()?.to_owned())
     }
 
+    /// Load config, and return Id configured as the current one
     pub fn read_current_id_opt(&self) -> Result<Option<crev_data::Id>> {
         Ok(self.load_user_config()?.get_current_userid_opt().cloned())
     }
 
     /// Calculate `for_id` that is used in a lot of operations
     ///
-    /// * if `id_str` is given - convert to Id
+    /// * if `id_str` is given and parses correctly - convert to Id.
     /// * otherwise return current id
     pub fn get_for_id_from_str_opt(&self, id_str: Option<&str>) -> Result<Option<Id>> {
         id_str
@@ -216,6 +224,7 @@ impl Local {
             .ok_or_else(|| format_err!("Id not specified and current id not set"))
     }
 
+    /// Load config, update which Id is the current one, and save.
     pub fn save_current_id(&self, id: &Id) -> Result<()> {
         let path = self.id_path(id);
         if !path.exists() {
@@ -236,18 +245,24 @@ impl Local {
         Ok(())
     }
 
+    /// Same as get_root_path()
     pub fn user_dir_path(&self) -> PathBuf {
         self.root_path.clone()
     }
 
+    /// Directory where yaml files for user identities are stored
     pub fn user_ids_path(&self) -> PathBuf {
         self.user_dir_path().join("ids")
     }
 
+    /// Directory where git checkouts for user's own proof repos are stored
+    ///
+    /// This is separate from cache of other people's proofs
     pub fn user_proofs_path(&self) -> PathBuf {
         self.root_path.join("proofs")
     }
 
+    /// Path where this Id is stored as YAML
     fn id_path(&self, id: &Id) -> PathBuf {
         match id {
             Id::Crev { id } => self
@@ -256,6 +271,7 @@ impl Local {
         }
     }
 
+    /// Ids that belong to the user, nothing else
     pub fn list_ids(&self) -> Result<Vec<PubId>> {
         let ids_path = self.user_ids_path();
         let mut ids = vec![];
@@ -267,18 +283,22 @@ impl Local {
         Ok(ids)
     }
 
+    /// Path to crev's config file
     fn user_config_path(&self) -> PathBuf {
         self.user_dir_path().join("config.yaml")
     }
 
+    /// Path where git checkouts of other people's proof repos are stored
     pub fn cache_remotes_path(&self) -> PathBuf {
         self.cache_path.join("remotes")
     }
 
+    /// Cache where metadata about in-progress reviews (etc) is stored
     fn cache_activity_path(&self) -> PathBuf {
         self.cache_path.join("activity")
     }
 
+    /// Yaml file path for in-progress review metadata
     fn cache_review_activity_path(
         &self,
         source: &str,
@@ -293,6 +313,7 @@ impl Local {
             .with_extension("yaml")
     }
 
+    /// Save activity (in-progress review) to disk
     pub fn record_review_activity(
         &self,
         source: &str,
@@ -307,6 +328,7 @@ impl Local {
         Ok(())
     }
 
+    /// Load activity (in-progress review) from disk
     pub fn read_review_activity(
         &self,
         source: &str,
@@ -322,6 +344,7 @@ impl Local {
         }
     }
 
+    /// Just returns the config, doesn't change anything
     pub fn load_user_config(&self) -> Result<UserConfig> {
         let path = self.user_config_path();
 
@@ -330,6 +353,7 @@ impl Local {
         Ok(serde_yaml::from_str(&config_str)?)
     }
 
+    /// Writes the config to disk AND sets it as the current one
     pub fn store_user_config(&self, config: &UserConfig) -> Result<()> {
         let path = self.user_config_path();
 
@@ -341,32 +365,38 @@ impl Local {
         Ok(())
     }
 
+    /// Id in the config
     pub fn get_current_userid(&self) -> Result<Id> {
         self.get_current_userid_opt()?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
+    /// Id in the config
     pub fn get_current_userid_opt(&self) -> Result<Option<Id>> {
         let config = self.load_user_config()?;
         Ok(config.current_id)
     }
 
+    /// Just reads the yaml file, doesn't change any state
     pub fn read_locked_id(&self, id: &Id) -> Result<LockedId> {
         let path = self.id_path(&id);
         LockedId::read_from_yaml_file(&path)
     }
 
+    /// Just reads the yaml file, doesn't change any state
     pub fn read_current_locked_id_opt(&self) -> Result<Option<LockedId>> {
         self.get_current_userid_opt()?
             .map(|current_id| self.read_locked_id(&current_id))
             .inside_out()
     }
 
+    /// Just reads the yaml file, doesn't change any state
     pub fn read_current_locked_id(&self) -> Result<LockedId> {
         self.read_current_locked_id_opt()?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
+    /// Just reads the yaml file and unlocks it, doesn't change any state
     pub fn read_current_unlocked_id_opt(
         &self,
         passphrase_callback: PassphraseFn<'_>,
@@ -376,11 +406,15 @@ impl Local {
             .inside_out()
     }
 
+    /// Just reads the yaml file and unlocks it, doesn't change anything
     pub fn read_current_unlocked_id(&self, passphrase_callback: PassphraseFn<'_>) -> Result<OwnId> {
         self.read_current_unlocked_id_opt(passphrase_callback)?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
+    /// Just reads the yaml file and unlocks it, doesn't change anything
+    ///
+    /// Asks for passphrase up to 5 times
     pub fn read_unlocked_id(
         &self,
         id: &Id,
@@ -403,13 +437,16 @@ impl Local {
         }
     }
 
+    /// Writes the Id to disk, doesn't change any state
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
         let path = self.id_path(&id.to_pubid().id);
         fs::create_dir_all(&path.parent().expect("Not /"))?;
         id.save_to(&path)
     }
 
-    /// Git clone or init new remote Github crev-proof repo
+    /// Git clone or init new remote Github crev-proof repo for the current user.
+    ///
+    /// Saves to `user_proofs_path`, so it's trusted as user's own proof repo.
     pub fn clone_proof_dir_from_git(
         &self,
         git_https_url: &str,
@@ -421,9 +458,9 @@ impl Local {
             match util::git::https_to_git_url(git_https_url) {
                 Some(git_url) => git_url,
                 None => {
-                    eprintln!("Could not deduce `ssh` push url. Call:");
-                    eprintln!("cargo crev git remote set-url --push origin <url>");
-                    eprintln!("manually, after id is generated.");
+                    eprintln!("warning: Could not deduce `ssh` push url. Call:");
+                    eprintln!("warning: cargo crev git remote set-url --push origin <url>");
+                    eprintln!("warning: manually, after id is generated.");
                     eprintln!("");
                     git_https_url.to_string()
                 }
@@ -456,6 +493,7 @@ impl Local {
         Ok(())
     }
 
+    /// Inits repo in `get_proofs_dir_path()`
     pub fn init_repo_readme_using_template(&self) -> Result<()> {
         const README_MARKER_V0: &str = "CREV_README_MARKER_V0";
 
@@ -491,6 +529,7 @@ impl Local {
         crate::proof::rel_store_path(&proof, host_salt)
     }
 
+    /// Proof repo URL associated with the current user Id
     fn get_cur_url(&self) -> Result<Option<Url>> {
         let url = self.cur_url.borrow().clone();
         Ok(if let Some(url) = url {
@@ -503,11 +542,13 @@ impl Local {
         })
     }
 
+    /// Creates `user_proofs_path()`
     fn ensure_proofs_root_exists(&self) -> Result<()> {
         fs::create_dir_all(&self.user_proofs_path())?;
         Ok(())
     }
 
+    /// Dir unique to this URL, inside `user_proofs_path()`
     pub fn get_proofs_dir_path_for_url(&self, url: &Url) -> Result<PathBuf> {
         let old_path = self.user_proofs_path().join(url.digest().to_string());
         let new_path = self.user_proofs_path().join(sanitize_url_for_fs(&url.url));
@@ -586,11 +627,13 @@ impl Local {
         )?)
     }
 
+    /// Fetch other people's proof repostiory from a git URL, into the current database on disk
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
         self.fetch_url_into(url, &mut db)
     }
 
+    /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, mut db: &mut ProofDB) -> Result<()> {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
             let mut db = ProofDB::new();
@@ -614,6 +657,7 @@ impl Local {
         Ok(())
     }
 
+    /// Fetch proof repo URLs of trusted Ids
     pub fn fetch_trusted(
         &self,
         trust_params: crate::TrustDistanceParams,
@@ -633,6 +677,7 @@ impl Local {
         Ok(())
     }
 
+    /// Fetch (and discover) proof repo URLs of all known Ids
     fn fetch_all_ids_recursively(
         &self,
         mut already_fetched_urls: HashSet<String>,
@@ -673,6 +718,7 @@ impl Local {
         something_was_fetched
     }
 
+    /// Per-url directory in `cache_remotes_path()`
     pub fn get_remote_git_cache_path(&self, url: &str) -> Result<PathBuf> {
         let digest = crev_common::blake2b256sum(url.as_bytes());
         let digest = crev_data::Digest::from_vec(digest);
@@ -689,6 +735,7 @@ impl Local {
         Ok(new_path)
     }
 
+    /// `LocalUser` if it's current user's URL, or `FetchSource` for the URL.
     fn fetch_source_for_url(&self, url: Url) -> Result<FetchSource> {
         if let Some(own_url) = self.get_cur_url()? {
             if own_url == url {
@@ -701,6 +748,8 @@ impl Local {
     /// Fetch a git proof repository
     ///
     /// Returns url where it was cloned/fetched
+    ///
+    /// Adds the repo to the local proof repo cache.
     pub fn fetch_remote_git(&self, url: &str) -> Result<PathBuf> {
         let dir = self.get_remote_git_cache_path(url)?;
 
@@ -714,6 +763,9 @@ impl Local {
         Ok(dir)
     }
 
+    /// Fetches and imports to the given db
+    ///
+    /// Same as `fetch_url_into`, but with more stats
     pub fn fetch_proof_repo_import_and_print_counts(
         &self,
         url: &str,
@@ -750,6 +802,8 @@ impl Local {
         }
     }
 
+    /// Fetch and discover proof repos. Like `fetch_all_ids_recursively`,
+    /// but adds `https://github.com/dpc/crev-proofs` and repos in cache that didn't belong to any Ids.
     pub fn fetch_all(&self) -> Result<()> {
         let mut fetched_urls = HashSet::new();
         let mut db = self.load_db()?;
@@ -799,6 +853,7 @@ impl Local {
         Ok(())
     }
 
+    /// Run arbitrary git command in `get_proofs_dir_path()`
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let orig_dir = std::env::current_dir()?;
         let proof_dir_path = self.get_proofs_dir_path()?;
@@ -822,12 +877,14 @@ impl Local {
         Ok(status)
     }
 
+    /// interactively edit readme file of the current user's proof repo
     pub fn edit_readme(&self) -> Result<()> {
         util::edit_file(&self.get_proofs_dir_path()?.join("README.md"))?;
         self.proof_dir_git_add_path(&PathBuf::from("README.md"))?;
         Ok(())
     }
 
+    /// interactively edit currnent user's yaml config file
     pub fn edit_user_config(&self) -> Result<()> {
         let config = self.load_user_config()?;
         let config = config.edit_iteractively()?;
@@ -835,6 +892,7 @@ impl Local {
         Ok(())
     }
 
+    /// set `open_cmd` in the config
     pub fn store_config_open_cmd(&self, cmd: String) -> Result<()> {
         let mut config = self.load_user_config()?;
         config.open_cmd = Some(cmd);
@@ -851,6 +909,7 @@ impl Local {
         Ok(db)
     }
 
+    /// The path must be inside `get_proofs_dir_path()`
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
         let repo = git2::Repository::open(&proof_dir)?;
@@ -861,6 +920,7 @@ impl Local {
         Ok(())
     }
 
+    /// Add a commit to user's proof repo
     pub fn proof_dir_commit(&self, commit_msg: &str) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
         let repo = git2::Repository::open(&proof_dir)?;
@@ -883,6 +943,7 @@ impl Local {
         Ok(())
     }
 
+    /// Prints `read_current_locked_id`
     pub fn show_current_id(&self) -> Result<()> {
         if let Some(id) = self.read_current_locked_id_opt()? {
             let id = id.to_pubid();
@@ -908,7 +969,12 @@ impl Local {
             bail!("URL must start with 'https://");
         }
 
-        self.clone_proof_dir_from_git(&url, use_https_push)?;
+        self.clone_proof_dir_from_git(&url, use_https_push).map_err(|e| {
+            eprintln!("To create your proof repository, fork the template:");
+            eprintln!("https://github.com/crev-dev/crev-proofs/fork");
+            eprintln!();
+            e
+        })?;
 
         let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         eprintln!("CrevID will be protected by a passphrase.");
@@ -938,13 +1004,12 @@ impl Local {
         Ok(())
     }
 
+    #[deprecated]
     pub fn list_own_ids(&self) -> Result<()> {
-        for id in self.list_ids()? {
-            println!("{} {}", id.id, id.url_display());
-        }
-        Ok(())
+        self.show_own_ids()
     }
 
+    /// Print Ids. See `list_ids()`
     pub fn show_own_ids(&self) -> Result<()> {
         let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
         for id in self.list_ids()? {
@@ -959,6 +1024,7 @@ impl Local {
         Ok(())
     }
 
+    /// See `read_locked_id`
     pub fn export_locked_id(&self, id_str: Option<String>) -> Result<String> {
         let id = if let Some(id_str) = id_str {
             let id = Id::crevid_from_str(&id_str)?;
@@ -970,6 +1036,7 @@ impl Local {
         Ok(id.to_string())
     }
 
+    /// Parse `LockedId`'s YAML and write it to disk. See `save_locked_id`
     pub fn import_locked_id(&self, locked_id_serialized: &str) -> Result<PubId> {
         let id = LockedId::from_str(locked_id_serialized)?;
         self.save_locked_id(&id)?;
