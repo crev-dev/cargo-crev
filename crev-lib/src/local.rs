@@ -579,6 +579,7 @@ impl Local {
             .ok_or_else(|| format_err!("Current Id not set"))
     }
 
+    /// Creates new unsigned trust proof object, not edited
     pub fn build_trust_proof(
         &self,
         from_id: &PubId,
@@ -609,14 +610,24 @@ impl Local {
             }
         }
 
-        let trust = from_id.create_trust_proof(
+        from_id.create_trust_proof(
             &pub_ids,
             match trust_or_distrust {
                 TrustProofType::Trust => TrustLevel::Medium,
                 TrustProofType::Distrust => TrustLevel::Distrust,
                 TrustProofType::Untrust => TrustLevel::None,
             },
-        )?;
+        )
+    }
+
+    /// Opens editor with a new trust proof for given Ids
+    pub fn build_trust_proof_interactively(
+        &self,
+        from_id: &PubId,
+        ids: Vec<Id>,
+        trust_or_distrust: TrustProofType,
+    ) -> Result<proof::trust::Trust> {
+        let trust = self.build_trust_proof(from_id, ids, trust_or_distrust)?;
 
         // TODO: Look up previous trust proof?
         Ok(util::edit_proof_content_iteractively(
@@ -854,24 +865,17 @@ impl Local {
 
     /// Run arbitrary git command in `get_proofs_dir_path()`
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
-        let orig_dir = std::env::current_dir()?;
         let proof_dir_path = self.get_proofs_dir_path()?;
         if !proof_dir_path.exists() {
             let id = self.read_current_locked_id()?;
             self.clone_proof_dir_from_git(&id.url.url, false)?;
         }
 
-        std::env::set_current_dir(proof_dir_path)
-            .with_context(|_| "Trying to change dir to the current local proof repo")?;
-
-        use std::process::Command;
-
-        let status = Command::new("git")
+        let status = std::process::Command::new("git")
             .args(args)
+            .current_dir(proof_dir_path)
             .status()
             .expect("failed to execute git");
-
-        std::env::set_current_dir(orig_dir)?;
 
         Ok(status)
     }
@@ -951,11 +955,13 @@ impl Local {
         Ok(())
     }
 
+    /// The callback should provide a passphrase
     pub fn generate_id(
         &self,
         url: Option<String>,
         github_username: Option<String>,
         use_https_push: bool,
+        read_new_passphrase: impl FnOnce() -> std::io::Result<String>,
     ) -> Result<()> {
         let url = match (url, github_username) {
             (Some(url), None) => url,
@@ -975,10 +981,11 @@ impl Local {
             e
         })?;
 
-        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         eprintln!("CrevID will be protected by a passphrase.");
         eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
-        let passphrase = crev_common::read_new_passphrase()?;
+        let passphrase = read_new_passphrase()?;
+
+        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
         let locked = id::LockedId::from_own_id(&id, &passphrase)?;
 
         self.save_locked_id(&locked)?;
@@ -994,6 +1001,16 @@ impl Local {
         self.init_repo_readme_using_template()?;
 
         Ok(())
+    }
+
+    /// Same as generate_id, but asks for a passphrase interactively
+    pub fn generate_id_interactively(
+        &self,
+        url: Option<String>,
+        github_username: Option<String>,
+        use_https_push: bool,
+    ) -> Result<()> {
+        self.generate_id(url, github_username, use_https_push, crev_common::read_new_passphrase)
     }
 
     pub fn switch_id(&self, id_str: &str) -> Result<()> {

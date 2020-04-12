@@ -624,7 +624,7 @@ pub fn create_trust_proof(
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(", ");
-    let trust = local.build_trust_proof(own_id.as_pubid(), ids, trust_or_distrust)?;
+    let trust = local.build_trust_proof_interactively(own_id.as_pubid(), ids, trust_or_distrust)?;
 
     let proof = trust.sign_by(&own_id)?;
     let commit_msg = format!(

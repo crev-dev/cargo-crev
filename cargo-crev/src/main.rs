@@ -178,7 +178,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Id(args) => match args {
             opts::Id::New(args) => {
                 let local = Local::auto_create_or_open()?;
-                let res = local.generate_id(args.url, args.github_username, args.use_https_push);
+                let res = local.generate_id_interactively(args.url, args.github_username, args.use_https_push);
                 if res.is_err() {
                     eprintln!(
                         "Visit https://github.com/crev-dev/crev/wiki/Proof-Repository for help."
