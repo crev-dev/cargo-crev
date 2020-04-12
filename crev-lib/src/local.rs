@@ -16,21 +16,20 @@ use crev_data::{
 };
 use default::default;
 use directories::ProjectDirs;
-use failure::{bail, format_err, ResultExt};
+use failure::{bail, format_err};
 use git2;
 use insideout::InsideOut;
 use resiter::*;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{
-    cell::RefCell,
     collections::HashSet,
     ffi::OsString,
     fs,
     io::{BufRead, Write},
     path::{Path, PathBuf},
     str::FromStr,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 /// Where a proof has been fetched from
@@ -129,8 +128,8 @@ impl UserConfig {
 pub struct Local {
     root_path: PathBuf,
     cache_path: PathBuf,
-    cur_url: RefCell<Option<Url>>,
-    user_config: RefCell<Option<UserConfig>>,
+    cur_url: Mutex<Option<Url>>,
+    user_config: Mutex<Option<UserConfig>>,
 }
 
 impl Local {
@@ -143,8 +142,8 @@ impl Local {
         Ok(Self {
             root_path,
             cache_path,
-            cur_url: RefCell::new(None),
-            user_config: RefCell::new(None),
+            cur_url: Mutex::new(None),
+            user_config: Mutex::new(None),
         })
     }
 
@@ -163,7 +162,7 @@ impl Local {
             bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
         }
 
-        *repo.user_config.borrow_mut() = Some(repo.load_user_config()?);
+        *repo.user_config.lock().unwrap() = Some(repo.load_user_config()?);
         Ok(repo)
     }
 
@@ -178,7 +177,7 @@ impl Local {
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
-        *repo.user_config.borrow_mut() = Some(config);
+        *repo.user_config.lock().unwrap() = Some(config);
         Ok(repo)
     }
 
@@ -222,7 +221,7 @@ impl Local {
             bail!("Id file not found.");
         }
 
-        *self.cur_url.borrow_mut() = None;
+        *self.cur_url.lock().unwrap() = None;
 
         let mut config = self.load_user_config()?;
         config.current_id = Some(id.clone());
@@ -337,7 +336,7 @@ impl Local {
 
         util::store_str_to_file(&path, &config_str)?;
 
-        *self.user_config.borrow_mut() = Some(config.clone());
+        *self.user_config.lock().unwrap() = Some(config.clone());
         Ok(())
     }
 
@@ -492,11 +491,11 @@ impl Local {
     }
 
     fn get_cur_url(&self) -> Result<Option<Url>> {
-        let url = self.cur_url.borrow().clone();
+        let url = self.cur_url.lock().unwrap().clone();
         Ok(if let Some(url) = url {
             Some(url)
         } else if let Some(locked_id) = self.read_current_locked_id_opt()? {
-            *self.cur_url.borrow_mut() = Some(locked_id.url.clone());
+            *self.cur_url.lock().unwrap() = Some(locked_id.url.clone());
             Some(locked_id.url)
         } else {
             None
@@ -988,7 +987,7 @@ impl ProofStore for Local {
             proof,
             &self
                 .user_config
-                .borrow()
+                .lock().unwrap()
                 .as_ref()
                 .expect("User config loaded")
                 .host_salt,
@@ -1097,4 +1096,10 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
             }
         })
         .flat_map(|iter| iter)
+}
+
+#[test]
+fn local_is_send_sync() {
+    fn is<T: Send + Sync>() {}
+    is::<Local>();
 }
