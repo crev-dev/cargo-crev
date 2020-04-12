@@ -1352,3 +1352,9 @@ impl Default for TrustDistanceParams {
         }
     }
 }
+
+#[test]
+fn db_is_send_sync() {
+    fn is<T: Send + Sync>() {}
+    is::<ProofDB>();
+}
