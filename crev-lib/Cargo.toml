@@ -12,7 +12,7 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "../README.md"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "0.16.0" }
+crev-common = { path = "../crev-common", version = "0.17.0" }
 miscreant = { version = "0.4", features = ["soft-aes"] }
 crev-data = { path = "../crev-data", version = "0.17.0" }
 blake2 = "0.8.1"
