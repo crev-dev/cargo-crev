@@ -1,5 +1,4 @@
-use crate::local::FetchSource;
-use crate::{VerificationRequirements, VerificationStatus};
+use crate::{local::FetchSource, VerificationRequirements, VerificationStatus};
 use chrono::{self, offset::Utc, DateTime};
 use common_failures::Result;
 use crev_data::{
@@ -742,7 +741,12 @@ impl ProofDB {
         }
     }
 
-    fn add_package_review(&mut self, review: &review::Package, signature: &str, fetched_from: FetchSource) {
+    fn add_package_review(
+        &mut self,
+        review: &review::Package,
+        signature: &str,
+        fetched_from: FetchSource,
+    ) {
         self.insertion_counter += 1;
 
         let from = &review.from();
@@ -979,7 +983,12 @@ impl ProofDB {
     }
 
     /// Record mapping between a PubId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
-    fn record_url_from_from_field(&mut self, date: &DateTime<Utc>, from: &crev_data::PubId, fetched_from: &FetchSource) {
+    fn record_url_from_from_field(
+        &mut self,
+        date: &DateTime<Utc>,
+        from: &crev_data::PubId,
+        fetched_from: &FetchSource,
+    ) {
         if let Some(url) = &from.url {
             let tu = TimestampedUrl {
                 value: url.clone(),

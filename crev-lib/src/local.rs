@@ -680,7 +680,12 @@ impl Local {
 
         loop {
             let trust_set = db.calculate_trust_set(&for_id, &trust_params);
-            if !self.fetch_ids_not_fetched_yet(trust_set.trusted_ids().cloned(), &mut already_fetched_ids, &mut already_fetched_urls, &mut db) {
+            if !self.fetch_ids_not_fetched_yet(
+                trust_set.trusted_ids().cloned(),
+                &mut already_fetched_ids,
+                &mut already_fetched_urls,
+                &mut db,
+            ) {
                 break;
             }
         }
@@ -696,7 +701,12 @@ impl Local {
         let mut already_fetched_ids = HashSet::new();
 
         loop {
-            if !self.fetch_ids_not_fetched_yet(db.all_known_ids().into_iter(), &mut already_fetched_ids, &mut already_fetched_urls, db) {
+            if !self.fetch_ids_not_fetched_yet(
+                db.all_known_ids().into_iter(),
+                &mut already_fetched_ids,
+                &mut already_fetched_urls,
+                db,
+            ) {
                 break;
             }
         }
@@ -704,7 +714,13 @@ impl Local {
     }
 
     /// True if something was fetched
-    fn fetch_ids_not_fetched_yet<'a>(&self, ids: impl Iterator<Item=Id>, already_fetched_ids: &mut HashSet<Id>, already_fetched_urls: &mut HashSet<String>, db: &mut ProofDB) -> bool {
+    fn fetch_ids_not_fetched_yet<'a>(
+        &self,
+        ids: impl Iterator<Item = Id>,
+        already_fetched_ids: &mut HashSet<Id>,
+        already_fetched_urls: &mut HashSet<String>,
+        db: &mut ProofDB,
+    ) -> bool {
         let mut something_was_fetched = false;
         for id in ids {
             if already_fetched_ids.contains(&id) {
@@ -788,7 +804,9 @@ impl Local {
         match self.fetch_remote_git(url) {
             Ok(dir) => {
                 let fetch_source = self.fetch_source_for_url(Url::new_git(url)).ok()?;
-                db.import_from_iter(proofs_iter_for_path(dir.clone()).map(move |p| (p, fetch_source.clone())));
+                db.import_from_iter(
+                    proofs_iter_for_path(dir.clone()).map(move |p| (p, fetch_source.clone())),
+                );
 
                 eprint!("OK");
 
@@ -907,8 +925,13 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crate::ProofDB> {
         let mut db = crate::ProofDB::new();
-        db.import_from_iter(self.all_local_proofs().map(move |p| (p, FetchSource::LocalUser)));
-        db.import_from_iter(proofs_iter_for_remotes_checkouts(self.cache_remotes_path())?);
+        db.import_from_iter(
+            self.all_local_proofs()
+                .map(move |p| (p, FetchSource::LocalUser)),
+        );
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(
+            self.cache_remotes_path(),
+        )?);
         Ok(db)
     }
 
@@ -974,12 +997,13 @@ impl Local {
             bail!("URL must start with 'https://");
         }
 
-        self.clone_proof_dir_from_git(&url, use_https_push).map_err(|e| {
-            eprintln!("To create your proof repository, fork the template:");
-            eprintln!("https://github.com/crev-dev/crev-proofs/fork");
-            eprintln!();
-            e
-        })?;
+        self.clone_proof_dir_from_git(&url, use_https_push)
+            .map_err(|e| {
+                eprintln!("To create your proof repository, fork the template:");
+                eprintln!("https://github.com/crev-dev/crev-proofs/fork");
+                eprintln!();
+                e
+            })?;
 
         eprintln!("CrevID will be protected by a passphrase.");
         eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
@@ -1010,7 +1034,12 @@ impl Local {
         github_username: Option<String>,
         use_https_push: bool,
     ) -> Result<()> {
-        self.generate_id(url, github_username, use_https_push, crev_common::read_new_passphrase)
+        self.generate_id(
+            url,
+            github_username,
+            use_https_push,
+            crev_common::read_new_passphrase,
+        )
     }
 
     pub fn switch_id(&self, id_str: &str) -> Result<()> {
@@ -1071,7 +1100,8 @@ impl ProofStore for Local {
             proof,
             &self
                 .user_config
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .as_ref()
                 .expect("User config loaded")
                 .host_salt,
@@ -1101,7 +1131,9 @@ impl ProofStore for Local {
 }
 
 /// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
-fn proofs_iter_for_remotes_checkouts(path: PathBuf) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>>{
+fn proofs_iter_for_remotes_checkouts(
+    path: PathBuf,
+) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>> {
     let dir = std::fs::read_dir(&path)?;
     Ok(dir
         .filter_map(|e| e.ok())

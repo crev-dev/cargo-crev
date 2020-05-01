@@ -432,7 +432,9 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id())).map_err(to_fail)?;
+        let mut registry = self
+            .registry(roots.iter().map(|pkgid| pkgid.source_id()))
+            .map_err(to_fail)?;
 
         let (package_set, _resolve) = our_resolve(
             &mut registry,
@@ -441,10 +443,13 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        ).map_err(to_fail)?;
+        )
+        .map_err(to_fail)?;
         let mut source = self.load_source()?;
 
-        let pkgs = package_set.get_many(package_set.package_ids()).map_err(to_fail)?;
+        let pkgs = package_set
+            .get_many(package_set.package_ids())
+            .map_err(to_fail)?;
 
         for pkg in pkgs {
             if !pkg.summary().source_id().is_registry() {
@@ -473,7 +478,9 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id())).map_err(to_fail)?;
+        let mut registry = self
+            .registry(roots.iter().map(|pkgid| pkgid.source_id()))
+            .map_err(to_fail)?;
 
         let (package_set, _resolve) = our_resolve(
             &mut registry,
@@ -482,7 +489,8 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        ).map_err(to_fail)?;
+        )
+        .map_err(to_fail)?;
 
         for pkg_id in package_set.package_ids() {
             if !pkg_id.source_id().is_registry() {
@@ -522,7 +530,8 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        ).map_err(to_fail)?)
+        )
+        .map_err(to_fail)?)
     }
 
     pub fn find_dependency_pkg_id_by_selector(
@@ -564,8 +573,12 @@ impl Repo {
         let mut source_map = SourceMap::new();
         source_map.insert(source);
         let package_set =
-            cargo::core::PackageSet::new(&[pkg_id.to_owned()], source_map, &self.config).map_err(to_fail)?;
-        Ok(package_set.get_one(pkg_id.to_owned()).map_err(to_fail)?.to_owned())
+            cargo::core::PackageSet::new(&[pkg_id.to_owned()], source_map, &self.config)
+                .map_err(to_fail)?;
+        Ok(package_set
+            .get_one(pkg_id.to_owned())
+            .map_err(to_fail)?
+            .to_owned())
     }
 
     pub fn find_independent_pkg_id_by_selector(
@@ -588,11 +601,14 @@ impl Repo {
             name,
             OptionDeref::as_deref(&version_str),
             source.source_id(),
-        ).map_err(to_fail)?;
+        )
+        .map_err(to_fail)?;
         let _lock = self.config.acquire_package_cache_lock().map_err(to_fail)?;
-        source.query(&dependency_request, &mut |summary| {
-            summaries.push(summary.clone())
-        }).map_err(to_fail)?;
+        source
+            .query(&dependency_request, &mut |summary| {
+                summaries.push(summary.clone())
+            })
+            .map_err(to_fail)?;
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
         } else {
@@ -633,7 +649,8 @@ impl Repo {
             self.find_pkgid_by_crate_selector(sel).map(|i| vec![i])
         } else {
             Ok(self
-                .workspace().map_err(to_fail)?
+                .workspace()
+                .map_err(to_fail)?
                 .members()
                 .map(|m| m.package_id())
                 .collect())

@@ -123,7 +123,11 @@ fn proofdb_distance() -> Result<()> {
 
     let mut trustdb = ProofDB::new();
 
-    trustdb.import_from_iter(vec![a_to_b, b_to_c, c_to_d, d_to_e].into_iter().map(|x| (x, url.clone())));
+    trustdb.import_from_iter(
+        vec![a_to_b, b_to_c, c_to_d, d_to_e]
+            .into_iter()
+            .map(|x| (x, url.clone())),
+    );
 
     let trust_set: HashSet<crev_data::Id> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
@@ -297,7 +301,11 @@ fn proofdb_distrust() -> Result<()> {
 
     let mut trustdb = ProofDB::new();
 
-    trustdb.import_from_iter(vec![a_to_bc, b_to_d, d_to_c, c_to_e].into_iter().map(|x| (x, url.clone())));
+    trustdb.import_from_iter(
+        vec![a_to_bc, b_to_d, d_to_c, c_to_e]
+            .into_iter()
+            .map(|x| (x, url.clone())),
+    );
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
