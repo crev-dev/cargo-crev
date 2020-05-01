@@ -11,22 +11,35 @@ matrix:
     - rust: 1.40.0
     - rust: nightly
 
-    # deployments
+    # OSX release build
     - env: DEPLOY=1 TARGET=x86_64-apple-darwin OPENSSL_STATIC=yes
-      script: cargo build --locked --release --target $TARGET
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --all -- --check
+        - cargo build --locked --release --target $TARGET
       os: osx
+
+    # Linux release build
     - env: DEPLOY=1 TARGET=x86_64-unknown-linux-musl OPENSSL_STATIC=yes
-      before_script: rustup target add $TARGET
-      script: cargo build --locked --release --target $TARGET
+      before_script:
+        - rustup target add $TARGET
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --all -- --check
+        - cargo build --locked --release --target $TARGET
       addons:
         apt:
           packages:
           - musl-tools
           - linux-headers-generic
+
   allow_failures:
     - rust: nightly
 
 script:
+  - rustup component add rustfmt
+  - cargo fmt --all -- --check
   - cargo build --release --locked --verbose
   - RUST_BACKTRACE=1 cargo test --release --locked --all --verbose
   # Requires PR #321

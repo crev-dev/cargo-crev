@@ -10,7 +10,11 @@ use self::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
-use std::{collections::{HashMap, HashSet}, io::BufRead, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    io::BufRead,
+    path::PathBuf,
+};
 use structopt::StructOpt;
 
 #[cfg(feature = "documentation")]
@@ -167,7 +171,8 @@ fn print_ids<'a>(
             "{} {:6} {} {}",
             id,
             trust_set.get_effective_trust_level(id),
-            status, url,
+            status,
+            url,
         );
     }
     Ok(())
@@ -178,7 +183,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Id(args) => match args {
             opts::Id::New(args) => {
                 let local = Local::auto_create_or_open()?;
-                let res = local.generate_id_interactively(args.url, args.github_username, args.use_https_push);
+                let res = local.generate_id_interactively(
+                    args.url,
+                    args.github_username,
+                    args.use_https_push,
+                );
                 if res.is_err() {
                     eprintln!(
                         "Visit https://github.com/crev-dev/crev/wiki/Proof-Repository for help."
@@ -289,11 +298,18 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
-                    let mut tmp = db.all_known_ids().into_iter().map(|id| {
-                        let trust = trust_set.get_effective_trust_level(&id);
-                        let url = db.lookup_url(&id).any_unverified().map(|url| url.url.as_str());
-                        (std::cmp::Reverse(trust), url, id)
-                    }).collect::<Vec<_>>();
+                    let mut tmp = db
+                        .all_known_ids()
+                        .into_iter()
+                        .map(|id| {
+                            let trust = trust_set.get_effective_trust_level(&id);
+                            let url = db
+                                .lookup_url(&id)
+                                .any_unverified()
+                                .map(|url| url.url.as_str());
+                            (std::cmp::Reverse(trust), url, id)
+                        })
+                        .collect::<Vec<_>>();
                     tmp.sort();
 
                     print_ids(tmp.iter().map(|(_, _, id)| id), &trust_set, &db)?;
@@ -319,7 +335,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             let mut lookup = HashMap::new();
             for (id, _) in db.all_author_ids() {
                 if let Some(url) = db.lookup_url(&id).from_self() {
-                    lookup.entry(url.url.as_str())
+                    lookup
+                        .entry(url.url.as_str())
                         .or_insert_with(HashSet::new)
                         .insert(id);
                 }
