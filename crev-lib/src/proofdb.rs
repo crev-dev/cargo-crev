@@ -1,4 +1,4 @@
-use crate::{local::FetchSource, VerificationRequirements, VerificationStatus};
+use crate::{VerificationRequirements, VerificationStatus};
 use chrono::{self, offset::Utc, DateTime};
 use common_failures::Result;
 use crev_data::{
@@ -19,6 +19,15 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync,
 };
+
+/// Where a proof has been fetched from
+#[derive(Debug, Clone)]
+pub enum FetchSource {
+    /// Remote repository (other people's proof repos)
+    Url(sync::Arc<Url>),
+    /// One of user's own proof repos, which are assumed to contain only verified information
+    LocalUser,
+}
 
 /// A `T` with a timestamp
 ///

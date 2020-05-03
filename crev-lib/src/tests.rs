@@ -1,5 +1,5 @@
 use super::*;
-use crate::local::FetchSource;
+use crate::proofdb::FetchSource;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
     Digest, Level, OwnId, Url,

@@ -2,6 +2,7 @@ use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
     prelude::*,
+    proofdb,
     proofdb::UrlOfId,
     util, ProofDB, ProofStore, TrustProofType,
 };
@@ -31,15 +32,6 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
-
-/// Where a proof has been fetched from
-#[derive(Debug, Clone)]
-pub enum FetchSource {
-    /// Remote repository (other people's proof repos)
-    Url(Arc<Url>),
-    /// One of user's own proof repos, which are assumed to contain only verified information
-    LocalUser,
-}
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -761,14 +753,14 @@ impl Local {
         Ok(new_path)
     }
 
-    /// `LocalUser` if it's current user's URL, or `FetchSource` for the URL.
-    fn fetch_source_for_url(&self, url: Url) -> Result<FetchSource> {
+    /// `LocalUser` if it's current user's URL, or `proofdb::FetchSource` for the URL.
+    fn fetch_source_for_url(&self, url: Url) -> Result<proofdb::FetchSource> {
         if let Some(own_url) = self.get_cur_url()? {
             if own_url == url {
-                return Ok(FetchSource::LocalUser);
+                return Ok(proofdb::FetchSource::LocalUser);
             }
         }
-        Ok(FetchSource::Url(Arc::new(url)))
+        Ok(proofdb::FetchSource::Url(Arc::new(url)))
     }
 
     /// Fetch a git proof repository
@@ -927,7 +919,7 @@ impl Local {
         let mut db = crate::ProofDB::new();
         db.import_from_iter(
             self.all_local_proofs()
-                .map(move |p| (p, FetchSource::LocalUser)),
+                .map(move |p| (p, proofdb::FetchSource::LocalUser)),
         );
         db.import_from_iter(proofs_iter_for_remotes_checkouts(
             self.cache_remotes_path(),
@@ -1133,7 +1125,7 @@ impl ProofStore for Local {
 /// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
 fn proofs_iter_for_remotes_checkouts(
     path: PathBuf,
-) -> Result<impl Iterator<Item = (proof::Proof, FetchSource)>> {
+) -> Result<impl Iterator<Item = (proof::Proof, proofdb::FetchSource)>> {
     let dir = std::fs::read_dir(&path)?;
     Ok(dir
         .filter_map(|e| e.ok())
@@ -1148,7 +1140,7 @@ fn proofs_iter_for_remotes_checkouts(
         .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
-            let fetch_source = FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
+            let fetch_source = proofdb::FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
             Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
         })
         .flat_map(|iter| iter))
