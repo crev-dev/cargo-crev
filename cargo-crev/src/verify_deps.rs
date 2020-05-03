@@ -119,11 +119,12 @@ fn run_on_deps<'a>(
             continue;
         }
 
-        let latest_trusted_version = db.find_latest_trusted_version(
+        let latest_trusted_version = crev_lib::find_latest_trusted_version(
             &trust_set,
             PROJECT_SOURCE_CRATES_IO,
             &crate_name,
             &requirements,
+            &db,
         );
         let pkg_review_count =
             db.get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(crate_name), None);

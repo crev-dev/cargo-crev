@@ -474,11 +474,12 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
         .src
         .clone()
         .or_else(|| {
-            db.find_latest_trusted_version(
+            crev_lib::find_latest_trusted_version(
                 &trust_set,
                 PROJECT_SOURCE_CRATES_IO,
                 &name,
                 &requirements,
+                &db,
             )
         })
         .ok_or_else(|| format_err!("No previously reviewed version found"))?;

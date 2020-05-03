@@ -29,6 +29,7 @@ use std::{
     fmt,
     path::{Path, PathBuf},
 };
+use semver::Version;
 
 /// Trait representing a place that can keep proofs (all reviews and trust proofs)
 ///
@@ -176,6 +177,27 @@ pub fn verify_package_digest(
         VerificationStatus::Insufficient
     }
 }
+
+pub fn find_latest_trusted_version(
+        trust_set: &TrustSet,
+        source: &str,
+        name: &str,
+        requirements: &crate::VerificationRequirements,
+        db: &proofdb::ProofDB,
+    ) -> Option<Version> {
+        db.get_pkg_reviews_for_name(source, name)
+            .filter(|review| {
+                verify_package_digest(
+                    &Digest::from_vec(review.package.digest.clone()),
+                    trust_set,
+                    requirements,
+                    &db,
+                )
+                .is_verified()
+            })
+            .max_by(|a, b| a.package.id.version.cmp(&b.package.id.version))
+            .map(|review| review.package.id.version.clone())
+    }
 
 /// Check whether code at this path has reviews, and the reviews meet the requirements
 pub fn dir_or_git_repo_verify(

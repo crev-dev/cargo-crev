@@ -1,4 +1,3 @@
-use crate::verify_package_digest;
 use chrono::{self, offset::Utc, DateTime};
 use common_failures::Result;
 use crev_data::{
@@ -910,27 +909,6 @@ impl ProofDB {
                         self.package_review_by_signature[&signature.value].clone()
                     })
             })
-    }
-
-    pub fn find_latest_trusted_version(
-        &self,
-        trust_set: &TrustSet,
-        source: &str,
-        name: &str,
-        requirements: &crate::VerificationRequirements,
-    ) -> Option<Version> {
-        self.get_pkg_reviews_for_name(source, name)
-            .filter(|review| {
-                verify_package_digest(
-                    &Digest::from_vec(review.package.digest.clone()),
-                    trust_set,
-                    requirements,
-                    &self,
-                )
-                .is_verified()
-            })
-            .max_by(|a, b| a.package.id.version.cmp(&b.package.id.version))
-            .map(|review| review.package.id.version.clone())
     }
 
     /// Record an untrusted mapping between a PubId and a URL it declares

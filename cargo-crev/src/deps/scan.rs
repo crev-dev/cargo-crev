@@ -322,11 +322,12 @@ impl Scanner {
 
         let loc = crate::tokei::get_rust_line_count(&info.root).ok();
 
-        let latest_trusted_version = self.db.find_latest_trusted_version(
+        let latest_trusted_version = crev_lib::find_latest_trusted_version(
             &self.trust_set,
             PROJECT_SOURCE_CRATES_IO,
             &pkg_name,
             &self.requirements,
+            &self.db,
         );
 
         let is_unmaintained = self
