@@ -270,9 +270,13 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
         trust_level: Level::None,
         redundancy: 1,
     };
-    assert!(!trustdb
-        .verify_package_digest(&Digest::from_vec(digest), &trust_set, &verification_reqs)
-        .is_verified());
+    assert!(!verify_package_digest(
+        &Digest::from_vec(digest),
+        &trust_set,
+        &verification_reqs,
+        &trustdb
+    )
+    .is_verified());
 
     Ok(())
 }

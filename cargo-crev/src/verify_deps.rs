@@ -113,7 +113,7 @@ fn run_on_deps<'a>(
             );
         }
 
-        let result = db.verify_package_digest(&digest, &trust_set, &requirements);
+        let result = crev_lib::verify_package_digest(&digest, &trust_set, &requirements, &db);
 
         if result.is_verified() && args.skip_verified {
             continue;

@@ -1,4 +1,7 @@
-use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
+use crate::{
+    id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, verify_package_digest,
+    ProofStore,
+};
 use crev_common::convert::OptionDeref;
 use crev_data::{
     proof::{self, ContentExt},
@@ -178,7 +181,12 @@ impl Repo {
             };
         let ignore_list = fnv::FnvHashSet::default();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        Ok(db.verify_package_digest(&digest, &trust_set, requirements))
+        Ok(verify_package_digest(
+            &digest,
+            &trust_set,
+            requirements,
+            &db,
+        ))
     }
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {

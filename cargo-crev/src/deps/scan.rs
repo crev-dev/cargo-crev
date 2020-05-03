@@ -252,8 +252,7 @@ impl Scanner {
             .map(|digest| !is_digest_clean(&self.db, &pkg_name, &pkg_version, &digest))
             .unwrap_or(false);
         let verification_result = if let Some(digest) = digest.as_ref() {
-            self.db
-                .verify_package_digest(&digest, &self.trust_set, &self.requirements)
+            crev_lib::verify_package_digest(&digest, &self.trust_set, &self.requirements, &self.db)
         } else {
             VerificationStatus::Local
         };

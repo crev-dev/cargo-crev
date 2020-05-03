@@ -1,14 +1,9 @@
-use crate::{VerificationRequirements, VerificationStatus};
+use crate::verify_package_digest;
 use chrono::{self, offset::Utc, DateTime};
 use common_failures::Result;
 use crev_data::{
     self,
-    proof::{
-        self,
-        review::{self, Rating},
-        trust::TrustLevel,
-        CommonOps, Content,
-    },
+    proof::{self, review, trust::TrustLevel, CommonOps, Content},
     Digest, Id, Level, Url,
 };
 use default::default;
@@ -917,48 +912,6 @@ impl ProofDB {
             })
     }
 
-    pub fn verify_package_digest(
-        &self,
-        digest: &Digest,
-        trust_set: &TrustSet,
-        requirements: &VerificationRequirements,
-    ) -> VerificationStatus {
-        let reviews: HashMap<Id, review::Package> = self
-            .get_package_reviews_by_digest(digest)
-            .map(|review| (review.from().id.clone(), review))
-            .collect();
-        // Faster somehow maybe?
-        let reviews_by: HashSet<Id, _> = reviews.keys().cloned().collect();
-        let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
-        let matching_reviewers = trusted_ids.intersection(&reviews_by);
-        let mut trust_count = 0;
-        let mut negative_count = 0;
-        for matching_reviewer in matching_reviewers {
-            let review = &reviews[matching_reviewer].review;
-            if !review.is_none()
-                && Rating::Neutral <= review.rating
-                && requirements.thoroughness <= review.thoroughness
-                && requirements.understanding <= review.understanding
-            {
-                if TrustLevel::from(requirements.trust_level)
-                    <= trust_set.get_effective_trust_level(matching_reviewer)
-                {
-                    trust_count += 1;
-                }
-            } else if review.rating <= Rating::Negative {
-                negative_count += 1;
-            }
-        }
-
-        if negative_count > 0 {
-            VerificationStatus::Negative
-        } else if trust_count >= requirements.redundancy {
-            VerificationStatus::Verified
-        } else {
-            VerificationStatus::Insufficient
-        }
-    }
-
     pub fn find_latest_trusted_version(
         &self,
         trust_set: &TrustSet,
@@ -968,10 +921,11 @@ impl ProofDB {
     ) -> Option<Version> {
         self.get_pkg_reviews_for_name(source, name)
             .filter(|review| {
-                self.verify_package_digest(
+                verify_package_digest(
                     &Digest::from_vec(review.package.digest.clone()),
                     trust_set,
                     requirements,
+                    &self,
                 )
                 .is_verified()
             })
