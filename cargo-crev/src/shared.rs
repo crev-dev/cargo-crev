@@ -693,7 +693,7 @@ pub enum CommandExitStatus {
 }
 
 pub fn is_digest_clean(
-    db: &crev_lib::ProofDB,
+    db: &crev_wot::ProofDB,
     name: &str,
     version: &Version,
     digest: &crev_data::Digest,

@@ -5,14 +5,12 @@ pub mod id;
 pub mod local;
 pub(crate) mod prelude;
 pub mod proof;
-pub mod proofdb;
 pub mod repo;
 pub mod staging;
 pub mod util;
 
 pub use self::local::Local;
-pub use crate::proofdb::{ProofDB, TrustDistanceParams};
-use crate::{prelude::*, proofdb::TrustSet};
+use crate::prelude::*;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
     self,
@@ -23,13 +21,15 @@ use crev_data::{
     },
     Digest, Id,
 };
+use crev_wot;
+pub use crev_wot::TrustDistanceParams;
 use failure::format_err;
+use semver::Version;
 use std::{
     collections::{HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
-use semver::Version;
 
 /// Trait representing a place that can keep proofs (all reviews and trust proofs)
 ///
@@ -138,9 +138,9 @@ impl fmt::Display for VerificationStatus {
 
 pub fn verify_package_digest(
     digest: &Digest,
-    trust_set: &TrustSet,
+    trust_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
-    db: &proofdb::ProofDB,
+    db: &crev_wot::ProofDB,
 ) -> VerificationStatus {
     let reviews: HashMap<Id, review::Package> = db
         .get_package_reviews_by_digest(digest)
@@ -179,32 +179,32 @@ pub fn verify_package_digest(
 }
 
 pub fn find_latest_trusted_version(
-        trust_set: &TrustSet,
-        source: &str,
-        name: &str,
-        requirements: &crate::VerificationRequirements,
-        db: &proofdb::ProofDB,
-    ) -> Option<Version> {
-        db.get_pkg_reviews_for_name(source, name)
-            .filter(|review| {
-                verify_package_digest(
-                    &Digest::from_vec(review.package.digest.clone()),
-                    trust_set,
-                    requirements,
-                    &db,
-                )
-                .is_verified()
-            })
-            .max_by(|a, b| a.package.id.version.cmp(&b.package.id.version))
-            .map(|review| review.package.id.version.clone())
-    }
+    trust_set: &crev_wot::TrustSet,
+    source: &str,
+    name: &str,
+    requirements: &crate::VerificationRequirements,
+    db: &crev_wot::ProofDB,
+) -> Option<Version> {
+    db.get_pkg_reviews_for_name(source, name)
+        .filter(|review| {
+            verify_package_digest(
+                &Digest::from_vec(review.package.digest.clone()),
+                trust_set,
+                requirements,
+                &db,
+            )
+            .is_verified()
+        })
+        .max_by(|a, b| a.package.id.version.cmp(&b.package.id.version))
+        .map(|review| review.package.id.version.clone())
+}
 
 /// Check whether code at this path has reviews, and the reviews meet the requirements
 pub fn dir_or_git_repo_verify(
     path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
-    db: &ProofDB,
-    trusted_set: &TrustSet,
+    db: &crev_wot::ProofDB,
+    trusted_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus> {
     let digest = if path.join(".git").exists() {
@@ -227,8 +227,8 @@ pub fn dir_or_git_repo_verify(
 pub fn dir_verify(
     path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
-    db: &ProofDB,
-    trusted_set: &TrustSet,
+    db: &crev_wot::ProofDB,
+    trusted_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus> {
     let digest = Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?);

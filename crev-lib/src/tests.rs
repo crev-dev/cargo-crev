@@ -1,9 +1,9 @@
 use super::*;
-use crate::proofdb::FetchSource;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
     Digest, Level, OwnId, Url,
 };
+use crev_wot::{FetchSource, ProofDB};
 use default::default;
 use semver::Version;
 use std::{str::FromStr, sync::Arc};

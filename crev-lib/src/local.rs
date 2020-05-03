@@ -2,9 +2,7 @@ use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
     prelude::*,
-    proofdb,
-    proofdb::UrlOfId,
-    util, ProofDB, ProofStore, TrustProofType,
+    util, ProofStore, TrustProofType,
 };
 use crev_common::{
     self, sanitize_name_for_fs, sanitize_url_for_fs,
@@ -15,6 +13,7 @@ use crev_data::{
     proof::{self, trust::TrustLevel},
     Id, PubId, Url,
 };
+use crev_wot;
 use default::default;
 use directories::ProjectDirs;
 use failure::{bail, format_err};
@@ -587,13 +586,15 @@ impl Local {
 
         for id in ids {
             let url = match db.lookup_url(&id) {
-                UrlOfId::FromSelf(url) | UrlOfId::FromSelfVerified(url) => Some(url),
-                UrlOfId::FromOthers(maybe_url) => {
+                crev_wot::UrlOfId::FromSelf(url) | crev_wot::UrlOfId::FromSelfVerified(url) => {
+                    Some(url)
+                }
+                crev_wot::UrlOfId::FromOthers(maybe_url) => {
                     let maybe_url = maybe_url.url.clone();
                     self.fetch_url_into(&maybe_url, &mut db)?;
                     db.lookup_url(&id).from_self()
                 }
-                UrlOfId::None => None,
+                crev_wot::UrlOfId::None => None,
             };
             if let Some(url) = url {
                 pub_ids.push(PubId::new(id, url.to_owned()));
@@ -636,9 +637,9 @@ impl Local {
     }
 
     /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
-    pub fn fetch_url_into(&self, url: &str, mut db: &mut ProofDB) -> Result<()> {
+    pub fn fetch_url_into(&self, url: &str, mut db: &mut crev_wot::ProofDB) -> Result<()> {
         if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
-            let mut db = ProofDB::new();
+            let mut db = crev_wot::ProofDB::new();
             let url = Url::new_git(url);
             let fetch_source = self.fetch_source_for_url(url.clone())?;
             db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
@@ -688,7 +689,7 @@ impl Local {
     fn fetch_all_ids_recursively(
         &self,
         mut already_fetched_urls: HashSet<String>,
-        db: &mut ProofDB,
+        db: &mut crev_wot::ProofDB,
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
 
@@ -711,7 +712,7 @@ impl Local {
         ids: impl Iterator<Item = Id>,
         already_fetched_ids: &mut HashSet<Id>,
         already_fetched_urls: &mut HashSet<String>,
-        db: &mut ProofDB,
+        db: &mut crev_wot::ProofDB,
     ) -> bool {
         let mut something_was_fetched = false;
         for id in ids {
@@ -753,14 +754,14 @@ impl Local {
         Ok(new_path)
     }
 
-    /// `LocalUser` if it's current user's URL, or `proofdb::FetchSource` for the URL.
-    fn fetch_source_for_url(&self, url: Url) -> Result<proofdb::FetchSource> {
+    /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for the URL.
+    fn fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
         if let Some(own_url) = self.get_cur_url()? {
             if own_url == url {
-                return Ok(proofdb::FetchSource::LocalUser);
+                return Ok(crev_wot::FetchSource::LocalUser);
             }
         }
-        Ok(proofdb::FetchSource::Url(Arc::new(url)))
+        Ok(crev_wot::FetchSource::Url(Arc::new(url)))
     }
 
     /// Fetch a git proof repository
@@ -787,7 +788,7 @@ impl Local {
     pub fn fetch_proof_repo_import_and_print_counts(
         &self,
         url: &str,
-        db: &mut ProofDB,
+        db: &mut crev_wot::ProofDB,
     ) -> Option<PathBuf> {
         let prev_pkg_review_count = db.unique_package_review_proof_count();
         let prev_trust_count = db.unique_trust_proof_count();
@@ -915,11 +916,11 @@ impl Local {
 
     /// Create a new proofdb, and populate it with local repo
     /// and cache content.
-    pub fn load_db(&self) -> Result<crate::ProofDB> {
-        let mut db = crate::ProofDB::new();
+    pub fn load_db(&self) -> Result<crev_wot::ProofDB> {
+        let mut db = crev_wot::ProofDB::new();
         db.import_from_iter(
             self.all_local_proofs()
-                .map(move |p| (p, proofdb::FetchSource::LocalUser)),
+                .map(move |p| (p, crev_wot::FetchSource::LocalUser)),
         );
         db.import_from_iter(proofs_iter_for_remotes_checkouts(
             self.cache_remotes_path(),
@@ -1125,7 +1126,7 @@ impl ProofStore for Local {
 /// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
 fn proofs_iter_for_remotes_checkouts(
     path: PathBuf,
-) -> Result<impl Iterator<Item = (proof::Proof, proofdb::FetchSource)>> {
+) -> Result<impl Iterator<Item = (proof::Proof, crev_wot::FetchSource)>> {
     let dir = std::fs::read_dir(&path)?;
     Ok(dir
         .filter_map(|e| e.ok())
@@ -1140,7 +1141,7 @@ fn proofs_iter_for_remotes_checkouts(
         .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
-            let fetch_source = proofdb::FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
+            let fetch_source = crev_wot::FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
             Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
         })
         .flat_map(|iter| iter))

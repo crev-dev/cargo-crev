@@ -1,11 +1,11 @@
 use super::*;
 
-use crate::proofdb::FetchSource;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
     OwnId, TrustLevel,
 };
+use crev_wot::FetchSource;
 use ifmt::iformat;
 use semver::Version;
 

@@ -3,6 +3,7 @@ members = [
 	"cargo-crev",
 	"crev-common",
 	"crev-data",
+	"crev-wot",
 	"crev-lib",
 	"crevsum"
 ]

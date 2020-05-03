@@ -16,6 +16,7 @@ use cargo::core::PackageId;
 use crev_common::convert::OptionDeref;
 use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
+use crev_wot::{self, *};
 use crossbeam::{
     self,
     channel::{unbounded, Receiver},
@@ -26,8 +27,6 @@ use std::{
     path::PathBuf,
     sync::{atomic, Arc, Mutex},
 };
-
-use crev_lib::proofdb::*;
 
 /// Dependency scaner
 ///
@@ -65,7 +64,7 @@ impl Scanner {
             db.calculate_trust_set(&for_id, &args.common.trust_params.clone().into())
         } else {
             // when running without an id (explicit, or current), just use an empty trust set
-            crev_lib::proofdb::TrustSet::default()
+            crev_wot::TrustSet::default()
         };
         let min_ignore_list = cargo_min_ignore_list();
         let full_ignore_list = cargo_full_ignore_list(false);

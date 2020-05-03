@@ -10,6 +10,7 @@ use crate::{
 };
 use crev_data::proof::{self, ContentExt};
 use crev_lib::TrustProofType;
+use crev_wot;
 
 use crate::{repo::*, shared::*};
 
@@ -153,7 +154,7 @@ pub fn create_review_proof(
 }
 
 pub fn find_previous_review_data(
-    db: &crev_lib::ProofDB,
+    db: &crev_wot::ProofDB,
     id: &crev_data::PubId,
     name: &str,
     crate_version: &Version,

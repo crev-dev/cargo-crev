@@ -89,7 +89,7 @@ pub fn get_crate_info(
         db.calculate_trust_set(&for_id, &common_opts.trust_params.clone().into())
     } else {
         // when running without an id (explicit, or current), just use an empty trust set
-        crev_lib::proofdb::TrustSet::default()
+        crev_wot::TrustSet::default()
     };
 
     let repo = Repo::auto_open_cwd(common_opts.cargo_opts.clone())?;
