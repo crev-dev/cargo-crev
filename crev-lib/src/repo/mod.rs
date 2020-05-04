@@ -1,9 +1,10 @@
-use crate::{id::PassphraseFn, local::Local, prelude::*, proofdb::TrustSet, util, ProofStore};
+use crate::{id::PassphraseFn, local::Local, prelude::*, util, verify_package_digest, ProofStore};
 use crev_common::convert::OptionDeref;
 use crev_data::{
     proof::{self, ContentExt},
     Digest,
 };
+use crev_wot;
 use failure::{bail, format_err, Fail};
 use git2;
 use serde::{Deserialize, Serialize};
@@ -174,11 +175,16 @@ impl Repo {
             if let Some(id) = local.get_for_id_from_str_opt(OptionDeref::as_deref(&for_id))? {
                 db.calculate_trust_set(&id, &params)
             } else {
-                TrustSet::default()
+                crev_wot::TrustSet::default()
             };
         let ignore_list = fnv::FnvHashSet::default();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        Ok(db.verify_package_digest(&digest, &trust_set, requirements))
+        Ok(verify_package_digest(
+            &digest,
+            &trust_set,
+            requirements,
+            &db,
+        ))
     }
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {

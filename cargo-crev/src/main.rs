@@ -36,10 +36,8 @@ mod tui;
 
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id};
-use crev_lib::{
-    proofdb::{ProofDB, TrustSet, UrlOfId},
-    TrustProofType::{self, *},
-};
+use crev_lib::TrustProofType::{self, *};
+use crev_wot::{ProofDB, TrustSet, UrlOfId};
 
 pub fn repo_publish() -> Result<()> {
     let local = Local::auto_open()?;
