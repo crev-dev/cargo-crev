@@ -320,7 +320,7 @@ impl ProofDB {
             .get(pkg_id)
             .into_iter()
             .flat_map(move |i| i.get(&from))
-            .flat_map(move |pkg_ids| pkg_ids)
+            .flatten()
             .cloned()
             .collect()
     }
@@ -409,7 +409,7 @@ impl ProofDB {
             .into_iter()
             .flat_map(move |map| map.get(name))
             .flat_map(move |map| map.get(version))
-            .flat_map(|v| v)
+            .flatten()
             .map(move |pkg_review_id| {
                 self.get_pkg_review_by_pkg_review_id(pkg_review_id)
                     .expect("exists")
@@ -1235,7 +1235,7 @@ impl TrustSet {
                     details.effective_trust = effective_trust;
                     changed = true;
                 }
-                match details.referers.entry(referer.clone()) {
+                match details.referers.entry(referer) {
                     Entry::Vacant(entry) => {
                         entry.insert(effective_trust);
                         changed = true;

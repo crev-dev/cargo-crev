@@ -5,7 +5,7 @@ use failure::bail;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
+
 use std::{collections::HashSet, default::Default, fmt, ops};
 use typed_builder::TypedBuilder;
 
@@ -120,11 +120,7 @@ impl proof::CommonOps for Package {
 
     fn kind(&self) -> &str {
         // Backfill the `kind` if it is empty (legacy format)
-        self.common
-            .kind
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or(Self::KIND)
+        self.common.kind.as_deref().unwrap_or(Self::KIND)
     }
 }
 

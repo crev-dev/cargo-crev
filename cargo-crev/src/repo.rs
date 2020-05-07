@@ -14,7 +14,6 @@ use cargo::{
 };
 use cargo_platform::Cfg;
 use crev_common::convert::OptionDeref;
-use crev_lib;
 use failure::format_err;
 use petgraph::graph::NodeIndex;
 use std::{

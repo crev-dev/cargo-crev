@@ -8,14 +8,10 @@ pub mod serde;
 
 pub use crate::blake2b256::Blake2b256;
 
-use blake2;
-use chrono;
 use failure::bail;
 
 use blake2::{digest::FixedOutput, Digest};
 use failure::format_err;
-use rpassword;
-use rprompt;
 use std::{
     collections::HashSet,
     env,

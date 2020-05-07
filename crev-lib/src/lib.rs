@@ -21,7 +21,7 @@ use crev_data::{
     },
     Digest, Id,
 };
-use crev_wot;
+
 pub use crev_wot::TrustDistanceParams;
 use failure::format_err;
 use semver::Version;

@@ -1,9 +1,9 @@
 use common_failures::prelude::*;
-use crev_common;
+
 use crev_data::proof;
 use failure::bail;
 use serde::{Deserialize, Serialize};
-use serde_cbor;
+
 use std::{
     collections::HashMap,
     fs,
@@ -75,7 +75,7 @@ impl Staging {
         let path = full_path.strip_prefix(&self.root_path)?.to_owned();
         println!("Adding {}", path.display());
         self.entries.insert(
-            path.to_owned(),
+            path,
             StagingPathInfo {
                 blake_hash: crev_common::blake2b256sum_file(&full_path)?,
             },

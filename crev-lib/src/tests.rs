@@ -143,7 +143,7 @@ fn proofdb_distance() -> Result<()> {
 
     let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
 
-    trustdb.import_from_iter(vec![(b_to_d, url.clone())].into_iter());
+    trustdb.import_from_iter(vec![(b_to_d, url)].into_iter());
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)
@@ -193,10 +193,7 @@ fn overwritting_reviews() -> Result<()> {
         .create_package_review_proof(package.clone(), default(), "b".into())?
         .sign_by(&a)?;
 
-    for order in vec![
-        vec![proof1.clone(), proof2.clone()],
-        vec![proof2.clone(), proof1.clone()],
-    ] {
+    for order in vec![vec![proof1.clone(), proof2.clone()], vec![proof2, proof1]] {
         let mut trustdb = ProofDB::new();
         trustdb.import_from_iter(order.into_iter().map(|x| (x, url.clone())));
         assert_eq!(
@@ -258,7 +255,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
 
     let proof1 = a
         .as_pubid()
-        .create_package_review_proof(package.clone(), review, "a".into())?
+        .create_package_review_proof(package, review, "a".into())?
         .sign_by(&a)?;
 
     let mut trustdb = ProofDB::new();
@@ -325,7 +322,7 @@ fn proofdb_distrust() -> Result<()> {
 
     let e_to_d = e.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Distrust)?;
 
-    trustdb.import_from_iter(vec![(e_to_d, url.clone())].into_iter());
+    trustdb.import_from_iter(vec![(e_to_d, url)].into_iter());
 
     let trust_set: HashSet<_> = trustdb
         .calculate_trust_set(a.as_ref(), &distance_params)

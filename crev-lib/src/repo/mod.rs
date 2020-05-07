@@ -4,11 +4,11 @@ use crev_data::{
     proof::{self, ContentExt},
     Digest,
 };
-use crev_wot;
+
 use failure::{bail, format_err, Fail};
-use git2;
+
 use serde::{Deserialize, Serialize};
-use serde_yaml;
+
 use std::{
     collections::HashSet,
     fs,
@@ -81,10 +81,9 @@ impl Repo {
 
     pub fn open(path: &Path) -> Result<Self> {
         if !path.exists() {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "directory not found",
-            ))?;
+            return Err(
+                std::io::Error::new(std::io::ErrorKind::NotFound, "directory not found").into(),
+            );
         }
 
         Self::new(path)

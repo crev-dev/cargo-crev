@@ -6,10 +6,9 @@ use crev_common::{
 };
 use crev_data::id::{OwnId, PubId};
 use failure::{bail, format_err};
-use miscreant;
-use num_cpus;
+
 use serde::{Deserialize, Serialize};
-use serde_yaml;
+
 use std::{self, fmt, io::Write, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
