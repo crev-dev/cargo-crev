@@ -5,7 +5,6 @@ use serde;
 use self::serde::Deserialize;
 use chrono::{self, offset::FixedOffset, prelude::*};
 use hex::{self, FromHex, FromHexError};
-use serde_yaml;
 use std::{fmt, io};
 
 // {{{ Serde serialization

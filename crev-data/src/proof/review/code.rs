@@ -77,11 +77,7 @@ impl proof::CommonOps for Code {
 
     fn kind(&self) -> &str {
         // Backfill the `kind` if it is empty (legacy format)
-        self.common
-            .kind
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or(Self::KIND)
+        self.common.kind.as_deref().unwrap_or(Self::KIND)
     }
 }
 

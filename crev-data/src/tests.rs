@@ -227,17 +227,15 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
             "name".into(),
             Version::parse("1.0.0").unwrap(),
         ),
-        digest: digest.clone(),
+        digest,
         digest_type: proof::default_digest_type(),
         revision: "".into(),
         revision_type: proof::default_revision_type(),
     };
 
-    let mut package = a.as_pubid().create_package_review_proof(
-        package.clone(),
-        Default::default(),
-        "a".into(),
-    )?;
+    let mut package =
+        a.as_pubid()
+            .create_package_review_proof(package, Default::default(), "a".into())?;
     assert!(package.ensure_serializes_to_valid_proof().is_ok());
     package.comment = std::iter::repeat("a").take(32_000).collect::<String>();
     assert!(package.ensure_serializes_to_valid_proof().is_err());

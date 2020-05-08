@@ -13,15 +13,15 @@ use crev_data::{
     proof::{self, trust::TrustLevel},
     Id, PubId, Url,
 };
-use crev_wot;
+
 use default::default;
 use directories::ProjectDirs;
 use failure::{bail, format_err};
-use git2;
+
 use insideout::InsideOut;
 use resiter::*;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
+
 use std::{
     collections::HashSet,
     ffi::OsString,
@@ -623,11 +623,7 @@ impl Local {
         let trust = self.build_trust_proof(from_id, ids, trust_or_distrust)?;
 
         // TODO: Look up previous trust proof?
-        Ok(util::edit_proof_content_iteractively(
-            &trust.into(),
-            None,
-            None,
-        )?)
+        Ok(util::edit_proof_content_iteractively(&trust, None, None)?)
     }
 
     /// Fetch other people's proof repostiory from a git URL, into the current database on disk
@@ -707,7 +703,7 @@ impl Local {
     }
 
     /// True if something was fetched
-    fn fetch_ids_not_fetched_yet<'a>(
+    fn fetch_ids_not_fetched_yet(
         &self,
         ids: impl Iterator<Item = Id>,
         already_fetched_ids: &mut HashSet<Id>,
@@ -1002,7 +998,7 @@ impl Local {
         eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
         let passphrase = read_new_passphrase()?;
 
-        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url.clone()));
+        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url));
         let locked = id::LockedId::from_own_id(&id, &passphrase)?;
 
         self.save_locked_id(&locked)?;

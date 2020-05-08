@@ -2,11 +2,11 @@ use crate::{
     proof::{self, CommonOps, Content},
     serde_content_serialize, serde_draft_serialize, Level, Result,
 };
-use crev_common;
+
 use derive_builder::Builder;
 use failure::bail;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
+
 use std::fmt;
 
 const CURRENT_TRUST_PROOF_SERIALIZATION_VERSION: i64 = -1;
@@ -111,11 +111,7 @@ impl proof::CommonOps for Trust {
 
     fn kind(&self) -> &str {
         // Backfill the `kind` if it is empty (legacy format)
-        self.common
-            .kind
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or(Self::KIND)
+        self.common.kind.as_deref().unwrap_or(Self::KIND)
     }
 }
 

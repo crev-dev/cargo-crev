@@ -1,10 +1,10 @@
 pub mod git;
 
 use crate::prelude::*;
-use crev_common;
+
 use crev_data::proof::{self, ContentExt};
 use failure::bail;
-use git2;
+
 use std::{
     self, env, ffi,
     fmt::Write as FmtWrite,
@@ -12,7 +12,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use tempdir;
 
 pub use crev_common::{
     read_file_to_string, run_with_shell_cmd, store_str_to_file, store_to_file_with,

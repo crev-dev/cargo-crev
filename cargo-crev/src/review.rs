@@ -10,7 +10,6 @@ use crate::{
 };
 use crev_data::proof::{self, ContentExt};
 use crev_lib::TrustProofType;
-use crev_wot;
 
 use crate::{repo::*, shared::*};
 

@@ -43,7 +43,7 @@ fn build_proof_with_advisories(
     };
     let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
-        .package(package_info.clone())
+        .package(package_info)
         .comment("comment".into())
         .advisories(advisories)
         .build()
@@ -62,7 +62,7 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
     };
     let review = proof::review::PackageBuilder::default()
         .from(id.id.to_owned())
-        .package(package_info.clone())
+        .package(package_info)
         .comment("comment".into())
         .issues(issues)
         .build()

@@ -1,7 +1,7 @@
 //! Some common stuff for both Review and Trust Proofs
 
 use chrono::{self, prelude::*};
-use crev_common;
+
 use failure::bail;
 use std::{
     default, fmt,
