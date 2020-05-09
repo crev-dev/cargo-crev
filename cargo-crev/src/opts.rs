@@ -100,7 +100,7 @@ pub struct IdNew {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct IdSwitch {
-    /// Own Id to switch to
+    /// Id to switch to
     pub id: String,
 }
 

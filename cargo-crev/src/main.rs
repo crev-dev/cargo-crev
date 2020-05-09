@@ -237,7 +237,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 // the library
                 local.save_current_id(&id.id)?;
 
-                let url = &id.url.as_ref().expect("own Id must have a URL");
+                let url = &id
+                    .url
+                    .as_ref()
+                    .expect("A public id must have an associated URL");
                 let proof_dir_path = local.get_proofs_dir_path_for_url(url)?;
                 if !proof_dir_path.exists() {
                     local.clone_proof_dir_from_git(&url.url, false)?;

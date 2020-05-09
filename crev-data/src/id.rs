@@ -162,24 +162,24 @@ impl PubId {
 
 /// A `PubId` with the corresponding secret key
 #[derive(Debug)]
-pub struct OwnId {
+pub struct UnlockedId {
     pub id: PubId,
     pub keypair: ed25519_dalek::Keypair,
 }
 
-impl AsRef<Id> for OwnId {
+impl AsRef<Id> for UnlockedId {
     fn as_ref(&self) -> &Id {
         &self.id.id
     }
 }
 
-impl AsRef<PubId> for OwnId {
+impl AsRef<PubId> for UnlockedId {
     fn as_ref(&self) -> &PubId {
         &self.id
     }
 }
 
-impl OwnId {
+impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
         let sec_key = SecretKey::from_bytes(&sec_key)?;
@@ -207,7 +207,7 @@ impl OwnId {
     }
 
     pub fn url(&self) -> &Url {
-        self.id.url.as_ref().expect("OwnId must have a URL")
+        self.id.url.as_ref().expect("UnlockedId must have a URL")
     }
 
     pub fn generate_for_git_url(url: &str) -> Self {

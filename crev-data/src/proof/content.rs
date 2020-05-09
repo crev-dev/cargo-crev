@@ -157,7 +157,7 @@ pub trait ContentExt: Content {
         Ok(body)
     }
 
-    fn sign_by(&self, id: &crate::id::OwnId) -> Result<Proof> {
+    fn sign_by(&self, id: &crate::id::UnlockedId) -> Result<Proof> {
         let body = self.serialize()?;
         let signature = id.sign(&body.as_bytes());
         Ok(Proof {

@@ -1,7 +1,7 @@
 use common_failures::Result;
 use crev_data::{
     proof::{self, CommonOps, ContentExt},
-    OwnId, PubId,
+    PubId, UnlockedId,
 };
 use failure::bail;
 
@@ -17,7 +17,7 @@ pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {
 pub trait DynContent {
     fn set_date(&mut self, date: &proof::Date);
     fn set_author(&mut self, id: &PubId);
-    fn sign_by(&self, id: &OwnId) -> Result<proof::Proof>;
+    fn sign_by(&self, id: &UnlockedId) -> Result<proof::Proof>;
 }
 
 impl DynContent for proof::review::Code {
@@ -27,7 +27,7 @@ impl DynContent for proof::review::Code {
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();
     }
-    fn sign_by(&self, id: &OwnId) -> Result<proof::Proof> {
+    fn sign_by(&self, id: &UnlockedId) -> Result<proof::Proof> {
         Ok(ContentExt::sign_by(self, id)?)
     }
 }
@@ -38,7 +38,7 @@ impl DynContent for proof::review::Package {
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();
     }
-    fn sign_by(&self, id: &OwnId) -> Result<proof::Proof> {
+    fn sign_by(&self, id: &UnlockedId) -> Result<proof::Proof> {
         Ok(ContentExt::sign_by(self, id)?)
     }
 }
@@ -49,7 +49,7 @@ impl DynContent for proof::trust::Trust {
     fn set_author(&mut self, id: &PubId) {
         self.common.from = id.clone();
     }
-    fn sign_by(&self, id: &OwnId) -> Result<proof::Proof> {
+    fn sign_by(&self, id: &UnlockedId) -> Result<proof::Proof> {
         Ok(ContentExt::sign_by(self, id)?)
     }
 }

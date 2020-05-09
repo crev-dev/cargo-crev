@@ -3,7 +3,7 @@ use super::*;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
-    OwnId, TrustLevel,
+    TrustLevel, UnlockedId,
 };
 use crev_wot::FetchSource;
 use ifmt::iformat;
@@ -30,7 +30,7 @@ fn build_issue(id: impl Into<String>) -> Issue {
 }
 
 fn build_proof_with_advisories(
-    id: &OwnId,
+    id: &UnlockedId,
     version: Version,
     advisories: Vec<Advisory>,
 ) -> proof::Proof {
@@ -52,7 +52,7 @@ fn build_proof_with_advisories(
     review.sign_by(&id).unwrap()
 }
 
-fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> proof::Proof {
+fn build_proof_with_issues(id: &UnlockedId, version: Version, issues: Vec<Issue>) -> proof::Proof {
     let package_info = proof::PackageInfo {
         id: proof::PackageVersionId::new("SOURCE_ID".to_owned(), NAME.into(), version),
         digest: vec![0, 1, 2, 3],
@@ -74,7 +74,7 @@ fn build_proof_with_issues(id: &OwnId, version: Version, issues: Vec<Issue>) -> 
 #[test]
 fn advisories_sanity() -> Result<()> {
     let url = FetchSource::LocalUser;
-    let id = OwnId::generate_for_git_url("https://a");
+    let id = UnlockedId::generate_for_git_url("https://a");
 
     let proof = build_proof_with_advisories(
         &id,
@@ -144,7 +144,7 @@ fn advisories_sanity() -> Result<()> {
 #[test]
 fn issues_sanity() -> Result<()> {
     let url = FetchSource::LocalUser;
-    let id = OwnId::generate_for_git_url("https://a");
+    let id = UnlockedId::generate_for_git_url("https://a");
     let mut trustdb = ProofDB::new();
     let trust_set = trustdb.calculate_trust_set(id.as_ref(), &TrustDistanceParams::new_no_wot());
 

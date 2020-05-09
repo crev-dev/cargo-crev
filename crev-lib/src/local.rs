@@ -9,7 +9,7 @@ use crev_common::{
     serde::{as_base64, from_base64},
 };
 use crev_data::{
-    id::OwnId,
+    id::UnlockedId,
     proof::{self, trust::TrustLevel},
     Id, PubId, Url,
 };
@@ -390,14 +390,17 @@ impl Local {
     pub fn read_current_unlocked_id_opt(
         &self,
         passphrase_callback: PassphraseFn<'_>,
-    ) -> Result<Option<OwnId>> {
+    ) -> Result<Option<UnlockedId>> {
         self.get_current_userid_opt()?
             .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
             .inside_out()
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change anything
-    pub fn read_current_unlocked_id(&self, passphrase_callback: PassphraseFn<'_>) -> Result<OwnId> {
+    pub fn read_current_unlocked_id(
+        &self,
+        passphrase_callback: PassphraseFn<'_>,
+    ) -> Result<UnlockedId> {
         self.read_current_unlocked_id_opt(passphrase_callback)?
             .ok_or_else(|| format_err!("Current Id not set"))
     }
@@ -409,7 +412,7 @@ impl Local {
         &self,
         id: &Id,
         passphrase_callback: PassphraseFn<'_>,
-    ) -> Result<OwnId> {
+    ) -> Result<UnlockedId> {
         let locked = self.read_locked_id(id)?;
         let mut i = 0;
         loop {
@@ -989,12 +992,12 @@ impl Local {
     ) -> Result<id::LockedId> {
         self.clone_proof_dir_from_git(&url, use_https_push)?;
 
-        let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url));
+        let unlocked_id = crev_data::id::UnlockedId::generate(crev_data::Url::new_git(url));
         let passphrase = read_new_passphrase()?;
-        let locked_id = id::LockedId::from_own_id(&id, &passphrase)?;
+        let locked_id = id::LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
 
         self.save_locked_id(&locked_id)?;
-        self.save_current_id(id.as_ref())?;
+        self.save_current_id(unlocked_id.as_ref())?;
         self.init_repo_readme_using_template()?;
         Ok(locked_id)
     }
