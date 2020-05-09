@@ -11,7 +11,7 @@ use crev_common::{
 use crev_data::{
     id::UnlockedId,
     proof::{self, trust::TrustLevel},
-    Id, PubId, Url,
+    Id, PublicId, Url,
 };
 
 use default::default;
@@ -262,12 +262,12 @@ impl Local {
     }
 
     /// Returns public Ids which belong to the current user.
-    pub fn get_current_user_public_ids(&self) -> Result<Vec<PubId>> {
+    pub fn get_current_user_public_ids(&self) -> Result<Vec<PublicId>> {
         let ids_path = self.user_ids_path();
         let mut ids = vec![];
         for dir_entry in std::fs::read_dir(&ids_path)? {
             let locked_id = LockedId::read_from_yaml_file(&dir_entry?.path())?;
-            ids.push(locked_id.to_pubid())
+            ids.push(locked_id.to_public_id())
         }
 
         Ok(ids)
@@ -432,7 +432,7 @@ impl Local {
 
     /// Writes the Id to disk, doesn't change any state
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
-        let path = self.id_path(&id.to_pubid().id);
+        let path = self.id_path(&id.to_public_id().id);
         fs::create_dir_all(&path.parent().expect("Not /"))?;
         id.save_to(&path)
     }
@@ -583,7 +583,7 @@ impl Local {
     /// See `trust.sign_by(ownid)`
     pub fn build_trust_proof(
         &self,
-        from_id: &PubId,
+        from_id: &PublicId,
         ids: Vec<Id>,
         trust_or_distrust: TrustProofType,
     ) -> Result<proof::trust::Trust> {
@@ -592,7 +592,7 @@ impl Local {
         }
 
         let mut db = self.load_db()?;
-        let mut pub_ids = Vec::with_capacity(ids.len());
+        let mut public_ids = Vec::with_capacity(ids.len());
 
         for id in ids {
             let url = match db.lookup_url(&id) {
@@ -607,14 +607,14 @@ impl Local {
                 crev_wot::UrlOfId::None => None,
             };
             if let Some(url) = url {
-                pub_ids.push(PubId::new(id, url.to_owned()));
+                public_ids.push(PublicId::new(id, url.to_owned()));
             } else {
-                pub_ids.push(PubId::new_id_only(id));
+                public_ids.push(PublicId::new_id_only(id));
             }
         }
 
         from_id.create_trust_proof(
-            &pub_ids,
+            &public_ids,
             match trust_or_distrust {
                 TrustProofType::Trust => TrustLevel::Medium,
                 TrustProofType::Distrust => TrustLevel::Distrust,
@@ -628,7 +628,7 @@ impl Local {
     /// Currently ignores previous proofs
     pub fn build_trust_proof_interactively(
         &self,
-        from_id: &PubId,
+        from_id: &PublicId,
         ids: Vec<Id>,
         trust_or_distrust: TrustProofType,
     ) -> Result<proof::trust::Trust> {
@@ -973,7 +973,7 @@ impl Local {
     /// Prints `read_current_locked_id`
     pub fn show_current_id(&self) -> Result<()> {
         if let Some(id) = self.read_current_locked_id_opt()? {
-            let id = id.to_pubid();
+            let id = id.to_public_id();
             println!("{} {}", id.id, id.url_display());
         }
         Ok(())
@@ -1017,7 +1017,9 @@ impl Local {
 
     /// Print the current user's public Ids.
     pub fn show_current_user_public_ids(&self) -> Result<()> {
-        let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
+        let current = self
+            .read_current_locked_id_opt()?
+            .map(|id| id.to_public_id());
         for id in self.get_current_user_public_ids()? {
             let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
             println!(
@@ -1043,10 +1045,10 @@ impl Local {
     }
 
     /// Parse `LockedId`'s YAML and write it to disk. See `save_locked_id`
-    pub fn import_locked_id(&self, locked_id_serialized: &str) -> Result<PubId> {
+    pub fn import_locked_id(&self, locked_id_serialized: &str) -> Result<PublicId> {
         let id = LockedId::from_str(locked_id_serialized)?;
         self.save_locked_id(&id)?;
-        Ok(id.to_pubid())
+        Ok(id.to_public_id())
     }
 
     /// All proofs from all local repos, regardless of current user's URL

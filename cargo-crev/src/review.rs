@@ -154,7 +154,7 @@ pub fn create_review_proof(
 
 pub fn find_previous_review_data(
     db: &crev_wot::ProofDB,
-    id: &crev_data::PubId,
+    id: &crev_data::PublicId,
     name: &str,
     crate_version: &Version,
     diff_base_version: &Option<Version>,

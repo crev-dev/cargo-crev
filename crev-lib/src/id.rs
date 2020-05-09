@@ -4,7 +4,7 @@ use crev_common::{
     rand::random_vec,
     serde::{as_base64, from_base64},
 };
-use crev_data::id::{PubId, UnlockedId};
+use crev_data::id::{PublicId, UnlockedId};
 use failure::{bail, format_err};
 
 use serde::{Deserialize, Serialize};
@@ -104,8 +104,8 @@ impl LockedId {
     }
 
     /// Extract only the public identity part from all data
-    pub fn to_pubid(&self) -> PubId {
-        PubId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
+    pub fn to_public_id(&self) -> PublicId {
+        PublicId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
             .expect("Invalid locked id.")
     }
 

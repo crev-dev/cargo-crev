@@ -1,5 +1,5 @@
 use crate::to_fail;
-use crev_data::{proof, Digest, PubId};
+use crev_data::{proof, Digest, PublicId};
 use crev_lib::*;
 use semver::Version;
 use std::path::PathBuf;
@@ -175,7 +175,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
 pub struct CrateDetails {
     pub digest: Option<Digest>,
     pub latest_trusted_version: Option<Version>,
-    pub trusted_reviewers: HashSet<PubId>,
+    pub trusted_reviewers: HashSet<PublicId>,
     pub version_reviews: CountWithTotal,
     pub downloads: Option<DownloadsStats>,
     pub known_owners: Option<CountWithTotal>,
@@ -298,7 +298,7 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
     let scanner = scan::Scanner::new(crate_, &args)?;
     let events = scanner.run();
 
-    let mut mvps: HashMap<PubId, u64> = HashMap::new();
+    let mut mvps: HashMap<PublicId, u64> = HashMap::new();
 
     for stats in events {
         for reviewer in &stats.details.trusted_reviewers {

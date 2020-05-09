@@ -352,7 +352,7 @@ pub struct CrateVerify {
 #[derive(Debug, StructOpt, Clone)]
 pub struct IdTrust {
     /// Public IDs to create Trust Proof for
-    pub pub_ids: Vec<String>,
+    pub public_ids: Vec<String>,
 
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
@@ -361,7 +361,7 @@ pub struct IdTrust {
 #[derive(Debug, StructOpt, Clone)]
 pub struct TrustUrls {
     /// Public IDs or proof repo URLs to create Trust Proof for
-    pub pub_ids_or_urls: Vec<String>,
+    pub public_ids_or_urls: Vec<String>,
 
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,

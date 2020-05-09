@@ -92,25 +92,26 @@ impl Id {
     }
 }
 
+/// A unique ID accompanied by publically identifying data.
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct PubId {
+pub struct PublicId {
     #[serde(flatten)]
     pub id: Id,
     #[serde(flatten)]
     pub url: Option<Url>,
 }
 
-impl PubId {
+impl PublicId {
     pub fn new(id: Id, url: Url) -> Self {
-        PubId { id, url: Some(url) }
+        Self { id, url: Some(url) }
     }
 
     pub fn new_id_only(id: Id) -> Self {
-        PubId { id, url: None }
+        Self { id, url: None }
     }
 
     pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self> {
-        Ok(PubId {
+        Ok(Self {
             id: Id::new_crev(v)?,
             url: Some(url),
         })
@@ -118,7 +119,7 @@ impl PubId {
 
     pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
         let v = crev_common::base64_decode(s)?;
-        Ok(PubId {
+        Ok(Self {
             id: Id::new_crev(v)?,
             url: Some(url),
         })
@@ -126,7 +127,7 @@ impl PubId {
 
     pub fn create_trust_proof<'a>(
         &self,
-        ids: impl IntoIterator<Item = &'a PubId>,
+        ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Trust> {
         Ok(proof::TrustBuilder::default()
@@ -160,10 +161,10 @@ impl PubId {
     }
 }
 
-/// A `PubId` with the corresponding secret key
+/// A `PublicId` with the corresponding secret key
 #[derive(Debug)]
 pub struct UnlockedId {
-    pub id: PubId,
+    pub id: PublicId,
     pub keypair: ed25519_dalek::Keypair,
 }
 
@@ -173,8 +174,8 @@ impl AsRef<Id> for UnlockedId {
     }
 }
 
-impl AsRef<PubId> for UnlockedId {
-    fn as_ref(&self) -> &PubId {
+impl AsRef<PublicId> for UnlockedId {
+    fn as_ref(&self) -> &PublicId {
         &self.id
     }
 }
@@ -186,7 +187,7 @@ impl UnlockedId {
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {
-            id: crate::PubId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url)?,
+            id: crate::PublicId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url)?,
             keypair: ed25519_dalek::Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
@@ -202,7 +203,7 @@ impl UnlockedId {
         "crev".into()
     }
 
-    pub fn as_pubid(&self) -> &PubId {
+    pub fn as_public_id(&self) -> &PublicId {
         &self.id
     }
 
@@ -217,7 +218,7 @@ impl UnlockedId {
     pub fn generate(url: Url) -> Self {
         let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
         Self {
-            id: PubId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
+            id: PublicId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
                 .expect("should be valid keypair"),
             keypair,
         }
@@ -225,7 +226,7 @@ impl UnlockedId {
 
     pub fn create_signed_trust_proof<'a>(
         &self,
-        ids: impl IntoIterator<Item = &'a PubId>,
+        ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
     ) -> Result<proof::Proof> {
         self.id.create_trust_proof(ids, trust_level)?.sign_by(&self)

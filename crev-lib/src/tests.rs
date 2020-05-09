@@ -59,7 +59,7 @@ pass:
     let unlocked = locked.to_unlocked("a")?;
 
     let _trust_proof =
-        unlocked.create_signed_trust_proof(vec![unlocked.as_pubid()], TrustLevel::High)?;
+        unlocked.create_signed_trust_proof(vec![unlocked.as_public_id()], TrustLevel::High)?;
 
     Ok(())
 }
@@ -116,10 +116,10 @@ fn proofdb_distance() -> Result<()> {
         max_distance: 111,
     };
 
-    let a_to_b = a.create_signed_trust_proof(vec![b.as_pubid()], TrustLevel::High)?;
-    let b_to_c = b.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Medium)?;
-    let c_to_d = c.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
-    let d_to_e = d.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
+    let a_to_b = a.create_signed_trust_proof(vec![b.as_public_id()], TrustLevel::High)?;
+    let b_to_c = b.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Medium)?;
+    let c_to_d = c.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low)?;
+    let d_to_e = d.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 
@@ -141,7 +141,7 @@ fn proofdb_distance() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Medium)?;
 
     trustdb.import_from_iter(vec![(b_to_d, url)].into_iter());
 
@@ -181,7 +181,7 @@ fn overwritting_reviews() -> Result<()> {
     };
 
     let proof1 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package.clone(), default(), "a".into())?
         .sign_by(&a)?;
     // it's lame, but oh well... ; we need to make sure there's a time delay between
@@ -189,7 +189,7 @@ fn overwritting_reviews() -> Result<()> {
     #[allow(deprecated)]
     std::thread::sleep_ms(1);
     let proof2 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package.clone(), default(), "b".into())?
         .sign_by(&a)?;
 
@@ -254,7 +254,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
     let review = crev_data::proof::review::Review::new_none();
 
     let proof1 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package, review, "a".into())?
         .sign_by(&a)?;
 
@@ -295,10 +295,10 @@ fn proofdb_distrust() -> Result<()> {
     };
 
     let a_to_bc =
-        a.create_signed_trust_proof(vec![b.as_pubid(), c.as_pubid()], TrustLevel::High)?;
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
-    let d_to_c = d.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Distrust)?;
-    let c_to_e = c.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
+        a.create_signed_trust_proof(vec![b.as_public_id(), c.as_public_id()], TrustLevel::High)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low)?;
+    let d_to_c = d.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Distrust)?;
+    let c_to_e = c.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 
@@ -320,7 +320,7 @@ fn proofdb_distrust() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let e_to_d = e.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Distrust)?;
+    let e_to_d = e.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Distrust)?;
 
     trustdb.import_from_iter(vec![(e_to_d, url)].into_iter());
 

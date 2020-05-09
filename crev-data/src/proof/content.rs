@@ -25,7 +25,7 @@ pub trait CommonOps {
             .expect("Common types are expected to always have the `kind` field backfilled")
     }
 
-    fn from(&self) -> &crate::PubId {
+    fn from(&self) -> &crate::PublicId {
         &self.common().from
     }
 
@@ -41,7 +41,7 @@ pub trait CommonOps {
         &self.common().from.id
     }
 
-    fn author_pub_id(&self) -> &crate::PubId {
+    fn author_public_id(&self) -> &crate::PublicId {
         &self.common().from
     }
 
@@ -68,7 +68,7 @@ pub struct Common {
     /// Timestamp of proof creation
     pub date: chrono::DateTime<FixedOffset>,
     /// Author of the proof
-    pub from: crate::PubId,
+    pub from: crate::PublicId,
 }
 
 impl CommonOps for Common {

@@ -1,12 +1,11 @@
 use crate::{opts, opts::CrateSelector, to_fail};
 use cargo::{
     core::{
-        resolver::features::RequestedFeatures,
         dependency::{DepKind, Dependency},
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
-        resolver::ResolveOpts,
+        resolver::{features::RequestedFeatures, ResolveOpts},
         source::SourceMap,
         InternedString, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },

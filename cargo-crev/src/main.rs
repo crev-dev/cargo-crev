@@ -248,21 +248,21 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Id::Trust(args) => {
                 create_trust_proof(
-                    ids_from_string(&args.pub_ids)?,
+                    ids_from_string(&args.public_ids)?,
                     Trust,
                     &args.common_proof_create,
                 )?;
             }
             opts::Id::Untrust(args) => {
                 create_trust_proof(
-                    ids_from_string(&args.pub_ids)?,
+                    ids_from_string(&args.public_ids)?,
                     Untrust,
                     &args.common_proof_create,
                 )?;
             }
             opts::Id::Distrust(args) => {
                 create_trust_proof(
-                    ids_from_string(&args.pub_ids)?,
+                    ids_from_string(&args.public_ids)?,
                     Distrust,
                     &args.common_proof_create,
                 )?;
@@ -271,7 +271,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 opts::IdQuery::Current { trust_params } => {
                     let local = Local::auto_open()?;
                     if let Some(id) = local.read_current_locked_id_opt()? {
-                        let id = id.to_pubid();
+                        let id = id.to_public_id();
                         let db = local.load_db()?;
                         let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
 
@@ -281,14 +281,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 opts::IdQuery::Own { trust_params } => {
                     let local = Local::auto_open()?;
                     if let Some(id) = local.read_current_locked_id_opt()? {
-                        let id = id.to_pubid();
+                        let id = id.to_public_id();
                         let db = local.load_db()?;
                         let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
                         print_ids(
                             local
                                 .get_current_user_public_ids()?
                                 .iter()
-                                .map(|pub_id| &pub_id.id),
+                                .map(|public_id| &public_id.id),
                             &trust_set,
                             &db,
                         )?;
@@ -343,7 +343,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         },
         opts::Command::Trust(args) => {
             let (urls, ids): (Vec<_>, Vec<_>) = args
-                .pub_ids_or_urls
+                .public_ids_or_urls
                 .into_iter()
                 .partition(|arg| arg.starts_with("https://"));
             let mut ids = ids_from_string(&ids)?;
@@ -548,7 +548,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             if args.reset_date {
                                 content.set_date(&now);
                             }
-                            content.set_author(&id.as_pubid());
+                            content.set_author(&id.as_public_id());
                             let proof = content.sign_by(&id)?;
                             maybe_store(&local, &proof, &commit_msg, &args.common)?;
                         }
