@@ -223,7 +223,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Id::Current => {
                 let local = Local::auto_open()?;
-                local.show_own_ids()?;
+                local.show_current_user_public_ids()?;
             }
             opts::Id::Export(args) => {
                 let local = Local::auto_open()?;
@@ -281,7 +281,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         let id = id.to_pubid();
                         let db = local.load_db()?;
                         let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
-                        // local.list_own_ids()?
                         print_ids(
                             local
                                 .get_current_user_public_ids()?

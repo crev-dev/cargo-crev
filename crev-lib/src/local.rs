@@ -1009,11 +1009,11 @@ impl Local {
 
     #[deprecated]
     pub fn list_own_ids(&self) -> Result<()> {
-        self.show_own_ids()
+        self.show_current_user_public_ids()
     }
 
-    /// Print Ids. See `get_current_user_public_ids()`
-    pub fn show_own_ids(&self) -> Result<()> {
+    /// Print the current user's public Ids.
+    pub fn show_current_user_public_ids(&self) -> Result<()> {
         let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
         for id in self.get_current_user_public_ids()? {
             let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
