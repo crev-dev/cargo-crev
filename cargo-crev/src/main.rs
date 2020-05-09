@@ -283,7 +283,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
                         // local.list_own_ids()?
                         print_ids(
-                            local.list_ids()?.iter().map(|pub_id| &pub_id.id),
+                            local
+                                .get_current_user_public_ids()?
+                                .iter()
+                                .map(|pub_id| &pub_id.id),
                             &trust_set,
                             &db,
                         )?;

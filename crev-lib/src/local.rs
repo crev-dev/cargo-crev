@@ -261,8 +261,8 @@ impl Local {
         }
     }
 
-    /// Ids that belong to the user, nothing else
-    pub fn list_ids(&self) -> Result<Vec<PubId>> {
+    /// Returns public Ids which belong to the current user.
+    pub fn get_current_user_public_ids(&self) -> Result<Vec<PubId>> {
         let ids_path = self.user_ids_path();
         let mut ids = vec![];
         for dir_entry in std::fs::read_dir(&ids_path)? {
@@ -1012,10 +1012,10 @@ impl Local {
         self.show_own_ids()
     }
 
-    /// Print Ids. See `list_ids()`
+    /// Print Ids. See `get_current_user_public_ids()`
     pub fn show_own_ids(&self) -> Result<()> {
         let current = self.read_current_locked_id_opt()?.map(|id| id.to_pubid());
-        for id in self.list_ids()? {
+        for id in self.get_current_user_public_ids()? {
             let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
             println!(
                 "{} {}{}",
