@@ -1,6 +1,7 @@
 use crate::{opts, opts::CrateSelector, to_fail};
 use cargo::{
     core::{
+        resolver::features::RequestedFeatures,
         dependency::{DepKind, Dependency},
         manifest::ManifestMetadata,
         package::PackageSet,
@@ -145,9 +146,11 @@ fn our_resolve<'a, 'cfg>(
 
     let resolve_opts = ResolveOpts {
         dev_deps: !no_dev_dependencies,
-        features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
-        all_features,
-        uses_default_features: !no_default_features,
+        features: RequestedFeatures {
+            features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
+            all_features,
+            uses_default_features: !no_default_features,
+        },
     };
 
     let specs: Vec<_> = workspace
@@ -159,7 +162,7 @@ fn our_resolve<'a, 'cfg>(
     let resolve = ops::resolve_with_previous(
         registry,
         workspace,
-        resolve_opts,
+        &resolve_opts,
         Some(&resolve),
         None,
         &specs,
@@ -287,12 +290,12 @@ impl Repo {
         config
             .configure(
                 0,
-                None,
+                /* quiet */ false,
                 None,
                 /* frozen: */ false,
                 /* locked: */ true,
                 /* offline: */ false,
-                &None,
+                /* target dir */ &None,
                 &cargo_opts.unstable_flags,
                 &[],
             )

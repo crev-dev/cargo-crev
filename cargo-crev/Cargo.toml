@@ -27,7 +27,7 @@ crev-wot = { path = "../crev-wot", version = "0.1.0" }
 crev-lib = { path = "../crev-lib", version = "0.17.0" }
 anyhow = "1.0.28"
 atty = "0.2.14"
-cargo = "0.43.1"
+cargo = "0.44"
 cargo-platform = "0.1.1"
 chrono = "0.4.11"
 common_failures = "0.1.1"
