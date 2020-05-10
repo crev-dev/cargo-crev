@@ -12,6 +12,7 @@ pub mod proof;
 pub mod url;
 #[macro_use]
 pub mod util;
+pub use semver::Version;
 
 pub use crate::{
     digest::Digest,
