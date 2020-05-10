@@ -12,7 +12,7 @@ use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
-    io::BufRead,
+    io::{self, BufRead},
     path::PathBuf,
 };
 use structopt::StructOpt;
@@ -180,20 +180,42 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
         opts::Command::Id(args) => match args {
             opts::Id::New(args) => {
-                let local = Local::auto_create_or_open()?;
-                let res = local.generate_id_interactively(
-                    args.url,
-                    args.github_username,
-                    args.use_https_push,
-                );
-                if res.is_err() {
-                    eprintln!(
-                        "Visit https://github.com/crev-dev/crev/wiki/Proof-Repository for help."
-                    );
+                let url = match (args.url, args.github_username) {
+                    (Some(url), None) => url,
+                    (None, Some(username)) => {
+                        format!("https://github.com/{}/crev-proofs", username)
+                    }
+                    _ => bail!("Must provide either a github username or url, but not both."),
+                };
+                if !url.starts_with("https://") {
+                    bail!("URL must start with 'https://'");
                 }
+
+                fn read_new_passphrase() -> io::Result<String> {
+                    println!("CrevID will be protected by a passphrase.");
+                    println!(
+                        "There's no way to recover your CrevID if you forget your passphrase."
+                    );
+                    crev_common::read_new_passphrase()
+                }
+                let local = Local::auto_create_or_open()?;
+                let res = local
+                    .generate_id(&url, args.use_https_push, read_new_passphrase)
+                    .map_err(|e| {
+                        eprintln!("To create your proof repository, fork the template:");
+                        eprintln!("https://github.com/crev-dev/crev-proofs/fork");
+                        eprintln!(
+                            "For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository"
+                        );
+                        eprintln!();
+                        e
+                    })?;
+                println!("Your CrevID was created and will be printed below in an encrypted form.");
+                println!("Make sure to back it up on another device, to prevent losing it.");
+                println!("{}", res);
+
                 let local = crev_lib::Local::auto_open()?;
                 let _ = ensure_known_owners_list_exists(&local);
-                res?;
             }
             opts::Id::Switch(args) => {
                 let local = Local::auto_open()?;

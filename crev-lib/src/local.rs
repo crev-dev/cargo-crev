@@ -470,6 +470,7 @@ impl Local {
 
         self.ensure_proofs_root_exists()?;
 
+        debug_assert!(git_https_url.starts_with("https://"));
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
@@ -970,65 +971,20 @@ impl Local {
     /// The callback should provide a passphrase
     pub fn generate_id(
         &self,
-        url: Option<String>,
-        github_username: Option<String>,
+        url: &str,
         use_https_push: bool,
         read_new_passphrase: impl FnOnce() -> std::io::Result<String>,
-    ) -> Result<()> {
-        let url = match (url, github_username) {
-            (Some(url), None) => url,
-            (None, Some(username)) => format!("https://github.com/{}/crev-proofs", username),
-            (Some(_), Some(_)) => bail!("Can't provide both username and url"),
-            (None, None) => bail!("Must provide github username or url"),
-        };
-
-        if !url.starts_with("https://") {
-            bail!("URL must start with 'https://");
-        }
-
-        self.clone_proof_dir_from_git(&url, use_https_push)
-            .map_err(|e| {
-                eprintln!("To create your proof repository, fork the template:");
-                eprintln!("https://github.com/crev-dev/crev-proofs/fork");
-                eprintln!();
-                e
-            })?;
-
-        eprintln!("CrevID will be protected by a passphrase.");
-        eprintln!("There's no way to recover your CrevID if you forget your passphrase.");
-        let passphrase = read_new_passphrase()?;
+    ) -> Result<id::LockedId> {
+        self.clone_proof_dir_from_git(&url, use_https_push)?;
 
         let id = crev_data::id::OwnId::generate(crev_data::Url::new_git(url));
-        let locked = id::LockedId::from_own_id(&id, &passphrase)?;
+        let passphrase = read_new_passphrase()?;
+        let locked_id = id::LockedId::from_own_id(&id, &passphrase)?;
 
-        self.save_locked_id(&locked)?;
+        self.save_locked_id(&locked_id)?;
         self.save_current_id(id.as_ref())?;
-
-        eprintln!("");
-        eprintln!("Your CrevID was created and will be printed below in an encrypted form.");
-        eprintln!("Make sure to back it up on another device, to prevent losing it.");
-
-        eprintln!("");
-        println!("{}", locked);
-
         self.init_repo_readme_using_template()?;
-
-        Ok(())
-    }
-
-    /// Same as generate_id, but asks for a passphrase interactively
-    pub fn generate_id_interactively(
-        &self,
-        url: Option<String>,
-        github_username: Option<String>,
-        use_https_push: bool,
-    ) -> Result<()> {
-        self.generate_id(
-            url,
-            github_username,
-            use_https_push,
-            crev_common::read_new_passphrase,
-        )
+        Ok(locked_id)
     }
 
     pub fn switch_id(&self, id_str: &str) -> Result<()> {
