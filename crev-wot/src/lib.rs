@@ -1150,6 +1150,14 @@ pub enum UrlOfId<'a> {
 }
 
 impl<'a> UrlOfId<'a> {
+    /// Only if this URL has been signed by its Id and verified by fetching
+    pub fn verified(self) -> Option<&'a Url> {
+        match self {
+            Self::FromSelfVerified(url) => Some(url),
+            _ => None,
+        }
+    }
+
     /// Only if this URL has been signed by its Id
     pub fn from_self(self) -> Option<&'a Url> {
         match self {
