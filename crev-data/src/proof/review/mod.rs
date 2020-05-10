@@ -8,7 +8,7 @@ pub mod package;
 
 pub use self::{code::*, package::*};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Rating {
     #[serde(alias = "dangerous")] // for backward compat with some previous versions
