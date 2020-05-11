@@ -1,7 +1,7 @@
 use super::*;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
-    Digest, Level, OwnId, Url,
+    Digest, Level, UnlockedId, Url,
 };
 use crev_wot::{FetchSource, ProofDB};
 use default::default;
@@ -18,17 +18,17 @@ mod issues;
 // * compare
 #[test]
 fn lock_and_unlock() -> Result<()> {
-    let id = OwnId::generate_for_git_url("https://example.com/crev-proofs");
+    let id = UnlockedId::generate_for_git_url("https://example.com/crev-proofs");
 
-    let id_relocked = id::LockedId::from_own_id(&id, "password")?.to_unlocked("password")?;
+    let id_relocked = id::LockedId::from_unlocked_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);
 
-    assert!(id::LockedId::from_own_id(&id, "password")?
+    assert!(id::LockedId::from_unlocked_id(&id, "password")?
         .to_unlocked("wrongpassword")
         .is_err());
 
-    let id_stored = serde_yaml::to_string(&id::LockedId::from_own_id(&id, "pass")?)?;
-    let id_restored: OwnId =
+    let id_stored = serde_yaml::to_string(&id::LockedId::from_unlocked_id(&id, "pass")?)?;
+    let id_restored: UnlockedId =
         serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
 
     println!("{}", id_stored);
@@ -59,7 +59,7 @@ pass:
     let unlocked = locked.to_unlocked("a")?;
 
     let _trust_proof =
-        unlocked.create_signed_trust_proof(vec![unlocked.as_pubid()], TrustLevel::High)?;
+        unlocked.create_signed_trust_proof(vec![unlocked.as_public_id()], TrustLevel::High)?;
 
     Ok(())
 }
@@ -103,11 +103,11 @@ NtGu3z1Jtnj6wx8INBrVujcOPz61BiGmJS-UoAOe0XQutatFsEbgAcAo7rBvZz4Q-ccNXIFZtKnXhBDM
 fn proofdb_distance() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://example.com")));
 
-    let a = OwnId::generate_for_git_url("https://a");
-    let b = OwnId::generate_for_git_url("https://b");
-    let c = OwnId::generate_for_git_url("https://c");
-    let d = OwnId::generate_for_git_url("https://d");
-    let e = OwnId::generate_for_git_url("https://e");
+    let a = UnlockedId::generate_for_git_url("https://a");
+    let b = UnlockedId::generate_for_git_url("https://b");
+    let c = UnlockedId::generate_for_git_url("https://c");
+    let d = UnlockedId::generate_for_git_url("https://d");
+    let e = UnlockedId::generate_for_git_url("https://e");
 
     let distance_params = TrustDistanceParams {
         high_trust_distance: 1,
@@ -116,10 +116,10 @@ fn proofdb_distance() -> Result<()> {
         max_distance: 111,
     };
 
-    let a_to_b = a.create_signed_trust_proof(vec![b.as_pubid()], TrustLevel::High)?;
-    let b_to_c = b.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Medium)?;
-    let c_to_d = c.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
-    let d_to_e = d.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
+    let a_to_b = a.create_signed_trust_proof(vec![b.as_public_id()], TrustLevel::High)?;
+    let b_to_c = b.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Medium)?;
+    let c_to_d = c.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low)?;
+    let d_to_e = d.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 
@@ -141,7 +141,7 @@ fn proofdb_distance() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Medium)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Medium)?;
 
     trustdb.import_from_iter(vec![(b_to_d, url)].into_iter());
 
@@ -166,7 +166,7 @@ fn proofdb_distance() -> Result<()> {
 #[test]
 fn overwritting_reviews() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
-    let a = OwnId::generate_for_git_url("https://a");
+    let a = UnlockedId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
         id: proof::PackageVersionId::new(
@@ -181,7 +181,7 @@ fn overwritting_reviews() -> Result<()> {
     };
 
     let proof1 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package.clone(), default(), "a".into())?
         .sign_by(&a)?;
     // it's lame, but oh well... ; we need to make sure there's a time delay between
@@ -189,7 +189,7 @@ fn overwritting_reviews() -> Result<()> {
     #[allow(deprecated)]
     std::thread::sleep_ms(1);
     let proof2 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package.clone(), default(), "b".into())?
         .sign_by(&a)?;
 
@@ -237,7 +237,7 @@ fn overwritting_reviews() -> Result<()> {
 #[test]
 fn dont_consider_an_empty_review_as_valid() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
-    let a = OwnId::generate_for_git_url("https://a");
+    let a = UnlockedId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = crev_data::proof::PackageInfo {
         id: proof::PackageVersionId::new(
@@ -254,7 +254,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
     let review = crev_data::proof::review::Review::new_none();
 
     let proof1 = a
-        .as_pubid()
+        .as_public_id()
         .create_package_review_proof(package, review, "a".into())?
         .sign_by(&a)?;
 
@@ -281,11 +281,11 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
 #[test]
 fn proofdb_distrust() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
-    let a = OwnId::generate_for_git_url("https://a");
-    let b = OwnId::generate_for_git_url("https://b");
-    let c = OwnId::generate_for_git_url("https://c");
-    let d = OwnId::generate_for_git_url("https://d");
-    let e = OwnId::generate_for_git_url("https://e");
+    let a = UnlockedId::generate_for_git_url("https://a");
+    let b = UnlockedId::generate_for_git_url("https://b");
+    let c = UnlockedId::generate_for_git_url("https://c");
+    let d = UnlockedId::generate_for_git_url("https://d");
+    let e = UnlockedId::generate_for_git_url("https://e");
 
     let distance_params = TrustDistanceParams {
         high_trust_distance: 1,
@@ -295,10 +295,10 @@ fn proofdb_distrust() -> Result<()> {
     };
 
     let a_to_bc =
-        a.create_signed_trust_proof(vec![b.as_pubid(), c.as_pubid()], TrustLevel::High)?;
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Low)?;
-    let d_to_c = d.create_signed_trust_proof(vec![c.as_pubid()], TrustLevel::Distrust)?;
-    let c_to_e = c.create_signed_trust_proof(vec![e.as_pubid()], TrustLevel::High)?;
+        a.create_signed_trust_proof(vec![b.as_public_id(), c.as_public_id()], TrustLevel::High)?;
+    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low)?;
+    let d_to_c = d.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Distrust)?;
+    let c_to_e = c.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High)?;
 
     let mut trustdb = ProofDB::new();
 
@@ -320,7 +320,7 @@ fn proofdb_distrust() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
-    let e_to_d = e.create_signed_trust_proof(vec![d.as_pubid()], TrustLevel::Distrust)?;
+    let e_to_d = e.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Distrust)?;
 
     trustdb.import_from_iter(vec![(e_to_d, url)].into_iter());
 

@@ -86,7 +86,7 @@ pub struct Package {
 }
 
 impl PackageBuilder {
-    pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
+    pub fn from<VALUE: Into<crate::PublicId>>(&mut self, value: VALUE) -> &mut Self {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {

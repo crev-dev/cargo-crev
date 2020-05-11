@@ -911,8 +911,8 @@ impl ProofDB {
             })
     }
 
-    /// Record an untrusted mapping between a PubId and a URL it declares
-    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PubId) {
+    /// Record an untrusted mapping between a PublicId and a URL it declares
+    fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PublicId) {
         if let Some(url) = &to.url {
             self.url_by_id_reported_by_others
                 .entry(to.id.clone())
@@ -923,11 +923,11 @@ impl ProofDB {
         }
     }
 
-    /// Record mapping between a PubId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
+    /// Record mapping between a PublicId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
     fn record_url_from_from_field(
         &mut self,
         date: &DateTime<Utc>,
-        from: &crev_data::PubId,
+        from: &crev_data::PublicId,
         fetched_from: &FetchSource,
     ) {
         if let Some(url) = &from.url {

@@ -74,7 +74,7 @@ impl TrustLevel {
 pub struct Trust {
     #[serde(flatten)]
     pub common: proof::Common,
-    pub ids: Vec<crate::PubId>,
+    pub ids: Vec<crate::PublicId>,
     #[builder(default = "Default::default()")]
     pub trust: TrustLevel,
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
@@ -83,7 +83,7 @@ pub struct Trust {
 }
 
 impl TrustBuilder {
-    pub fn from<VALUE: Into<crate::PubId>>(&mut self, value: VALUE) -> &mut Self {
+    pub fn from<VALUE: Into<crate::PublicId>>(&mut self, value: VALUE) -> &mut Self {
         if let Some(ref mut common) = self.common {
             common.from = value.into();
         } else {

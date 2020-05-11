@@ -16,7 +16,7 @@ pub use semver::Version;
 
 pub use crate::{
     digest::Digest,
-    id::{Id, OwnId, PubId},
+    id::{Id, PublicId, UnlockedId},
     level::Level,
     proof::{
         review,

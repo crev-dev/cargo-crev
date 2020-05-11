@@ -4,7 +4,7 @@ use crev_common::{
     rand::random_vec,
     serde::{as_base64, from_base64},
 };
-use crev_data::id::{OwnId, PubId};
+use crev_data::id::{PublicId, UnlockedId};
 use failure::{bail, format_err};
 
 use serde::{Deserialize, Serialize};
@@ -61,7 +61,7 @@ impl std::str::FromStr for LockedId {
 }
 
 impl LockedId {
-    pub fn from_own_id(own_id: &OwnId, passphrase: &str) -> Result<LockedId> {
+    pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
         use miscreant::aead::Aead;
 
         let config = Config {
@@ -88,10 +88,10 @@ impl LockedId {
 
         Ok(LockedId {
             version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
-            public_key: own_id.keypair.public.to_bytes().to_vec(),
-            sealed_secret_key: siv.seal(&seal_nonce, &[], own_id.keypair.secret.as_bytes()),
+            public_key: unlocked_id.keypair.public.to_bytes().to_vec(),
+            sealed_secret_key: siv.seal(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
             seal_nonce,
-            url: own_id.url().clone(),
+            url: unlocked_id.url().clone(),
             pass: PassConfig {
                 salt: pwsalt,
                 iterations: config.time_cost,
@@ -104,9 +104,9 @@ impl LockedId {
     }
 
     /// Extract only the public identity part from all data
-    pub fn to_pubid(&self) -> PubId {
-        PubId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
-            .expect("own id should be valid")
+    pub fn to_public_id(&self) -> PublicId {
+        PublicId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
+            .expect("Invalid locked id.")
     }
 
     pub fn pub_key_as_base64(&self) -> String {
@@ -135,7 +135,7 @@ impl LockedId {
         Ok(serde_yaml::from_reader(&file)?)
     }
 
-    pub fn to_unlocked(&self, passphrase: &str) -> Result<OwnId> {
+    pub fn to_unlocked(&self, passphrase: &str) -> Result<UnlockedId> {
         let LockedId {
             ref version,
             ref url,
@@ -183,7 +183,7 @@ impl LockedId {
 
             assert!(!secret_key.is_empty());
 
-            let result = OwnId::new(url.to_owned(), secret_key)?;
+            let result = UnlockedId::new(url.to_owned(), secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {
                 bail!("PubKey mismatch");
             }

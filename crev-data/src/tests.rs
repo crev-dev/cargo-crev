@@ -1,5 +1,5 @@
 use crate::{
-    id::OwnId,
+    id::UnlockedId,
     proof::{self, ContentExt, Proof},
     Result, Url,
 };
@@ -158,8 +158,8 @@ review:
     Ok(())
 }
 
-pub fn generate_id_and_proof() -> Result<(OwnId, Proof)> {
-    let id = OwnId::generate(Url::new_git("https://mypage.com/trust.git"));
+pub fn generate_id_and_proof() -> Result<(UnlockedId, Proof)> {
+    let id = UnlockedId::generate(Url::new_git("https://mypage.com/trust.git"));
 
     let package_info = proof::PackageInfo {
         id: proof::PackageVersionId::new(
@@ -219,7 +219,7 @@ pub fn verify_works() -> Result<()> {
 
 #[test]
 pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
-    let a = OwnId::generate_for_git_url("https://a");
+    let a = UnlockedId::generate_for_git_url("https://a");
     let digest = vec![0; 32];
     let package = proof::PackageInfo {
         id: proof::PackageVersionId::new(
@@ -234,7 +234,7 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
     };
 
     let mut package =
-        a.as_pubid()
+        a.as_public_id()
             .create_package_review_proof(package, Default::default(), "a".into())?;
     assert!(package.ensure_serializes_to_valid_proof().is_ok());
     package.comment = std::iter::repeat("a").take(32_000).collect::<String>();
