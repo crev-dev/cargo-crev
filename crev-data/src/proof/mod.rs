@@ -1,8 +1,7 @@
 //! Some common stuff for both Review and Trust Proofs
 
+use crate::{Error, Result};
 use chrono::{self, prelude::*};
-
-use failure::bail;
 use std::{
     default, fmt,
     io::{self, BufRead},
@@ -22,8 +21,6 @@ pub use crate::proof::content::{
     Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
 };
 pub use review::*;
-
-use crate::Result;
 
 const MAX_PROOF_BODY_LENGTH: usize = 32_000;
 
@@ -52,7 +49,7 @@ impl Proof {
     pub fn from_parts(body: String, signature: String) -> Result<Self> {
         let common_content: Common = serde_yaml::from_str(&body)?;
         if common_content.kind.is_none() {
-            bail!("`kind` field missing");
+            Err(Error::KindFieldMissing)?;
         }
         let digest = crev_common::blake2b256sum(&body.as_bytes());
         let signature = signature.trim().to_owned();
@@ -67,8 +64,8 @@ impl Proof {
     pub fn from_legacy_parts(body: String, signature: String, type_name: String) -> Result<Self> {
         #[allow(deprecated)]
         let mut legacy_common_content: content::Common = serde_yaml::from_str(&body)?;
-        if let Some(kind) = legacy_common_content.kind {
-            bail!("Unexpected `kind` value in a legacy format: {}", kind);
+        if legacy_common_content.kind.is_some() {
+            Err(Error::UnexpectedKindValueInALegacyFormat)?;
         }
 
         legacy_common_content.kind = Some(type_name);
@@ -245,14 +242,14 @@ impl Proof {
                             assert!(self.type_name.is_none());
                             self.stage = Stage::Body;
                         } else {
-                            bail!("Parsing error when looking for start of code review proof");
+                            Err(Error::ParsingErrorWhenLookingForStartOfCodeReviewProof)?;
                         }
                     }
                     Stage::Body => {
                         if self.type_name.is_some() {
                             if let Some(type_name) = is_legacy_signature_line(line) {
                                 if Some(type_name) != self.type_name {
-                                    bail!("Parsing error: type name mismatch in the signature");
+                                    Err(Error::ParsingErrorTypeNameMismatchInTheSignature)?;
                                 }
                                 self.stage = Stage::Signature;
                             } else {
@@ -268,14 +265,14 @@ impl Proof {
                             }
                         }
                         if self.body.len() > MAX_PROOF_BODY_LENGTH {
-                            bail!("Proof body too long");
+                            Err(Error::ProofBodyTooLong)?;
                         }
                     }
                     Stage::Signature => {
                         if self.type_name.is_some() {
                             if let Some(type_name) = is_legacy_end_line(line) {
                                 if Some(&type_name) != self.type_name.as_ref() {
-                                    bail!("Parsing error: type name mismatch in the footer");
+                                    Err(Error::ParsingErrorTypeNameMismatchInTheFooter)?;
                                 }
                                 self.stage = Stage::None;
                                 self.type_name = None;
@@ -302,7 +299,7 @@ impl Proof {
                         }
 
                         if self.signature.len() > 2000 {
-                            bail!("Signature too long");
+                            Err(Error::SignatureTooLong)?;
                         }
                     }
                 }
@@ -311,7 +308,7 @@ impl Proof {
 
             fn finish(self) -> Result<Vec<Proof>> {
                 if self.stage != Stage::None {
-                    bail!("Unexpected EOF while parsing");
+                    Err(Error::UnexpectedEOFWhileParsing)?;
                 }
                 Ok(self.proofs)
             }

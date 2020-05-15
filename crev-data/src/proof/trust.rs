@@ -1,10 +1,9 @@
 use crate::{
     proof::{self, CommonOps, Content},
-    serde_content_serialize, serde_draft_serialize, Level, Result,
+    serde_content_serialize, serde_draft_serialize, Error, Level, Result,
 };
 
 use derive_builder::Builder;
-use failure::bail;
 use serde::{Deserialize, Serialize};
 
 use std::fmt;
@@ -64,7 +63,7 @@ impl TrustLevel {
             "low" => TrustLevel::Low,
             "medium" => TrustLevel::Medium,
             "high" => TrustLevel::High,
-            _ => bail!("Unknown level: {}", s),
+            _ => Err(Error::UnknownLevel(s.into()))?,
         })
     }
 }
@@ -144,7 +143,7 @@ impl fmt::Display for Draft {
 }
 
 impl proof::Content for Trust {
-    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> fmt::Result {
         serde_content_serialize!(self, fmt);
         Ok(())
     }

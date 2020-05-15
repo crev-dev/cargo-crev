@@ -122,7 +122,7 @@ impl proof::content::Content for Code {
         Ok(())
     }
 
-    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> fmt::Result {
         serde_content_serialize!(self, fmt);
         Ok(())
     }

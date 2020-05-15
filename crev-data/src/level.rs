@@ -1,4 +1,3 @@
-use failure::Fail;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -29,8 +28,8 @@ impl fmt::Display for Level {
     }
 }
 
-#[derive(Fail, Debug)]
-#[fail(display = "Can't convert string to Level")]
+#[derive(thiserror::Error, Debug)]
+#[error("Can't convert string to Level")]
 pub struct FromStrErr;
 
 impl std::str::FromStr for Level {

@@ -1,11 +1,10 @@
-use crate::{proof, proof::ContentExt, Result, Url};
+use crate::{proof, proof::ContentExt, Error, Result, Url};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
 };
 use derive_builder::Builder;
 use ed25519_dalek::{self, PublicKey, SecretKey};
-use failure::format_err;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -58,27 +57,30 @@ impl fmt::Display for Id {
 impl Id {
     pub fn new_crev(bytes: Vec<u8>) -> Result<Self> {
         if bytes.len() != 32 {
-            failure::bail!(
-                "wrong length of crev id, expected 32 bytes, got {}",
-                bytes.len()
-            );
+            Err(Error::WrongIdLength(bytes.len()))?;
         }
         Ok(Id::Crev { id: bytes })
     }
 
     pub fn crevid_from_str(s: &str) -> Result<Self> {
-        let bytes = crev_common::base64_decode(s)?;
+        let bytes = crev_common::base64_decode(s)
+            .map_err(|e| Error::InvalidCrevId(e.to_string().into()))?;
         Self::new_crev(bytes)
     }
 
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<()> {
         match self {
             Id::Crev { id } => {
-                let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)?;
+                let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)
+                    .map_err(|e| Error::InvalidPublicKey(e.to_string().into()))?;
 
-                let sig_bytes = crev_common::base64_decode(sig_str)?;
-                let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)?;
-                pubkey.verify(&content, &signature)?;
+                let sig_bytes = crev_common::base64_decode(sig_str)
+                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
+                let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)
+                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
+                pubkey
+                    .verify(&content, &signature)
+                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
             }
         }
 
@@ -118,7 +120,8 @@ impl PublicId {
     }
 
     pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
-        let v = crev_common::base64_decode(s)?;
+        let v = crev_common::base64_decode(s)
+            .map_err(|e| Error::InvalidCrevId(e.to_string().into()))?;
         Ok(Self {
             id: Id::new_crev(v)?,
             url: Some(url),
@@ -135,7 +138,7 @@ impl PublicId {
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
             .build()
-            .map_err(|e| format_err!("{}", e))?)
+            .map_err(|e| Error::BuildingProof(e.into()))?)
     }
 
     pub fn create_package_review_proof(
@@ -150,7 +153,7 @@ impl PublicId {
             .review(review)
             .comment(comment)
             .build()
-            .map_err(|e| format_err!("{}", e))?)
+            .map_err(|e| Error::BuildingProof(e.into()))?)
     }
 
     pub fn url_display(&self) -> &str {
@@ -183,7 +186,8 @@ impl AsRef<PublicId> for UnlockedId {
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
-        let sec_key = SecretKey::from_bytes(&sec_key)?;
+        let sec_key = SecretKey::from_bytes(&sec_key)
+            .map_err(|e| Error::InvalidSecretKey(e.to_string().into()))?;
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {

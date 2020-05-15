@@ -1,14 +1,12 @@
+use crate::{proof, proof::Proof, Error, Result};
 use chrono::{self, prelude::*};
-use failure::bail;
-
-use crate::{proof, proof::Proof, Result};
 use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
 use derive_builder::Builder;
 use serde::{self, Deserialize, Serialize};
-use std::io;
+use std::{fmt, io};
 
 pub type Date = chrono::DateTime<FixedOffset>;
 
@@ -46,8 +44,12 @@ pub trait CommonOps {
     }
 
     fn ensure_kind_is(&self, kind: &str) -> Result<()> {
-        if self.kind() != kind {
-            bail!("Invalid kind: {}, expected: {}", self.kind(), kind);
+        let expected = self.kind();
+        if expected != kind {
+            Err(Error::InvalidKind(Box::new([
+                expected.to_string(),
+                kind.to_string(),
+            ])))?;
         }
         Ok(())
     }
@@ -94,7 +96,7 @@ pub trait Content: CommonOps {
         Ok(())
     }
 
-    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()>;
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> fmt::Result;
 }
 
 pub trait ContentDeserialize: Content + Sized {
@@ -153,7 +155,8 @@ pub trait ContentWithDraft: Content {
 pub trait ContentExt: Content {
     fn serialize(&self) -> Result<String> {
         let mut body = String::new();
-        self.serialize_to(&mut body)?;
+        self.serialize_to(&mut body)
+            .map_err(|e| crate::Error::YAMLFormat(e.to_string().into()))?;
         Ok(body)
     }
 
@@ -181,7 +184,7 @@ pub trait ContentExt: Content {
         let parsed = proof::Proof::parse_from(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 
         if parsed.len() != 1 {
-            bail!("Serialized to {} proofs", parsed.len());
+            Err(Error::SerializedTooManyProofs(parsed.len()))?;
         }
 
         Ok(())

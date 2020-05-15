@@ -1,7 +1,6 @@
-use crate::{proof, serde_content_serialize, serde_draft_serialize, Level, Result};
+use crate::{proof, serde_content_serialize, serde_draft_serialize, Error, Level, Result};
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
-use failure::bail;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -177,33 +176,33 @@ impl proof::Content for Package {
 
         for alternative in &self.alternatives {
             if alternative.source.is_empty() {
-                bail!("Alternative source can't be empty");
+                Err(Error::AlternativeSourceCanTBeEmpty)?;
             }
             if alternative.name.is_empty() {
-                bail!("Alternative name can't be empty");
+                Err(Error::AlternativeNameCanTBeEmpty)?;
             }
         }
         for issue in &self.issues {
             if issue.id.is_empty() {
-                bail!("Issues with an empty `id` field are not allowed");
+                Err(Error::IssuesWithAnEmptyIDFieldAreNotAllowed)?;
             }
         }
 
         for advisory in &self.advisories {
             if advisory.ids.is_empty() {
-                bail!("Advisories with no `id`s are not allowed");
+                Err(Error::AdvisoriesWithNoIDSAreNotAllowed)?;
             }
 
             for id in &advisory.ids {
                 if id.is_empty() {
-                    bail!("Advisories with an empty `id` field are not allowed");
+                    Err(Error::AdvisoriesWithAnEmptyIDFieldAreNotAllowed)?;
                 }
             }
         }
         Ok(())
     }
 
-    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> Result<()> {
+    fn serialize_to(&self, fmt: &mut dyn std::fmt::Write) -> fmt::Result {
         serde_content_serialize!(self, fmt);
         Ok(())
     }

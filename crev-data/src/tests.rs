@@ -1,9 +1,8 @@
 use crate::{
     id::UnlockedId,
     proof::{self, ContentExt, Proof},
-    Result, Url,
+    Error, Result, Url,
 };
-use failure::format_err;
 use semver::Version;
 use std::{default::Default, path::PathBuf};
 
@@ -189,7 +188,7 @@ pub fn generate_id_and_proof() -> Result<(UnlockedId, Proof)> {
             },
         ])
         .build()
-        .map_err(|e| format_err!("{}", e))?;
+        .map_err(|e| Error::BuildingReview(e.into()))?;
 
     let proof = review.sign_by(&id)?;
 

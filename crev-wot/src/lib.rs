@@ -1,18 +1,37 @@
 use chrono::{self, offset::Utc, DateTime};
-use common_failures::Result;
 use crev_data::{
     self,
     proof::{self, review, trust::TrustLevel, CommonOps, Content},
     Digest, Id, Level, Url,
 };
 use default::default;
-use failure::bail;
 use log::debug;
 use semver::Version;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync,
 };
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Unknown proof type '{}'", _0)]
+    UnknownProofType(Box<str>),
+
+    #[error("{}", _0)]
+    Data(#[from] crev_data::Error),
+
+    // temporary
+    #[error("{}", _0)]
+    Failure(failure::Error),
+}
+
+impl From<failure::Error> for Error {
+    fn from(f: failure::Error) -> Self {
+        Self::Failure(f)
+    }
+}
+
+type Result<T> = std::result::Result<T, Error>;
 
 /// Where a proof has been fetched from
 #[derive(Debug, Clone)]
@@ -962,7 +981,7 @@ impl ProofDB {
                 self.add_package_review(&proof.parse_content()?, proof.signature(), fetched_from)
             }
             proof::Trust::KIND => self.add_trust(&proof.parse_content()?, fetched_from),
-            other => bail!("Unknown proof type: {}", other),
+            other => Err(Error::UnknownProofType(other.into()))?,
         }
 
         Ok(())

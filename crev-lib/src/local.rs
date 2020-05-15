@@ -204,7 +204,7 @@ impl Local {
     /// * otherwise return current id
     pub fn get_for_id_from_str_opt(&self, id_str: Option<&str>) -> Result<Option<Id>> {
         id_str
-            .map(crev_data::id::Id::crevid_from_str)
+            .map(|s| crev_data::id::Id::crevid_from_str(s).map_err(failure::Error::from))
             .or_else(|| self.read_current_id_opt().inside_out())
             .inside_out()
     }
@@ -613,14 +613,14 @@ impl Local {
             }
         }
 
-        from_id.create_trust_proof(
+        Ok(from_id.create_trust_proof(
             &public_ids,
             match trust_or_distrust {
                 TrustProofType::Trust => TrustLevel::Medium,
                 TrustProofType::Distrust => TrustLevel::Distrust,
                 TrustProofType::Untrust => TrustLevel::None,
             },
-        )
+        )?)
     }
 
     /// Opens editor with a new trust proof for given Ids
