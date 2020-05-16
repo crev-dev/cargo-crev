@@ -1010,11 +1010,6 @@ impl Local {
         Ok(())
     }
 
-    #[deprecated]
-    pub fn list_own_ids(&self) -> Result<()> {
-        self.show_current_user_public_ids()
-    }
-
     /// Print the current user's public Ids.
     pub fn show_current_user_public_ids(&self) -> Result<()> {
         let current = self
