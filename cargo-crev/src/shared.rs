@@ -1,12 +1,13 @@
 // Here are the structs and functions which still need to be sorted
 //
 use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
+use anyhow::{format_err, Context, Result};
 use crev_data::{
     proof::{self, ContentExt},
     Id,
 };
 use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
-use failure::format_err;
+use failure::Fail;
 use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
@@ -222,7 +223,7 @@ pub fn clean_crate(selector: &CrateSelector) -> Result<()> {
 pub fn get_open_cmd(local: &Local) -> Result<String> {
     let config = local
         .load_user_config()
-        .with_context(|_err| "Can't open user config")?;
+        .with_context(|| "Can't open user config")?;
     if let Some(cmd) = config.open_cmd {
         return Ok(cmd);
     }
@@ -732,7 +733,7 @@ pub fn maybe_store(
         if !proof_create_opt.no_commit {
             local
                 .proof_dir_commit(&commit_msg)
-                .with_context(|_| format_err!("Could not not automatically commit"))?;
+                .with_context(|| "Could not not automatically commit")?;
         }
     }
 
@@ -758,7 +759,8 @@ pub fn lookup_crates(query: &str, count: usize) -> Result<()> {
             per_page: 100,
             page: 1,
             query: Some(query.to_string()),
-        })?
+        })
+        .map_err(|e| e.compat())?
         .crates
         .iter()
         .map(|crate_| CrateStats {

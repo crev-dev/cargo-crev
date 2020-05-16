@@ -1,9 +1,6 @@
-use common_failures::prelude::*;
-
+use crate::{Error, Result};
 use crev_data::proof;
-use failure::bail;
 use serde::{Deserialize, Serialize};
-
 use std::{
     collections::HashMap,
     fs,
@@ -72,7 +69,10 @@ impl Staging {
     pub fn insert(&mut self, path: &Path) -> Result<()> {
         let full_path = path.canonicalize()?;
 
-        let path = full_path.strip_prefix(&self.root_path)?.to_owned();
+        let path = full_path
+            .strip_prefix(&self.root_path)
+            .map_err(|_| Error::PathNotInStageRootPath)?
+            .to_owned();
         println!("Adding {}", path.display());
         self.entries.insert(
             path,
@@ -87,7 +87,10 @@ impl Staging {
     pub fn remove(&mut self, path: &Path) -> Result<()> {
         let full_path = path.canonicalize()?;
 
-        let path = full_path.strip_prefix(&self.root_path)?.to_owned();
+        let path = full_path
+            .strip_prefix(&self.root_path)
+            .map_err(|_| Error::PathNotInStageRootPath)?
+            .to_owned();
         println!("Removing {}", path.display());
 
         self.entries.remove(&path);
@@ -110,11 +113,7 @@ impl Staging {
         for (rel_path, info) in self.entries.iter() {
             let path = self.root_path.join(rel_path);
             if crev_common::blake2b256sum_file(&path)? != info.blake_hash {
-                bail!(
-                    "File {} not current. Review again use `crev add` to
-                      update.",
-                    rel_path.display()
-                );
+                return Err(Error::FileNotCurrent(rel_path.as_path().into()));
             }
         }
 

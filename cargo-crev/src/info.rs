@@ -3,10 +3,9 @@ use crate::{
     opts::{CrateSelector, CrateVerify, CrateVerifyCommon},
     Repo,
 };
-use common_failures::Result;
+use anyhow::{bail, Result};
 use crev_common::convert::OptionDeref;
 use crev_data::proof;
-use failure::bail;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io};
 

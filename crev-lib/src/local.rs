@@ -1,8 +1,7 @@
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
-    prelude::*,
-    util, ProofStore, TrustProofType,
+    util, Error, ProofStore, Result, TrustProofType,
 };
 use crev_common::{
     self, sanitize_name_for_fs, sanitize_url_for_fs,
@@ -13,15 +12,11 @@ use crev_data::{
     proof::{self, trust::TrustLevel},
     Id, PublicId, Url,
 };
-
 use default::default;
 use directories::ProjectDirs;
-use failure::{bail, format_err};
-
 use insideout::InsideOut;
 use resiter::*;
 use serde::{Deserialize, Serialize};
-
 use std::{
     collections::HashSet,
     ffi::OsString,
@@ -93,7 +88,7 @@ impl Default for UserConfig {
 impl UserConfig {
     pub fn get_current_userid(&self) -> Result<&Id> {
         self.get_current_userid_opt()
-            .ok_or_else(|| format_err!("Current Id not set"))
+            .ok_or_else(|| Error::CurrentIDNotSet)
     }
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
@@ -154,7 +149,7 @@ impl Local {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
         if !repo.root_path.exists() || !repo.user_config_path().exists() {
-            bail!("User config not-initialized. Use `crev id new` to generate CrevID.");
+            Err(Error::UserConfigNotInitialized)?;
         }
 
         *repo.user_config.lock().unwrap() = Some(repo.load_user_config()?);
@@ -169,7 +164,7 @@ impl Local {
 
         let config_path = repo.user_config_path();
         if config_path.exists() {
-            bail!("User config already exists");
+            Err(Error::UserConfigAlreadyExists)?;
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
@@ -204,21 +199,21 @@ impl Local {
     /// * otherwise return current id
     pub fn get_for_id_from_str_opt(&self, id_str: Option<&str>) -> Result<Option<Id>> {
         id_str
-            .map(|s| crev_data::id::Id::crevid_from_str(s).map_err(failure::Error::from))
+            .map(|s| crev_data::id::Id::crevid_from_str(s).map_err(Error::from))
             .or_else(|| self.read_current_id_opt().inside_out())
             .inside_out()
     }
 
     pub fn get_for_id_from_str(&self, id_str: Option<&str>) -> Result<Id> {
         self.get_for_id_from_str_opt(id_str)?
-            .ok_or_else(|| format_err!("Id not specified and current id not set"))
+            .ok_or_else(|| Error::IDNotSpecifiedAndCurrentIDNotSet)
     }
 
     /// Load config, update which Id is the current one, and save.
     pub fn save_current_id(&self, id: &Id) -> Result<()> {
         let path = self.id_path(id);
         if !path.exists() {
-            bail!("Id file not found.");
+            Err(Error::IDFileNotFound)?;
         }
 
         *self.cur_url.lock().unwrap() = None;
@@ -313,7 +308,8 @@ impl Local {
     ) -> Result<()> {
         let path = self.cache_review_activity_path(source, name, version);
 
-        crev_common::save_to_yaml_file(&path, activity)?;
+        crev_common::save_to_yaml_file(&path, activity)
+            .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         Ok(())
     }
@@ -328,7 +324,10 @@ impl Local {
         let path = self.cache_review_activity_path(source, name, version);
 
         if path.exists() {
-            Ok(Some(crev_common::read_from_yaml_file(&path)?))
+            Ok(Some(
+                crev_common::read_from_yaml_file(&path)
+                    .map_err(|e| Error::ReviewActivity(Box::new(e)))?,
+            ))
         } else {
             Ok(None)
         }
@@ -340,7 +339,7 @@ impl Local {
 
         let config_str = crev_common::read_file_to_string(&path)?;
 
-        Ok(serde_yaml::from_str(&config_str)?)
+        Ok(serde_yaml::from_str(&config_str).map_err(Error::UserConfigParse)?)
     }
 
     /// Writes the config to disk AND sets it as the current one
@@ -358,7 +357,7 @@ impl Local {
     /// Id in the config
     pub fn get_current_userid(&self) -> Result<Id> {
         self.get_current_userid_opt()?
-            .ok_or_else(|| format_err!("Current Id not set"))
+            .ok_or_else(|| Error::CurrentIDNotSet)
     }
 
     /// Id in the config
@@ -383,7 +382,7 @@ impl Local {
     /// Just reads the yaml file, doesn't change any state
     pub fn read_current_locked_id(&self) -> Result<LockedId> {
         self.read_current_locked_id_opt()?
-            .ok_or_else(|| format_err!("Current Id not set"))
+            .ok_or_else(|| Error::CurrentIDNotSet)
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change any state
@@ -402,7 +401,7 @@ impl Local {
         passphrase_callback: PassphraseFn<'_>,
     ) -> Result<UnlockedId> {
         self.read_current_unlocked_id_opt(passphrase_callback)?
-            .ok_or_else(|| format_err!("Current Id not set"))
+            .ok_or_else(|| Error::CurrentIDNotSet)
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change anything
@@ -480,7 +479,10 @@ impl Local {
                 repo.remote_set_url("origin", &push_url)?;
             }
             Err(e) => {
-                bail!("Couldn't clone {}: {}", git_https_url, e);
+                Err(Error::CouldNotCloneGitHttpsURL(Box::new((
+                    git_https_url.to_string(),
+                    e.to_string(),
+                ))))?;
             }
         }
 
@@ -571,7 +573,7 @@ impl Local {
     /// This function derives path from current user's URL
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
         self.get_proofs_dir_path_opt()?
-            .ok_or_else(|| format_err!("Current Id not set"))
+            .ok_or_else(|| Error::CurrentIDNotSet)
     }
 
     /// Creates new unsigned trust proof object, not edited
@@ -588,7 +590,7 @@ impl Local {
         trust_or_distrust: TrustProofType,
     ) -> Result<proof::trust::Trust> {
         if ids.is_empty() {
-            bail!("No ids given.");
+            Err(Error::NoIdsGiven)?;
         }
 
         let mut db = self.load_db()?;
@@ -857,9 +859,7 @@ impl Local {
                 || -> Result<String> {
                     let repo = repo.unwrap();
                     let remote = repo.find_remote("origin")?;
-                    let url = remote
-                        .url()
-                        .ok_or_else(|| format_err!("origin has no url"))?;
+                    let url = remote.url().ok_or_else(|| Error::OriginHasNoURL)?;
                     Ok(url.to_string())
                 }
             }();
@@ -1120,11 +1120,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         // skip dotfiles, .git dir
         .filter_entry(|e| e.file_name().to_str().map_or(true, |f| !f.starts_with('.')))
         .map_err(move |e| {
-            format_err!(
-                "Error iterating local ProofStore at {}: {}",
-                path.display(),
-                e
-            )
+            Error::ErrorIteratingLocalProofStore(Box::new((path.to_owned(), e.to_string())))
         })
         .filter_map_ok(|entry| {
             let path = entry.path();

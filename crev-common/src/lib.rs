@@ -5,13 +5,8 @@ pub mod convert;
 pub mod fs;
 pub mod rand;
 pub mod serde;
-
 pub use crate::blake2b256::Blake2b256;
-
-use failure::bail;
-
 use blake2::{digest::FixedOutput, Digest};
-use failure::format_err;
 use std::{
     collections::HashSet,
     env,
@@ -20,6 +15,18 @@ use std::{
     path::{Path, PathBuf},
     process,
 };
+
+#[derive(Debug, thiserror::Error)]
+pub enum YAMLIOError {
+    #[error("I/O: {}", _0)]
+    IO(#[from] std::io::Error),
+
+    #[error("Can't save to root path")]
+    RootPath,
+
+    #[error("YAML: {}", _0)]
+    YAML(#[from] serde_yaml::Error),
+}
 
 /// Now with a fixed offset of the current system timezone
 pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {
@@ -173,9 +180,17 @@ pub fn read_file_to_digest_input(
     Ok(())
 }
 
-pub fn try_again_or_cancel() -> common_failures::Result<()> {
-    if !yes_or_no_was_y("Try again (y/n) ")? {
-        bail!("Canceled by the user");
+#[derive(Debug, thiserror::Error)]
+pub enum CancelledError {
+    #[error("Cancelled by the user")]
+    ByUser,
+    #[error("Cancelled due to terminal I/O error")]
+    NoInput,
+}
+
+pub fn try_again_or_cancel() -> std::result::Result<(), CancelledError> {
+    if !yes_or_no_was_y("Try again (y/n) ").map_err(|_| CancelledError::NoInput)? {
+        return Err(CancelledError::ByUser);
     }
 
     Ok(())
@@ -304,20 +319,17 @@ pub fn read_file_to_string(path: &Path) -> io::Result<String> {
     Ok(res)
 }
 
-pub fn save_to_yaml_file<T>(path: &Path, t: &T) -> common_failures::Result<()>
+pub fn save_to_yaml_file<T>(path: &Path, t: &T) -> Result<(), YAMLIOError>
 where
     T: ::serde::Serialize,
 {
-    std::fs::create_dir_all(
-        path.parent()
-            .ok_or_else(|| format_err!("Can't save to root path"))?,
-    )?;
+    std::fs::create_dir_all(path.parent().ok_or(YAMLIOError::RootPath)?)?;
     let text = serde_yaml::to_string(t)?;
     store_str_to_file(&path, &text)?;
     Ok(())
 }
 
-pub fn read_from_yaml_file<T>(path: &Path) -> common_failures::Result<T>
+pub fn read_from_yaml_file<T>(path: &Path) -> Result<T, YAMLIOError>
 where
     T: ::serde::de::DeserializeOwned,
 {

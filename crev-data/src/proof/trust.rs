@@ -1,6 +1,6 @@
 use crate::{
-    proof::{self, CommonOps, Content},
-    serde_content_serialize, serde_draft_serialize, Error, Level, Result,
+    proof::{self, content::ValidationResult, CommonOps, Content},
+    serde_content_serialize, serde_draft_serialize, Error, Level, ParseError, Result,
 };
 
 use derive_builder::Builder;
@@ -148,7 +148,7 @@ impl proof::Content for Trust {
         Ok(())
     }
 
-    fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> ValidationResult<()> {
         self.ensure_kind_is(Self::KIND)?;
         Ok(())
     }
@@ -190,7 +190,7 @@ impl proof::ContentWithDraft for Trust {
 }
 
 impl Draft {
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+    pub fn parse(s: &str) -> std::result::Result<Self, ParseError> {
+        serde_yaml::from_str(&s).map_err(ParseError::Draft)
     }
 }

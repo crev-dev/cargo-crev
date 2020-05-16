@@ -1,10 +1,13 @@
-use crate::{proof, serde_content_serialize, serde_draft_serialize, Error, Level, Result};
+use crate::{
+    proof,
+    proof::content::{ValidationError, ValidationResult},
+    serde_content_serialize, serde_draft_serialize, Error, Level, ParseError,
+};
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-
 use std::{collections::HashSet, default::Default, fmt, ops};
 use typed_builder::TypedBuilder;
 
@@ -141,8 +144,8 @@ pub struct Draft {
 }
 
 impl Draft {
-    pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+    pub fn parse(s: &str) -> std::result::Result<Self, ParseError> {
+        serde_yaml::from_str(&s).map_err(ParseError::Draft)
     }
 }
 
@@ -171,31 +174,31 @@ impl From<Package> for Draft {
 }
 
 impl proof::Content for Package {
-    fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> ValidationResult<()> {
         self.ensure_kind_is(Self::KIND)?;
 
         for alternative in &self.alternatives {
             if alternative.source.is_empty() {
-                Err(Error::AlternativeSourceCanTBeEmpty)?;
+                Err(ValidationError::AlternativeSourceCanNotBeEmpty)?;
             }
             if alternative.name.is_empty() {
-                Err(Error::AlternativeNameCanTBeEmpty)?;
+                Err(ValidationError::AlternativeNameCanNotBeEmpty)?;
             }
         }
         for issue in &self.issues {
             if issue.id.is_empty() {
-                Err(Error::IssuesWithAnEmptyIDFieldAreNotAllowed)?;
+                Err(ValidationError::IssuesWithAnEmptyIDFieldAreNotAllowed)?;
             }
         }
 
         for advisory in &self.advisories {
             if advisory.ids.is_empty() {
-                Err(Error::AdvisoriesWithNoIDSAreNotAllowed)?;
+                Err(ValidationError::AdvisoriesWithNoIDSAreNotAllowed)?;
             }
 
             for id in &advisory.ids {
                 if id.is_empty() {
-                    Err(Error::AdvisoriesWithAnEmptyIDFieldAreNotAllowed)?;
+                    Err(ValidationError::AdvisoriesWithAnEmptyIDFieldAreNotAllowed)?;
                 }
             }
         }
@@ -219,7 +222,7 @@ impl proof::ContentWithDraft for Package {
         }
     }
 
-    fn apply_draft(&self, s: &str) -> Result<Self> {
+    fn apply_draft(&self, s: &str) -> Result<Self, Error> {
         let draft = Draft::parse(&s)?;
 
         let mut package = self.clone();

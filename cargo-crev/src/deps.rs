@@ -1,4 +1,3 @@
-use crate::to_fail;
 use crev_data::{proof, Digest, PublicId};
 use crev_lib::*;
 use semver::Version;
@@ -215,7 +214,7 @@ impl CrateInfo {
         if !self.root.exists() {
             let repo = crate::Repo::auto_open_cwd(cargo_opts)?;
             let mut source = repo.load_source()?;
-            source.download(self.id).map_err(to_fail)?;
+            source.download(self.id)?;
         }
         Ok(())
     }

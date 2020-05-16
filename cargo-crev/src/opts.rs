@@ -1,6 +1,5 @@
-use common_failures::Result;
+use anyhow::{bail, Result};
 use crev_data::Level;
-use failure::bail;
 use semver::Version;
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;

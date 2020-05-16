@@ -1,12 +1,11 @@
-use crate::{id::PassphraseFn, local::Local, prelude::*, util, verify_package_digest, ProofStore};
+use crate::{
+    id::PassphraseFn, local::Local, util, verify_package_digest, Error, ProofStore, Result,
+};
 use crev_common::convert::OptionDeref;
 use crev_data::{
     proof::{self, ContentExt},
     Digest,
 };
-
-use failure::{bail, format_err, Fail};
-
 use serde::{Deserialize, Serialize};
 
 use std::{
@@ -27,21 +26,20 @@ pub struct PackageConfig {
 
 const CREV_DOT_NAME: &str = ".crev";
 
-#[derive(Fail, Debug)]
-#[fail(display = "Package config not-initialized. Use `crev package init` to generate it.")]
-struct PackageDirNotFound;
+#[derive(thiserror::Error, Debug)]
+#[error("Package config not-initialized. Use `crev package init` to generate it.")]
+pub struct PackageDirNotFound;
 
-fn find_package_root_dir() -> Result<PathBuf> {
-    let mut path = PathBuf::from(".").canonicalize()?;
+fn find_package_root_dir() -> std::result::Result<PathBuf, PackageDirNotFound> {
+    let path = Path::new(".")
+        .canonicalize()
+        .map_err(|_| PackageDirNotFound)?;
+    let mut path = path.as_path();
     loop {
         if path.join(CREV_DOT_NAME).is_dir() {
-            return Ok(path);
+            return Ok(path.to_owned());
         }
-        path = if let Some(parent) = path.parent() {
-            parent.to_owned()
-        } else {
-            return Err(PackageDirNotFound.into());
-        }
+        path = path.parent().ok_or(PackageDirNotFound)?;
     }
 }
 
@@ -64,7 +62,7 @@ impl Repo {
 
         let config_path = repo.package_config_path();
         if config_path.exists() {
-            bail!("`{}` already exists", config_path.display());
+            Err(Error::PathAlreadyExists(config_path.as_path().into()))?;
         }
         util::store_to_file_with(&config_path, move |w| {
             serde_yaml::to_writer(
@@ -109,9 +107,7 @@ impl Repo {
 
     pub fn load_package_config(&self) -> Result<PackageConfig> {
         let config = self.try_load_package_config()?;
-        config.ok_or_else(|| {
-            format_err!("Package config not-initialized. Use `crev package init` to generate it.")
-        })
+        config.ok_or_else(|| Error::PackageConfigNotInitialized)
     }
 
     pub fn try_load_package_config(&self) -> Result<Option<PackageConfig>> {
@@ -165,7 +161,7 @@ impl Repo {
         requirements: &crate::VerificationRequirements,
     ) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
-            bail!("Git repository is not in a clean state");
+            Err(Error::GitRepositoryIsNotInACleanState)?;
         }
 
         let db = local.load_db()?;
@@ -188,7 +184,7 @@ impl Repo {
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
         if !allow_dirty && self.is_unclean()? {
-            bail!("Git repository is not in a clean state");
+            Err(Error::GitRepositoryIsNotInACleanState)?;
         }
 
         let ignore_list = HashSet::default();
@@ -201,7 +197,7 @@ impl Repo {
     fn is_unclean(&self) -> Result<bool> {
         let git_repo = git2::Repository::open(&self.root_dir)?;
         if git_repo.state() != git2::RepositoryState::Clean {
-            bail!("Git repository is not in a clean state");
+            Err(Error::GitRepositoryIsNotInACleanState)?;
         }
         let mut status_opts = git2::StatusOptions::new();
         status_opts.include_unmodified(true);
@@ -227,7 +223,7 @@ impl Repo {
         let rev = head
             .resolve()?
             .target()
-            .ok_or_else(|| format_err!("HEAD target does not resolve to oid"))?
+            .ok_or_else(|| Error::HEADTargetDoesNotResolveToOid)?
             .to_string();
         Ok(Some(crev_data::proof::Revision {
             revision_type: "git".into(),
@@ -239,7 +235,7 @@ impl Repo {
         if let Some(info) = self.try_read_git_revision()? {
             return Ok(info);
         }
-        bail!("Couldn't identify revision info");
+        Err(Error::CouldNotIdentifyRevisionInfo)
     }
 
     pub fn trust_package(
@@ -248,11 +244,11 @@ impl Repo {
         allow_dirty: bool,
     ) -> Result<()> {
         if !self.staging()?.is_empty() {
-            bail!("Can't review with uncommitted staged files.");
+            Err(Error::CanTReviewWithUncommittedStagedFiles)?;
         }
 
         if !allow_dirty && self.is_unclean()? {
-            bail!("Git repository is not in a clean state");
+            Err(Error::GitRepositoryIsNotInACleanState)?;
         }
 
         let local = Local::auto_open()?;
@@ -265,7 +261,7 @@ impl Repo {
         let review = proof::review::PackageBuilder::default()
             .from(id.id.to_owned())
             .build()
-            .map_err(|e| format_err!("{}", e))?;
+            .map_err(|e| Error::PackageBuilder(e.into()))?;
 
         let review = util::edit_proof_content_iteractively(&review, None, None)?;
 
@@ -281,7 +277,7 @@ impl Repo {
         allow_dirty: bool,
     ) -> Result<()> {
         if self.staging()?.is_empty() && !allow_dirty {
-            bail!("No reviews to commit. Use `add` first or use `-a` for the whole package.");
+            Err(Error::NoReviewsToCommitUseAddFirstOrUseAForTheWholePackage)?;
         }
 
         let local = Local::auto_open()?;
@@ -294,7 +290,7 @@ impl Repo {
             .from(id.id.to_owned())
             .files(files)
             .build()
-            .map_err(|e| format_err!("{}", e))?;
+            .map_err(|e| Error::CodeBuilder(e.into()))?;
 
         let review = util::edit_proof_content_iteractively(&review, None, None)?;
 
