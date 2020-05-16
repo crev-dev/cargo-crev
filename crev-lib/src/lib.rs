@@ -52,10 +52,13 @@ pub enum Error {
 
     #[error("User config not-initialized. Use `crev id new` to generate CrevID.")]
     UserConfigNotInitialized,
+
     #[error("User config already exists")]
     UserConfigAlreadyExists,
+
     #[error("Id file not found.")]
     IDFileNotFound,
+
     #[error("Couldn't clone {}: {}", _0.0, _0.1)]
     CouldNotCloneGitHttpsURL(Box<(String, String)>),
 
@@ -67,8 +70,10 @@ pub enum Error {
 
     #[error("Current Id not set")]
     CurrentIDNotSet,
+
     #[error("Id not specified and current id not set")]
     IDNotSpecifiedAndCurrentIDNotSet,
+
     #[error("origin has no url")]
     OriginHasNoURL,
 

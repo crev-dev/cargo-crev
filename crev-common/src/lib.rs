@@ -5,12 +5,12 @@ pub mod convert;
 pub mod fs;
 pub mod rand;
 pub mod serde;
-use std::ffi::OsStr;
 pub use crate::blake2b256::Blake2b256;
 use blake2::{digest::FixedOutput, Digest};
 use std::{
     collections::HashSet,
     env,
+    ffi::OsStr,
     io::{self, BufRead, Read, Write},
     path::{Path, PathBuf},
     process,
@@ -208,10 +208,7 @@ pub fn yes_or_no_was_y(msg: &str) -> io::Result<bool> {
     }
 }
 
-pub fn run_with_shell_cmd(
-    cmd: &OsStr,
-    arg: Option<&Path>,
-) -> io::Result<std::process::ExitStatus> {
+pub fn run_with_shell_cmd(cmd: &OsStr, arg: Option<&Path>) -> io::Result<std::process::ExitStatus> {
     Ok(run_with_shell_cmd_custom(cmd, arg, false)?.status)
 }
 
