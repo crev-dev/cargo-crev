@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::Result;
 
 #[derive(PartialEq, Debug, Default)]
 pub struct GitUrlComponents {

@@ -25,17 +25,15 @@ crev-common = { path = "../crev-common", version = "0.17.0" }
 crev-data = { path = "../crev-data", version = "0.17.0" }
 crev-wot = { path = "../crev-wot", version = "0.1.0" }
 crev-lib = { path = "../crev-lib", version = "0.17.0" }
-anyhow = "1.0.28"
+anyhow = "1.0.31"
 atty = "0.2.14"
 cargo = "0.44"
 cargo-platform = "0.1.1"
 chrono = "0.4.11"
-common_failures = "0.1.1"
 crates_io_api = "0.5.1"
 crossbeam = "0.7.3"
 crossterm = "0.9.6"
 env_logger = { version = "0.7.1", default-features = false, features = ["termcolor", "atty", "humantime"] }
-failure = "0.1.7"
 fnv = "1.0.6"
 geiger = "0.4.4"
 insideout = "0.2.0"
@@ -55,6 +53,7 @@ time = "0.2.9"
 tokei = "11.0.0"
 walkdir = "2.3.1"
 openssl-sys = { version = "0.9.55", features = ["vendored"] }
+failure = "0.1.8"
 
 [features]
 default = []

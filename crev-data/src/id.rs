@@ -1,4 +1,4 @@
-use crate::{proof, proof::ContentExt, Error, Result, Url};
+use crate::{proof, proof::ContentExt, Url};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
@@ -13,6 +13,20 @@ use std::fmt;
 pub enum IdType {
     #[serde(rename = "crev")]
     Crev,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum IdError {
+    #[error("wrong length of crev id, expected 32 bytes, got {}", _0)]
+    WrongIdLength(usize),
+    #[error("Invalid CrevId: {}", _0)]
+    InvalidCrevId(Box<str>),
+    #[error("Invalid signature: {}", _0)]
+    InvalidSignature(Box<str>),
+    #[error("Invalid public key: {}", _0)]
+    InvalidPublicKey(Box<str>),
+    #[error("Invalid secret key: {}", _0)]
+    InvalidSecretKey(Box<str>),
 }
 
 impl fmt::Display for IdType {
@@ -55,32 +69,32 @@ impl fmt::Display for Id {
 }
 
 impl Id {
-    pub fn new_crev(bytes: Vec<u8>) -> Result<Self> {
+    pub fn new_crev(bytes: Vec<u8>) -> Result<Self, IdError> {
         if bytes.len() != 32 {
-            Err(Error::WrongIdLength(bytes.len()))?;
+            Err(IdError::WrongIdLength(bytes.len()))?;
         }
         Ok(Id::Crev { id: bytes })
     }
 
-    pub fn crevid_from_str(s: &str) -> Result<Self> {
+    pub fn crevid_from_str(s: &str) -> Result<Self, IdError> {
         let bytes = crev_common::base64_decode(s)
-            .map_err(|e| Error::InvalidCrevId(e.to_string().into()))?;
+            .map_err(|e| IdError::InvalidCrevId(e.to_string().into()))?;
         Self::new_crev(bytes)
     }
 
-    pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<()> {
+    pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<(), IdError> {
         match self {
             Id::Crev { id } => {
                 let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)
-                    .map_err(|e| Error::InvalidPublicKey(e.to_string().into()))?;
+                    .map_err(|e| IdError::InvalidPublicKey(e.to_string().into()))?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)
-                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
+                    .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
                 let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)
-                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
+                    .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
                 pubkey
                     .verify(&content, &signature)
-                    .map_err(|e| Error::InvalidSignature(e.to_string().into()))?;
+                    .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
             }
         }
 
@@ -112,16 +126,16 @@ impl PublicId {
         Self { id, url: None }
     }
 
-    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self> {
+    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self, IdError> {
         Ok(Self {
             id: Id::new_crev(v)?,
             url: Some(url),
         })
     }
 
-    pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self> {
+    pub fn new_crevid_from_base64(s: &str, url: Url) -> Result<Self, IdError> {
         let v = crev_common::base64_decode(s)
-            .map_err(|e| Error::InvalidCrevId(e.to_string().into()))?;
+            .map_err(|e| IdError::InvalidCrevId(e.to_string().into()))?;
         Ok(Self {
             id: Id::new_crev(v)?,
             url: Some(url),
@@ -132,13 +146,13 @@ impl PublicId {
         &self,
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
-    ) -> Result<proof::Trust> {
+    ) -> crate::Result<proof::Trust> {
         Ok(proof::TrustBuilder::default()
             .from(self.clone())
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
             .build()
-            .map_err(|e| Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
     }
 
     pub fn create_package_review_proof(
@@ -146,14 +160,14 @@ impl PublicId {
         package: proof::PackageInfo,
         review: proof::review::Review,
         comment: String,
-    ) -> Result<proof::review::Package> {
+    ) -> crate::Result<proof::review::Package> {
         Ok(proof::review::PackageBuilder::default()
             .from(self.clone())
             .package(package)
             .review(review)
             .comment(comment)
             .build()
-            .map_err(|e| Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
     }
 
     pub fn url_display(&self) -> &str {
@@ -185,9 +199,9 @@ impl AsRef<PublicId> for UnlockedId {
 
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self> {
+    pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self, IdError> {
         let sec_key = SecretKey::from_bytes(&sec_key)
-            .map_err(|e| Error::InvalidSecretKey(e.to_string().into()))?;
+            .map_err(|e| IdError::InvalidSecretKey(e.to_string().into()))?;
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 
         Ok(Self {
@@ -232,7 +246,7 @@ impl UnlockedId {
         &self,
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
-    ) -> Result<proof::Proof> {
+    ) -> crate::Result<proof::Proof> {
         self.id.create_trust_proof(ids, trust_level)?.sign_by(&self)
     }
 }

@@ -1,14 +1,11 @@
-use crate::prelude::*;
+use crate::{Error, Result};
 use argon2::{self, Config};
 use crev_common::{
     rand::random_vec,
     serde::{as_base64, from_base64},
 };
 use crev_data::id::{PublicId, UnlockedId};
-use failure::{bail, format_err};
-
 use serde::{Deserialize, Serialize};
-
 use std::{self, fmt, io::Write, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
@@ -80,7 +77,8 @@ impl LockedId {
         };
 
         let pwsalt = random_vec(32);
-        let pwhash = argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config)?;
+        let pwhash =
+            argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config).map_err(Error::Passphrase)?;
 
         let mut siv = miscreant::aead::Aes256SivAead::new(&pwhash);
 
@@ -146,7 +144,7 @@ impl LockedId {
         } = self;
         {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
-                bail!("Unsupported version: {}", *version);
+                Err(Error::UnsupportedVersion(*version))?;
             }
             use miscreant::aead::Aead;
 
@@ -179,13 +177,13 @@ impl LockedId {
 
             let secret_key = siv
                 .open(&seal_nonce, &[], &sealed_secret_key)
-                .map_err(|_| format_err!("incorrect passphrase"))?;
+                .map_err(|_| Error::IncorrectPassphrase)?;
 
             assert!(!secret_key.is_empty());
 
             let result = UnlockedId::new(url.to_owned(), secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {
-                bail!("PubKey mismatch");
+                Err(Error::PubKeyMismatch)?;
             }
             Ok(result)
         }

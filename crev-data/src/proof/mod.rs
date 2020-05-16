@@ -1,6 +1,6 @@
 //! Some common stuff for both Review and Trust Proofs
 
-use crate::{Error, Result};
+use crate::{Error, ParseError, Result};
 use chrono::{self, prelude::*};
 use std::{
     default, fmt,
@@ -47,7 +47,7 @@ pub struct Proof {
 
 impl Proof {
     pub fn from_parts(body: String, signature: String) -> Result<Self> {
-        let common_content: Common = serde_yaml::from_str(&body)?;
+        let common_content: Common = serde_yaml::from_str(&body).map_err(ParseError::Proof)?;
         if common_content.kind.is_none() {
             Err(Error::KindFieldMissing)?;
         }
@@ -63,7 +63,8 @@ impl Proof {
 
     pub fn from_legacy_parts(body: String, signature: String, type_name: String) -> Result<Self> {
         #[allow(deprecated)]
-        let mut legacy_common_content: content::Common = serde_yaml::from_str(&body)?;
+        let mut legacy_common_content: content::Common =
+            serde_yaml::from_str(&body).map_err(ParseError::Proof)?;
         if legacy_common_content.kind.is_some() {
             Err(Error::UnexpectedKindValueInALegacyFormat)?;
         }
@@ -90,8 +91,8 @@ impl Proof {
         self.digest.as_slice()
     }
 
-    pub fn parse_content<T: ContentDeserialize>(&self) -> Result<T> {
-        Ok(T::deserialize_from(self.body.as_bytes())?)
+    pub fn parse_content<T: ContentDeserialize>(&self) -> std::result::Result<T, Error> {
+        T::deserialize_from(self.body.as_bytes())
     }
 }
 

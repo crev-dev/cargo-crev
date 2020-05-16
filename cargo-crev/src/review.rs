@@ -1,6 +1,6 @@
+use anyhow::format_err;
 use crev_data::Rating;
 use crev_lib::{self, local::Local};
-use failure::format_err;
 use std::default::Default;
 
 use crate::{

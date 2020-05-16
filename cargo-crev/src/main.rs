@@ -618,16 +618,8 @@ fn main() {
         Ok(CommandExitStatus::Success) => {}
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
         Err(e) => {
-            eprintln!("{}", e.display_causes_and_backtrace());
+            eprintln!("{:?}", e);
             std::process::exit(-2)
         }
     }
-}
-
-pub(crate) fn to_fail(anyhow: anyhow::Error) -> failure::Error {
-    failure::Error::from_boxed_compat(to_std(anyhow))
-}
-
-pub(crate) fn to_std(anyhow: anyhow::Error) -> Box<dyn std::error::Error + Send + Sync> {
-    anyhow.into()
 }

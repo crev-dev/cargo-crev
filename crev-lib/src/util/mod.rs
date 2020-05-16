@@ -1,10 +1,8 @@
-pub mod git;
-
-use crate::prelude::*;
-
+use crate::{Error, Result};
+pub use crev_common::{
+    read_file_to_string, run_with_shell_cmd, store_str_to_file, store_to_file_with,
+};
 use crev_data::proof::{self, ContentExt};
-use failure::bail;
-
 use std::{
     self, env, ffi,
     fmt::Write as FmtWrite,
@@ -13,9 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use crev_common::{
-    read_file_to_string, run_with_shell_cmd, store_str_to_file, store_to_file_with,
-};
+pub mod git;
 
 fn get_git_default_editor() -> Result<String> {
     let cfg = git2::Config::open_default()?;
@@ -81,7 +77,7 @@ pub fn edit_file(path: &Path) -> Result<()> {
     let status = run_with_shell_cmd(editor, Some(path))?;
 
     if !status.success() {
-        bail!("Editor returned {}", status);
+        Error::EditorLaunch(status.code().unwrap_or(-1));
     }
     Ok(())
 }
@@ -102,21 +98,23 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
 ) -> Result<C> {
     let mut text = String::new();
     if let Some(date) = previous_date {
-        text.write_str(&format!(
+        write!(
+            &mut text,
             "# Overwriting existing proof created on {}\n",
             date.to_rfc3339()
-        ))?;
+        )
+        .map_err(|_| Error::FmtIO)?;
     }
     let draft = content.to_draft();
 
-    text.write_str(&format!("# {}\n", draft.title()))?;
+    write!(&mut text, "# {}\n", draft.title()).map_err(|_| Error::FmtIO)?;
     if let Some(base_version) = base_version {
-        text.write_str(&format!("# Diff base version: {}\n", base_version))?;
+        write!(&mut text, "# Diff base version: {}\n", base_version).map_err(|_| Error::FmtIO)?;
     }
-    text.write_str(&draft.body())?;
-    text.write_str("\n\n")?;
+    text.write_str(&draft.body()).map_err(|_| Error::FmtIO)?;
+    text.write_str("\n\n").map_err(|_| Error::FmtIO)?;
     for line in get_documentation_for(content).lines() {
-        text.write_fmt(format_args!("# {}\n", line))?;
+        write!(&mut text, "# {}\n", line).map_err(|_| Error::FmtIO)?;
     }
     loop {
         text = edit_text_iteractively_until_writen_to(&text)?;

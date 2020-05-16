@@ -1,4 +1,7 @@
-use crate::{proof, serde_content_serialize, serde_draft_serialize, Result};
+use crate::{
+    proof, proof::content::ValidationResult, serde_content_serialize, serde_draft_serialize,
+    ParseError, Result,
+};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
@@ -97,7 +100,7 @@ pub struct Draft {
 
 impl Draft {
     pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s)?)
+        Ok(serde_yaml::from_str(&s).map_err(ParseError::Draft)?)
     }
 }
 
@@ -117,7 +120,7 @@ impl proof::WithReview for Code {
 }
 
 impl proof::content::Content for Code {
-    fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> ValidationResult<()> {
         self.ensure_kind_is(Code::KIND)?;
         Ok(())
     }

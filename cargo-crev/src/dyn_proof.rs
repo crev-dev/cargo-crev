@@ -1,9 +1,8 @@
-use common_failures::Result;
+use anyhow::{bail, Result};
 use crev_data::{
     proof::{self, CommonOps, ContentExt},
     PublicId, UnlockedId,
 };
-use failure::bail;
 
 pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {
     Ok(match proof.kind() {

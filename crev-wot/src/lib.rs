@@ -19,16 +19,6 @@ pub enum Error {
 
     #[error("{}", _0)]
     Data(#[from] crev_data::Error),
-
-    // temporary
-    #[error("{}", _0)]
-    Failure(failure::Error),
-}
-
-impl From<failure::Error> for Error {
-    fn from(f: failure::Error) -> Self {
-        Self::Failure(f)
-    }
 }
 
 type Result<T> = std::result::Result<T, Error>;

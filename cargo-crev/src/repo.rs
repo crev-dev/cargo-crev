@@ -1,4 +1,5 @@
-use crate::{opts, opts::CrateSelector, to_fail};
+use crate::{opts, opts::CrateSelector};
+use anyhow::format_err;
 use cargo::{
     core::{
         dependency::{DepKind, Dependency},
@@ -14,7 +15,6 @@ use cargo::{
 };
 use cargo_platform::Cfg;
 use crev_common::convert::OptionDeref;
-use failure::format_err;
 use petgraph::graph::NodeIndex;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
@@ -115,7 +115,7 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
         process.arg("--target").arg(s);
     }
 
-    let output = match process.exec_with_output().map_err(to_fail) {
+    let output = match process.exec_with_output() {
         Ok(output) => output,
         Err(e) => return Err(e),
     };
@@ -283,22 +283,20 @@ impl Repo {
             path.to_owned()
         } else {
             let cwd = env::current_dir()?;
-            find_root_manifest_for_wd(&cwd).map_err(to_fail)?
+            find_root_manifest_for_wd(&cwd)?
         };
-        let mut config = cargo::util::config::Config::default().map_err(to_fail)?;
-        config
-            .configure(
-                0,
-                /* quiet */ false,
-                None,
-                /* frozen: */ false,
-                /* locked: */ true,
-                /* offline: */ false,
-                /* target dir */ &None,
-                &cargo_opts.unstable_flags,
-                &[],
-            )
-            .map_err(to_fail)?;
+        let mut config = cargo::util::config::Config::default()?;
+        config.configure(
+            0,
+            /* quiet */ false,
+            None,
+            /* frozen: */ false,
+            /* locked: */ true,
+            /* offline: */ false,
+            /* target dir */ &None,
+            &cargo_opts.unstable_flags,
+            &[],
+        )?;
         // how it used to be; can't find it anywhere anymore
         // let features_set =
         //     Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
@@ -374,7 +372,7 @@ impl Repo {
             None
         };
 
-        let cfgs = get_cfgs(&rustc, target).map_err(|e| e.compat())?;
+        let cfgs = get_cfgs(&rustc, target)?;
         let graph = build_graph(&resolve, &packages, roots.into_iter(), target, &cfgs)?;
 
         Ok(graph)
@@ -382,8 +380,8 @@ impl Repo {
 
     pub fn update_source(&self) -> Result<()> {
         let mut source = self.load_source()?;
-        let _lock = self.config.acquire_package_cache_lock().map_err(to_fail)?;
-        source.update().map_err(to_fail)?;
+        let _lock = self.config.acquire_package_cache_lock()?;
+        source.update()?;
         Ok(())
     }
 
@@ -400,10 +398,10 @@ impl Repo {
     }
 
     pub fn load_source<'a>(&'a self) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
-        let source_id = SourceId::crates_io(&self.config).map_err(to_fail)?;
-        let map = cargo::sources::SourceConfigMap::new(&self.config).map_err(to_fail)?;
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
         let yanked_whitelist = HashSet::new();
-        let source = map.load(source_id, &yanked_whitelist).map_err(to_fail)?;
+        let source = map.load(source_id, &yanked_whitelist)?;
         Ok(source)
     }
 
@@ -411,9 +409,9 @@ impl Repo {
         &'a self,
         yanked_whitelist: HashSet<PackageId>,
     ) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
-        let source_id = SourceId::crates_io(&self.config).map_err(to_fail)?;
-        let map = cargo::sources::SourceConfigMap::new(&self.config).map_err(to_fail)?;
-        let source = map.load(source_id, &yanked_whitelist).map_err(to_fail)?;
+        let source_id = SourceId::crates_io(&self.config)?;
+        let map = cargo::sources::SourceConfigMap::new(&self.config)?;
+        let source = map.load(source_id, &yanked_whitelist)?;
         Ok(source)
     }
 
@@ -425,7 +423,7 @@ impl Repo {
         &self,
         mut f: impl FnMut(&Package) -> Result<()>,
     ) -> Result<()> {
-        let workspace = self.workspace().map_err(to_fail)?;
+        let workspace = self.workspace()?;
 
         // TODO: all pkgs instead
         let roots: Vec<_> = workspace
@@ -433,9 +431,7 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self
-            .registry(roots.iter().map(|pkgid| pkgid.source_id()))
-            .map_err(to_fail)?;
+        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
 
         let (package_set, _resolve) = our_resolve(
             &mut registry,
@@ -444,20 +440,17 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        )
-        .map_err(to_fail)?;
+        )?;
         let mut source = self.load_source()?;
 
-        let pkgs = package_set
-            .get_many(package_set.package_ids())
-            .map_err(to_fail)?;
+        let pkgs = package_set.get_many(package_set.package_ids())?;
 
         for pkg in pkgs {
             if !pkg.summary().source_id().is_registry() {
                 continue;
             }
             if !pkg.root().exists() {
-                source.download(pkg.package_id()).map_err(to_fail)?;
+                source.download(pkg.package_id())?;
             }
 
             f(&pkg)?;
@@ -471,7 +464,7 @@ impl Repo {
         &self,
         mut f: impl FnMut(&PackageId) -> Result<()>,
     ) -> Result<()> {
-        let workspace = self.workspace().map_err(to_fail)?;
+        let workspace = self.workspace()?;
 
         // TODO: all pkgs instead
         let roots: Vec<_> = workspace
@@ -479,9 +472,7 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self
-            .registry(roots.iter().map(|pkgid| pkgid.source_id()))
-            .map_err(to_fail)?;
+        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
 
         let (package_set, _resolve) = our_resolve(
             &mut registry,
@@ -490,8 +481,7 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        )
-        .map_err(to_fail)?;
+        )?;
 
         for pkg_id in package_set.package_ids() {
             if !pkg_id.source_id().is_registry() {
@@ -520,9 +510,9 @@ impl Repo {
     */
 
     pub fn get_package_set<'a>(&'a self) -> Result<(PackageSet<'a>, Resolve)> {
-        let workspace = self.workspace().map_err(to_fail)?;
+        let workspace = self.workspace()?;
 
-        let mut registry = self.registry(vec![].into_iter()).map_err(to_fail)?;
+        let mut registry = self.registry(vec![].into_iter())?;
 
         Ok(our_resolve(
             &mut registry,
@@ -531,8 +521,7 @@ impl Repo {
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        )
-        .map_err(to_fail)?)
+        )?)
     }
 
     pub fn find_dependency_pkg_id_by_selector(
@@ -574,12 +563,8 @@ impl Repo {
         let mut source_map = SourceMap::new();
         source_map.insert(source);
         let package_set =
-            cargo::core::PackageSet::new(&[pkg_id.to_owned()], source_map, &self.config)
-                .map_err(to_fail)?;
-        Ok(package_set
-            .get_one(pkg_id.to_owned())
-            .map_err(to_fail)?
-            .to_owned())
+            cargo::core::PackageSet::new(&[pkg_id.to_owned()], source_map, &self.config)?;
+        Ok(package_set.get_one(pkg_id.to_owned())?.to_owned())
     }
 
     pub fn find_independent_pkg_id_by_selector(
@@ -590,8 +575,8 @@ impl Repo {
         let mut source = if let Some(version) = version {
             // special case - we need to whitelist the crate, in case it was yanked
             let mut yanked_whitelist = HashSet::default();
-            let source_id = SourceId::crates_io(&self.config).map_err(to_fail)?;
-            yanked_whitelist.insert(PackageId::new(name, version, source_id).map_err(to_fail)?);
+            let source_id = SourceId::crates_io(&self.config)?;
+            yanked_whitelist.insert(PackageId::new(name, version, source_id)?);
             self.load_source_with_whitelist(yanked_whitelist)?
         } else {
             self.load_source()?
@@ -602,14 +587,11 @@ impl Repo {
             name,
             OptionDeref::as_deref(&version_str),
             source.source_id(),
-        )
-        .map_err(to_fail)?;
-        let _lock = self.config.acquire_package_cache_lock().map_err(to_fail)?;
-        source
-            .query(&dependency_request, &mut |summary| {
-                summaries.push(summary.clone())
-            })
-            .map_err(to_fail)?;
+        )?;
+        let _lock = self.config.acquire_package_cache_lock()?;
+        source.query(&dependency_request, &mut |summary| {
+            summaries.push(summary.clone())
+        })?;
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
         } else {
@@ -650,8 +632,7 @@ impl Repo {
             self.find_pkgid_by_crate_selector(sel).map(|i| vec![i])
         } else {
             Ok(self
-                .workspace()
-                .map_err(to_fail)?
+                .workspace()?
                 .members()
                 .map(|m| m.package_id())
                 .collect())

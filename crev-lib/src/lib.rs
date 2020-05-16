@@ -3,17 +3,15 @@
 pub mod activity;
 pub mod id;
 pub mod local;
-pub(crate) mod prelude;
 pub mod proof;
 pub mod repo;
 pub mod staging;
 pub mod util;
-
 pub use self::local::Local;
-use crate::prelude::*;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
     self,
+    id::IdError,
     proof::{
         review::{self, Rating},
         trust::TrustLevel,
@@ -21,15 +19,127 @@ use crev_data::{
     },
     Digest, Id,
 };
-
 pub use crev_wot::TrustDistanceParams;
-use failure::format_err;
 use semver::Version;
 use std::{
     collections::{HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("`{}` already exists", _0.display())]
+    PathAlreadyExists(Box<Path>),
+
+    #[error("Git repository is not in a clean state")]
+    GitRepositoryIsNotInACleanState,
+
+    #[error("Couldn't identify revision info")]
+    CouldNotIdentifyRevisionInfo,
+
+    #[error("Can't review with uncommitted staged files.")]
+    CanTReviewWithUncommittedStagedFiles,
+
+    #[error("No reviews to commit. Use `add` first or use `-a` for the whole package.")]
+    NoReviewsToCommitUseAddFirstOrUseAForTheWholePackage,
+
+    #[error("Unsupported version {}", _0)]
+    UnsupportedVersion(i64),
+
+    #[error("PubKey mismatch")]
+    PubKeyMismatch,
+
+    #[error("User config not-initialized. Use `crev id new` to generate CrevID.")]
+    UserConfigNotInitialized,
+    #[error("User config already exists")]
+    UserConfigAlreadyExists,
+    #[error("Id file not found.")]
+    IDFileNotFound,
+    #[error("Couldn't clone {}: {}", _0.0, _0.1)]
+    CouldNotCloneGitHttpsURL(Box<(String, String)>),
+
+    #[error("No ids given.")]
+    NoIdsGiven,
+
+    #[error("Incorrect passphrase")]
+    IncorrectPassphrase,
+
+    #[error("Current Id not set")]
+    CurrentIDNotSet,
+    #[error("Id not specified and current id not set")]
+    IDNotSpecifiedAndCurrentIDNotSet,
+    #[error("origin has no url")]
+    OriginHasNoURL,
+
+    #[error("Error iterating local ProofStore at {}: {}", _0.0.display(), _0.1)]
+    ErrorIteratingLocalProofStore(Box<(PathBuf, String)>),
+
+    #[error("File {} not current. Review again use `crev add` to update.", _0.display())]
+    FileNotCurrent(Box<Path>),
+
+    #[error("Package config not-initialized. Use `crev package init` to generate it.")]
+    PackageConfigNotInitialized,
+
+    #[error("HEAD target does not resolve to oid")]
+    HEADTargetDoesNotResolveToOid,
+
+    #[error("{}", _0)]
+    PackageBuilder(Box<str>),
+
+    #[error("{}", _0)]
+    CodeBuilder(Box<str>),
+
+    #[error("Can't stage path from outside of the staging root")]
+    PathNotInStageRootPath,
+
+    #[error("Editor failed with status {}", _0)]
+    EditorLaunch(i32),
+
+    #[error("Git entry without a path")]
+    GitEntryWithoutAPath,
+
+    #[error(transparent)]
+    YAML(#[from] serde_yaml::Error),
+
+    #[error(transparent)]
+    CBOR(#[from] serde_cbor::Error),
+
+    #[error(transparent)]
+    PackageDirNotFound(#[from] repo::PackageDirNotFound),
+
+    #[error(transparent)]
+    Cancelled(#[from] crev_common::CancelledError),
+
+    #[error(transparent)]
+    Data(#[from] crev_data::Error),
+
+    #[error("Passphrase: {}", _0)]
+    Passphrase(#[from] argon2::Error),
+
+    #[error("Review activity parse error: {}", _0)]
+    ReviewActivity(#[source] Box<crev_common::YAMLIOError>),
+
+    #[error("Error parsing user config: {}", _0)]
+    UserConfigParse(#[source] serde_yaml::Error),
+
+    #[error(transparent)]
+    Digest(#[from] crev_recursive_digest::DigestError),
+
+    #[error(transparent)]
+    Git(#[from] git2::Error),
+
+    #[error("I/O: {}", _0)]
+    IO(#[from] std::io::Error),
+
+    #[error("fmt I/O")]
+    FmtIO,
+
+    #[error(transparent)]
+    Id(#[from] IdError),
+}
+
+type Result<T> = std::result::Result<T, Error>;
 
 /// Trait representing a place that can keep proofs (all reviews and trust proofs)
 ///
@@ -259,11 +369,7 @@ pub fn get_recursive_digest_for_git_dir(
     status_opts.include_unmodified(true);
     status_opts.include_untracked(false);
     for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-        let entry_path = PathBuf::from(
-            entry
-                .path()
-                .ok_or_else(|| format_err!("Git entry without a path"))?,
-        );
+        let entry_path = PathBuf::from(entry.path().ok_or_else(|| Error::GitEntryWithoutAPath)?);
         if ignore_list.contains(&entry_path) {
             continue;
         };

@@ -1,4 +1,4 @@
-use crate::{proof, proof::Proof, Error, Result};
+use crate::{proof, proof::Proof, Error, ParseError, Result};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,
@@ -43,13 +43,13 @@ pub trait CommonOps {
         &self.common().from
     }
 
-    fn ensure_kind_is(&self, kind: &str) -> Result<()> {
+    fn ensure_kind_is(&self, kind: &str) -> ValidationResult<()> {
         let expected = self.kind();
         if expected != kind {
-            Err(Error::InvalidKind(Box::new([
+            Err(ValidationError::InvalidKind(Box::new((
                 expected.to_string(),
                 kind.to_string(),
-            ])))?;
+            ))))?;
         }
         Ok(())
     }
@@ -83,6 +83,25 @@ pub trait WithReview {
     fn review(&self) -> &super::Review;
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ValidationError {
+    #[error("Invalid kind: {}, expected: {}", _0.0, _0.1)]
+    InvalidKind(Box<(String, String)>),
+
+    #[error("Alternative source can't be empty")]
+    AlternativeSourceCanNotBeEmpty,
+    #[error("Alternative name can't be empty")]
+    AlternativeNameCanNotBeEmpty,
+    #[error("Issues with an empty `id` field are not allowed")]
+    IssuesWithAnEmptyIDFieldAreNotAllowed,
+    #[error("Advisories with no `id`s are not allowed")]
+    AdvisoriesWithNoIDSAreNotAllowed,
+    #[error("Advisories with an empty `id` field are not allowed")]
+    AdvisoriesWithAnEmptyIDFieldAreNotAllowed,
+}
+
+pub type ValidationResult<T> = std::result::Result<T, ValidationError>;
+
 /// Proof Content
 ///
 /// `Content` is a standardized format of a crev proof body
@@ -91,7 +110,7 @@ pub trait WithReview {
 /// It is open-ended, and different software
 /// can implement their own formats.
 pub trait Content: CommonOps {
-    fn validate_data(&self) -> Result<()> {
+    fn validate_data(&self) -> ValidationResult<()> {
         // typically just OK
         Ok(())
     }
@@ -100,7 +119,7 @@ pub trait Content: CommonOps {
 }
 
 pub trait ContentDeserialize: Content + Sized {
-    fn deserialize_from<IO>(io: IO) -> Result<Self>
+    fn deserialize_from<IO>(io: IO) -> std::result::Result<Self, Error>
     where
         IO: io::Read;
 }
@@ -109,11 +128,11 @@ impl<T> ContentDeserialize for T
 where
     T: serde::de::DeserializeOwned + Content + Sized,
 {
-    fn deserialize_from<IO>(io: IO) -> Result<Self>
+    fn deserialize_from<IO>(io: IO) -> std::result::Result<Self, Error>
     where
         IO: io::Read,
     {
-        let s: Self = serde_yaml::from_reader(io)?;
+        let s: Self = serde_yaml::from_reader(io).map_err(ParseError::Proof)?;
 
         s.validate_data()?;
 
