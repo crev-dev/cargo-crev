@@ -1,9 +1,7 @@
-use crate::{
-    id::PassphraseFn, local::Local, util, verify_package_digest, Error, ProofStore, Result,
-};
+use crate::{local::Local, util, verify_package_digest, Error, Result};
 use crev_common::convert::OptionDeref;
 use crev_data::{
-    proof::{self, ContentExt},
+    proof::{self},
     Digest,
 };
 use serde::{Deserialize, Serialize};
@@ -11,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fs,
-    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -132,22 +129,6 @@ impl Repo {
         Ok(self.staging.as_mut().unwrap())
     }
 
-    fn append_proof_at(&mut self, proof: &proof::Proof, rel_store_path: &Path) -> Result<()> {
-        let path = self.dot_crev_path().join(rel_store_path);
-
-        fs::create_dir_all(path.parent().expect("Not a root dir"))?;
-        let mut file = fs::OpenOptions::new()
-            .append(true)
-            .create(true)
-            .write(true)
-            .open(path)?;
-
-        file.write_all(proof.to_string().as_bytes())?;
-        file.flush()?;
-
-        Ok(())
-    }
-
     pub fn get_proof_rel_store_path(&self, _proof: &proof::Proof) -> PathBuf {
         unimplemented!();
     }
@@ -210,110 +191,6 @@ impl Repo {
         }
 
         Ok(unclean_found)
-    }
-
-    fn try_read_git_revision(&self) -> Result<Option<crev_data::proof::Revision>> {
-        let dot_git_path = self.root_dir.join(".git");
-        if !dot_git_path.exists() {
-            return Ok(None);
-        }
-        let git_repo = git2::Repository::open(&self.root_dir)?;
-
-        let head = git_repo.head()?;
-        let rev = head
-            .resolve()?
-            .target()
-            .ok_or_else(|| Error::HEADTargetDoesNotResolveToOid)?
-            .to_string();
-        Ok(Some(crev_data::proof::Revision {
-            revision_type: "git".into(),
-            revision: rev,
-        }))
-    }
-
-    fn read_revision(&self) -> Result<crev_data::proof::Revision> {
-        if let Some(info) = self.try_read_git_revision()? {
-            return Ok(info);
-        }
-        Err(Error::CouldNotIdentifyRevisionInfo)
-    }
-
-    pub fn trust_package(
-        &mut self,
-        passphrase_callback: PassphraseFn<'_>,
-        allow_dirty: bool,
-    ) -> Result<()> {
-        if !self.staging()?.is_empty() {
-            Err(Error::CanTReviewWithUncommittedStagedFiles)?;
-        }
-
-        if !allow_dirty && self.is_unclean()? {
-            Err(Error::GitRepositoryIsNotInACleanState)?;
-        }
-
-        let local = Local::auto_open()?;
-        let _revision = self.read_revision()?;
-
-        let ignore_list = fnv::FnvHashSet::default();
-        let _digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
-        let id = local.read_current_unlocked_id(passphrase_callback)?;
-
-        let review = proof::review::PackageBuilder::default()
-            .from(id.id.to_owned())
-            .build()
-            .map_err(|e| Error::PackageBuilder(e.into()))?;
-
-        let review = util::edit_proof_content_iteractively(&review, None, None)?;
-
-        let proof = review.sign_by(&id)?;
-
-        self.save_signed_review(&local, &proof)?;
-        Ok(())
-    }
-
-    pub fn commit(
-        &mut self,
-        passphrase_callback: PassphraseFn<'_>,
-        allow_dirty: bool,
-    ) -> Result<()> {
-        if self.staging()?.is_empty() && !allow_dirty {
-            Err(Error::NoReviewsToCommitUseAddFirstOrUseAForTheWholePackage)?;
-        }
-
-        let local = Local::auto_open()?;
-        let _revision = self.read_revision()?;
-        self.staging()?.enforce_current()?;
-        let files = self.staging()?.to_review_files();
-        let id = local.read_current_unlocked_id(passphrase_callback)?;
-
-        let review = proof::review::CodeBuilder::default()
-            .from(id.id.to_owned())
-            .files(files)
-            .build()
-            .map_err(|e| Error::CodeBuilder(e.into()))?;
-
-        let review = util::edit_proof_content_iteractively(&review, None, None)?;
-
-        let proof = review.sign_by(&id)?;
-
-        self.save_signed_review(&local, &proof)?;
-        self.staging()?.wipe()?;
-        Ok(())
-    }
-
-    fn save_signed_review(&mut self, local: &Local, proof: &proof::Proof) -> Result<()> {
-        let rel_store_path = self.get_proof_rel_store_path(&proof);
-
-        println!("{}", proof);
-        self.append_proof_at(proof, &rel_store_path)?;
-        eprintln!(
-            "Proof written to: {}",
-            PathBuf::from(".crev").join(rel_store_path).display()
-        );
-        local.insert(proof)?;
-        eprintln!("Proof added to your store");
-
-        Ok(())
     }
 
     pub fn status(&mut self) -> Result<()> {
