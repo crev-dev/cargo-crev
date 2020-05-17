@@ -5,12 +5,12 @@ pub mod convert;
 pub mod fs;
 pub mod rand;
 pub mod serde;
+use std::ffi::OsStr;
 pub use crate::blake2b256::Blake2b256;
 use blake2::{digest::FixedOutput, Digest};
 use std::{
     collections::HashSet,
     env,
-    ffi::OsString,
     io::{self, BufRead, Read, Write},
     path::{Path, PathBuf},
     process,
@@ -209,13 +209,13 @@ pub fn yes_or_no_was_y(msg: &str) -> io::Result<bool> {
 }
 
 pub fn run_with_shell_cmd(
-    cmd: OsString,
+    cmd: &OsStr,
     arg: Option<&Path>,
 ) -> io::Result<std::process::ExitStatus> {
     Ok(run_with_shell_cmd_custom(cmd, arg, false)?.status)
 }
 
-pub fn run_with_shell_cmd_capture_stdout(cmd: OsString, arg: Option<&Path>) -> io::Result<Vec<u8>> {
+pub fn run_with_shell_cmd_capture_stdout(cmd: &OsStr, arg: Option<&Path>) -> io::Result<Vec<u8>> {
     let output = run_with_shell_cmd_custom(cmd, arg, true)?;
     if !output.status.success() {
         return Err(std::io::Error::new(
@@ -227,7 +227,7 @@ pub fn run_with_shell_cmd_capture_stdout(cmd: OsString, arg: Option<&Path>) -> i
 }
 
 pub fn run_with_shell_cmd_custom(
-    cmd: OsString,
+    cmd: &OsStr,
     arg: Option<&Path>,
     capture_stdout: bool,
 ) -> io::Result<std::process::Output> {
@@ -250,20 +250,14 @@ pub fn run_with_shell_cmd_custom(
         if let Some(arg) = arg {
             proc.arg("-c").arg(format!(
                 "{} {}",
-                cmd.clone().into_string().map_err(|_| std::io::Error::new(
+                cmd.to_str().ok_or_else(|| std::io::Error::new(
                     io::ErrorKind::InvalidData,
                     "not a valid unicode"
                 ))?,
                 shell_escape::escape(arg.display().to_string().into())
             ));
         } else {
-            proc.arg("-c").arg(format!(
-                "{}",
-                cmd.clone().into_string().map_err(|_| std::io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "not a valid unicode"
-                ))?,
-            ));
+            proc.arg("-c").arg(cmd);
         }
         proc
     } else {
@@ -285,7 +279,7 @@ pub fn read_passphrase() -> io::Result<String> {
         return Ok(pass);
     } else if let Some(cmd) = env::var_os("CREV_PASSPHRASE_CMD") {
         return Ok(
-            String::from_utf8_lossy(&run_with_shell_cmd_capture_stdout(cmd, None)?)
+            String::from_utf8_lossy(&run_with_shell_cmd_capture_stdout(&cmd, None)?)
                 .trim()
                 .to_owned(),
         );

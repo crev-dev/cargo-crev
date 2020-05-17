@@ -269,7 +269,7 @@ pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool
         &crate_.version(),
         &crev_lib::ReviewActivity::new_full(),
     )?;
-    let status = crev_lib::util::run_with_shell_cmd(open_cmd.into(), Some(crate_root))?;
+    let status = crev_lib::util::run_with_shell_cmd(open_cmd.as_ref(), Some(crate_root))?;
 
     if !status.success() {
         bail!("Shell returned {}", status);

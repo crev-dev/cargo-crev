@@ -74,7 +74,7 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
 pub fn edit_file(path: &Path) -> Result<()> {
     let editor = get_editor_to_use()?;
 
-    let status = run_with_shell_cmd(editor, Some(path))?;
+    let status = run_with_shell_cmd(&editor, Some(path))?;
 
     if !status.success() {
         Error::EditorLaunch(status.code().unwrap_or(-1));
