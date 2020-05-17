@@ -1,6 +1,6 @@
 // Here are the structs and functions which still need to be sorted
 //
-use crate::{deps::scan, opts, opts::CrateSelector, prelude::*, repo::*};
+use crate::{deps::scan, edit, opts, opts::CrateSelector, prelude::*, repo::*};
 use anyhow::{format_err, Context, Result};
 use crev_data::{
     proof::{self, ContentExt},
@@ -178,7 +178,7 @@ pub fn edit_known_owners_list() -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
     ensure_known_owners_list_exists(&local)?;
-    crev_lib::util::edit_file(&path)?;
+    edit::edit_file(&path)?;
     Ok(())
 }
 
@@ -626,7 +626,8 @@ pub fn create_trust_proof(
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(", ");
-    let trust = local.build_trust_proof_interactively(
+    let trust = edit::build_trust_proof_interactively(
+        &local,
         unlocked_id.as_public_id(),
         ids,
         trust_or_distrust,

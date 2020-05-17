@@ -1,15 +1,15 @@
-use anyhow::format_err;
-use crev_data::Rating;
-use crev_lib::{self, local::Local};
-use std::default::Default;
-
 use crate::{
-    opts,
+    edit, opts,
     opts::{CargoOpts, CrateSelector},
     prelude::*,
 };
-use crev_data::proof::{self, ContentExt};
-use crev_lib::TrustProofType;
+use anyhow::format_err;
+use crev_data::{
+    proof::{self, ContentExt},
+    Rating,
+};
+use crev_lib::{self, local::Local, TrustProofType};
+use std::default::Default;
 
 use crate::{repo::*, shared::*};
 
@@ -136,7 +136,7 @@ pub fn create_review_proof(
 
     review.alternatives = db.get_pkg_alternatives_by_author(&id.id.id, &review.package.id.id);
 
-    let review = crev_lib::util::edit_proof_content_iteractively(
+    let review = edit::edit_proof_content_iteractively(
         &review,
         previous_date.as_ref(),
         diff_base_version.as_ref(),

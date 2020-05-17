@@ -54,6 +54,8 @@ tokei = "11.0.0"
 walkdir = "2.3.1"
 openssl-sys = { version = "0.9.55", features = ["vendored"] }
 failure = "0.1.8"
+git2 = "0.13.5"
+tempdir = "0.3.7"
 
 [features]
 default = []

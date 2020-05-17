@@ -35,15 +35,6 @@ pub enum Error {
     #[error("Git repository is not in a clean state")]
     GitRepositoryIsNotInACleanState,
 
-    #[error("Couldn't identify revision info")]
-    CouldNotIdentifyRevisionInfo,
-
-    #[error("Can't review with uncommitted staged files.")]
-    CanTReviewWithUncommittedStagedFiles,
-
-    #[error("No reviews to commit. Use `add` first or use `-a` for the whole package.")]
-    NoReviewsToCommitUseAddFirstOrUseAForTheWholePackage,
-
     #[error("Unsupported version {}", _0)]
     UnsupportedVersion(i64),
 
@@ -86,20 +77,8 @@ pub enum Error {
     #[error("Package config not-initialized. Use `crev package init` to generate it.")]
     PackageConfigNotInitialized,
 
-    #[error("HEAD target does not resolve to oid")]
-    HEADTargetDoesNotResolveToOid,
-
-    #[error("{}", _0)]
-    PackageBuilder(Box<str>),
-
-    #[error("{}", _0)]
-    CodeBuilder(Box<str>),
-
     #[error("Can't stage path from outside of the staging root")]
     PathNotInStageRootPath,
-
-    #[error("Editor failed with status {}", _0)]
-    EditorLaunch(i32),
 
     #[error("Git entry without a path")]
     GitEntryWithoutAPath,
@@ -136,9 +115,6 @@ pub enum Error {
 
     #[error("I/O: {}", _0)]
     IO(#[from] std::io::Error),
-
-    #[error("fmt I/O")]
-    FmtIO,
 
     #[error(transparent)]
     Id(#[from] IdError),

@@ -1,9 +1,6 @@
 use crate::{local::Local, util, verify_package_digest, Error, Result};
 use crev_common::convert::OptionDeref;
-use crev_data::{
-    proof::{self},
-    Digest,
-};
+use crev_data::{proof, Digest};
 use serde::{Deserialize, Serialize};
 
 use std::{

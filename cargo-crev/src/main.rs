@@ -24,6 +24,7 @@ pub mod doc;
 mod crates_io;
 mod deps;
 mod dyn_proof;
+mod edit;
 mod info;
 mod opts;
 mod prelude;
@@ -458,7 +459,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
-                local.edit_user_config()?;
+                edit::edit_user_config(&local)?;
             }
             opts::Config::Completions { shell } => {
                 use structopt::clap::Shell;
@@ -526,7 +527,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Repo::Edit(cmd) => match cmd {
                 opts::RepoEdit::Readme => {
                     let local = crev_lib::Local::auto_open()?;
-                    local.edit_readme()?;
+                    edit::edit_readme(&local)?;
                 }
                 opts::RepoEdit::Known => {
                     edit_known_owners_list()?;

@@ -93,20 +93,6 @@ impl UserConfig {
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
     }
-
-    pub fn edit_iteractively(&self) -> Result<Self> {
-        let mut text = serde_yaml::to_string(self)?;
-        loop {
-            text = util::edit_text_iteractively(&text)?;
-            match serde_yaml::from_str(&text) {
-                Err(e) => {
-                    eprintln!("There was an error parsing content: {}", e);
-                    crev_common::try_again_or_cancel()?;
-                }
-                Ok(s) => return Ok(s),
-            }
-        }
-    }
 }
 
 /// Local config stored in `~/.config/crev`
@@ -625,21 +611,6 @@ impl Local {
         )?)
     }
 
-    /// Opens editor with a new trust proof for given Ids
-    ///
-    /// Currently ignores previous proofs
-    pub fn build_trust_proof_interactively(
-        &self,
-        from_id: &PublicId,
-        ids: Vec<Id>,
-        trust_or_distrust: TrustProofType,
-    ) -> Result<proof::trust::Trust> {
-        let trust = self.build_trust_proof(from_id, ids, trust_or_distrust)?;
-
-        // TODO: Look up previous trust proof?
-        Ok(util::edit_proof_content_iteractively(&trust, None, None)?)
-    }
-
     /// Fetch other people's proof repostiory from a git URL, into the current database on disk
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
@@ -897,21 +868,6 @@ impl Local {
             .expect("failed to execute git");
 
         Ok(status)
-    }
-
-    /// interactively edit readme file of the current user's proof repo
-    pub fn edit_readme(&self) -> Result<()> {
-        util::edit_file(&self.get_proofs_dir_path()?.join("README.md"))?;
-        self.proof_dir_git_add_path(&PathBuf::from("README.md"))?;
-        Ok(())
-    }
-
-    /// interactively edit currnent user's yaml config file
-    pub fn edit_user_config(&self) -> Result<()> {
-        let config = self.load_user_config()?;
-        let config = config.edit_iteractively()?;
-        self.store_user_config(&config)?;
-        Ok(())
     }
 
     /// set `open_cmd` in the config
