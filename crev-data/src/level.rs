@@ -18,7 +18,7 @@ impl Default for Level {
 
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::Level::*;
+        use Level::*;
         f.write_str(match self {
             None => "none",
             Low => "low",

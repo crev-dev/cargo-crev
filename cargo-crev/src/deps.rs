@@ -324,7 +324,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     // print header, only after `scanner` had a chance to download everything
     if term.stderr_is_tty && term.stdout_is_tty {
-        self::print_term::print_header(&mut term, &args.columns);
+        print_term::print_header(&mut term, &args.columns);
     }
 
     let mut crates_with_issues = false;

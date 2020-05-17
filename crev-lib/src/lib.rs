@@ -7,7 +7,7 @@ pub mod proof;
 pub mod repo;
 pub mod staging;
 pub mod util;
-pub use self::local::Local;
+pub use crate::local::Local;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
     self,
@@ -158,7 +158,7 @@ impl TrustProofType {
     }
 
     pub fn to_review(self) -> crev_data::Review {
-        use self::TrustProofType::*;
+        use TrustProofType::*;
         match self {
             Trust => crev_data::Review::new_positive(),
             Distrust => crev_data::Review::new_negative(),

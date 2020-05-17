@@ -1,12 +1,12 @@
 use crate::level::Level;
+pub use code::*;
 use derive_builder::Builder;
+pub use package::*;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 
 pub mod code;
 pub mod package;
-
-pub use self::{code::*, package::*};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]

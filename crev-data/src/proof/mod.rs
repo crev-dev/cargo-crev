@@ -1,26 +1,25 @@
 //! Some common stuff for both Review and Trust Proofs
 
+pub use crate::proof::content::{
+    Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
+};
 use crate::{Error, ParseError, Result};
 use chrono::{self, prelude::*};
+pub use package_info::*;
+pub use review::{Code as CodeReview, Package as PackageReview, *};
+pub use revision::*;
 use std::{
     default, fmt,
     io::{self, BufRead},
     mem,
 };
+pub use trust::*;
 
 pub mod content;
 pub mod package_info;
 pub mod review;
 pub mod revision;
 pub mod trust;
-
-pub use self::review::{Code as CodeReview, Package as PackageReview};
-
-pub use self::{package_info::*, revision::*, trust::*};
-pub use crate::proof::content::{
-    Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
-};
-pub use review::*;
 
 const MAX_PROOF_BODY_LENGTH: usize = 32_000;
 

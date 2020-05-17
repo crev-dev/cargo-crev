@@ -6,7 +6,7 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
-use self::prelude::*;
+use crate::prelude::*;
 
 use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
@@ -544,7 +544,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
                 for proof in proofs {
                     let now = crev_common::now();
-                    match self::dyn_proof::parse_dyn_content(&proof) {
+                    match dyn_proof::parse_dyn_content(&proof) {
                         Ok(mut content) => {
                             if args.reset_date {
                                 content.set_date(&now);

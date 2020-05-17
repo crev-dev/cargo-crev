@@ -31,7 +31,7 @@ pub enum IdError {
 
 impl fmt::Display for IdType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::IdType::*;
+        use IdType::*;
         f.write_str(match self {
             Crev => "crev",
         })
