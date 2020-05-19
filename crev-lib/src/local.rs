@@ -821,19 +821,10 @@ impl Local {
                 continue;
             }
 
-            let repo = git2::Repository::open(&path);
-            if repo.is_err() {
-                continue;
-            }
-
-            let url = {
-                || -> Result<String> {
-                    let repo = repo.unwrap();
-                    let remote = repo.find_remote("origin")?;
-                    let url = remote.url().ok_or_else(|| Error::OriginHasNoURL)?;
-                    Ok(url.to_string())
-                }
-            }();
+            let url = match git2::Repository::open(&path) {
+                Ok(repo) => Self::url_for_repo(&repo),
+                Err(_) => continue,
+            };
 
             match url {
                 Ok(url) => {
@@ -851,6 +842,12 @@ impl Local {
         self.fetch_all_ids_recursively(fetched_urls, &mut db)?;
 
         Ok(())
+    }
+
+    fn url_for_repo(repo: &git2::Repository) -> Result<String> {
+        let remote = repo.find_remote("origin")?;
+        let url = remote.url().ok_or_else(|| Error::OriginHasNoURL)?;
+        Ok(url.to_string())
     }
 
     /// Run arbitrary git command in `get_proofs_dir_path()`
