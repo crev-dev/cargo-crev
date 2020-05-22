@@ -235,6 +235,17 @@ impl Local {
         self.root_path.join("proofs")
     }
 
+    /// Like `user_proofs_path` but checks if the dir exists
+    pub fn user_proofs_path_opt(&self) -> Option<PathBuf> {
+        let path = self.user_proofs_path();
+
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
     /// Path where this Id is stored as YAML
     fn id_path(&self, id: &Id) -> PathBuf {
         match id {
@@ -1035,7 +1046,12 @@ impl Local {
 
     /// All proofs from all local repos, regardless of current user's URL
     fn all_local_proofs(&self) -> impl Iterator<Item = proof::Proof> {
-        proofs_iter_for_path(self.user_proofs_path())
+        match self.user_proofs_path_opt() {
+            Some(path) => {
+                Box::new(proofs_iter_for_path(path)) as Box<dyn Iterator<Item = proof::Proof>>
+            }
+            None => Box::new(vec![].into_iter()),
+        }
     }
 }
 
