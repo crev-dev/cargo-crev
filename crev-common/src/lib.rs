@@ -4,7 +4,9 @@ pub mod blake2b256;
 pub mod convert;
 pub mod fs;
 pub mod rand;
+pub mod result;
 pub mod serde;
+
 pub use crate::blake2b256::Blake2b256;
 use blake2::{digest::FixedOutput, Digest};
 use std::{

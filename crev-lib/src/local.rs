@@ -4,7 +4,9 @@ use crate::{
     util, Error, ProofStore, Result, TrustProofType,
 };
 use crev_common::{
-    self, sanitize_name_for_fs, sanitize_url_for_fs,
+    self,
+    result::ResultExt as _,
+    sanitize_name_for_fs, sanitize_url_for_fs,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -619,24 +621,25 @@ impl Local {
 
     /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, mut db: &mut crev_wot::ProofDB) -> Result<()> {
-        if let Some(dir) = self.fetch_proof_repo_import_and_print_counts(url, &mut db) {
-            let mut db = crev_wot::ProofDB::new();
-            let url = Url::new_git(url);
-            let fetch_source = self.fetch_source_for_url(url.clone())?;
-            db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
-            eprintln!("Found proofs from:");
-            for (id, count) in db.all_author_ids() {
-                let tmp;
-                let verified_state = match db.lookup_url(&id).from_self() {
-                    Some(verified_url) if verified_url == &url => "verified owner",
-                    Some(verified_url) => {
-                        tmp = format!("copy from {}", verified_url.url);
-                        &tmp
-                    }
-                    None => "copy from another repo",
-                };
-                println!("{:>8} {} ({})", count, id, verified_state);
-            }
+        eprintln!("Fetching {}... ", url);
+        let dir = self.fetch_remote_git(url)?;
+        self.import_proof_dir_and_print_counts(&dir, url, &mut db)?;
+        let mut db = crev_wot::ProofDB::new();
+        let url = Url::new_git(url);
+        let fetch_source = self.get_fetch_source_for_url(url.clone())?;
+        db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
+        eprintln!("Found proofs from:");
+        for (id, count) in db.all_author_ids() {
+            let tmp;
+            let verified_state = match db.lookup_url(&id).from_self() {
+                Some(verified_url) if verified_url == &url => "verified owner",
+                Some(verified_url) => {
+                    tmp = format!("copy from {}", verified_url.url);
+                    &tmp
+                }
+                None => "copy from another repo",
+            };
+            println!("{:>8} {} ({})", count, id, verified_state);
         }
         Ok(())
     }
@@ -674,6 +677,7 @@ impl Local {
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
 
+        eprintln!("Fetching recursively...");
         loop {
             if !self.fetch_ids_not_fetched_yet(
                 db.all_known_ids().into_iter(),
@@ -690,31 +694,59 @@ impl Local {
     /// True if something was fetched
     fn fetch_ids_not_fetched_yet(
         &self,
-        ids: impl Iterator<Item = Id>,
+        ids: impl Iterator<Item = Id> + Send,
         already_fetched_ids: &mut HashSet<Id>,
         already_fetched_urls: &mut HashSet<String>,
         db: &mut crev_wot::ProofDB,
     ) -> bool {
-        let mut something_was_fetched = false;
-        for id in ids {
-            if already_fetched_ids.contains(&id) {
-                continue;
-            }
-            if let Some(url) = db.lookup_url(&id).any_unverified() {
-                let url = &url.url;
+        use std::sync::mpsc::channel;
 
-                if already_fetched_urls.contains(url) {
+        let mut something_was_fetched = false;
+        let (tx, rx) = channel();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(8)
+            .build()
+            .unwrap();
+
+        pool.scope(|scope| {
+            for id in ids {
+                let tx = tx.clone();
+
+                if already_fetched_ids.contains(&id) {
                     continue;
                 }
-                let url = url.clone();
-                self.fetch_proof_repo_import_and_print_counts(&url, db);
-                already_fetched_urls.insert(url);
-                something_was_fetched = true;
-            } else {
-                eprintln!("No URL for {}", id);
+
+                if let Some(url) = db.lookup_url(&id).any_unverified() {
+                    let url = &url.url;
+
+                    if already_fetched_urls.contains(url) {
+                        continue;
+                    }
+                    let url_clone = url.clone();
+                    scope.spawn(move |_scope| {
+                        tx.send((url_clone.clone(), self.fetch_remote_git(&url_clone)))
+                            .expect("send to work");
+                    });
+                    already_fetched_urls.insert(url.clone());
+                } else {
+                    eprintln!("Error: No URL for {}", id);
+                }
+                already_fetched_ids.insert(id);
             }
-            already_fetched_ids.insert(id);
-        }
+
+            drop(tx);
+
+            for (url, res) in rx.into_iter() {
+                res.and_then(|dir| {
+                    self.import_proof_dir_and_print_counts(&dir, &url, db)?;
+                    something_was_fetched = true;
+                    Ok(())
+                })
+                .unwrap_or_else(|e| {
+                    eprintln!("Error: Failed to fetch {}: {}", url, e);
+                });
+            }
+        });
         something_was_fetched
     }
 
@@ -736,7 +768,7 @@ impl Local {
     }
 
     /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for the URL.
-    fn fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
+    fn get_fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
         if let Some(own_url) = self.get_cur_url()? {
             if own_url == url {
                 return Ok(crev_wot::FetchSource::LocalUser);
@@ -766,42 +798,38 @@ impl Local {
     /// Fetches and imports to the given db
     ///
     /// Same as `fetch_url_into`, but with more stats
-    pub fn fetch_proof_repo_import_and_print_counts(
+    ///
+    /// dir - where the proofs were downloaded to
+    /// url - url from which it was fetched
+    pub fn import_proof_dir_and_print_counts(
         &self,
+        dir: &Path,
         url: &str,
         db: &mut crev_wot::ProofDB,
-    ) -> Option<PathBuf> {
+    ) -> Result<()> {
         let prev_pkg_review_count = db.unique_package_review_proof_count();
         let prev_trust_count = db.unique_trust_proof_count();
 
-        eprint!("Fetching {}... ", url);
-        match self.fetch_remote_git(url) {
-            Ok(dir) => {
-                let fetch_source = self.fetch_source_for_url(Url::new_git(url)).ok()?;
-                db.import_from_iter(
-                    proofs_iter_for_path(dir.clone()).map(move |p| (p, fetch_source.clone())),
-                );
+        let fetch_source = self.get_fetch_source_for_url(Url::new_git(url))?;
+        db.import_from_iter(
+            proofs_iter_for_path(dir.to_owned()).map(move |p| (p, fetch_source.clone())),
+        );
 
-                eprint!("OK");
+        let new_pkg_review_count = db.unique_package_review_proof_count() - prev_pkg_review_count;
+        let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
 
-                let new_pkg_review_count =
-                    db.unique_package_review_proof_count() - prev_pkg_review_count;
-                let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
+        let msg = match (new_trust_count > 0, new_pkg_review_count > 0) {
+            (true, true) => format!(
+                "new: {} trust, {} package reviews",
+                new_trust_count, new_pkg_review_count
+            ),
+            (true, false) => format!("new: {} trust", new_trust_count,),
+            (false, true) => format!("new: {} package reviews", new_pkg_review_count),
+            (false, false) => "no updates".into(),
+        };
 
-                if new_trust_count > 0 {
-                    eprint!("; {} new trust proofs", new_trust_count);
-                }
-                if new_pkg_review_count > 0 {
-                    eprint!("; {} new package reviews", new_pkg_review_count);
-                }
-                eprintln!("");
-                Some(dir)
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                None
-            }
-        }
+        eprintln!("{:<60} {}", url, msg);
+        Ok(())
     }
 
     /// Fetch and discover proof repos. Like `fetch_all_ids_recursively`,
@@ -812,7 +840,12 @@ impl Local {
 
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
-        self.fetch_proof_repo_import_and_print_counts(dpc_url, &mut db);
+        self.fetch_remote_git(dpc_url)
+            .err_eprint_and_ignore()
+            .map(|dir| {
+                self.import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
+                    .err_eprint_and_ignore();
+            });
         fetched_urls.insert(dpc_url.to_owned());
 
         for entry in fs::read_dir(self.cache_remotes_path())? {
@@ -830,7 +863,8 @@ impl Local {
                 Ok(url) => {
                     if !fetched_urls.contains(&url) {
                         fetched_urls.insert(url.clone());
-                        self.fetch_proof_repo_import_and_print_counts(&url, &mut db);
+                        self.import_proof_dir_and_print_counts(&path, &url, &mut db)
+                            .err_eprint_and_ignore();
                     }
                 }
                 Err(e) => {

@@ -18,16 +18,6 @@ pub fn get_documentation_for(content: &impl proof::Content) -> &'static str {
     }
 }
 
-pub fn err_eprint_and_ignore<O, E: std::error::Error>(res: std::result::Result<O, E>) -> Option<O> {
-    match res {
-        Err(e) => {
-            eprintln!("{}", e);
-            None
-        }
-        Ok(o) => Some(o),
-    }
-}
-
 #[cfg(target_family = "unix")]
 pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
     use std::{fs::Permissions, os::unix::fs::PermissionsExt};
