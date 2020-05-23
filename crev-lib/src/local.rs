@@ -688,7 +688,6 @@ impl Local {
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
 
-        eprintln!("Fetching recursively...");
         loop {
             if !self.fetch_ids_not_fetched_yet(
                 db.all_known_ids().into_iter(),
@@ -849,6 +848,7 @@ impl Local {
         let mut fetched_urls = HashSet::new();
         let mut db = self.load_db()?;
 
+        eprintln!("Fetching...");
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
         self.fetch_remote_git(dpc_url)
