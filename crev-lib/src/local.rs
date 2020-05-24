@@ -872,11 +872,14 @@ impl Local {
 
             match url {
                 Ok(url) => {
-                    if !fetched_urls.contains(&url) {
-                        fetched_urls.insert(url.clone());
-                        self.import_proof_dir_and_print_counts(&path, &url, &mut db)
-                            .err_eprint_and_ignore();
-                    }
+                    self.get_fetch_source_for_url(Url::new_git(url))
+                        .map(|fetch_source| {
+                            db.import_from_iter(
+                                proofs_iter_for_path(path.to_owned())
+                                    .map(move |p| (p, fetch_source.clone())),
+                            );
+                        })
+                        .err_eprint_and_ignore();
                 }
                 Err(e) => {
                     eprintln!("ERR: {} {}", path.display(), e);
