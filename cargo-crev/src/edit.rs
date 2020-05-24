@@ -1,7 +1,8 @@
 use anyhow::{bail, Result};
-use crev_common::{read_file_to_string, run_with_shell_cmd};
+use crev_common::{read_file_to_string, run_with_shell_cmd, CancelledError};
 use crev_data::{proof, proof::content::ContentExt, Id, PublicId};
 use crev_lib::{local::Local, util::get_documentation_for, TrustProofType};
+use rprompt;
 use std::{
     env, ffi,
     fmt::Write,
@@ -55,11 +56,14 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
             eprintln!(
                 "File not written to. Make sure to save it at least once to confirm the data."
             );
-            crev_common::try_again_or_cancel()?;
-            continue;
-        }
+            let reply = rprompt::prompt_reply_stderr("Commit anyway? (y/N/q) ")?;
 
-        return Ok(text);
+            match reply.as_str() {
+                "y" | "Y" => return Ok(text),
+                "q" | "Q" => return Err(CancelledError::ByUser.into()),
+                "n" | "N" | "" | _ => continue,
+            }
+        }
     }
 }
 

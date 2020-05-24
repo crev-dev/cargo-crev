@@ -191,20 +191,24 @@ pub enum CancelledError {
 }
 
 pub fn try_again_or_cancel() -> std::result::Result<(), CancelledError> {
-    if !yes_or_no_was_y("Try again (y/n) ").map_err(|_| CancelledError::NoInput)? {
+    if !yes_or_no_was_y("Try again (Y/n)")
+        .map_err(|_| CancelledError::NoInput)?
+        .unwrap_or(true)
+    {
         return Err(CancelledError::ByUser);
     }
 
     Ok(())
 }
 
-pub fn yes_or_no_was_y(msg: &str) -> io::Result<bool> {
+pub fn yes_or_no_was_y(msg: &str) -> io::Result<Option<bool>> {
     loop {
-        let reply = rprompt::prompt_reply_stderr(msg)?;
+        let reply = rprompt::prompt_reply_stderr(&format!("{} ", msg))?;
 
         match reply.as_str() {
-            "y" | "Y" => return Ok(true),
-            "n" | "N" => return Ok(false),
+            "y" | "Y" => return Ok(Some(true)),
+            "n" | "N" => return Ok(Some(false)),
+            "" => return Ok(None),
             _ => {}
         }
     }
