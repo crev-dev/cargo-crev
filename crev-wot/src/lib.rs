@@ -1,3 +1,17 @@
+//! Crev - Web of Trust implementation
+//!
+//! # Introduction
+//!
+//! It's important to mention that Crev does not mandate
+//! any particular implementation of the Web of Trust. It only
+//! loosely defines data-format to describe trust relationships
+//! between users.
+//!
+//! How exactly is the trustworthiness in the wider network
+//! calculated remains an open question, and subject for experimentation.
+//!
+//! `crev-wot` is just an initial, reference implementation, and might
+//! evolve, be replaced or become just one of many available implementations.
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -35,7 +49,8 @@ pub enum FetchSource {
 /// A `T` with a timestamp
 ///
 /// This allows easily keeping track of a most recent version
-/// of `T`. Typically `T` is a *proof* of some kind.
+/// of `T`. Typically `T` is some information from a timestamped
+/// *proof* of some kind.
 #[derive(Clone, Debug)]
 pub struct Timestamped<T> {
     pub date: chrono::DateTime<Utc>,
@@ -43,7 +58,7 @@ pub struct Timestamped<T> {
 }
 
 impl<T> Timestamped<T> {
-    // Return `trude` if value was updated
+    // Return `true` if value was updated
     fn update_to_more_recent(&mut self, other: &Self)
     where
         T: Clone,
@@ -128,11 +143,16 @@ impl From<&review::Package> for PkgVersionReviewId {
     }
 }
 
+/// An unique id for a review by a given author of a given package.
+///
+/// Similar to `PackageVersionReviewId`, but where
+/// exact version is not important.
 #[derive(Hash, Debug, Clone, PartialEq, Eq)]
 pub struct PkgReviewId {
     from: Id,
     package_id: proof::PackageId,
 }
+
 impl From<review::Package> for PkgReviewId {
     fn from(review: review::Package) -> Self {
         PkgReviewId {
@@ -207,7 +227,7 @@ impl AlternativesData {
 
 /// In memory database tracking information from proofs
 ///
-/// After population, used for calculating the effcttive trust set, etc.
+/// After population, used for calculating the effective trust set, etc.
 ///
 /// Right now, for every invocation of crev, we just load it up with
 /// all known proofs, and then query. If it ever becomes too slow,
