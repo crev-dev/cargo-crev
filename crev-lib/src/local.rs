@@ -1011,23 +1011,6 @@ impl Local {
         Ok(())
     }
 
-    /// Print the current user's public Ids.
-    pub fn show_current_user_public_ids(&self) -> Result<()> {
-        let current = self
-            .read_current_locked_id_opt()?
-            .map(|id| id.to_public_id());
-        for id in self.get_current_user_public_ids()? {
-            let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
-            println!(
-                "{} {}{}",
-                id.id,
-                id.url_display(),
-                if is_current { " (current)" } else { "" }
-            );
-        }
-        Ok(())
-    }
-
     /// See `read_locked_id`
     pub fn export_locked_id(&self, id_str: Option<String>) -> Result<String> {
         let id = if let Some(id_str) = id_str {

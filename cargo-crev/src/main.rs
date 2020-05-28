@@ -224,7 +224,18 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Id::Current => {
                 let local = Local::auto_open()?;
-                local.show_current_user_public_ids()?;
+                let current = local
+                    .read_current_locked_id_opt()?
+                    .map(|id| id.to_public_id());
+                for id in local.get_current_user_public_ids()? {
+                    let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
+                    println!(
+                        "{} {}{}",
+                        id.id,
+                        id.url_display(),
+                        if is_current { " (current)" } else { "" }
+                    );
+                }
             }
             opts::Id::Export(args) => {
                 let local = Local::auto_open()?;
