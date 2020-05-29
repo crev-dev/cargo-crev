@@ -67,6 +67,7 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
                 "n" | "N" | "" | _ => continue,
             }
         }
+        return Ok(text);
     }
 }
 
