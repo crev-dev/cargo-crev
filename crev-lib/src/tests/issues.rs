@@ -6,7 +6,6 @@ use crev_data::{
     TrustLevel, UnlockedId,
 };
 use crev_wot::FetchSource;
-use ifmt::iformat;
 use semver::Version;
 
 const SOURCE: &str = "SOURCE_ID";
@@ -17,7 +16,7 @@ fn build_advisory(id: impl Into<String>, range: VersionRange) -> Advisory {
     Advisory::builder()
         .range(range)
         .ids(vec![id.clone()])
-        .comment(iformat!("comment for {id}"))
+        .comment(format!("comment for {}", id))
         .build()
 }
 
@@ -25,7 +24,7 @@ fn build_issue(id: impl Into<String>) -> Issue {
     let id = id.into();
     Issue::builder()
         .id(id.clone())
-        .comment(iformat!("issue {id}"))
+        .comment(format!("issue {}", id))
         .build()
 }
 
