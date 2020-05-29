@@ -110,7 +110,7 @@ impl Repo {
         if !path.exists() {
             return Ok(None);
         }
-        let config_str = util::read_file_to_string(&path)?;
+        let config_str = fs::read_to_string(&path)?;
 
         Ok(Some(serde_yaml::from_str(&config_str)?))
     }

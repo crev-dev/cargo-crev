@@ -58,7 +58,7 @@ impl VcsInfoJson {
         let path = pkg_dir.join(VCS_INFO_JSON_FILE);
 
         if path.exists() {
-            let txt = crev_common::read_file_to_string(&path)?;
+            let txt = std::fs::read_to_string(&path)?;
             let info: VcsInfoJson = serde_json::from_str(&txt)?;
             Ok(Some(info))
         } else {
@@ -162,7 +162,7 @@ pub fn read_known_owners_list() -> Result<HashSet<String>> {
     let local = Local::auto_create_or_open()?;
     let content = if let Some(path) = local.get_proofs_dir_path_opt()? {
         let path = path.join(KNOWN_CARGO_OWNERS_FILE);
-        crev_common::read_file_to_string(&path)?
+        std::fs::read_to_string(&path)?
     } else {
         include_str!("known_cargo_owners_defaults.txt").to_string()
     };

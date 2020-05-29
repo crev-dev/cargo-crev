@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use crev_common::{read_file_to_string, run_with_shell_cmd, CancelledError};
+use crev_common::{run_with_shell_cmd, CancelledError};
 use crev_data::{proof, proof::content::ContentExt, Id, PublicId};
 use crev_lib::{local::Local, util::get_documentation_for, TrustProofType};
 use rprompt;
@@ -42,7 +42,10 @@ fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
         .modified()
         .unwrap_or_else(|_| std::time::SystemTime::now());
 
-    Ok((read_file_to_string(&file_path)?, starting_ts != modified_ts))
+    Ok((
+        std::fs::read_to_string(&file_path)?,
+        starting_ts != modified_ts,
+    ))
 }
 
 pub fn edit_text_iteractively(text: &str) -> Result<String> {

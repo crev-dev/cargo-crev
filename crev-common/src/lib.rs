@@ -13,7 +13,7 @@ use std::{
     collections::HashSet,
     env,
     ffi::OsStr,
-    io::{self, BufRead, Read, Write},
+    io::{self, BufRead, Write},
     path::{Path, PathBuf},
     process,
 };
@@ -308,14 +308,6 @@ pub fn read_new_passphrase() -> io::Result<String> {
     }
 }
 
-pub fn read_file_to_string(path: &Path) -> io::Result<String> {
-    let mut file = std::fs::File::open(&path)?;
-    let mut res = String::new();
-    file.read_to_string(&mut res)?;
-
-    Ok(res)
-}
-
 pub fn save_to_yaml_file<T>(path: &Path, t: &T) -> Result<(), YAMLIOError>
 where
     T: ::serde::Serialize,
@@ -330,7 +322,7 @@ pub fn read_from_yaml_file<T>(path: &Path) -> Result<T, YAMLIOError>
 where
     T: ::serde::de::DeserializeOwned,
 {
-    let text = read_file_to_string(path)?;
+    let text = std::fs::read_to_string(path)?;
 
     Ok(serde_yaml::from_str(&text)?)
 }
