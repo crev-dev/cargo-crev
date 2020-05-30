@@ -12,7 +12,7 @@ const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PassConfig {
+pub struct PassphraseConfig {
     version: u32,
     variant: String,
     iterations: u32,
@@ -39,7 +39,9 @@ pub struct LockedId {
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "seal-nonce")]
     seal_nonce: Vec<u8>,
-    pass: PassConfig,
+
+    #[serde(rename = "pass")]
+    passphrase_config: PassphraseConfig,
 }
 
 impl fmt::Display for LockedId {
@@ -90,7 +92,7 @@ impl LockedId {
             sealed_secret_key: siv.seal(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
             seal_nonce,
             url: unlocked_id.url().clone(),
-            pass: PassConfig {
+            passphrase_config: PassphraseConfig {
                 salt: pwsalt,
                 iterations: config.time_cost,
                 memory_size: config.mem_cost,
@@ -140,7 +142,7 @@ impl LockedId {
             ref public_key,
             ref sealed_secret_key,
             ref seal_nonce,
-            ref pass,
+            ref passphrase_config,
         } = self;
         {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
@@ -149,12 +151,12 @@ impl LockedId {
             use miscreant::aead::Aead;
 
             let mut config = Config {
-                variant: argon2::Variant::from_str(&pass.variant)?,
+                variant: argon2::Variant::from_str(&passphrase_config.variant)?,
                 version: argon2::Version::Version13,
 
                 hash_length: 64,
-                mem_cost: pass.memory_size,
-                time_cost: pass.iterations,
+                mem_cost: passphrase_config.memory_size,
+                time_cost: passphrase_config.iterations,
 
                 lanes: num_cpus::get() as u32,
                 thread_mode: argon2::ThreadMode::Parallel,
@@ -163,7 +165,7 @@ impl LockedId {
                 secret: &[],
             };
 
-            if let Some(lanes) = pass.lanes {
+            if let Some(lanes) = passphrase_config.lanes {
                 config.lanes = lanes;
             } else {
                 eprintln!(
@@ -172,7 +174,8 @@ impl LockedId {
                 eprintln!("Using `lanes: {}`", config.lanes);
             }
 
-            let passphrase_hash = argon2::hash_raw(passphrase.as_bytes(), &pass.salt, &config)?;
+            let passphrase_hash =
+                argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
             let mut siv = miscreant::aead::Aes256SivAead::new(&passphrase_hash);
 
             let secret_key = siv
