@@ -1033,16 +1033,24 @@ impl ProofDB {
 
     /// Calculate the effective trust levels for IDs inside a WoT.
     ///
-    /// This is one of the most important functions in `crev-lib`.
+    /// This is one of the most important functions in `crev-wot`.
     fn calculate_trust_set_internal(
         &self,
         for_id: &Id,
         params: &TrustDistanceParams,
         distrusted: HashMap<Id, HashSet<Id>>,
     ) -> TrustSet {
+        /// Node that is to be visited
+        ///
+        /// Order of field is important, since we use the `Ord` trait
+        /// to visit nodes breadth-first with respect to trust level
         #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
         struct Visit {
+            /// Effective transitive trust level of the node
+            effective_trust_level: TrustLevel,
+            /// Distance from the root, in some abstract numerical unit
             distance: u64,
+            /// Id we're visit
             id: Id,
         }
 
@@ -1051,6 +1059,7 @@ impl ProofDB {
         visited.distrusted = distrusted;
 
         pending.insert(Visit {
+            effective_trust_level: TrustLevel::High,
             distance: 0,
             id: for_id.clone(),
         });
@@ -1081,22 +1090,25 @@ impl ProofDB {
                     continue;
                 }
 
-                let effective_trust = std::cmp::min(
+                let effective_trust_level = std::cmp::min(
                     direct_trust,
                     visited
                         .get_effective_trust_level_opt(&current.id)
                         .expect("Id should have been inserted to `visited` beforehand"),
                 );
-                debug!("Effective trust for {} {}", candidate_id, effective_trust);
+                debug!(
+                    "Effective trust for {} {}",
+                    candidate_id, effective_trust_level
+                );
 
-                if effective_trust < TrustLevel::None {
+                if effective_trust_level < TrustLevel::None {
                     unreachable!(
                         "this should not happen: candidate_effective_trust < TrustLevel::None"
                     );
                 }
 
                 let candidate_distance_from_current =
-                    if let Some(v) = params.distance_by_level(effective_trust) {
+                    if let Some(v) = params.distance_by_level(effective_trust_level) {
                         v
                     } else {
                         debug!("Not traversing {}: trust too low", candidate_id);
@@ -1125,9 +1137,10 @@ impl ProofDB {
                     candidate_id.clone(),
                     current.id.clone(),
                     candidate_total_distance,
-                    effective_trust,
+                    effective_trust_level,
                 ) {
                     let visit = Visit {
+                        effective_trust_level,
                         distance: candidate_total_distance,
                         id: candidate_id.to_owned(),
                     };
@@ -1207,9 +1220,11 @@ impl<'a> UrlOfId<'a> {
 /// Details of a one Id that is
 #[derive(Debug, Clone)]
 struct TrustedIdDetails {
+    // distanc from the root of trust
     distance: u64,
     // effective, global trust from the root of the WoT
-    effective_trust: TrustLevel,
+    effective_trust_level: TrustLevel,
+    /// People that reported trust for this id
     referers: HashMap<Id, TrustLevel>,
 }
 
@@ -1241,7 +1256,7 @@ impl TrustSet {
         subject: Id,
         referer: Id,
         distance: u64,
-        effective_trust: TrustLevel,
+        effective_trust_level: TrustLevel,
     ) -> bool {
         // TODO: turn into log or something
         // eprintln!(
@@ -1253,10 +1268,10 @@ impl TrustSet {
         match self.trusted.entry(subject) {
             Entry::Vacant(entry) => {
                 let mut referers = HashMap::default();
-                referers.insert(referer, effective_trust);
+                referers.insert(referer, effective_trust_level);
                 entry.insert(TrustedIdDetails {
                     distance,
-                    effective_trust,
+                    effective_trust_level,
                     referers,
                 });
                 true
@@ -1268,19 +1283,19 @@ impl TrustSet {
                     details.distance = distance;
                     changed = true;
                 }
-                if details.effective_trust < effective_trust {
-                    details.effective_trust = effective_trust;
+                if details.effective_trust_level < effective_trust_level {
+                    details.effective_trust_level = effective_trust_level;
                     changed = true;
                 }
                 match details.referers.entry(referer) {
                     Entry::Vacant(entry) => {
-                        entry.insert(effective_trust);
+                        entry.insert(effective_trust_level);
                         changed = true;
                     }
                     Entry::Occupied(mut entry) => {
                         let level = entry.get_mut();
-                        if *level < effective_trust {
-                            *level = effective_trust;
+                        if *level < effective_trust_level {
+                            *level = effective_trust_level;
                             changed = true;
                         }
                     }
@@ -1296,7 +1311,9 @@ impl TrustSet {
     }
 
     pub fn get_effective_trust_level_opt(&self, id: &Id) -> Option<TrustLevel> {
-        self.trusted.get(id).map(|details| details.effective_trust)
+        self.trusted
+            .get(id)
+            .map(|details| details.effective_trust_level)
     }
 }
 
