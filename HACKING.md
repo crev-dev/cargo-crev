@@ -17,6 +17,19 @@
 
 For core crates, the rule is that any given crate can only depend on the lower layer.
 
+## Continuous Integration
+
+To streamline development, this repository uses continuous integration (CI) to check that tests pass and that the code is correctly formatted.
+
+These checks can be automatically executed locally using [Git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). They will be executed before running Git commands (such as commit). Git hooks for this repository can be trivially installed using the [pre-commit](https://pre-commit.com/) Python package:
+
+```shell
+pip install pre-commit
+pre-commit install -t pre-commit -t pre-push
+```
+
+Hooks for this project are defined in `./.pre-commit-config.yaml`. Pre-commit allows a developer to chose which hooks to install.
+
 ## Misc
 
 Other than that there's not that much structure yet, and everything is still fluid
