@@ -1038,7 +1038,7 @@ impl ProofDB {
         &self,
         for_id: &Id,
         params: &TrustDistanceParams,
-        distrusted: HashMap<Id, HashSet<Id>>,
+        distrusted: HashMap<Id, DistrustedIdDetails>,
     ) -> TrustSet {
         /// Node that is to be visited
         ///
@@ -1055,55 +1055,75 @@ impl ProofDB {
         }
 
         let mut pending = BTreeSet::new();
-        let mut visited = TrustSet::default();
-        visited.distrusted = distrusted;
+        let mut current_trust_set = TrustSet::default();
+        let initial_distrusted_len = distrusted.len();
+        current_trust_set.distrusted = distrusted;
 
         pending.insert(Visit {
             effective_trust_level: TrustLevel::High,
             distance: 0,
             id: for_id.clone(),
         });
-        visited.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
+        let mut previous_iter_trust_level = TrustLevel::High;
+        current_trust_set.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
         while let Some(current) = pending.iter().next().cloned() {
             debug!("Traversing id: {:?}", current);
             pending.remove(&current);
 
+            if current.effective_trust_level != previous_iter_trust_level {
+                debug!(
+                    "No more nodes with effective_trust_level of {}",
+                    previous_iter_trust_level
+                );
+                assert!(current.effective_trust_level < previous_iter_trust_level);
+                if initial_distrusted_len != current_trust_set.distrusted.len() {
+                    debug!("Some people got banned at the current trust level - restarting the WoT calculation");
+                    break;
+                }
+            } else {
+                previous_iter_trust_level = current.effective_trust_level;
+            }
+
             for (direct_trust, candidate_id) in self.get_trust_list_of_id(&&current.id) {
                 debug!(
-                    "{} trusts {} - level: {}",
-                    current.id, candidate_id, direct_trust
+                    "{} ({}) reports trust level for {}: {}",
+                    current.id, current.effective_trust_level, candidate_id, direct_trust
                 );
 
-                if visited.distrusted.contains_key(candidate_id) {
+                if current_trust_set.is_distrusted(candidate_id) {
                     debug!("{} is distrusted", candidate_id);
                     continue;
                 }
 
+                // Note: lower trust node can ban higher trust node, but only
+                // if it wasn't banned by a higher trust node beforehand.
+                // However banning by the same trust level node, does not prevent
+                // the node from banning others.
                 if direct_trust == TrustLevel::Distrust {
                     debug!("Adding {} to distrusted list", candidate_id);
-                    visited
-                        .distrusted
-                        .entry(candidate_id.clone())
-                        .or_default()
-                        .insert(current.id.clone());
+                    // We discard the result, because we actually want to make as much
+                    // progress as possible before restaring building the WoT, and
+                    // we will not visit any node that was marked as distrusted,
+                    // becuse we check it for every node to be visited
+                    let _ = current_trust_set
+                        .record_distrusted_id(candidate_id.clone(), current.id.clone());
+
                     continue;
                 }
 
-                let effective_trust_level = std::cmp::min(
-                    direct_trust,
-                    visited
-                        .get_effective_trust_level_opt(&current.id)
-                        .expect("Id should have been inserted to `visited` beforehand"),
-                );
+                // Note: we keep visiting nodes, even banned ones, just like they were originally
+                // reported
+                let effective_trust_level =
+                    std::cmp::min(direct_trust, current.effective_trust_level);
                 debug!(
                     "Effective trust for {} {}",
                     candidate_id, effective_trust_level
                 );
 
-                if effective_trust_level < TrustLevel::None {
+                if effective_trust_level <= TrustLevel::None {
                     unreachable!(
-                        "this should not happen: candidate_effective_trust < TrustLevel::None"
+                        "this should not happen: candidate_effective_trust <= TrustLevel::None"
                     );
                 }
 
@@ -1133,7 +1153,7 @@ impl ProofDB {
                     continue;
                 }
 
-                if visited.record_trusted_id(
+                if current_trust_set.record_trusted_id(
                     candidate_id.clone(),
                     current.id.clone(),
                     candidate_total_distance,
@@ -1153,7 +1173,7 @@ impl ProofDB {
             }
         }
 
-        visited
+        current_trust_set
     }
 
     /// Finds which URL is the latest and claimed to belong to the given Id.
@@ -1217,7 +1237,7 @@ impl<'a> UrlOfId<'a> {
     }
 }
 
-/// Details of a one Id that is
+/// Details of a one Id that is trusted
 #[derive(Debug, Clone)]
 struct TrustedIdDetails {
     // distanc from the root of trust
@@ -1225,13 +1245,20 @@ struct TrustedIdDetails {
     // effective, global trust from the root of the WoT
     effective_trust_level: TrustLevel,
     /// People that reported trust for this id
-    referers: HashMap<Id, TrustLevel>,
+    reported_by: HashMap<Id, TrustLevel>,
+}
+
+/// Details of a one Id that is distrusted
+#[derive(Debug, Clone, Default)]
+struct DistrustedIdDetails {
+    /// People that reported distrust for this id
+    reported_by: HashSet<Id>,
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct TrustSet {
     trusted: HashMap<Id, TrustedIdDetails>,
-    distrusted: HashMap<Id, HashSet<Id>>,
+    distrusted: HashMap<Id, DistrustedIdDetails>,
 }
 
 impl TrustSet {
@@ -1239,40 +1266,54 @@ impl TrustSet {
         self.trusted.keys()
     }
 
-    pub fn contains_trusted(&self, id: &Id) -> bool {
+    pub fn is_trusted(&self, id: &Id) -> bool {
         self.trusted.contains_key(id)
     }
 
-    pub fn contains_distrusted(&self, id: &Id) -> bool {
+    pub fn is_distrusted(&self, id: &Id) -> bool {
         self.distrusted.contains_key(id)
     }
 
-    /// Record that an Id is considered trusted
+    /// Record that an Id is reported as distrusted
+    ///
+    /// Return `true` if it was previously considered as trusted,
+    /// and so that WoT traversal needs to be restarted
+    fn record_distrusted_id(&mut self, subject: Id, reported_by: Id) -> bool {
+        let res = self.trusted.remove(&subject).is_some();
+
+        self.distrusted
+            .entry(subject)
+            .or_default()
+            .reported_by
+            .insert(reported_by);
+
+        res
+    }
+
+    /// Record that an Id is reported as trusted
     ///
     /// Returns `true` if this actually added or changed the `subject` details,
     /// which requires revising it's own downstream trusted Id details in the graph algorithm for it.
     fn record_trusted_id(
         &mut self,
         subject: Id,
-        referer: Id,
+        reported_by: Id,
         distance: u64,
         effective_trust_level: TrustLevel,
     ) -> bool {
-        // TODO: turn into log or something
-        // eprintln!(
-        //     "{} -> {} {} ({})",
-        //     referer, subject, distance, effective_trust
-        // );
         use std::collections::hash_map::Entry;
+
+        assert!(effective_trust_level >= TrustLevel::None);
 
         match self.trusted.entry(subject) {
             Entry::Vacant(entry) => {
-                let mut referers = HashMap::default();
-                referers.insert(referer, effective_trust_level);
+                let reported_by = vec![(reported_by, effective_trust_level)]
+                    .into_iter()
+                    .collect();
                 entry.insert(TrustedIdDetails {
                     distance,
                     effective_trust_level,
-                    referers,
+                    reported_by,
                 });
                 true
             }
@@ -1287,7 +1328,7 @@ impl TrustSet {
                     details.effective_trust_level = effective_trust_level;
                     changed = true;
                 }
-                match details.referers.entry(referer) {
+                match details.reported_by.entry(reported_by) {
                     Entry::Vacant(entry) => {
                         entry.insert(effective_trust_level);
                         changed = true;
@@ -1314,6 +1355,7 @@ impl TrustSet {
         self.trusted
             .get(id)
             .map(|details| details.effective_trust_level)
+            .or_else(|| self.distrusted.get(id).map(|_| TrustLevel::Distrust))
     }
 }
 

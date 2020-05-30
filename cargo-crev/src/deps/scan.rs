@@ -330,7 +330,7 @@ impl Scanner {
         let is_unmaintained = self
             .db
             .get_pkg_flags(&proof_pkg_id)
-            .any(|(id, flags)| self.trust_set.contains_trusted(id) && flags.unmaintained);
+            .any(|(id, flags)| self.trust_set.is_trusted(id) && flags.unmaintained);
 
         let owner_set = OwnerSetSet::new(info.id, owner_list.into_iter().flatten());
 

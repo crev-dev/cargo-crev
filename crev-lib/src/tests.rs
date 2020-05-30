@@ -320,6 +320,8 @@ fn proofdb_distrust() -> Result<()> {
     assert!(trust_set.contains(d.as_ref()));
     assert!(!trust_set.contains(e.as_ref()));
 
+    // This introduces a tie between nodes banning each other.
+    // Both should be removed from the trust_set.
     let e_to_d = e.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Distrust)?;
 
     trustdb.import_from_iter(vec![(e_to_d, url)].into_iter());
