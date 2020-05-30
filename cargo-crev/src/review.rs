@@ -107,7 +107,7 @@ pub fn create_review_proof(
             )
         {
             if trust != TrustProofType::Untrust {
-                review.review = prev_review;
+                *review.review_possibly_none_mut() = prev_review;
             }
             review.comment = prev_comment;
             review.advisories = prev_advisories;
@@ -126,7 +126,7 @@ pub fn create_review_proof(
         let mut report = proof::review::package::Issue::new_with_severity("".into(), severity);
         report.severity = severity;
         review.issues.push(report);
-        review.review.rating = Rating::Negative;
+        review.review_possibly_none_mut().rating = Rating::Negative;
     }
 
     review.flags = db
@@ -170,7 +170,7 @@ pub fn find_previous_review_data(
     {
         return Some((
             Some(previous_review.common.date),
-            previous_review.review.to_owned(),
+            previous_review.review_possibly_none().to_owned(),
             previous_review.advisories.to_owned(),
             previous_review.issues.to_owned(),
             previous_review.comment.to_owned(),
@@ -181,7 +181,7 @@ pub fn find_previous_review_data(
         {
             return Some((
                 None,
-                base_review.review.to_owned(),
+                base_review.review_possibly_none().to_owned(),
                 vec![],
                 vec![],
                 base_review.comment.to_owned(),

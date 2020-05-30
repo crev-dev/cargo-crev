@@ -69,7 +69,7 @@ pub struct Package {
     pub diff_base: Option<proof::PackageInfo>,
     #[builder(default = "Default::default()")]
     #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
-    pub review: super::Review,
+    review: super::Review,
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
     pub issues: Vec<Issue>,
@@ -252,6 +252,30 @@ impl Package {
             }
         }
         false
+    }
+
+    /// Get the `Review`
+    ///
+    /// This forces the user to handle reviews that are
+    /// empty (everything is set to None) explicitly.
+    pub fn review(&self) -> Option<&super::Review> {
+        if self.review.is_none() {
+            None
+        } else {
+            Some(&self.review)
+        }
+    }
+
+    /// Get the underlying review.
+    ///
+    /// The caller is responsible for handling the case where
+    /// `review.is_none()`.
+    pub fn review_possibly_none(&self) -> &super::Review {
+        &self.review
+    }
+
+    pub fn review_possibly_none_mut(&mut self) -> &mut super::Review {
+        &mut self.review
     }
 }
 

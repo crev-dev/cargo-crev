@@ -244,7 +244,7 @@ pub fn verify_package_digest(
     let mut trust_count = 0;
     let mut negative_count = 0;
     for matching_reviewer in matching_reviewers {
-        let review = &reviews[matching_reviewer].review;
+        let review = &reviews[matching_reviewer].review_possibly_none();
         if !review.is_none()
             && Rating::Neutral <= review.rating
             && requirements.thoroughness <= review.thoroughness
