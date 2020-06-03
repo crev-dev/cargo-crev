@@ -1,3 +1,4 @@
+use crate::ProofStore;
 use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
@@ -40,4 +41,35 @@ pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf 
         )
     })
     .with_extension("proof.crev")
+}
+
+pub fn store_id_trust_proof(
+    proof: &crev_data::proof::Proof,
+    ids: &[crev_data::Id],
+    trust_or_distrust: crate::TrustProofType,
+    commit: bool,
+) -> crate::Result<()> {
+    let local = crate::Local::auto_open()?;
+    local.insert(&proof)?;
+    if commit {
+        let commit_message = create_id_trust_commit_message(&ids, trust_or_distrust);
+        local.proof_dir_commit(&commit_message)?;
+    }
+    Ok(())
+}
+
+fn create_id_trust_commit_message(
+    ids: &[crev_data::Id],
+    trust_or_distrust: crate::TrustProofType,
+) -> String {
+    let string_ids = ids
+        .iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "Add {t_or_d} for {ids}",
+        t_or_d = trust_or_distrust,
+        ids = string_ids
+    )
 }

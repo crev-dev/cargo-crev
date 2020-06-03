@@ -611,38 +611,20 @@ where
     Ok(())
 }
 
-/// Creates new trust proof interactively
-pub fn create_trust_proof(
-    ids: Vec<Id>,
+/// Creates a new trust proof interactively
+pub fn create_id_trust_proof_interactively(
+    ids: &[Id],
     trust_or_distrust: TrustProofType,
-    proof_create_opt: &opts::CommonProofCreate,
-) -> Result<()> {
+) -> Result<proof::Proof> {
     let local = Local::auto_open()?;
-
     let unlocked_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
-
-    let string_ids = ids
-        .iter()
-        .map(|id| id.to_string())
-        .collect::<Vec<_>>()
-        .join(", ");
     let trust = edit::build_trust_proof_interactively(
         &local,
         unlocked_id.as_public_id(),
-        ids,
+        ids.to_vec(),
         trust_or_distrust,
     )?;
-
-    let proof = trust.sign_by(&unlocked_id)?;
-    let commit_msg = format!(
-        "Add {t_or_d} for {ids}",
-        t_or_d = trust_or_distrust,
-        ids = string_ids
-    );
-
-    maybe_store(&local, &proof, &commit_msg, proof_create_opt)?;
-
-    Ok(())
+    Ok(trust.sign_by(&unlocked_id)?)
 }
 
 pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
