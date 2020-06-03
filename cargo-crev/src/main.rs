@@ -259,25 +259,64 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Id::Trust(args) => {
-                create_trust_proof(
-                    ids_from_string(&args.public_ids)?,
-                    Trust,
-                    &args.common_proof_create,
-                )?;
+                let ids = ids_from_string(&args.public_ids)?;
+                let id_trust_proof_type = Trust;
+                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
+
+                if args.common_proof_create.print_unsigned {
+                    print!("{}", proof.body());
+                }
+                if args.common_proof_create.print_signed {
+                    print!("{}", proof);
+                }
+                if !args.common_proof_create.no_store {
+                    crev_lib::proof::store_id_trust_proof(
+                        &proof,
+                        &ids,
+                        id_trust_proof_type,
+                        !args.common_proof_create.no_commit,
+                    )?;
+                }
             }
             opts::Id::Untrust(args) => {
-                create_trust_proof(
-                    ids_from_string(&args.public_ids)?,
-                    Untrust,
-                    &args.common_proof_create,
-                )?;
+                let ids = ids_from_string(&args.public_ids)?;
+                let id_trust_proof_type = Untrust;
+                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
+
+                if args.common_proof_create.print_unsigned {
+                    print!("{}", proof.body());
+                }
+                if args.common_proof_create.print_signed {
+                    print!("{}", proof);
+                }
+                if !args.common_proof_create.no_store {
+                    crev_lib::proof::store_id_trust_proof(
+                        &proof,
+                        &ids,
+                        id_trust_proof_type,
+                        !args.common_proof_create.no_commit,
+                    )?;
+                }
             }
             opts::Id::Distrust(args) => {
-                create_trust_proof(
-                    ids_from_string(&args.public_ids)?,
-                    Distrust,
-                    &args.common_proof_create,
-                )?;
+                let ids = ids_from_string(&args.public_ids)?;
+                let id_trust_proof_type = Distrust;
+                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
+
+                if args.common_proof_create.print_unsigned {
+                    print!("{}", proof.body());
+                }
+                if args.common_proof_create.print_signed {
+                    print!("{}", proof);
+                }
+                if !args.common_proof_create.no_store {
+                    crev_lib::proof::store_id_trust_proof(
+                        &proof,
+                        &ids,
+                        id_trust_proof_type,
+                        !args.common_proof_create.no_commit,
+                    )?;
+                }
             }
             opts::Id::Query(cmd) => match cmd {
                 opts::IdQuery::Current { trust_params } => {
@@ -387,7 +426,23 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     eprintln!("warning: Could not find Id for URL {}", url);
                 }
             }
-            create_trust_proof(ids, Trust, &args.common_proof_create)?;
+            let id_trust_proof_type = Trust;
+            let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
+
+            if args.common_proof_create.print_unsigned {
+                print!("{}", proof.body());
+            }
+            if args.common_proof_create.print_signed {
+                print!("{}", proof);
+            }
+            if !args.common_proof_create.no_store {
+                crev_lib::proof::store_id_trust_proof(
+                    &proof,
+                    &ids,
+                    id_trust_proof_type,
+                    !args.common_proof_create.no_commit,
+                )?;
+            }
         }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {
