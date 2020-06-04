@@ -68,8 +68,8 @@ fn create_id_trust_commit_message(
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "Add {t_or_d} for {ids}",
-        t_or_d = proof_type,
+        "Add {proof_type} for {ids}",
+        proof_type = proof_type,
         ids = string_ids
     )
 }
