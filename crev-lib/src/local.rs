@@ -586,7 +586,7 @@ impl Local {
         &self,
         from_id: &PublicId,
         ids: Vec<Id>,
-        trust_or_distrust: TrustProofType,
+        proof_type: TrustProofType,
     ) -> Result<proof::trust::Trust> {
         if ids.is_empty() {
             Err(Error::NoIdsGiven)?;
@@ -616,7 +616,7 @@ impl Local {
 
         Ok(from_id.create_trust_proof(
             &public_ids,
-            match trust_or_distrust {
+            match proof_type {
                 TrustProofType::Trust => TrustLevel::Medium,
                 TrustProofType::Distrust => TrustLevel::Distrust,
                 TrustProofType::Untrust => TrustLevel::None,
