@@ -140,7 +140,7 @@ of the available functionality.
 
 A subcommand determines the action taken by `cargo-crev`. Some subcommand of `cargo-crev` offer 
 an additional level of subcommands. Some of these cascaded subcommands are provided by shortcuts, 
-such as `verify` for `crate  verify`. For specific help regarding a subcommand use the flag `-h`.
+such as `verify` for `crate  verify`. For specific help regarding a subcommand use the `-h` flag.
 
 Note: You can abbreviate most of `cargo-crev` subcommands. So you can save some keypresses with: `cargo crev c v`.
 
