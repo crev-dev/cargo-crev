@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The goal of this guide is to introduce you to the [`crev`](https://github.com/crev-dev/cargo-crev)
+The goal of this guide is to introduce you to the [`crev`](https://github.com/crev-dev/crev)
 review system, the [`cargo crev`](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev) command,
 ideas behind them and describe the basic workflows that will allow you to start using them.
 
@@ -21,8 +21,7 @@ them between developers to coordinate a distributed ecosystem of code review.
 
 While `crev` itself is generic and abstract, to be a practical tool it requires integration
 with the given ecosystem of each programming language. `cargo-crev` is an implementation of `crev` for
-Rust programming language, tightly integrated with its package manager: `cargo`. The goal
-of `cargo-crev` is helping Rust community verify and review all the dependencies published
+Rust programming language, tightly integrated with its package manager: [`cargo`](https://doc.rust-lang.org/book/ch01-03-hello-cargo.html). The goal of `cargo-crev` is helping Rust community verify and review all the dependencies published
 on http://crates.io and used by Rust developers.
 
 `cargo-crev` is a command line tool, similar in nature to tools like `git`. Integration
@@ -41,21 +40,45 @@ Static binaries build by CI pipeline are available on [crev's releases](https://
 
 #### Dependencies
 
-Regrettably `cargo-crev` requires a non-Rust dependency to compile, as OpenSSL
+Currently `cargo-crev` requires a non-Rust dependency to compile, as OpenSSL
 is required for TLS support.
 
 Though OpenSSL is popular and readily available, it's virtually impossible to cover installing
-it on all the available operating systems. In case of problems, don't hesitate to ask for help.
+it on all the available operating systems. We list some examples below. They should have matching commands and similar package names in the Unix-like OS of your choice.
 
-##### Unix
+In case of problems, don't hesitate to ask for help. 
 
-The following should work on Ubuntu:
+##### Debian and Ubuntu 
+
+The following should work on Debian and Debian based distributions such as Ubuntu:
 
 ```text
 sudo apt-get install openssl libssl-dev
 ```
 
-and should have matching command in the Unix-like OS of your choice.
+##### Arch Linux
+
+On Arch and Arch based distributions such as Manjaro make sure the latest OpenSSL is installed:
+
+```text
+sudo pacman -Syu openssl
+```
+
+##### RedHat
+
+On RedHat and its derivates Fedora and CentOS the following should work:
+
+```text
+sudo yum install openssl openssl-devel
+```
+
+##### SuSE
+
+On SuSE Linux the following should work:
+
+```text
+sudo zypper install openssl libopenssl-devel
+```
 
 #### Compiling
 
@@ -85,29 +108,61 @@ When installed `cargo-crev` can be run like this:
 
 ```text
 $ cargo crev
-cargo-crev 0.9.0
-Dawid Ciężarkiewicz <dpc@dpc.pw>
-Scalable, social, Code REView system that we desperately need - Rust/cargo frontend
+cargo-crev 0.17.0
 
 USAGE:
-    cargo-crev crev <SUBCOMMAND>
+    cargo crev <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 SUBCOMMANDS:
-    config    Config
-    crate     Crate related operations (review, verify...)
-    help      Prints this message or the help of the given subcommand(s)
-    id        Id (own and of other users)
-    repo      Proof Repository - store of proofs
+    config     Local configuration
+    crate      Crate related operations (review, verify...)
+    id         Id (own and of other users)
+    proof      Find a proof in the proof repo
+    repo       Proof Repository
+    trust      Add a Trust proof by an Id or a URL
+    goto       Shortcut for `crate goto`
+    open       Shortcut for `crate open`
+    publish    Shortcut for `repo publish`
+    review     Shortcut for `crate review`
+    update     Shortcut for `repo update`
+    verify     Shortcut for `crate verify`
 ```
 
 As you can see, by default `cargo crev` displays the built in help. Try it and
 scan briefly over `SUBCOMMANDS` section. It should give you a good overview
 of the available functionality.
 
+## Using Subcommands
+
+A subcommand determines the action taken by `cargo-crev`. Some subcommand of `cargo-crev` offer 
+an additional level of subcommands. Some of these cascaded subcommands are provided by shortcuts, 
+such as `verify` for `crate  verify`. For specific help regarding a subcommand use the flag `-h`.
+
+Note: You can abbreviate most of `cargo-crev` subcommands. So you can save some keypresses with: `cargo crev c v`.
+
+```
+text
+$ cargo crev config -h
+cargo-crev-config 0.17.0
+Local configuration
+
+USAGE:
+    cargo crev config <SUBCOMMAND>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    completions    Completions
+    dir            Print the dir containing config files
+    edit           Edit the config file
+    help           Prints this message or the help of the given subcommand(s)
+```
 
 ## Verifying
 
@@ -120,17 +175,14 @@ through `cargo crev crate verify` command. This is one of the most important and
 Let's take a look:
 
 ```text
-$ cargo crev crate verify
-status reviews     downloads    own. issues lines  geiger flgs crate                version         latest_t
-none    0  0   354897   1504220 0/5    0/0   2249     504      core-foundation      0.5.1
-none    0  0   530853   1026015 0/1    0/0    429       2      scoped_threadpool    0.1.9
-none    0  0  1045209   2648161 1/1    0/0    403       3      same-file            1.0.4
-none    0  0   395480  11267511 1/3    0/0   9563       0 CB   serde                1.0.90
-(...)
+$ cargo crev crate verify --show-all --skip-indirect
+digest                                      status reviews     downloads       owner issues    loc geiger flgs lpidx crate                version         latest_t       
+dVQxGEaHcfAqvwThsn36nLQiSqOR_qvZYTf0tgMX98s none     0   0  3008623   6631360  0   1  0   0    211      0 ____  7339 adler32              1.0.4           
+1nHDTyWmT6V19umoimQWYccblq1AHG9SNDWfqOb8D8U none     0   0  1770811  10749683  1   1  0   0   1295    206 CB__  1419 arrayvec             0.4.12          
+svZHC251mVIE-ep8Gwc7VhQ60aHyQ50uc3ZTVaHOq7Y none     0   0    93405    886797  0   2  0   0   1245      0 ____   119 ammonia              2.1.2           
+5RqRXABIJly1ZZlqphYktM2CeAOUC8ry8eeHbjiUmqs none     0   0   368513    429505  0   2  0   0   6166     19 ____     3 actix-net            0.2.6           
+-                                           local    0   0        ?         ?  ?   ?  0   0      3      0 ____     0 cargo-crev-demo      0.1.0*
 ```
-
-Note: You can abbreviate most of `cargo-crev` subcommands. So you can
-save some keypresses with: `cargo crev c v`.
 
 The actual output is using color to make the data more accessible.
 
@@ -143,10 +195,10 @@ On the right side `crate` and `version` indicate for which crate (in a given ver
 values in other columns are calculated and displayed for.
 
 The `status` column displays the verification status for each crate. A `pass` value
-indicates it has been reviewed by enough trusted people to consider it trustworthy.
+indicates it has been reviewed by enough trusted people (default is `1`) to consider it trustworthy.
 
 Verification of dependencies is considered as successful only if all the values
-in `trust` column contain `pass` value.
+in `status` column contain `pass` value.
 
 If you just started using `crev`, your Rust project probably has more than 100
 dependencies, and all of them are not passing the verification. That's the reason
@@ -284,14 +336,14 @@ comment: ""
 
 Editing the proof is modeled after editing a commit message through `git commit`.
 As you can see helpful documentation is available in the editor. Don't forget
-to read it at some point.
+to read it at some [point](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-trust.md).
 
 When creating a *trust proof* you have to decide on the trust level,
 and optionally add a comment about the nature of this trust relationship.
 
 ## Transitive effective trust
 
-When you are done, have saved the proof and closed the editor, you should be able query
+When you are done, have saved the proof and closed the editor, you should be able to query
 all the ids you trust.
 
 ```text
@@ -327,12 +379,9 @@ Fetching https://github.com/dpc/crev-proofs... OK
 ```
 
 You can also consider fetching *proofs* from all the users `crev` is aware of - even ones that
-are not par of your *WoT*. Use `cargo crev repo fetch all` for that.
-
-
+are not part of your *WoT*. Use `cargo crev repo fetch all` for that.
 
 ## Reviewing code
-
 
 Try `cargo crev crate verify` again.
 
@@ -340,9 +389,8 @@ If you are moderately lucky, at least some of the dependencies are now passing t
 
 But ultimately someone has to do the review, and at least sometimes you will have to do it yourself.
 
-Scan the output of `cargo crev crate verify` and pick a crate with low `lines` count. For your first
+Scan the output of `cargo crev crate verify` and pick a crate with low `loc` count. For your first
 review you want to start small and easy.
-
 
 At the moment of writing this `cargo crev` provides two methods of reviewing crate source code:
 
@@ -366,6 +414,10 @@ set to a copy of the crate source code stored by `cargo` itself.
 You're now free to use `Vim` or any other commands and text editors to investigate the content of the crate.
 `tree -alh` or `ls` are a typical starting commands, followed by `vi <path_to_rs_file>`.
 
+Also consider using [`cargo tree`](https://crates.io/crates/cargo-tree) which is part of `cargo` as of `cargo 1.44.0`, 
+[`cargo-audit`](https://crates.io/crates/cargo-audit) and 
+[`cargo-outdated`](https://crates.io/crates/cargo-outdated).
+
 Now go ahead and review! It might be a novel experience, but it is the core of `crev` - we can not build
 trust if no one ever actually reviews any code. Try to be thorough, but at the same time: do not push
 yourself too much or let the fear make you not review at all.
@@ -384,7 +436,6 @@ Example. VSCode users can run:
 ```text
 $ cargo crev open <crate> --cmd "code --wait -n" --cmd-save
 ```
-
 
 `--cmd-save` will make `crev` remember the `--cmd` paramter in the future, so it does not have to be
 repeated every time. The exact `--cmd` to use for each IDE can vary, and you can ask for help in figuring it out
@@ -430,7 +481,7 @@ comment: ""
 (...)
 ```
 
-Again, a helpful comment section documents the basic guidelines of *review proof*.
+Again, a helpful comment section documents the basic guidelines of *review proof*, read it [here](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-package-review.md).
 
 The most important part is: just be truthful.
 
@@ -520,7 +571,7 @@ Now that your work is public, the only thing left is to help other people find i
 a *trust proof* for your `CrevId` (even with `trust: none` settings), your *proof repository* is not
 easily discoverable.
 
-You can ask other people to include them in their *WoT* by publishing a blog-post, sending a tweet, sending message on
+You can ask other people to include your `CrevID` in their *WoT* by publishing a blog-post, sending a tweet, sending message on
 [`crev's` gitter channel](https://gitter.im/dpc/crev) or adding it to the
 [official bootstrapping wiki-page list of crev *proof repositories*](https://github.com/crev-dev/cargo-crev/wiki/List-of-Proof-Repositories)
 
@@ -536,4 +587,4 @@ and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
 * Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
-* Security and serious flaws can be reported with `advise` and are visible in the `advisr` output of `verify`.
+* Security and serious flaws can be reported with `review --advisory` and are visible in the `issues` output of `verify`.
