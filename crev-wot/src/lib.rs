@@ -1121,7 +1121,9 @@ impl ProofDB {
                     candidate_id, effective_trust_level
                 );
 
-                if effective_trust_level <= TrustLevel::None {
+                if effective_trust_level == TrustLevel::None {
+                    continue;
+                } else if effective_trust_level < TrustLevel::None {
                     unreachable!(
                         "this should not happen: candidate_effective_trust <= TrustLevel::None"
                     );
