@@ -144,8 +144,7 @@ such as `verify` for `crate  verify`. For specific help regarding a subcommand u
 
 Note: You can abbreviate most `cargo-crev` subcommands. For example: `cargo crev c v`.
 
-```
-text
+```text
 $ cargo crev config -h
 cargo-crev-config 0.17.0
 Local configuration
