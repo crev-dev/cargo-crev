@@ -334,8 +334,9 @@ comment: ""
 ```
 
 Editing the proof is modeled after editing a commit message through `git commit`.
-As you can see helpful documentation is available in the editor. Don't forget
-to read it at some [point](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-trust.md).
+As you can see 
+[helpful documentation](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-trust.md) 
+is available in the editor. Don't forget to read it at some point.
 
 When creating a *trust proof* you have to decide on the trust level,
 and optionally add a comment about the nature of this trust relationship.
