@@ -614,7 +614,7 @@ where
 /// Creates a new trust proof interactively
 pub fn create_id_trust_proof_interactively(
     ids: &[Id],
-    trust_or_distrust: TrustProofType,
+    proof_type: TrustProofType,
 ) -> Result<proof::Proof> {
     let local = Local::auto_open()?;
     let unlocked_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
@@ -622,7 +622,7 @@ pub fn create_id_trust_proof_interactively(
         &local,
         unlocked_id.as_public_id(),
         ids.to_vec(),
-        trust_or_distrust,
+        proof_type,
     )?;
     Ok(trust.sign_by(&unlocked_id)?)
 }

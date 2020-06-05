@@ -46,13 +46,13 @@ pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf 
 pub fn store_id_trust_proof(
     proof: &crev_data::proof::Proof,
     ids: &[crev_data::Id],
-    trust_or_distrust: crate::TrustProofType,
+    proof_type: crate::TrustProofType,
     commit: bool,
 ) -> crate::Result<()> {
     let local = crate::Local::auto_open()?;
     local.insert(&proof)?;
     if commit {
-        let commit_message = create_id_trust_commit_message(&ids, trust_or_distrust);
+        let commit_message = create_id_trust_commit_message(&ids, proof_type);
         local.proof_dir_commit(&commit_message)?;
     }
     Ok(())
@@ -60,7 +60,7 @@ pub fn store_id_trust_proof(
 
 fn create_id_trust_commit_message(
     ids: &[crev_data::Id],
-    trust_or_distrust: crate::TrustProofType,
+    proof_type: crate::TrustProofType,
 ) -> String {
     let string_ids = ids
         .iter()
@@ -68,8 +68,8 @@ fn create_id_trust_commit_message(
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "Add {t_or_d} for {ids}",
-        t_or_d = trust_or_distrust,
+        "Add {proof_type} for {ids}",
+        proof_type = proof_type,
         ids = string_ids
     )
 }

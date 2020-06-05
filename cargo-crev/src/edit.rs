@@ -161,9 +161,9 @@ pub fn build_trust_proof_interactively(
     local: &Local,
     from_id: &PublicId,
     ids: Vec<Id>,
-    trust_or_distrust: TrustProofType,
+    proof_type: TrustProofType,
 ) -> Result<proof::trust::Trust> {
-    let trust = local.build_trust_proof(from_id, ids, trust_or_distrust)?;
+    let trust = local.build_trust_proof(from_id, ids, proof_type)?;
 
     // TODO: Look up previous trust proof?
     Ok(edit_proof_content_iteractively(&trust, None, None)?)
