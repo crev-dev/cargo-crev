@@ -194,7 +194,7 @@ On the right side `crate` and `version` indicate for which crate (in a given ver
 values in other columns are calculated and displayed for.
 
 The `status` column displays the verification status for each crate. A `pass` value
-indicates it has been reviewed by enough trusted people (default is `1`) to consider it trustworthy.
+indicates that it has been reviewed by a sufficient number of trusted peers.
 
 Verification of dependencies is considered as successful only if all the values
 in `status` column contain `pass` value.
