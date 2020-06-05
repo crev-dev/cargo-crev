@@ -388,7 +388,7 @@ If you are moderately lucky, at least some of the dependencies are now passing t
 
 But ultimately someone has to do the review, and at least sometimes you will have to do it yourself.
 
-Scan the output of `cargo crev crate verify` and pick a crate with low `loc` count. For your first
+Scan the output of `cargo crev crate verify` and pick a crate with low lines of code (`loc`) count. For your first
 review you want to start small and easy.
 
 At the moment of writing this `cargo crev` provides two methods of reviewing crate source code:
