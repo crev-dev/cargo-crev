@@ -11,7 +11,7 @@ Other users might use information you provide, to judge software quality
 and trustworthiness.
 
 Your Proofs are cryptographically signed and will circulate in the ecosystem.
-While there is no explicit or implicity legal responsibility attached to
+While there is no explicit or implicit legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 

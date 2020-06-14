@@ -12,7 +12,7 @@ Other users might use information you provide, to judge software quality
 and trustworthiness.
 
 Your Proofs are cryptographically signed and will circulate in the ecosystem.
-While there is no explicit or implicity legal responsibility attached to
+While there is no explicit or implicit legal responsibility attached to
 using `crev` system, other people will most probably use it to judge you,
 your other work, etc.
 
@@ -56,7 +56,7 @@ By creating and publishing proofs, you implicitly agree to other people freely u
 * `issues` - issues report a problem in a release (list)
     * `id` - an ID of an issue
     * `severity` - same as in the `advisories` section
-* `alternatives` - potential alternatives, similiar or better; elements
+* `alternatives` - potential alternatives, similar or better; elements
   of the list with an empty `name` will be automatically ignored and removed
 * `flags` - additional flags
   * `unmaintained` - package is not maintained or abandoned; **NOTE**: this
