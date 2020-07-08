@@ -29,7 +29,7 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
 /// Retruns the edited string, and bool indicating if the file was ever written to/ (saved).
 fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
     let dir = tempdir::TempDir::new("crev")?;
-    let file_path = dir.path().join("crev.review");
+    let file_path = dir.path().join("crev.review.yaml");
     std::fs::write(&file_path, text)?;
 
     let starting_ts = std::fs::metadata(&file_path)?
