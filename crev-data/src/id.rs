@@ -5,9 +5,12 @@ use crev_common::{
 };
 use derive_builder::Builder;
 use ed25519_dalek::{self, PublicKey, SecretKey};
+use ed25519_dalek::Signer;
+use ed25519_dalek::Verifier;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::convert::TryFrom;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IdType {
@@ -90,7 +93,7 @@ impl Id {
 
                 let sig_bytes = crev_common::base64_decode(sig_str)
                     .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
-                let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes)
+                let signature = ed25519_dalek::Signature::try_from(sig_bytes.as_slice())
                     .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
                 pubkey
                     .verify(&content, &signature)
