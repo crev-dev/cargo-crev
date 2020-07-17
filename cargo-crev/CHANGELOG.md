@@ -8,6 +8,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-url -->
 ## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.22.2...HEAD) - ReleaseDate
+
+- Ignore cargo directory source replacements - this essentially ignores `cargo vendor` and `cargo crev` will not read vendored sources
+
 ## [0.22.2](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...v0.22.2) - 2022-01-11
 
 - Use `cargo-release` to make our release process more reasonable.
