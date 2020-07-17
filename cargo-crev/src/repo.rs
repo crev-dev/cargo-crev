@@ -285,12 +285,7 @@ fn prune_directory_source_replacements(
         let mut source_graph = petgraph::Graph::<String, ()>::new();
         let nodes = source_config
             .keys()
-            .map(|source_key| {
-                (
-                    source_key.clone(),
-                    source_graph.add_node(source_key.clone()),
-                )
-            })
+            .map(|source_key| (source_key, source_graph.add_node(source_key.clone())))
             .collect::<HashMap<_, _>>();
 
         source_config
@@ -309,8 +304,7 @@ fn prune_directory_source_replacements(
                 }
             });
         source_graph.reverse();
-        let mut source_entries_to_delete: HashSet<String> = HashSet::new();
-        source_graph
+        let source_entries_to_delete: HashSet<&String> = source_graph
             .externals(petgraph::Direction::Incoming)
             .filter(|leaf_node| {
                 let leaf_source = &source_graph[*leaf_node];
@@ -321,12 +315,14 @@ fn prune_directory_source_replacements(
                 }
                 return false;
             })
-            .for_each(|leaf_node| {
-                let mut bfs = petgraph::visit::Bfs::new(&source_graph, leaf_node);
-                while let Some(nx) = bfs.next(&source_graph) {
-                    source_entries_to_delete.insert(source_graph[nx].clone());
-                }
-            });
+            .flat_map(|leaf_node| {
+                petgraph::visit::Walker::iter(
+                    petgraph::visit::Bfs::new(&source_graph, leaf_node),
+                    &source_graph,
+                )
+            })
+            .map(|node| &source_graph[node])
+            .collect();
 
         source_config.retain(|source_name, _| !source_entries_to_delete.contains(source_name));
     }
