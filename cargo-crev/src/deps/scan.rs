@@ -38,7 +38,7 @@ pub struct Scanner {
     trust_set: TrustSet,
     min_ignore_list: fnv::FnvHashSet<PathBuf>,
     full_ignore_list: fnv::FnvHashSet<PathBuf>,
-    crates_io: Arc<crates_io::Client>,
+    local: Arc<crev_lib::Local>,
     known_owners: HashSet<String>,
     requirements: crev_lib::VerificationRequirements,
     recursive: bool,
@@ -67,7 +67,6 @@ impl Scanner {
         };
         let min_ignore_list = cargo_min_ignore_list();
         let full_ignore_list = cargo_full_ignore_list(false);
-        let crates_io = crates_io::Client::new(&local)?;
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());
         let requirements =
             crev_lib::VerificationRequirements::from(args.common.requirements.clone());
@@ -117,7 +116,7 @@ impl Scanner {
             trust_set,
             min_ignore_list,
             full_ignore_list,
-            crates_io: Arc::new(crates_io),
+            local: Arc::new(local),
             known_owners,
             requirements,
             recursive: args.recursive,
@@ -129,6 +128,10 @@ impl Scanner {
             crate_details_by_id: Default::default(),
             roots,
         })
+    }
+
+    fn crates_io(&self) -> Result<crates_io::Client> {
+        crates_io::Client::new(&self.local)
     }
 
     pub fn selected_crate_count(&self) -> usize {
@@ -275,12 +278,12 @@ impl Scanner {
             total: total_reviews_count as u64,
         };
 
-        let downloads = self
-            .crates_io
+        let crates_io = self.crates_io()?;
+        let downloads = crates_io
             .get_downloads_count(&pkg_name, &pkg_version)
             .ok();
 
-        let owner_list = self.crates_io.get_owners(&pkg_name).ok();
+        let owner_list = crates_io.get_owners(&pkg_name).ok();
         let known_owners = match &owner_list {
             Some(owner_list) => {
                 let total_owners_count = owner_list.len();

@@ -63,7 +63,10 @@ impl Client {
         let cache_dir = local.get_root_cache_dir().join("crates_io");
         fs::create_dir_all(&cache_dir)?;
         Ok(Self {
-            client: crates_io_api::SyncClient::new(),
+            client: crates_io_api::SyncClient::new(
+                "cargo-crev",
+                std::time::Duration::from_millis(1000),
+            )?,
             cache_dir,
         })
     }
