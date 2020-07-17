@@ -11,7 +11,12 @@ use cargo::{
         FeatureValue, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
-    util::{important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
+    util::{
+        self,
+        config::{Config, ConfigValue},
+        important_paths::find_root_manifest_for_wd,
+        CargoResult, Rustc,
+    },
 };
 use cargo_platform::Cfg;
 use petgraph::graph::NodeIndex;
@@ -270,10 +275,74 @@ fn build_graph<'a>(
     Ok(graph)
 }
 
+/// Modifies the given config so that directory source replacements are removed, and references to them as well.
+///
+/// - For information on directory sources, [see here](https://doc.rust-lang.org/cargo/reference/source-replacement.html#directory-sources)
+/// - For information on source replacement, [see here](https://doc.rust-lang.org/cargo/reference/config.html#source)
+fn prune_directory_source_replacements(
+    config: &mut HashMap<String, ConfigValue>,
+) -> CargoResult<()> {
+    if let Some(ConfigValue::Table(ref mut source_config, _)) = config.get_mut("source") {
+        // To do the pruning, first, generate a graph of registry sources, where the node are the sources, and there is an edge if a source
+        //  defines that it is replaced with another source.
+        // Then, find the directory sources, and traverse the graph in reverse to find all the sources that are directory sources, or reference them
+        //  directly or indirectly.
+        // Then, the found sources can be removed from the config.
+        let mut source_graph = petgraph::Graph::<String, ()>::new();
+        let nodes = source_config
+            .keys()
+            .map(|source_key| {
+                (
+                    source_key.clone(),
+                    source_graph.add_node(source_key.clone()),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        source_config
+            .iter()
+            .for_each(|(source_name, source_config_entry)| {
+                if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
+                    if let Some(ConfigValue::String(replacement, _)) =
+                        source_config_entry.get("replace-with")
+                    {
+                        source_graph.add_edge(
+                            *nodes.get(source_name).unwrap(),
+                            *nodes.get(replacement).unwrap(),
+                            (),
+                        );
+                    }
+                }
+            });
+        source_graph.reverse();
+        let mut source_entries_to_delete: HashSet<String> = HashSet::new();
+        source_graph
+            .externals(petgraph::Direction::Incoming)
+            .filter(|leaf_node| {
+                let leaf_source = &source_graph[*leaf_node];
+                if let ConfigValue::Table(ref source_config_entry, _) = source_config[leaf_source] {
+                    if let Some(ConfigValue::String(_, _)) = source_config_entry.get("directory") {
+                        return true;
+                    }
+                }
+                return false;
+            })
+            .for_each(|leaf_node| {
+                let mut bfs = petgraph::visit::Bfs::new(&source_graph, leaf_node);
+                while let Some(nx) = bfs.next(&source_graph) {
+                    source_entries_to_delete.insert(source_graph[nx].clone());
+                }
+            });
+
+        source_config.retain(|source_name, _| !source_entries_to_delete.contains(source_name));
+    }
+    Ok(())
+}
+
 /// A handle to the current Rust project
 pub struct Repo {
     manifest_path: PathBuf,
-    config: cargo::util::config::Config,
+    config: Config,
     cargo_opts: opts::CargoOpts,
     features_list: Vec<String>,
 }
@@ -290,7 +359,7 @@ impl Repo {
             let cwd = env::current_dir()?;
             find_root_manifest_for_wd(&cwd)?
         };
-        let mut config = cargo::util::config::Config::default()?;
+        let mut config = Config::default()?;
         config.configure(
             0,
             /* quiet */ false,
@@ -302,6 +371,10 @@ impl Repo {
             &cargo_opts.unstable_flags,
             &[],
         )?;
+
+        config.load_values()?;
+        prune_directory_source_replacements(config.values_mut()?)?;
+
         // how it used to be; can't find it anywhere anymore
         // let features_set =
         //     Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
@@ -362,7 +435,11 @@ impl Repo {
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
         let host = rustc.host.to_string();
 
-        let target = self.cargo_opts.target.as_ref().map(|target| target.as_ref().unwrap_or(&host).as_str());
+        let target = self
+            .cargo_opts
+            .target
+            .as_ref()
+            .map(|target| target.as_ref().unwrap_or(&host).as_str());
 
         let cfgs = get_cfgs(&rustc, target)?;
         let graph = build_graph(&resolve, &packages, roots.into_iter(), target, &cfgs)?;
@@ -624,5 +701,181 @@ impl Repo {
                 .map(|m| m.package_id())
                 .collect())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cargo::util::config::Definition;
+
+    #[test]
+    fn test_prune_directory_source_replacement() {
+        // Test that:
+        // {
+        //     "source": {"crates-io": {"replace-with": my-vendor-source (from --config cli option)},
+        //                "another-source": {"registry": path/to/registry (from --config cli option)},
+        //                "my-vendor-source": {"directory": vendor (from --config cli option)}},
+        // }
+        // becomes:
+        // {
+        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)}},
+        // }
+        //
+        // the "my-vendor-source" should get removed because it's a directory source replacement,
+        // and "crates-io" should get removed because it referenced the removed "my-vendor-source"
+        let crates_io_source_replacement = ConfigValue::Table(
+            [(
+                "replace-with".into(),
+                ConfigValue::String("my-vendor-source".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let directory_replacement = ConfigValue::Table(
+            [(
+                "directory".into(),
+                ConfigValue::String("vendor".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let registry_replacement = ConfigValue::Table(
+            [(
+                "registry".into(),
+                ConfigValue::String("path/to/registry".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let source_table = ConfigValue::Table(
+            [
+                ("crates-io".into(), crates_io_source_replacement),
+                ("my-vendor-source".into(), directory_replacement),
+                ("another-source".into(), registry_replacement.clone()),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let mut config_table = [("source".into(), source_table)].iter().cloned().collect();
+
+        let expected_source_table = ConfigValue::Table(
+            [("another-source".into(), registry_replacement)]
+                .iter()
+                .cloned()
+                .collect(),
+            Definition::Cli,
+        );
+        let expected_config_table = [("source".into(), expected_source_table)]
+            .iter()
+            .cloned()
+            .collect();
+
+        prune_directory_source_replacements(&mut config_table).unwrap();
+        assert_eq!(config_table, expected_config_table);
+    }
+
+    #[test]
+    fn test_prune_directory_source_replacement_nested() {
+        // Test that:
+        // {
+        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)},
+        //                "nested-vendor-source": {"directory": vendor (from --config cli option)},
+        //                "my-vendor-source": {"replace-with": nested-vendor-source (from --config cli option)},
+        //                "crates-io": {"replace-with": my-vendor-source (from --config cli option)}},
+        // }
+        // becomes:
+        // {
+        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)}},
+        // }
+        //
+        // the "nested-vendor-source" should get removed because it's a directory source replacement,
+        // and "my-vendor-source" should get removed because it referenced the removed "nested-vendor-source"
+        // and "crates-io" should get removed because it referenced the removed "my-vendor-source"
+        let crates_io_source_replacement = ConfigValue::Table(
+            [(
+                "replace-with".into(),
+                ConfigValue::String("my-vendor-source".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let nested_replacement = ConfigValue::Table(
+            [(
+                "replace-with".into(),
+                ConfigValue::String("nested-vendor-source".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let directory_replacement = ConfigValue::Table(
+            [(
+                "directory".into(),
+                ConfigValue::String("vendor".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let registry_replacement = ConfigValue::Table(
+            [(
+                "registry".into(),
+                ConfigValue::String("path/to/registry".into(), Definition::Cli),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let source_table = ConfigValue::Table(
+            [
+                ("crates-io".into(), crates_io_source_replacement),
+                ("my-vendor-source".into(), nested_replacement),
+                ("nested-vendor-source".into(), directory_replacement),
+                ("another-source".into(), registry_replacement.clone()),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+            Definition::Cli,
+        );
+
+        let mut config_table = [("source".into(), source_table)].iter().cloned().collect();
+
+        let expected_source_table = ConfigValue::Table(
+            [("another-source".into(), registry_replacement)]
+                .iter()
+                .cloned()
+                .collect(),
+            Definition::Cli,
+        );
+        let expected_config_table = [("source".into(), expected_source_table)]
+            .iter()
+            .cloned()
+            .collect();
+
+        prune_directory_source_replacements(&mut config_table).unwrap();
+        assert_eq!(config_table, expected_config_table);
     }
 }
