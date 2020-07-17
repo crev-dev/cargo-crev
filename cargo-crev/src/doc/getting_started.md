@@ -46,9 +46,9 @@ is required for TLS support.
 Though OpenSSL is popular and readily available, it's virtually impossible to cover installing
 it on all the available operating systems. We list some examples below. They should have matching commands and similar package names in the Unix-like OS of your choice.
 
-In case of problems, don't hesitate to ask for help. 
+In case of problems, don't hesitate to ask for help.
 
-##### Debian and Ubuntu 
+##### Debian and Ubuntu
 
 The following should work on Debian and Debian based distributions such as Ubuntu:
 
@@ -108,7 +108,7 @@ When installed `cargo-crev` can be run like this:
 
 ```text
 $ cargo crev
-cargo-crev 0.17.0
+cargo-crev 0.18.0
 
 USAGE:
     cargo crev <SUBCOMMAND>
@@ -138,15 +138,15 @@ of the available functionality.
 
 ## Using Subcommands
 
-A subcommand determines the action taken by `cargo-crev`. Some subcommand of `cargo-crev` offer 
-an additional level of subcommands. Some of these cascaded subcommands are provided by shortcuts, 
+A subcommand determines the action taken by `cargo-crev`. Some subcommand of `cargo-crev` offer
+an additional level of subcommands. Some of these cascaded subcommands are provided by shortcuts,
 such as `verify` for `crate  verify`. For specific help regarding a subcommand use the `-h` flag.
 
 Note: You can abbreviate most `cargo-crev` subcommands. For example: `cargo crev c v`.
 
 ```text
 $ cargo crev config -h
-cargo-crev-config 0.17.0
+cargo-crev-config 0.18.0
 Local configuration
 
 USAGE:
