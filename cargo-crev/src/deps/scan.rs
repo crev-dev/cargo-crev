@@ -312,6 +312,7 @@ impl Scanner {
         };
 
         let crates_io = self.crates_io()?;
+
         let downloads = if required_details.downloads {
             crates_io.get_downloads_count(&pkg_name, pkg_version).ok()
         } else {
