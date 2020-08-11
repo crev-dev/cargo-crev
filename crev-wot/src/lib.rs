@@ -35,7 +35,7 @@ pub enum Error {
     Data(#[from] crev_data::Error),
 }
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<T, E=Error> = std::result::Result<T, E>;
 
 /// Where a proof has been fetched from
 #[derive(Debug, Clone)]
