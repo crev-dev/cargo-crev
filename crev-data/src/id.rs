@@ -4,13 +4,10 @@ use crev_common::{
     serde::{as_base64, from_base64},
 };
 use derive_builder::Builder;
-use ed25519_dalek::{self, PublicKey, SecretKey};
-use ed25519_dalek::Signer;
-use ed25519_dalek::Verifier;
+use ed25519_dalek::{self, PublicKey, SecretKey, Signer, Verifier};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IdType {

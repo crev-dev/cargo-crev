@@ -120,7 +120,7 @@ pub enum Error {
     Id(#[from] IdError),
 }
 
-type Result<T, E=Error> = std::result::Result<T, E>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Trait representing a place that can keep proofs (all reviews and trust proofs)
 ///
