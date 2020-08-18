@@ -13,10 +13,7 @@ matrix:
 
     # OSX release build
     - env: DEPLOY=1 TARGET=x86_64-apple-darwin OPENSSL_STATIC=yes
-      before_script:
-        - rustup component add rustfmt
       script:
-        - cargo fmt --all -- --check
         - cargo build --locked --release --target $TARGET
       os: osx
 
@@ -24,22 +21,24 @@ matrix:
     - env: DEPLOY=1 TARGET=x86_64-unknown-linux-musl OPENSSL_STATIC=yes
       before_script:
         - rustup target add $TARGET
-        - rustup component add rustfmt
       script:
-        - cargo fmt --all -- --check
         - cargo build --locked --release --target $TARGET
       addons:
         apt:
           packages:
-          - musl-tools
-          - linux-headers-generic
+            - musl-tools
+            - linux-headers-generic
+
+    - name: nightly rustfmt
+      rust: nightly-2020-08-17
+      script:
+        - rustup component add rustfmt
+        - cargo fmt --all -- --check
 
   allow_failures:
     - rust: nightly
 
 script:
-  - rustup component add rustfmt
-  - cargo fmt --all -- --check
   - cargo build --release --locked --verbose
   - RUST_BACKTRACE=1 cargo test --release --locked --all --verbose
   # Requires PR #321
@@ -54,13 +53,11 @@ deploy:
   file_glob: true
   file: cargo-crev-$TRAVIS_TAG-$TARGET.*
   on:
-    condition: $TRAVIS_RUST_VERSION = stable
-    condition: $DEPLOY = 1
+    condition: $TRAVIS_RUST_VERSION = stable && $DEPLOY = 1
     tags: true
   provider: releases
   skip_cleanup: true
 
-cache: cargo
 before_cache:
   # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo
