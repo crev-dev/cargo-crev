@@ -27,7 +27,7 @@ crev-wot = { path = "../crev-wot", version = "0.18.0" }
 crev-lib = { path = "../crev-lib", version = "0.18.0" }
 anyhow = "1.0.31"
 atty = "0.2.14"
-cargo = "0.46"
+cargo = "0.47.0"
 cargo-platform = "0.1.1"
 chrono = "0.4.11"
 crates_io_api = "0.6"
@@ -50,7 +50,7 @@ structopt = "0.3.13"
 term = "0.6.1"
 termimad = "0.6"
 time = "0.2.9"
-tokei = "11.0.0"
+tokei = "12.0.4"
 walkdir = "2.3.1"
 openssl-sys = { version = "0.9.55", features = ["vendored"] }
 failure = "0.1.8"

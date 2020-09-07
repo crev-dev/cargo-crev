@@ -8,7 +8,7 @@ use cargo::{
         registry::PackageRegistry,
         resolver::{features::RequestedFeatures, ResolveOpts},
         source::SourceMap,
-        InternedString, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
+        Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
     util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
@@ -146,7 +146,7 @@ fn our_resolve<'a, 'cfg>(
     let resolve_opts = ResolveOpts {
         dev_deps: !no_dev_dependencies,
         features: RequestedFeatures {
-            features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
+            features: Rc::new(features.iter().map(|s| s.into()).collect()),
             all_features,
             uses_default_features: !no_default_features,
         },
