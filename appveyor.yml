@@ -39,7 +39,7 @@ environment:
       target: x86_64-pc-windows-msvc
     - channel: nightly
       target: x86_64-pc-windows-msvc
-    - channel: 1.40.0 # Oldest supported version. Keep in sync with README.md.
+    - channel: 1.43.0 # Oldest supported version. Keep in sync with README.md.
       target: x86_64-pc-windows-msvc
 
 before_deploy:
