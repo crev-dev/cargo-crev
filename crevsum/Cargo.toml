@@ -1,6 +1,6 @@
 [package]
 name = "crevsum"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 edition = "2018"
 description = "Recursive digest as calculated by `crev`"
@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 common_failures = "0.1"
-crev-common = { path = "../crev-common", version = "0.18.0" }
+crev-common = { path = "../crev-common", version = "0.18.1" }
 crev-recursive-digest = {  version = "0.2.1" }
 hex = "0.4"
 structopt = "0.3"

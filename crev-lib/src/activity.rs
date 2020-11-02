@@ -8,7 +8,7 @@ use crev_common::{
     self,
     serde::{as_rfc3339_fixed, from_rfc3339_fixed},
 };
-use semver::Version;
+use crev_data::Version;
 use serde::{Deserialize, Serialize};
 
 pub type Date = chrono::DateTime<chrono::FixedOffset>;

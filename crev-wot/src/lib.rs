@@ -20,7 +20,7 @@ use crev_data::{
 };
 use default::default;
 use log::debug;
-use semver::Version;
+use crev_data::Version;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync,

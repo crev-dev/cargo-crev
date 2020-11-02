@@ -287,7 +287,7 @@ impl Local {
         &self,
         source: &str,
         name: &str,
-        version: &semver::Version,
+        version: &crev_data::Version,
     ) -> PathBuf {
         self.cache_activity_path()
             .join("review")
@@ -302,7 +302,7 @@ impl Local {
         &self,
         source: &str,
         name: &str,
-        version: &semver::Version,
+        version: &crev_data::Version,
         activity: &ReviewActivity,
     ) -> Result<()> {
         let path = self.cache_review_activity_path(source, name, version);
@@ -318,7 +318,7 @@ impl Local {
         &self,
         source: &str,
         name: &str,
-        version: &semver::Version,
+        version: &crev_data::Version,
     ) -> Result<Option<ReviewActivity>> {
         let path = self.cache_review_activity_path(source, name, version);
 

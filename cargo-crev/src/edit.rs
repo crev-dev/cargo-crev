@@ -28,7 +28,7 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
 
 /// Retruns the edited string, and bool indicating if the file was ever written to/ (saved).
 fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
-    let dir = tempdir::TempDir::new("crev")?;
+    let dir = tempfile::tempdir()?;
     let file_path = dir.path().join("crev.review.yaml");
     std::fs::write(&file_path, text)?;
 
@@ -89,7 +89,7 @@ pub fn edit_file(path: &Path) -> Result<()> {
 pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
     content: &C,
     previous_date: Option<&proof::Date>,
-    base_version: Option<&semver::Version>,
+    base_version: Option<&crev_data::Version>,
 ) -> Result<C> {
     let mut text = String::new();
     if let Some(date) = previous_date {

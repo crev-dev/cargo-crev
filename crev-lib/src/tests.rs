@@ -5,7 +5,7 @@ use crev_data::{
 };
 use crev_wot::{FetchSource, ProofDB};
 use default::default;
-use semver::Version;
+use crev_data::Version;
 use std::{str::FromStr, sync::Arc};
 
 mod issues;

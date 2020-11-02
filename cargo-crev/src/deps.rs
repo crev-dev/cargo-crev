@@ -1,6 +1,6 @@
 use crev_data::{proof, Digest, PublicId};
 use crev_lib::*;
-use semver::Version;
+use crev_data::Version;
 use std::path::PathBuf;
 
 use crate::{opts::*, prelude::*, shared::*, term};

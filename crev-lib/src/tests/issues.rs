@@ -6,7 +6,7 @@ use crev_data::{
     TrustLevel, UnlockedId,
 };
 use crev_wot::FetchSource;
-use semver::Version;
+use crev_data::Version;
 
 const SOURCE: &str = "SOURCE_ID";
 const NAME: &str = "name";

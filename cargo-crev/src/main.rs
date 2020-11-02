@@ -136,7 +136,7 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
 }
 
 pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> String {
-    let s = source_id.into_url().to_string();
+    let s = source_id.as_url().to_string();
     if &s == "registry+https://github.com/rust-lang/crates.io-index" {
         crate::PROJECT_SOURCE_CRATES_IO.into()
     } else {

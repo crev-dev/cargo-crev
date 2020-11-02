@@ -20,7 +20,7 @@ use crev_data::{
     Digest, Id,
 };
 pub use crev_wot::TrustDistanceParams;
-use semver::Version;
+use crev_data::Version;
 use std::{
     collections::{HashMap, HashSet},
     fmt,

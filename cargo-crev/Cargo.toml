@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.18.0"
+version = "0.18.1"
 description = "Scalable, social, Code REView system that we desperately need - Rust/cargo frontend"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev"
@@ -21,19 +21,19 @@ name = "cargo_crev"
 path = "src/lib.rs"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "0.18.0" }
-crev-data = { path = "../crev-data", version = "0.18.0" }
-crev-wot = { path = "../crev-wot", version = "0.18.0" }
-crev-lib = { path = "../crev-lib", version = "0.18.0" }
+crev-common = { path = "../crev-common", version = "0.18.1" }
+crev-data = { path = "../crev-data", version = "0.18.1" }
+crev-wot = { path = "../crev-wot", version = "0.18.1" }
+crev-lib = { path = "../crev-lib", version = "0.18.1" }
 anyhow = "1.0.31"
 atty = "0.2.14"
-cargo = "0.47.0"
+cargo = "0.48"
 cargo-platform = "0.1.1"
 chrono = "0.4.11"
 crates_io_api = "0.6"
 crossbeam = "0.7.3"
 crossterm = "0.9.6"
-env_logger = { version = "0.7.1", default-features = false, features = ["termcolor", "atty", "humantime"] }
+env_logger = { version = "0.8", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.6"
 geiger = "0.4.4"
 insideout = "0.2.0"
@@ -42,7 +42,6 @@ num_cpus = "1.12.0"
 petgraph = "0.5.0"
 rayon = "1.3.0"
 resiter = "0.4.0"
-semver = "0.10.0"
 serde = "1.0.106"
 serde_json = "1.0.51"
 serde_yaml = "0.8.11"
@@ -55,7 +54,7 @@ walkdir = "2.3.1"
 openssl-sys = { version = "0.9.55", features = ["vendored"] }
 failure = "0.1.8"
 git2 = "0.13.5"
-tempdir = "0.3.7"
+tempfile = "3.1.0"
 rprompt = "1.0.5"
 
 [features]

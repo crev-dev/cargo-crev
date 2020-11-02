@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use crev_data::Level;
-use semver::Version;
+use crev_data::Version;
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 
@@ -565,7 +565,7 @@ pub struct CrateReview {
 
     #[structopt(long = "diff")]
     #[allow(clippy::option_option)]
-    pub diff: Option<Option<semver::Version>>,
+    pub diff: Option<Option<crev_data::Version>>,
 
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
