@@ -8,7 +8,7 @@ matrix:
 
     # rustc version compat
     - rust: stable
-    - rust: 1.43.0
+    - rust: 1.49.0
     - rust: nightly
 
     # OSX release build
