@@ -552,7 +552,7 @@ Congratulations!
 Every time you create a *proof* `crev` records it in a local copy of your *proof repository* associated with
 your current `CrevID`.
 
-You can access this repository using `cargo crev git` command.
+You can access this repository using `cargo crev repo git` command.
 
 
 ```text
