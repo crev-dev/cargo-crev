@@ -56,6 +56,7 @@ failure = "0.1.8"
 git2 = "0.13.5"
 tempfile = "3.1.0"
 rprompt = "1.0.5"
+thiserror = "1.0.23"
 
 [features]
 default = []

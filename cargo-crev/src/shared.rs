@@ -301,6 +301,23 @@ impl UnrelatedOrDependency {
     }
 }*/
 
+#[derive(Debug, thiserror::Error)]
+pub enum ActivityCheckError {
+    #[error("No previous review activity to determine base version")]
+    NoPreviousReview,
+    #[error("Last review activity record indicates full review")]
+    UnexpectedFullReview,
+    #[error("Last review activity record indicates differential review")]
+    UnexpectedDiffReview,
+    #[error("Last review activity record is too old")]
+    Expired,
+    #[error("No review activity record found")]
+    NoRecord,
+    #[error("{}", _0)]
+    Other(#[from] crev_lib::Error),
+}
+
+
 /// Check `diff` command line argument against previous activity
 ///
 /// Return `Option<Version>` indicating final ReviewMode settings to use.
@@ -310,7 +327,7 @@ pub fn crate_review_activity_check(
     version: &Version,
     diff: &Option<Option<Version>>,
     skip_activity_check: bool,
-) -> Result<Option<Version>> {
+) -> Result<Option<Version>, ActivityCheckError> {
     let activity = local.read_review_activity(PROJECT_SOURCE_CRATES_IO, name, version)?;
 
     let diff = match diff {
@@ -318,19 +335,9 @@ pub fn crate_review_activity_check(
         Some(None) => Some(
             activity
                 .clone()
-                .ok_or_else(|| {
-                    format_err!("No previous review activity to determine base version")
-                })?
+                .ok_or(ActivityCheckError::NoPreviousReview)?
                 .diff_base
-                .ok_or_else(|| {
-                    format_err!(
-                        "Last review activity record for {}:{} indicates full review. \
-                         Are you sure you want to use `--diff` flag? \
-                         Use `--skip-activity-check` to override.",
-                        name,
-                        version
-                    )
-                })?,
+                .ok_or(ActivityCheckError::UnexpectedFullReview)?,
         ),
         Some(o) => o.clone(),
     };
@@ -342,43 +349,21 @@ pub fn crate_review_activity_check(
         match activity.to_review_mode() {
             ReviewMode::Full => {
                 if diff.is_some() {
-                    bail!(
-                        "Last review activity record for {}:{} indicates full review. \
-                         Are you sure you want to use `--diff` flag? \
-                         Use `--skip-activity-check` to override.",
-                        name,
-                        version
-                    );
+                    return Err(ActivityCheckError::UnexpectedFullReview);
                 }
             }
             ReviewMode::Differential => {
                 if diff.is_none() {
-                    bail!(
-                        "Last review activity record for {}:{} indicates differential review. \
-                         Use `--diff` flag? Use `--skip-activity-check` to override.",
-                        name,
-                        version
-                    );
+                    return Err(ActivityCheckError::UnexpectedDiffReview);
                 }
             }
         }
 
         if activity.timestamp + chrono::Duration::days(2) < crev_common::now() {
-            bail!(
-                "Last review activity record for {}:{} is too old. \
-                 Re-review or use `--skip-activity-check` to override.",
-                name,
-                version
-            );
+            return Err(ActivityCheckError::Expired)
         }
     } else {
-        bail!(
-            "No review activity record for {}:{} found. \
-             Make sure you have reviewed the code in this version before creating review proof. \
-             Use `--skip-activity-check` to override.",
-            name,
-            version
-        );
+        return Err(ActivityCheckError::NoRecord)
     }
 
     Ok(diff)

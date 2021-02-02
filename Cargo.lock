@@ -374,6 +374,7 @@ dependencies = [
  "tempfile",
  "term",
  "termimad",
+ "thiserror",
  "time 0.2.25",
  "tokei",
  "walkdir",

@@ -37,13 +37,42 @@ pub fn create_review_proof(
     assert!(!crate_root.starts_with(std::env::current_dir()?));
     let local = Local::auto_open()?;
 
-    let diff_base_version = crate_review_activity_check(
+    let diff_base_version = match crate_review_activity_check(
         &local,
         &pkg_id.name(),
         &effective_crate_version,
         &diff_version,
         skip_activity_check,
-    )?;
+    ) {
+        Ok(res) => res,
+        Err(ActivityCheckError::NoPreviousReview) => bail!("No previous review activity to determine base version"),
+        Err(ActivityCheckError::UnexpectedFullReview) => bail!(
+            "Last review activity record for {}:{} indicates full review. \
+             Use `--diff` flag? Use `--skip-activity-check` to override.",
+            pkg_id.name(),
+            effective_crate_version
+        ),
+        Err(ActivityCheckError::UnexpectedDiffReview) => bail!(
+            "Last review activity record for {}:{} indicates differential review. \
+             Use `--diff` flag? Use `--skip-activity-check` to override.",
+            pkg_id.name(),
+            effective_crate_version
+        ),
+        Err(ActivityCheckError::Expired) =>  bail!(
+            "Last review activity record for {}:{} is too old. \
+             Re-review or use `--skip-activity-check` to override.",
+            pkg_id.name(),
+            effective_crate_version
+        ),
+        Err(ActivityCheckError::NoRecord) => bail!(
+            "No review activity record for {}:{} found. \
+             Make sure you have reviewed the code in this version before creating review proof. \
+             Use `--skip-activity-check` to override.",
+            pkg_id.name(),
+            effective_crate_version
+        ),
+        Err(ActivityCheckError::Other(e)) => return Err(e.into()),
+    };
 
     let (digest_clean, vcs) =
         check_package_clean_state(&repo, &crate_root, &crate_.name(), &effective_crate_version)?;
