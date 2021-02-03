@@ -65,11 +65,11 @@ pub fn create_review_proof(
             effective_crate_version
         ),
         Err(ActivityCheckError::NoRecord) => bail!(
-            "No review activity record for {}:{} found. \
-             Make sure you have reviewed the code in this version before creating review proof. \
-             Use `--skip-activity-check` to override.",
-            pkg_id.name(),
-            effective_crate_version
+            "No review activity record for {name}:{} found. \
+             Make sure you have reviewed the code in this version before creating review proof. \n\
+             Use `cargo crev open {name}` or `cargo crev goto {name}` to review the code, or `--skip-activity-check` to override.",
+            effective_crate_version,
+            name = pkg_id.name(),
         ),
         Err(ActivityCheckError::Other(e)) => return Err(e.into()),
     };
