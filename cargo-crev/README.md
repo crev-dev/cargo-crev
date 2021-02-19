@@ -5,7 +5,7 @@
   <a href="https://crates.io/crates/cargo-crev">
       <img src="http://meritbadge.herokuapp.com/cargo-crev?style=flat-square" alt="crates.io">
   </a>
-  <a href="https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org">
+  <a href="https://matrix.to/#/#crev:matrix.org">
     <img src="https://img.shields.io/matrix/crev:matrix.org.svg?server_fqdn=matrix.org&style=flat-square" alt="crev matrix channel">
   </a>
   <a href="https://gitter.im/dpc/crev">
@@ -48,7 +48,7 @@ Follow the [`cargo-crev` - Getting Started Guide](https://github.com/crev-dev/ca
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
 `cargo-crev` is a work in progress, but it should be usable at all times.
-Join our [matrix](https://matrix.to/#/!uBhYhtcoNlyEbzfYAW:matrix.org) or [gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help,
+Join our [matrix](https://matrix.to/#/#crev:matrix.org) or [gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help,
 report problems and feedback. Thank you!
 
 ## Raise awareness
