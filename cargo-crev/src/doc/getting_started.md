@@ -2,99 +2,22 @@
 
 ## Introduction
 
-The goal of this guide is to introduce you to the [`crev`](https://github.com/crev-dev/crev)
-review system, the [`cargo crev`](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev) command,
-ideas behind them and describe the basic workflows that will allow you to start using them.
+[Crev](https://github.com/crev-dev/crev) is a system for verifying security and reliability of dependencies based on collaborative code reviews. Crev users review source code of packages/libraries/crates, and share their findings with others. Crev then uses Web of Trust select trusted [reviews](https://web.crev.dev/rust-reviews/crates/) and judge reputation of projects' dependencies.
 
-Please remember that `crev` project is still largely a work in progress,
-and this documentation might be incorrect or stale. In case of any problems
-please don't hesitate to [join crev's gitter channel](https://gitter.im/dpc/crev)
-and ask for help or open a GitHub issue.
+Crev is [language-independent](https://github.com/crev-dev/crev/#implementations), but the primary implementation is [`cargo crev`](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev) for Rust/[Cargo](https://doc.rust-lang.org/book/ch01-03-hello-cargo.html) crates.
 
-Any help in improving this documentation is greatly appreciated.
-
-## `crev` vs `cargo-crev`
-
-`crev` is a general system of preparing cryptographically signed
-documents (*proofs*) describing results of code reviews and circulating
-them between developers to coordinate a distributed ecosystem of code review.
-
-While `crev` itself is generic and abstract, to be a practical tool it requires integration
-with the given ecosystem of each programming language. `cargo-crev` is an implementation of `crev` for
-Rust programming language, tightly integrated with its package manager: [`cargo`](https://doc.rust-lang.org/book/ch01-03-hello-cargo.html). The goal of `cargo-crev` is helping Rust community verify and review all the dependencies published
-on http://crates.io and used by Rust developers.
-
-`cargo-crev` is a command line tool, similar in nature to tools like `git`. Integration
-with IDEs and text editors are possible, but not implemented at the moment.
+> This project and documentation is a work in progress. If anything is missing, incorrect or stale, let us know. You can [join crev's gitter channel](https://gitter.im/dpc/crev)
+and ask for help or open a GitHub issue. Any help in improving this documentation is greatly appreciated.
 
 ## Installing
 
-`cargo-crev` is written in Rust, and until binaries for various operating systems are
-available, the recommended way to install it is installing from source.
+`cargo-crev` is a command-line tool written in Rust. You can [download pre-built binaries from Releases page](https://github.com/crev-dev/cargo-crev/releases), or install from source:
 
-### Using static binaries
-
-Static binaries build by CI pipeline are available on [crev's releases](https://github.com/crev-dev/cargo-crev/releases) GitHub page.
-
-### Building from source
-
-#### Dependencies
-
-Currently `cargo-crev` requires a non-Rust dependency to compile, as OpenSSL
-is required for TLS support.
-
-Though OpenSSL is popular and readily available, it's virtually impossible to cover installing
-it on all the available operating systems. We list some examples below. They should have matching commands and similar package names in the Unix-like OS of your choice.
-
-In case of problems, don't hesitate to ask for help.
-
-##### Debian and Ubuntu
-
-The following should work on Debian and Debian based distributions such as Ubuntu:
-
-```text
-sudo apt-get install openssl libssl-dev
-```
-
-##### Arch Linux
-
-On Arch and Arch based distributions such as Manjaro make sure the latest OpenSSL is installed:
-
-```text
-sudo pacman -Syu openssl
-```
-
-##### RedHat
-
-On RedHat and its derivates Fedora and CentOS the following should work:
-
-```text
-sudo yum install openssl openssl-devel
-```
-
-##### SuSE
-
-On SuSE Linux the following should work:
-
-```text
-sudo zypper install openssl libopenssl-devel
-```
-
-#### Compiling
-
-To compile and install latest `cargo-crev` release use `cargo`:
-
-```text
+```bash
 cargo install cargo-crev
 ```
 
-In case you'd like to try latest features from the master branch, try:
-
-```text
-cargo install --git https://github.com/crev-dev/cargo-crev/ cargo-crev
-```
-
-If you need help installing Rust compiler & `cargo`, consider using [rustup.rs page](https://rustup.rs/)
+In case of compilation issues, [check build instructions](compiling.md) for more information and troubleshooting.
 
 ## Running
 
