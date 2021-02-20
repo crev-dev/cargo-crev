@@ -8,7 +8,6 @@
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use crate::prelude::*;
 
-use crev_common::convert::OptionDeref;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
@@ -352,7 +351,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 } => {
                     let local = crev_lib::Local::auto_open()?;
                     let db = local.load_db()?;
-                    let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
+                    let for_id = local.get_for_id_from_str(for_id.as_deref())?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
                     print_ids(
@@ -371,7 +370,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 } => {
                     let local = crev_lib::Local::auto_create_or_open()?;
                     let db = local.load_db()?;
-                    let for_id = local.get_for_id_from_str(OptionDeref::as_deref(&for_id))?;
+                    let for_id = local.get_for_id_from_str(for_id.as_deref())?;
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
                     let mut tmp = db
@@ -578,7 +577,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     for_id,
                 } => {
                     let local = Local::auto_create_or_open()?;
-                    local.fetch_trusted(distance_params.into(), OptionDeref::as_deref(&for_id))?;
+                    local.fetch_trusted(distance_params.into(), for_id.as_deref())?;
                 }
                 opts::RepoFetch::Url(params) => {
                     let local = Local::auto_create_or_open()?;

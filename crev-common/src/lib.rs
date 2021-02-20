@@ -1,7 +1,6 @@
 //! Bunch of code that is auxiliary and common for all `crev`
 
 pub mod blake2b256;
-pub mod convert;
 pub mod fs;
 pub mod rand;
 pub mod result;

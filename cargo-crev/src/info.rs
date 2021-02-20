@@ -4,7 +4,6 @@ use crate::{
     Repo,
 };
 use anyhow::{bail, Result};
-use crev_common::convert::OptionDeref;
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io};
@@ -83,7 +82,7 @@ pub fn get_crate_info(
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
     let trust_set = if let Some(for_id) =
-        local.get_for_id_from_str_opt(OptionDeref::as_deref(&common_opts.for_id))?
+        local.get_for_id_from_str_opt(common_opts.for_id.as_deref())?
     {
         db.calculate_trust_set(&for_id, &common_opts.trust_params.clone().into())
     } else {

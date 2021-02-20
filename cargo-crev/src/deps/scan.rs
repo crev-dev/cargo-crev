@@ -12,7 +12,6 @@ use crate::{
     },
 };
 use cargo::core::PackageId;
-use crev_common::convert::OptionDeref;
 use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, *};
@@ -58,7 +57,7 @@ impl Scanner {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set = if let Some(for_id) =
-            local.get_for_id_from_str_opt(OptionDeref::as_deref(&args.common.for_id))?
+            local.get_for_id_from_str_opt(args.common.for_id.as_deref())?
         {
             db.calculate_trust_set(&for_id, &args.common.trust_params.clone().into())
         } else {

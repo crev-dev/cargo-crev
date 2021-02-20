@@ -14,7 +14,6 @@ use cargo::{
     util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
 };
 use cargo_platform::Cfg;
-use crev_common::convert::OptionDeref;
 use petgraph::graph::NodeIndex;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
@@ -585,7 +584,7 @@ impl Repo {
         let version_str = version.map(ToString::to_string);
         let dependency_request = Dependency::parse_no_deprecated(
             name,
-            OptionDeref::as_deref(&version_str),
+            version_str.as_deref(),
             source.source_id(),
         )?;
         let _lock = self.config.acquire_package_cache_lock()?;

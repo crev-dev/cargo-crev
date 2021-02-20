@@ -1,5 +1,4 @@
 use crate::{local::Local, util, verify_package_digest, Error, Result};
-use crev_common::convert::OptionDeref;
 use crev_data::{proof, Digest};
 use serde::{Deserialize, Serialize};
 
@@ -145,7 +144,7 @@ impl Repo {
         let db = local.load_db()?;
 
         let trust_set =
-            if let Some(id) = local.get_for_id_from_str_opt(OptionDeref::as_deref(&for_id))? {
+            if let Some(id) = local.get_for_id_from_str_opt(for_id.as_deref())? {
                 db.calculate_trust_set(&id, &params)
             } else {
                 crev_wot::TrustSet::default()
