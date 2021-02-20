@@ -302,27 +302,29 @@ impl CrateVerifyColumns {
 
 #[derive(Debug, StructOpt, Clone, Default)]
 #[structopt(
-    after_help = r"Recursive mode will calculate most metrics for the crate together with all its transitive dependencies.
+    after_help = r#"Recursive mode will calculate most metrics for the crate together with all its transitive dependencies.
 
 Column description:
 
-- trust      - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- status     - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
 - reviews    - Number of reviews for the specific version and for all available versions (total)
-- downloads  - Download counts from crates.io for the specific version and all versions
+- issues     - Number of issues repored (from trusted sources/all)
 - owner
   - In non-recursive mode: Owner counts from crates.io (known/all)
   - In recursive mode:
     - Total number of owners from crates.io
     - Total number of owner groups ignoring subsets
-- issues     - Number of issues repored (from trusted sources/all)
-- lines      - Lines of Rust code
+- downloads  - Download counts from crates.io for the specific version and all versions
+- loc        - Lines of Rust code
+- lpidx      - "left-pad" index (ratio of downloads to lines of code)
 - geiger     - Geiger score: number of `unsafe` lines
 - flgs       - Flags for specific types of packages
-  - CB         - Custom Build
-  - UM         - Crate Unmaintained
+  - CB         - Custom Build (runs arbitrary code at build time)
+  - UM         - Unmaintained crate
 - name       - Crate name
 - version    - Crate version
-- latest_t   - Latest trusted version"
+- latest_t   - Latest trusted version
+"#
 )]
 pub struct CrateVerify {
     #[structopt(flatten)]

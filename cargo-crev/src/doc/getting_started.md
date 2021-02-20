@@ -97,38 +97,51 @@ through `cargo crev crate verify` command. This is one of the most important and
 Let's take a look:
 
 ```text
-$ cargo crev crate verify --show-all --skip-indirect
-digest                                      status reviews     downloads       owner issues    loc geiger flgs lpidx crate                version         latest_t       
-dVQxGEaHcfAqvwThsn36nLQiSqOR_qvZYTf0tgMX98s none     0   0  3008623   6631360  0   1  0   0    211      0 ____  7339 adler32              1.0.4           
-1nHDTyWmT6V19umoimQWYccblq1AHG9SNDWfqOb8D8U none     0   0  1770811  10749683  1   1  0   0   1295    206 CB__  1419 arrayvec             0.4.12          
-svZHC251mVIE-ep8Gwc7VhQ60aHyQ50uc3ZTVaHOq7Y none     0   0    93405    886797  0   2  0   0   1245      0 ____   119 ammonia              2.1.2           
-5RqRXABIJly1ZZlqphYktM2CeAOUC8ry8eeHbjiUmqs none     0   0   368513    429505  0   2  0   0   6166     19 ____     3 actix-net            0.2.6           
--                                           local    0   0        ?         ?  ?   ?  0   0      3      0 ____     0 cargo-crev-demo      0.1.0*
+$ cargo crev verify --show-all
+status reviews issues owner      downloads    loc lpidx geiger flgs crate                version      latest_t
+none     0   2  0   0  0  3   197K   5129K    179    84      0 CB__ wasm-bindgen-shared  0.2.70
+none     0   1  0   0  0  1   497K   1603K    268    29      0 ____ bytesize             1.0.1
+none     0   1  0   0  0  1  3459K   7936K    238    94      1 ____ subtle               1.0.0
+none     0   0  0   0  0  3   120K    854K    167    50      0 ____ signature            1.3.0
+none     2   2  0   0  0  1     9K      9K      3    15      0 ____ default              0.1.2
 ```
 
-The actual output is using color to make the data more accessible.
-
-The meaning of each column, and all the available options are
-described in the output of `cargo crev crate verify --help` command.
-
-Right now we will discuss just the most important columns.
+### Columns
 
 On the right side `crate` and `version` indicate for which crate (in a given version)
 values in other columns are calculated and displayed for.
 
 The `status` column displays the verification status for each crate. A `pass` value
-indicates that it has been reviewed by a sufficient number of trusted peers.
-
-Verification of dependencies is considered as successful only if all the values
+indicates that it has been reviewed by a sufficient number of trusted peers. `none` for lacking reviews, `flagged` or `dangerous` for crates
+with problem reports. Verification of dependencies is considered as successful only if all the values
 in `status` column contain `pass` value.
 
 If you just started using `crev`, your Rust project probably has more than 100
 dependencies, and all of them are not passing the verification. That's the reason
 why `crev` was created - your software is implicitly trusting 100 or more libraries,
 created by strangers from the Internet, containing code that you've never looked at.
-
 It might seem like an impossible problem to solve, but the goal of `crev` is to actually
 make it doable.
+
+`cargo crev verify --help`:
+
+- reviews    - Number of reviews for the specific version and for all available versions (total)
+- issues     - Number of issues repored (from trusted sources/all)
+- owner
+  - In non-recursive mode: Owner counts from crates.io (known/all)
+  - In recursive mode:
+    - Total number of owners from crates.io
+    - Total number of owner groups ignoring subsets
+- downloads  - Download counts from crates.io for the specific version and all versions
+- loc        - Lines of Rust code
+- lpidx      - "left-pad" index (ratio of downloads to lines of code)
+- geiger     - Geiger score: number of `unsafe` lines
+- flgs       - Flags for specific types of packages
+  - CB         - Custom Build (runs arbitrary code at build time)
+  - UM         - Unmaintained crate
+- name       - Crate name
+- version    - Crate version
+- latest_t   - Latest trusted version
 
 ## Fetching reviews from other users
 
