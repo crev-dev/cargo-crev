@@ -285,7 +285,10 @@ impl CrateVerifyColumns {
             || self.show_all
     }
 
-    show_x!(show_digest, false);
+    pub fn show_digest(self) -> bool {
+        self.show_digest.flatten().unwrap_or(false)
+    }
+
     show_x!(show_reviews, false);
     show_x!(show_leftpad_index, false);
     show_x!(show_downloads, false);
