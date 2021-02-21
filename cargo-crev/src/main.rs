@@ -203,8 +203,12 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
 
                 if url.is_none() {
-                    print_crev_proof_repo_fork_help();
-                    bail!("Try again with --url or --github-username");
+                    if args.no_url {
+                        eprintln!("warning: creating CrevID without a URL.");
+                    } else {
+                        print_crev_proof_repo_fork_help();
+                        bail!("Try again with --url or --github-username");
+                    }
                 }
 
                 fn read_new_passphrase() -> io::Result<String> {

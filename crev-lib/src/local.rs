@@ -433,6 +433,21 @@ impl Local {
         id.save_to(&path)
     }
 
+    fn init_local_proofs_repo(&self, id: &Id) -> Result<()> {
+        self.ensure_proofs_root_exists()?;
+
+        let proof_dir = self.local_proofs_repo_path_for_id(id);
+        if proof_dir.exists() {
+            warn!(
+                "Proof directory `{}` already exists. Will not init.",
+                proof_dir.display()
+            );
+            return Ok(());
+        }
+        let _ = git2::Repository::init(&proof_dir)?;
+        Ok(())
+    }
+
     /// Git clone or init new remote Github crev-proof repo for the current user.
     ///
     /// Saves to `user_proofs_path`, so it's trusted as user's own proof repo.
@@ -540,10 +555,22 @@ impl Local {
         Ok(())
     }
 
+    fn local_proofs_repo_path_for_id(&self, id: &Id) -> PathBuf {
+        let Id::Crev { id } = id;
+        let dir_name = format!("local_only_{}", crev_common::base64_encode(&id));
+        let proofs_path = self.user_proofs_path();
+        proofs_path.join(dir_name)
+    }
+
+    fn local_proofs_repo_path(&self) -> Result<PathBuf> {
+        Ok(self.local_proofs_repo_path_for_id(&self.get_current_userid()?))
+    }
+
     /// Dir unique to this URL, inside `user_proofs_path()`
     pub fn get_proofs_dir_path_for_url(&self, url: &Url) -> Result<PathBuf> {
-        let old_path = self.user_proofs_path().join(url.digest().to_string());
-        let new_path = self.user_proofs_path().join(sanitize_url_for_fs(&url.url));
+        let proofs_path = self.user_proofs_path();
+        let old_path = proofs_path.join(url.digest().to_string());
+        let new_path = proofs_path.join(sanitize_url_for_fs(&url.url));
 
         if old_path.exists() {
             // we used to use less human-friendly path format; move directories
@@ -559,8 +586,11 @@ impl Local {
     ///
     /// This function derives path from current user's URL
     pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
-        let url = self.get_cur_url()?;
-        self.get_proofs_dir_path_for_url(&url)
+        match self.get_cur_url() {
+            Ok(url) => self.get_proofs_dir_path_for_url(&url),
+            Err(Error::GitUrlNotConfigured) => self.local_proofs_repo_path(),
+            Err(err) => Err(err),
+        }
     }
 
     /// This function derives path from current user's URL
@@ -1008,11 +1038,13 @@ impl Local {
         let passphrase = read_new_passphrase()?;
         let locked_id = id::LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
 
+        if url.is_none() {
+            self.init_local_proofs_repo(&unlocked_id.id.id)?;
+        }
+
         self.save_locked_id(&locked_id)?;
         self.save_current_id(unlocked_id.as_ref())?;
-        if url.is_some() {
-            self.init_repo_readme_using_template()?;
-        }
+        self.init_repo_readme_using_template()?;
         Ok(locked_id)
     }
 
