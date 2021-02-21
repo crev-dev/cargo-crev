@@ -456,6 +456,8 @@ impl Local {
         git_https_url: &str,
         use_https_push: bool,
     ) -> Result<()> {
+        debug_assert!(git_https_url.starts_with("https://"));
+
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
 
@@ -467,23 +469,29 @@ impl Local {
                 None => {
                     warn!("Could not deduce `ssh` push url. Call:\n\
                            cargo crev git remote set-url --push origin <url>\n\
-                           manually in {}, after the id is generated.", proof_dir.display());
+                           manually after the id is generated.");
                     git_https_url.to_string()
                 }
             }
         };
 
         if proof_dir.exists() {
-            warn!(
-                "Proof directory `{}` already exists. Will not clone.",
-                proof_dir.display()
-            );
+            info!("Using existing repository `{}`", proof_dir.display());
+            match git2::Repository::open(&proof_dir) {
+                Ok(repo) => {
+                    repo.remote_set_url("origin", &push_url)?;
+                },
+                Err(_) => {
+                    git2::Repository::init_opts(&proof_dir, git2::RepositoryInitOptions::new()
+                        .no_reinit(true)
+                        .origin_url(git_https_url))?;
+                },
+            }
             return Ok(());
         }
 
         self.ensure_proofs_root_exists()?;
 
-        debug_assert!(git_https_url.starts_with("https://"));
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
                 info!("{} cloned to {}", git_https_url, proof_dir.display());
