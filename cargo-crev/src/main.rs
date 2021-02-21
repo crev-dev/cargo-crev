@@ -257,6 +257,17 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     );
                 }
             }
+            opts::Id::SetUrl(args) => {
+                if !args.url.starts_with("https://") {
+                    bail!("URL must be https://");
+                }
+                let local = Local::auto_open()?;
+                let locked_id = local.read_current_locked_id()?;
+                let pub_id = locked_id.to_public_id().id.clone();
+                local.change_locked_id_url(locked_id, &args.url, args.use_https_push)?;
+                local.save_current_id(&pub_id)?;
+                local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+            }
             opts::Id::Export(args) => {
                 let local = Local::auto_open()?;
                 println!("{}", local.export_locked_id(args.id)?);

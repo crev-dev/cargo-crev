@@ -601,6 +601,16 @@ pub struct IdExport {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct IdSetUrl {
+    #[structopt(long = "https-push")]
+    /// Setup `https` instead of recommended `ssh`-based push url
+    pub use_https_push: bool,
+
+    /// https git URL to use for the new crev-proofs repo
+    pub url: String,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub struct RepoImport {
     /// Reset proof date to current date
     #[structopt(long = "reset-date")]
@@ -635,6 +645,10 @@ pub enum Id {
     /// Change passphrase
     #[structopt(name = "passwd")]
     Passwd,
+
+    /// Change repo URL for the current Id
+    #[structopt(name = "set-url")]
+    SetUrl(IdSetUrl),
 
     /// Trust an Id
     #[structopt(name = "trust")]

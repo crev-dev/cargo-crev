@@ -427,6 +427,34 @@ impl Local {
         }
     }
 
+    /// Changes the repo URL for the ID. Adopts existing temporary/local repo if any.
+    /// Previous remote URL is abandoned.
+    /// For crev id set-url command.
+    pub fn change_locked_id_url(&self, mut id: id::LockedId, git_https_url: &str, use_https_push: bool) -> Result<()> {
+        self.ensure_proofs_root_exists()?;
+
+        let old_proof_dir = self.local_proofs_repo_path_for_id(&id.to_public_id().id);
+        let new_url = Url::new_git(git_https_url.to_owned());
+        let new_proof_dir = self.get_proofs_dir_path_for_url(&new_url)?;
+        if old_proof_dir.exists() {
+            if !new_proof_dir.exists() {
+                fs::rename(&old_proof_dir, &new_proof_dir)?;
+            } else {
+                warn!("Abandoning old temporary repo in {}", old_proof_dir.display());
+            }
+        }
+
+        self.clone_proof_dir_from_git(git_https_url, use_https_push)?;
+
+        id.url = Some(new_url);
+        self.save_locked_id(&id)?;
+
+        // commit uncommitted changes, if there are any. Otherwise the next pull may fail
+        let _ = self.proof_dir_commit("Setting up new CrevID URL");
+        let _ = self.run_git(vec!["pull".into(), "--rebase".into(), "-Xours".into()]);
+        Ok(())
+    }
+
     /// Writes the Id to disk, doesn't change any state
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
         let path = self.id_path(&id.to_public_id().id);
