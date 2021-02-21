@@ -430,7 +430,6 @@ impl Local {
     /// Writes the Id to disk, doesn't change any state
     pub fn save_locked_id(&self, id: &id::LockedId) -> Result<()> {
         let path = self.id_path(&id.to_public_id().id);
-        fs::create_dir_all(&path.parent().expect("Not /"))?;
         id.save_to(&path)
     }
 

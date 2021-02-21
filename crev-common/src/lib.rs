@@ -326,15 +326,10 @@ where
     Ok(serde_yaml::from_str(&text)?)
 }
 
+#[inline]
 pub fn store_str_to_file(path: &Path, s: &str) -> io::Result<()> {
-    std::fs::create_dir_all(path.parent().expect("Not a root path"))?;
-    let tmp_path = path.with_extension("tmp");
-    let mut file = std::fs::File::create(&tmp_path)?;
-    file.write_all(&s.as_bytes())?;
-    file.flush()?;
-    drop(file);
-    std::fs::rename(tmp_path, path)?;
-    Ok(())
+    store_to_file_with(path, |f| f.write_all(s.as_bytes()))
+        .and_then(|res| res)
 }
 
 pub fn store_to_file_with<E, F>(path: &Path, f: F) -> io::Result<Result<(), E>>

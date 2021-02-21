@@ -7,6 +7,7 @@
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use crate::prelude::*;
+use crev_lib::id::LockedId;
 
 use crev_lib::{self, local::Local};
 use std::{
@@ -220,6 +221,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Id::Switch(args) => {
                 let local = Local::auto_open()?;
                 local.switch_id(&args.id)?
+            }
+            opts::Id::Passwd => {
+                change_passphrase()?;
             }
             opts::Id::Current => {
                 let local = Local::auto_open()?;
@@ -676,6 +680,20 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
     Ok(s)
 }
 
+fn change_passphrase() -> Result<()> {
+    let local = Local::auto_open()?;
+    eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
+    let unlocked_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+    eprintln!("Now please enter the NEW passphrase.");
+    let passphrase = crev_common::read_new_passphrase()?;
+    let locked_id = LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
+
+    local.save_locked_id(&locked_id)?;
+    local.save_current_id(unlocked_id.as_ref())?;
+    eprintln!("Passphrase changed successfully.");
+    Ok(())
+}
+
 fn main() {
     env_logger::init();
     let opts = opts::Opts::from_args();
@@ -689,3 +707,4 @@ fn main() {
         }
     }
 }
+

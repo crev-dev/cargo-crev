@@ -629,6 +629,10 @@ pub enum Id {
     #[structopt(name = "switch")]
     Switch(IdSwitch),
 
+    /// Change passphrase
+    #[structopt(name = "passwd")]
+    Passwd,
+
     /// Trust an Id
     #[structopt(name = "trust")]
     Trust(IdTrust),
