@@ -338,7 +338,6 @@ dependencies = [
  "fnv",
  "geiger",
  "git2",
- "insideout",
  "lazy_static",
  "num_cpus",
  "openssl-sys",
@@ -589,7 +588,6 @@ dependencies = [
  "directories-next",
  "fnv",
  "git2",
- "insideout",
  "log",
  "miscreant",
  "num_cpus",
@@ -1731,12 +1729,6 @@ dependencies = [
  "autocfg",
  "hashbrown",
 ]
-
-[[package]]
-name = "insideout"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2d154ccd0b9a143b3d7ef692673ec2af7f81e2b9eb0c5cf616daefa6a7b0967"
 
 [[package]]
 name = "instant"

@@ -8,7 +8,6 @@ use crev_data::{
 };
 use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
 use failure::Fail;
-use insideout::InsideOutIter;
 use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
@@ -633,8 +632,7 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
             }
             Ok(Some(entry.path().canonicalize()?))
         })
-        .inside_out_iter()
-        .filter_map(|res| res)
+        .filter_map(|res| res.transpose())
 }
 
 // Note: this function is very slow

@@ -16,7 +16,6 @@ use crev_data::{
 };
 use default::default;
 use directories::ProjectDirs;
-use insideout::InsideOut;
 use resiter::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -188,8 +187,8 @@ impl Local {
     pub fn get_for_id_from_str_opt(&self, id_str: Option<&str>) -> Result<Option<Id>> {
         id_str
             .map(|s| crev_data::id::Id::crevid_from_str(s).map_err(Error::from))
-            .or_else(|| self.read_current_id_opt().inside_out())
-            .inside_out()
+            .or_else(|| self.read_current_id_opt().transpose())
+            .transpose()
     }
 
     pub fn get_for_id_from_str(&self, id_str: Option<&str>) -> Result<Id> {
@@ -375,7 +374,7 @@ impl Local {
     pub fn read_current_locked_id_opt(&self) -> Result<Option<LockedId>> {
         self.get_current_userid_opt()?
             .map(|current_id| self.read_locked_id(&current_id))
-            .inside_out()
+            .transpose()
     }
 
     /// Just reads the yaml file, doesn't change any state
@@ -391,7 +390,7 @@ impl Local {
     ) -> Result<Option<UnlockedId>> {
         self.get_current_userid_opt()?
             .map(|current_id| self.read_unlocked_id(&current_id, passphrase_callback))
-            .inside_out()
+            .transpose()
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change anything
