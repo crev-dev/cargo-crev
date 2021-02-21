@@ -191,8 +191,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     (None, Some(username)) => {
                         Some(format!("https://github.com/{}/crev-proofs", username))
                     }
+                    (None, None) => None,
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
+
+                if url.is_none() {
+                    print_crev_proof_repo_fork_help();
+                    bail!("Try again with --url or --github-username");
+                }
 
                 fn read_new_passphrase() -> io::Result<String> {
                     println!("CrevID will be protected by a passphrase.");
@@ -205,12 +211,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let res = local
                     .generate_id(url.as_deref(), args.use_https_push, read_new_passphrase)
                     .map_err(|e| {
-                        eprintln!("To create your proof repository, fork the template:");
-                        eprintln!("https://github.com/crev-dev/crev-proofs/fork");
-                        eprintln!(
-                            "For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository"
-                        );
-                        eprintln!();
+                        print_crev_proof_repo_fork_help();
                         e
                     })?;
                 println!("Your CrevID was created and will be printed below in an encrypted form.");
@@ -680,6 +681,13 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 
     std::io::stdin().lock().read_until(0, &mut s)?;
     Ok(s)
+}
+
+fn print_crev_proof_repo_fork_help() {
+    eprintln!("To create your proof repository, fork the template:\n\
+    https://github.com/crev-dev/crev-proofs/fork\n\n\
+
+    For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n");
 }
 
 fn change_passphrase() -> Result<()> {

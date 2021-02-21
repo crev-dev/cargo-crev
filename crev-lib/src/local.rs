@@ -1002,8 +1002,6 @@ impl Local {
     ) -> Result<id::LockedId> {
         if let Some(url) = url {
             self.clone_proof_dir_from_git(&url, use_https_push)?;
-        } else {
-            return Err(Error::GitUrlNotConfigured);
         }
 
         let unlocked_id = crev_data::id::UnlockedId::generate(url.map(crev_data::Url::new_git));
@@ -1012,7 +1010,9 @@ impl Local {
 
         self.save_locked_id(&locked_id)?;
         self.save_current_id(unlocked_id.as_ref())?;
-        self.init_repo_readme_using_template()?;
+        if url.is_some() {
+            self.init_repo_readme_using_template()?;
+        }
         Ok(locked_id)
     }
 
