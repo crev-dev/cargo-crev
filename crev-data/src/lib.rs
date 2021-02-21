@@ -28,7 +28,7 @@ pub use crate::{
 #[cfg(test)]
 mod tests;
 
-type Result<T, E=Error> = std::result::Result<T, E>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

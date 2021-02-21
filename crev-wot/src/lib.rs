@@ -13,6 +13,7 @@
 //! `crev-wot` is just an initial, reference implementation, and might
 //! evolve, be replaced or become just one of many available implementations.
 use chrono::{self, offset::Utc, DateTime};
+use crev_data::Version;
 use crev_data::{
     self,
     proof::{self, review, trust::TrustLevel, CommonOps, Content},
@@ -20,7 +21,6 @@ use crev_data::{
 };
 use default::default;
 use log::debug;
-use crev_data::Version;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync,
@@ -35,7 +35,7 @@ pub enum Error {
     Data(#[from] crev_data::Error),
 }
 
-type Result<T, E=Error> = std::result::Result<T, E>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Where a proof has been fetched from
 #[derive(Debug, Clone)]

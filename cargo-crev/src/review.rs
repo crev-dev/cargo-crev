@@ -1,7 +1,8 @@
 use crate::{
-    edit, opts, term,
+    edit, opts,
     opts::{CargoOpts, CrateSelector},
     prelude::*,
+    term,
 };
 use anyhow::format_err;
 use crev_data::{

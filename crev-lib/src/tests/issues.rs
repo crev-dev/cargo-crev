@@ -1,12 +1,12 @@
 use super::*;
 
+use crev_data::Version;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
     TrustLevel, UnlockedId,
 };
 use crev_wot::FetchSource;
-use crev_data::Version;
 
 const SOURCE: &str = "SOURCE_ID";
 const NAME: &str = "name";

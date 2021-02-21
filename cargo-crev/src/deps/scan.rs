@@ -287,9 +287,7 @@ impl Scanner {
         };
 
         let crates_io = self.crates_io()?;
-        let downloads = crates_io
-            .get_downloads_count(&pkg_name, &pkg_version)
-            .ok();
+        let downloads = crates_io.get_downloads_count(&pkg_name, &pkg_version).ok();
 
         let owner_list = crates_io.get_owners(&pkg_name).ok();
         let known_owners = match &owner_list {
