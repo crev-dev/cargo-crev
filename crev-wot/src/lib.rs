@@ -952,6 +952,10 @@ impl ProofDB {
         }
     }
 
+    pub fn record_tusted_url_from_own_id(&mut self, own_id: &crev_data::PublicId) {
+        self.record_url_from_from_field(&Utc::now(), own_id, &FetchSource::LocalUser);
+    }
+
     /// Record mapping between a PublicId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
     fn record_url_from_from_field(
         &mut self,

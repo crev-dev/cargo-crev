@@ -26,7 +26,7 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
-use log::{info, warn, error};
+use log::{debug, info, warn, error};
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -494,7 +494,7 @@ impl Local {
 
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
-                info!("{} cloned to {}", git_https_url, proof_dir.display());
+                debug!("{} cloned to {}", git_https_url, proof_dir.display());
                 repo.remote_set_url("origin", &push_url)?;
             }
             Err(e) => {
@@ -966,6 +966,10 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crev_wot::ProofDB> {
         let mut db = crev_wot::ProofDB::new();
+        if let Some(id) = self.read_current_locked_id_opt()? {
+            let pub_id = id.to_public_id();
+            db.record_tusted_url_from_own_id(&pub_id);
+        }
         db.import_from_iter(
             self.all_local_proofs()
                 .map(move |p| (p, crev_wot::FetchSource::LocalUser)),
