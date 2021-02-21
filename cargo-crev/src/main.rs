@@ -195,6 +195,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
 
+                if let Ok(existing) = Local::auto_open().and_then(|l| l.get_current_user_public_ids()) {
+                    if !existing.is_empty() {
+                        let existing = existing.into_iter().map(|id| format!("{} {}", id.id, id.url_display())).collect::<Vec<_>>();
+                        eprintln!("warning: you already have CrevID {}", existing.join(", "));
+                    }
+                }
+
                 if url.is_none() {
                     print_crev_proof_repo_fork_help();
                     bail!("Try again with --url or --github-username");
