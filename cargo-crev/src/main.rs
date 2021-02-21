@@ -237,7 +237,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 local.switch_id(&args.id)?
             }
             opts::Id::Passwd => {
-                change_passphrase()?;
+                let res = current_id_change_passphrase()?;
+                println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
+                println!("Make sure to back it up on another device, to prevent losing it.");
+                println!("{}", res);
             }
             opts::Id::Current => {
                 let local = Local::auto_open()?;
@@ -701,7 +704,7 @@ fn print_crev_proof_repo_fork_help() {
     For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n");
 }
 
-fn change_passphrase() -> Result<()> {
+fn current_id_change_passphrase() -> Result<LockedId> {
     let local = Local::auto_open()?;
     eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
@@ -712,7 +715,7 @@ fn change_passphrase() -> Result<()> {
     local.save_locked_id(&locked_id)?;
     local.save_current_id(unlocked_id.as_ref())?;
     eprintln!("Passphrase changed successfully.");
-    Ok(())
+    Ok(locked_id)
 }
 
 fn main() {
