@@ -5,7 +5,6 @@ use crate::{
 };
 use crev_common::{
     self,
-    result::ResultExt as _,
     sanitize_name_for_fs, sanitize_url_for_fs,
     serde::{as_base64, from_base64},
 };
@@ -27,6 +26,7 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
+use log::{info, warn, error};
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -417,7 +417,7 @@ impl Local {
             match locked.to_unlocked(&passphrase) {
                 Ok(o) => return Ok(o),
                 Err(e) => {
-                    eprintln!("Error: {}", e);
+                    error!("Error: {}", e);
                     if i == 5 {
                         return Err(e);
                     }
@@ -441,26 +441,25 @@ impl Local {
         git_https_url: &str,
         use_https_push: bool,
     ) -> Result<()> {
+        let proof_dir =
+            self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
+
         let push_url = if use_https_push {
             git_https_url.to_string()
         } else {
             match util::git::https_to_git_url(git_https_url) {
                 Some(git_url) => git_url,
                 None => {
-                    eprintln!("warning: Could not deduce `ssh` push url. Call:");
-                    eprintln!("warning: cargo crev git remote set-url --push origin <url>");
-                    eprintln!("warning: manually, after id is generated.");
-                    eprintln!("");
+                    warn!("Could not deduce `ssh` push url. Call:\n\
+                           cargo crev git remote set-url --push origin <url>\n\
+                           manually in {}, after the id is generated.", proof_dir.display());
                     git_https_url.to_string()
                 }
             }
         };
 
-        let proof_dir =
-            self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
-
         if proof_dir.exists() {
-            eprintln!(
+            warn!(
                 "Proof directory `{}` already exists. Will not clone.",
                 proof_dir.display()
             );
@@ -472,7 +471,7 @@ impl Local {
         debug_assert!(git_https_url.starts_with("https://"));
         match git2::Repository::clone(git_https_url, &proof_dir) {
             Ok(repo) => {
-                eprintln!("{} cloned to {}", git_https_url, proof_dir.display());
+                info!("{} cloned to {}", git_https_url, proof_dir.display());
                 repo.remote_set_url("origin", &push_url)?;
             }
             Err(e) => {
@@ -630,14 +629,14 @@ impl Local {
 
     /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, mut db: &mut crev_wot::ProofDB) -> Result<()> {
-        eprintln!("Fetching {}... ", url);
+        info!("Fetching {}... ", url);
         let dir = self.fetch_remote_git(url)?;
         self.import_proof_dir_and_print_counts(&dir, url, &mut db)?;
         let mut db = crev_wot::ProofDB::new();
         let url = Url::new_git(url);
         let fetch_source = self.get_fetch_source_for_url(url.clone())?;
         db.import_from_iter(proofs_iter_for_path(dir).map(move |p| (p, fetch_source.clone())));
-        eprintln!("Found proofs from:");
+        info!("Found proofs from:");
         for (id, count) in db.all_author_ids() {
             let tmp;
             let verified_state = match db.lookup_url(&id).from_self() {
@@ -737,7 +736,7 @@ impl Local {
                     });
                     already_fetched_urls.insert(url.clone());
                 } else {
-                    eprintln!("Error: No URL for {}", id);
+                    error!("Error: No URL for {}", id);
                 }
                 already_fetched_ids.insert(id);
             }
@@ -751,7 +750,7 @@ impl Local {
                     Ok(())
                 })
                 .unwrap_or_else(|e| {
-                    eprintln!("Error: Failed to fetch {}: {}", url, e);
+                    error!("Error: Failed to fetch {}: {}", url, e);
                 });
             }
         });
@@ -850,10 +849,10 @@ impl Local {
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
         self.fetch_remote_git(dpc_url)
-            .err_eprint_and_ignore()
+            .map_err(|e| warn!("{}", e)).ok()
             .map(|dir| {
-                self.import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
-                    .err_eprint_and_ignore();
+                let _ = self.import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
+                    .map_err(|e| warn!("{}", e));
             });
         fetched_urls.insert(dpc_url.to_owned());
 
@@ -870,17 +869,17 @@ impl Local {
 
             match url {
                 Ok(url) => {
-                    self.get_fetch_source_for_url(Url::new_git(url))
+                    let _ = self.get_fetch_source_for_url(Url::new_git(url))
                         .map(|fetch_source| {
                             db.import_from_iter(
                                 proofs_iter_for_path(path.to_owned())
                                     .map(move |p| (p, fetch_source.clone())),
                             );
                         })
-                        .err_eprint_and_ignore();
+                        .map_err(|e| warn!("{}", e));
                 }
                 Err(e) => {
-                    eprintln!("ERR: {} {}", path.display(), e);
+                    error!("in {}: {}", path.display(), e);
                 }
             }
         }
@@ -1137,7 +1136,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     file_iter
         .filter_map(|maybe_path| {
             maybe_path
-                .map_err(|e| eprintln!("Failed scanning for proofs: {}", e))
+                .map_err(|e| error!("Failed scanning for proofs: {}", e))
                 .ok()
         })
         .filter_map(|path| match parse_proofs(&path) {
@@ -1145,7 +1144,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
                 proof
                     .verify()
                     .map_err(|e| {
-                        eprintln!(
+                        error!(
                             "Verification failed for proof signed '{}' in {}: {} ",
                             proof.signature(),
                             path.display(),
@@ -1156,7 +1155,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
                     .map(|_| proof)
             })),
             Err(e) => {
-                eprintln!("Error parsing proofs in {}: {}", path.display(), e);
+                error!("Error parsing proofs in {}: {}", path.display(), e);
                 None
             }
         })

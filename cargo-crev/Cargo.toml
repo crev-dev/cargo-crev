@@ -57,6 +57,7 @@ git2 = "0.13.17"
 tempfile = "3.2.0"
 rprompt = "1.0.5"
 thiserror = "1.0.24"
+log = "0.4.14"
 
 [features]
 default = []

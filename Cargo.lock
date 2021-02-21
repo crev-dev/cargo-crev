@@ -339,6 +339,7 @@ dependencies = [
  "geiger",
  "git2",
  "lazy_static",
+ "log",
  "num_cpus",
  "openssl-sys",
  "petgraph",

@@ -12,7 +12,7 @@ use crev_lib::id::LockedId;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
-    io::{self, BufRead},
+    io::{self, BufRead, Write},
     path::PathBuf,
 };
 use structopt::StructOpt;
@@ -695,7 +695,28 @@ fn change_passphrase() -> Result<()> {
 }
 
 fn main() {
-    env_logger::init();
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Off)
+        .filter_module("crev_wot", log::LevelFilter::Info)
+        .filter_module("crev_lib", log::LevelFilter::Info)
+        .filter_module("crev_data", log::LevelFilter::Info)
+        .filter_module("crev_common", log::LevelFilter::Info)
+        .filter_module("cargo_crev", log::LevelFilter::Info)
+        .parse_default_env()
+        .filter_module("cargo", log::LevelFilter::Off)
+        .filter_module("tokei", log::LevelFilter::Off)
+        .filter_module("ignore", log::LevelFilter::Off)
+        .filter_module("globset", log::LevelFilter::Off)
+        .filter_module("reqwest", log::LevelFilter::Off)
+        .format(|buf, record| if record.level() == log::Level::Info {
+            writeln!(buf, "{}", record.args())
+        } else if record.level() > log::Level::Info {
+            writeln!(buf, "[{}:{}] {}", record.module_path().or_else(|| record.file()).unwrap_or("?"),
+                record.line().unwrap_or(0), record.args())
+        } else {
+            writeln!(buf, "{}: {}", record.level(), record.args())
+        })
+        .init();
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
     match run_command(command) {
