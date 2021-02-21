@@ -953,7 +953,15 @@ impl Local {
         let mut index = repo.index()?;
         let tree_id = index.write_tree()?;
         let tree = repo.find_tree(tree_id)?;
-        let head = repo.head()?.peel_to_commit()?;
+        let commit;
+        let commit_ref;
+        let parents: &[_] = if let Ok(head) = repo.head() {
+            commit = head.peel_to_commit()?;
+            commit_ref = &commit;
+            std::slice::from_ref(&commit_ref)
+        } else {
+            &[]
+        };
 
         let signature = repo.signature()?;
 
@@ -963,7 +971,7 @@ impl Local {
             &signature,
             commit_msg,
             &tree,
-            &[&head],
+            parents,
         )?;
 
         Ok(())
