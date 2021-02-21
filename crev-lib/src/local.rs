@@ -522,16 +522,16 @@ impl Local {
     }
 
     /// Proof repo URL associated with the current user Id
-    fn get_cur_url(&self) -> Result<Option<Url>> {
+    fn get_cur_url(&self) -> Result<Url> {
         let url = self.cur_url.lock().unwrap().clone();
-        Ok(if let Some(url) = url {
-            Some(url)
+        if let Some(url) = url {
+            Ok(url)
         } else if let Some(locked_id) = self.read_current_locked_id_opt()? {
             *self.cur_url.lock().unwrap() = locked_id.url.clone();
-            locked_id.url
+            locked_id.url.ok_or(Error::GitUrlNotConfigured)
         } else {
-            None
-        })
+            Err(Error::CurrentIDNotSet)
+        }
     }
 
     /// Creates `user_proofs_path()`
@@ -558,18 +558,18 @@ impl Local {
     /// Path where the `proofs` are stored under `git` repository.
     ///
     /// This function derives path from current user's URL
-    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
-        if let Some(url) = self.get_cur_url()? {
-            Ok(Some(self.get_proofs_dir_path_for_url(&url)?))
-        } else {
-            Ok(None)
-        }
+    pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
+        let url = self.get_cur_url()?;
+        self.get_proofs_dir_path_for_url(&url)
     }
 
     /// This function derives path from current user's URL
-    pub fn get_proofs_dir_path(&self) -> Result<PathBuf> {
-        self.get_proofs_dir_path_opt()?
-            .ok_or_else(|| Error::CurrentIDNotSet)
+    pub fn get_proofs_dir_path_opt(&self) -> Result<Option<PathBuf>> {
+        match self.get_proofs_dir_path() {
+            Ok(p) => Ok(Some(p)),
+            Err(Error::CurrentIDNotSet) => Ok(None),
+            Err(e) => Err(e),
+        }
     }
 
     /// Creates new unsigned trust proof object, not edited
@@ -776,7 +776,7 @@ impl Local {
 
     /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for the URL.
     fn get_fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
-        if let Some(own_url) = self.get_cur_url()? {
+        if let Ok(own_url) = self.get_cur_url() {
             if own_url == url {
                 return Ok(crev_wot::FetchSource::LocalUser);
             }
