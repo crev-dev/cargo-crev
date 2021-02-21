@@ -457,6 +457,9 @@ impl Local {
         use_https_push: bool,
     ) -> Result<()> {
         debug_assert!(git_https_url.starts_with("https://"));
+        if git_https_url.starts_with("https://github.com/crev-dev/crev-proofs") {
+            return Err(Error::CouldNotCloneGitHttpsURL(Box::new((git_https_url.into(), "this is a template, fork it first".into()))));
+        }
 
         let proof_dir =
             self.get_proofs_dir_path_for_url(&Url::new_git(git_https_url.to_owned()))?;
