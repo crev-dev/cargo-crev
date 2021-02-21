@@ -1,5 +1,5 @@
 use crate::{
-    edit, opts,
+    edit, opts, term,
     opts::{CargoOpts, CrateSelector},
     prelude::*,
 };
@@ -100,7 +100,7 @@ pub fn create_review_proof(
         None
     };
 
-    let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+    let id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
     let db = local.load_db()?;
     let mut review = proof::review::PackageBuilder::default()

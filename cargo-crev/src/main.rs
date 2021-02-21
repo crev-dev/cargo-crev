@@ -197,7 +197,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     println!(
                         "There's no way to recover your CrevID if you forget your passphrase."
                     );
-                    crev_common::read_new_passphrase()
+                    term::read_new_passphrase()
                 }
                 let local = Local::auto_create_or_open()?;
                 let res = local
@@ -605,7 +605,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
             opts::Repo::Import(args) => {
                 let local = Local::auto_create_or_open()?;
-                let id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+                let id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
                 let s = load_stdin_with_prompt()?;
                 let proofs = crev_data::proof::Proof::parse_from(s.as_slice())?;
@@ -683,9 +683,9 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 fn change_passphrase() -> Result<()> {
     let local = Local::auto_open()?;
     eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
-    let unlocked_id = local.read_current_unlocked_id(&crev_common::read_passphrase)?;
+    let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
     eprintln!("Now please enter the NEW passphrase.");
-    let passphrase = crev_common::read_new_passphrase()?;
+    let passphrase = term::read_new_passphrase()?;
     let locked_id = LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
 
     local.save_locked_id(&locked_id)?;
