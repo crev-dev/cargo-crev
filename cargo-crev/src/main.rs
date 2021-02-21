@@ -182,15 +182,17 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Id(args) => match args {
             opts::Id::New(args) => {
                 let url = match (args.url, args.github_username) {
-                    (Some(url), None) => url,
+                    (Some(url), None) => {
+                        if !url.starts_with("https://") {
+                            bail!("URL must start with 'https://'");
+                        }
+                        Some(url)
+                    },
                     (None, Some(username)) => {
-                        format!("https://github.com/{}/crev-proofs", username)
+                        Some(format!("https://github.com/{}/crev-proofs", username))
                     }
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
-                if !url.starts_with("https://") {
-                    bail!("URL must start with 'https://'");
-                }
 
                 fn read_new_passphrase() -> io::Result<String> {
                     println!("CrevID will be protected by a passphrase.");
@@ -201,7 +203,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
                 let local = Local::auto_create_or_open()?;
                 let res = local
-                    .generate_id(&url, args.use_https_push, read_new_passphrase)
+                    .generate_id(url.as_deref(), args.use_https_push, read_new_passphrase)
                     .map_err(|e| {
                         eprintln!("To create your proof repository, fork the template:");
                         eprintln!("https://github.com/crev-dev/crev-proofs/fork");

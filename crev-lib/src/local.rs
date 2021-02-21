@@ -527,8 +527,8 @@ impl Local {
         Ok(if let Some(url) = url {
             Some(url)
         } else if let Some(locked_id) = self.read_current_locked_id_opt()? {
-            *self.cur_url.lock().unwrap() = Some(locked_id.url.clone());
-            Some(locked_id.url)
+            *self.cur_url.lock().unwrap() = locked_id.url.clone();
+            locked_id.url
         } else {
             None
         })
@@ -900,7 +900,11 @@ impl Local {
         let proof_dir_path = self.get_proofs_dir_path()?;
         if !proof_dir_path.exists() {
             let id = self.read_current_locked_id()?;
-            self.clone_proof_dir_from_git(&id.url.url, false)?;
+            if let Some(u) = id.url {
+                self.clone_proof_dir_from_git(&u.url, false)?;
+            } else {
+                return Err(Error::GitUrlNotConfigured);
+            }
         }
 
         let status = std::process::Command::new("git")
@@ -992,13 +996,17 @@ impl Local {
     /// The callback should provide a passphrase
     pub fn generate_id(
         &self,
-        url: &str,
+        url: Option<&str>,
         use_https_push: bool,
         read_new_passphrase: impl FnOnce() -> std::io::Result<String>,
     ) -> Result<id::LockedId> {
-        self.clone_proof_dir_from_git(&url, use_https_push)?;
+        if let Some(url) = url {
+            self.clone_proof_dir_from_git(&url, use_https_push)?;
+        } else {
+            return Err(Error::GitUrlNotConfigured);
+        }
 
-        let unlocked_id = crev_data::id::UnlockedId::generate(crev_data::Url::new_git(url));
+        let unlocked_id = crev_data::id::UnlockedId::generate(url.map(crev_data::Url::new_git));
         let passphrase = read_new_passphrase()?;
         let locked_id = id::LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
 

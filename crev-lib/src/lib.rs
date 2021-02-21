@@ -68,6 +68,9 @@ pub enum Error {
     #[error("origin has no url")]
     OriginHasNoURL,
 
+    #[error("current Id has been created without a git URL")]
+    GitUrlNotConfigured,
+
     #[error("Error iterating local ProofStore at {}: {}", _0.0.display(), _0.1)]
     ErrorIteratingLocalProofStore(Box<(PathBuf, String)>),
 

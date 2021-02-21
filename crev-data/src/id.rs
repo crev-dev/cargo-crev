@@ -129,10 +129,10 @@ impl PublicId {
         Self { id, url: None }
     }
 
-    pub fn new_from_pubkey(v: Vec<u8>, url: Url) -> Result<Self, IdError> {
+    pub fn new_from_pubkey(v: Vec<u8>, url: Option<Url>) -> Result<Self, IdError> {
         Ok(Self {
             id: Id::new_crev(v)?,
-            url: Some(url),
+            url,
         })
     }
 
@@ -202,7 +202,7 @@ impl AsRef<PublicId> for UnlockedId {
 
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(url: Url, sec_key: Vec<u8>) -> Result<Self, IdError> {
+    pub fn new(url: Option<Url>, sec_key: Vec<u8>) -> Result<Self, IdError> {
         let sec_key = SecretKey::from_bytes(&sec_key)
             .map_err(|e| IdError::InvalidSecretKey(e.to_string().into()))?;
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
@@ -228,15 +228,15 @@ impl UnlockedId {
         &self.id
     }
 
-    pub fn url(&self) -> &Url {
-        self.id.url.as_ref().expect("UnlockedId must have a URL")
+    pub fn url(&self) -> Option<&Url> {
+        self.id.url.as_ref()
     }
 
     pub fn generate_for_git_url(url: &str) -> Self {
-        Self::generate(Url::new_git(url.to_owned()))
+        Self::generate(Some(Url::new_git(url.to_owned())))
     }
 
-    pub fn generate(url: Url) -> Self {
+    pub fn generate(url: Option<Url>) -> Self {
         let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
         Self {
             id: PublicId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)

@@ -158,7 +158,7 @@ review:
 }
 
 pub fn generate_id_and_proof() -> Result<(UnlockedId, Proof)> {
-    let id = UnlockedId::generate(Url::new_git("https://mypage.com/trust.git"));
+    let id = UnlockedId::generate(Some(Url::new_git("https://mypage.com/trust.git")));
 
     let package_info = proof::PackageInfo {
         id: proof::PackageVersionId::new(

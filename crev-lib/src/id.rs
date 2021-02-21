@@ -28,7 +28,7 @@ pub struct PassphraseConfig {
 pub struct LockedId {
     version: i64,
     #[serde(flatten)]
-    pub url: crev_data::Url,
+    pub url: Option<crev_data::Url>,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,
@@ -91,7 +91,7 @@ impl LockedId {
             public_key: unlocked_id.keypair.public.to_bytes().to_vec(),
             sealed_secret_key: siv.seal(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
             seal_nonce,
-            url: unlocked_id.url().clone(),
+            url: unlocked_id.url().cloned(),
             passphrase_config: PassphraseConfig {
                 salt: pwsalt,
                 iterations: config.time_cost,
@@ -175,7 +175,7 @@ impl LockedId {
 
             assert!(!secret_key.is_empty());
 
-            let result = UnlockedId::new(url.to_owned(), secret_key)?;
+            let result = UnlockedId::new(url.clone(), secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {
                 Err(Error::PubKeyMismatch)?;
             }
