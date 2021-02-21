@@ -130,6 +130,7 @@ impl std::ops::Add<OwnerSetSet> for OwnerSetSet {
 #[derive(Clone, Debug)]
 pub struct AccumulativeCrateDetails {
     pub trust: VerificationStatus,
+    pub has_trusted_ids: bool,
     pub trusted_issues: CountWithTotal,
     pub verified: bool,
     pub loc: Option<u64>,
@@ -157,6 +158,7 @@ impl std::ops::Add<AccumulativeCrateDetails> for AccumulativeCrateDetails {
     fn add(self, other: Self) -> Self {
         Self {
             trust: self.trust.min(other.trust),
+            has_trusted_ids: self.has_trusted_ids || other.has_trusted_ids,
             trusted_issues: self.trusted_issues + other.trusted_issues,
             verified: self.verified && other.verified,
             loc: sum_options(self.loc, other.loc),

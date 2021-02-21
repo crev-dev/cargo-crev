@@ -306,7 +306,7 @@ impl CrateVerifyColumns {
 
 Column description:
 
-- status     - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports.
+- status     - Trust check result: `pass` for trusted, `none` for lacking reviews, `flagged` or `dangerous` for crates with problem reports. `N/A` when crev is not configured yet.
 - reviews    - Number of reviews for the specific version and for all available versions (total)
 - issues     - Number of issues repored (from trusted sources/all)
 - owner

@@ -35,6 +35,8 @@ use std::{
 pub struct Scanner {
     db: Arc<ProofDB>,
     trust_set: TrustSet,
+    /// True if trust_set is not empty
+    has_trusted_ids: bool,
     min_ignore_list: fnv::FnvHashSet<PathBuf>,
     full_ignore_list: fnv::FnvHashSet<PathBuf>,
     local: Arc<crev_lib::Local>,
@@ -110,9 +112,12 @@ impl Scanner {
             .cloned()
             .collect();
 
+        let has_trusted_ids = trust_set.trusted_ids().next().is_some();
+
         Ok(Scanner {
             db: Arc::new(db),
             trust_set,
+            has_trusted_ids,
             min_ignore_list,
             full_ignore_list,
             local: Arc::new(local),
@@ -139,6 +144,10 @@ impl Scanner {
 
     /// start computations on a new thread
     pub fn run(self) -> Receiver<CrateStats> {
+        if !self.has_trusted_ids {
+            eprintln!("There are no trusted Ids. There is nothing to verify against.\nUse `cargo crev trust` to add trusted reviewers");
+        }
+
         let (ready_tx, ready_rx) = unbounded();
         // instead of properly traversing the graph
         // to be able to calculate recursive stats,
@@ -337,6 +346,7 @@ impl Scanner {
         let owner_set = OwnerSetSet::new(info.id, owner_list.into_iter().flatten());
 
         let accumulative_own = AccumulativeCrateDetails {
+            has_trusted_ids: self.has_trusted_ids,
             trust: verification_result,
             trusted_issues: issues,
             geiger_count,
