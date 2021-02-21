@@ -6,7 +6,7 @@ use crev_common::{
 };
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
-use std::{self, fmt, fs, io, io::Write, path::Path};
+use std::{self, fmt, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
@@ -118,19 +118,6 @@ impl LockedId {
         let s = self.to_string();
         crev_common::store_str_to_file(path, &s)
             .map_err(|e| Error::FileWrite(e, path.into()))
-    }
-
-    fn _replace_file(&self, path: &Path) -> io::Result<()> {
-        let mut file = fs::File::create(path)?;
-
-        // it is not terribly important for this file to be readable
-        // only for the user (because the key is encrypted anyway),
-        // so ignore the error if it happens
-        let _ = crate::util::chmod_path_to_600(path);
-
-        write!(file, "{}", self)?;
-
-        Ok(())
     }
 
     pub fn read_from_yaml_file(path: &Path) -> Result<Self> {
