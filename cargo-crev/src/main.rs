@@ -6,9 +6,9 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
-use crev_data::UnlockedId;
-use crev_data::proof::ContentExt;
 use crate::prelude::*;
+use crev_data::proof::ContentExt;
+use crev_data::UnlockedId;
 use crev_lib::id::LockedId;
 
 use crev_lib::{self, local::Local};
@@ -225,12 +225,15 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 if !args.url.starts_with("https://") {
                     bail!("URL must be https://");
                 }
-                let local = Local::auto_open()?;
-                let locked_id = local.read_current_locked_id()?;
-                let pub_id = locked_id.to_public_id().id.clone();
-                local.change_locked_id_url(locked_id, &args.url, args.use_https_push)?;
-                local.save_current_id(&pub_id)?;
-                local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+                match current_id_set_url(&args.url, args.use_https_push) {
+                    Err(crev_lib::Error::CurrentIDNotSet)
+                    | Err(crev_lib::Error::IDNotSpecifiedAndCurrentIDNotSet)
+                    | Err(crev_lib::Error::UserConfigNotInitialized) => {
+                        eprintln!("set-url requires a CrevID set up, so we'll set up one now.");
+                        generate_new_id_interactively(Some(&args.url), args.use_https_push, false)?
+                    }
+                    res => res?,
+                }
             }
             opts::Id::Export(args) => {
                 let local = Local::auto_open()?;
@@ -581,6 +584,16 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     }
 
     Ok(CommandExitStatus::Success)
+}
+
+fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::Error> {
+    let local = Local::auto_open()?;
+    let locked_id = local.read_current_locked_id()?;
+    let pub_id = locked_id.to_public_id().id.clone();
+    local.change_locked_id_url(locked_id, url, use_https_push)?;
+    local.save_current_id(&pub_id)?;
+    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+    Ok(())
 }
 
 /// Interactive process of setting up a new CrevID
