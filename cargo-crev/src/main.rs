@@ -6,6 +6,7 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
+use crev_data::proof::ContentExt;
 use crate::prelude::*;
 use crev_lib::id::LockedId;
 
@@ -36,8 +37,8 @@ mod tokei;
 mod tui;
 
 use crate::{repo::*, review::*, shared::*};
-use crev_data::{proof, Id};
-use crev_lib::TrustProofType::{self, *};
+use crev_data::{proof, Id, TrustLevel};
+use crev_lib::TrustProofType;
 use crev_wot::{ProofDB, TrustSet, UrlOfId};
 
 pub fn repo_publish() -> Result<()> {
@@ -290,64 +291,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Id::Trust(args) => {
-                let ids = ids_from_string(&args.public_ids)?;
-                let id_trust_proof_type = Trust;
-                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
-
-                if args.common_proof_create.print_unsigned {
-                    print!("{}", proof.body());
-                }
-                if args.common_proof_create.print_signed {
-                    print!("{}", proof);
-                }
-                if !args.common_proof_create.no_store {
-                    crev_lib::proof::store_id_trust_proof(
-                        &proof,
-                        &ids,
-                        id_trust_proof_type,
-                        !args.common_proof_create.no_commit,
-                    )?;
-                }
+                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, args.level.unwrap_or(TrustLevel::Medium), args.level.is_none())?;
             }
             opts::Id::Untrust(args) => {
-                let ids = ids_from_string(&args.public_ids)?;
-                let id_trust_proof_type = Untrust;
-                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
-
-                if args.common_proof_create.print_unsigned {
-                    print!("{}", proof.body());
-                }
-                if args.common_proof_create.print_signed {
-                    print!("{}", proof);
-                }
-                if !args.common_proof_create.no_store {
-                    crev_lib::proof::store_id_trust_proof(
-                        &proof,
-                        &ids,
-                        id_trust_proof_type,
-                        !args.common_proof_create.no_commit,
-                    )?;
-                }
+                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, TrustLevel::None, true)?;
             }
             opts::Id::Distrust(args) => {
-                let ids = ids_from_string(&args.public_ids)?;
-                let id_trust_proof_type = Distrust;
-                let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
-
-                if args.common_proof_create.print_unsigned {
-                    print!("{}", proof.body());
-                }
-                if args.common_proof_create.print_signed {
-                    print!("{}", proof);
-                }
-                if !args.common_proof_create.no_store {
-                    crev_lib::proof::store_id_trust_proof(
-                        &proof,
-                        &ids,
-                        id_trust_proof_type,
-                        !args.common_proof_create.no_commit,
-                    )?;
-                }
+                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, TrustLevel::Distrust, true)?;
             }
             opts::Id::Query(cmd) => match cmd {
                 opts::IdQuery::Current { trust_params } => {
@@ -457,23 +407,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     eprintln!("warning: Could not find Id for URL {}", url);
                 }
             }
-            let id_trust_proof_type = Trust;
-            let proof = create_id_trust_proof_interactively(&ids, id_trust_proof_type)?;
-
-            if args.common_proof_create.print_unsigned {
-                print!("{}", proof.body());
-            }
-            if args.common_proof_create.print_signed {
-                print!("{}", proof);
-            }
-            if !args.common_proof_create.no_store {
-                crev_lib::proof::store_id_trust_proof(
-                    &proof,
-                    &ids,
-                    id_trust_proof_type,
-                    !args.common_proof_create.no_commit,
-                )?;
-            }
+            set_trust_level_for_ids(&ids, &args.common_proof_create, args.level.unwrap_or(TrustLevel::Medium), args.level.is_none())?;
         }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {
@@ -684,6 +618,39 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     }
 
     Ok(CommandExitStatus::Success)
+}
+
+fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::CommonProofCreate, trust_level: TrustLevel, edit_interactively: bool) -> Result<()> {
+    let local = Local::auto_open()?;
+    let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
+
+    let trust = local.build_trust_proof(
+        unlocked_id.as_public_id(),
+        ids.to_vec(),
+        trust_level,
+    )?;
+
+    if edit_interactively {
+        edit::edit_proof_content_iteractively(&trust, None, None)?;
+    }
+
+    let proof = trust.sign_by(&unlocked_id)?;
+
+    if common_proof_create.print_unsigned {
+        print!("{}", proof.body());
+    }
+    if common_proof_create.print_signed {
+        print!("{}", proof);
+    }
+    if !common_proof_create.no_store {
+        crev_lib::proof::store_id_trust_proof(
+            &proof,
+            ids,
+            trust_level,
+            !common_proof_create.no_commit,
+        )?;
+    }
+    Ok(())
 }
 
 fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {

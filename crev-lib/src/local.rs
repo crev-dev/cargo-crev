@@ -1,7 +1,7 @@
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
-    util, Error, ProofStore, Result, TrustProofType,
+    util, Error, ProofStore, Result,
 };
 use crev_common::{
     self,
@@ -652,7 +652,7 @@ impl Local {
         &self,
         from_id: &PublicId,
         ids: Vec<Id>,
-        proof_type: TrustProofType,
+        trust_level: TrustLevel,
     ) -> Result<proof::trust::Trust> {
         if ids.is_empty() {
             Err(Error::NoIdsGiven)?;
@@ -682,11 +682,7 @@ impl Local {
 
         Ok(from_id.create_trust_proof(
             &public_ids,
-            match proof_type {
-                TrustProofType::Trust => TrustLevel::Medium,
-                TrustProofType::Distrust => TrustLevel::Distrust,
-                TrustProofType::Untrust => TrustLevel::None,
-            },
+            trust_level,
         )?)
     }
 

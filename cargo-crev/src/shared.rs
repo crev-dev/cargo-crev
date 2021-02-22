@@ -1,15 +1,12 @@
 // Here are the structs and functions which still need to be sorted
 //
 use crate::{
-    deps::scan, edit, opts, term,
+    deps::scan, edit, opts,
     opts::CrateSelector, prelude::*, repo::*
 };
 use anyhow::{format_err, Context, Result};
-use crev_data::{
-    proof::{self, ContentExt},
-    Id,
-};
-use crev_lib::{self, local::Local, ProofStore, ReviewMode, TrustProofType};
+use crev_data::proof;
+use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use failure::Fail;
 use resiter::FlatMap;
 use serde::Deserialize;
@@ -595,22 +592,6 @@ where
         f(&args.crate_)?;
     }
     Ok(())
-}
-
-/// Creates a new trust proof interactively
-pub fn create_id_trust_proof_interactively(
-    ids: &[Id],
-    proof_type: TrustProofType,
-) -> Result<proof::Proof> {
-    let local = Local::auto_open()?;
-    let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
-    let trust = edit::build_trust_proof_interactively(
-        &local,
-        unlocked_id.as_public_id(),
-        ids.to_vec(),
-        proof_type,
-    )?;
-    Ok(trust.sign_by(&unlocked_id)?)
 }
 
 pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {

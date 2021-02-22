@@ -43,6 +43,26 @@ impl fmt::Display for TrustLevel {
     }
 }
 
+
+#[derive(thiserror::Error, Debug)]
+#[error("Can't convert string to TrustLevel")]
+pub struct FromStrErr;
+
+impl std::str::FromStr for TrustLevel {
+    type Err = FromStrErr;
+
+    fn from_str(s: &str) -> std::result::Result<TrustLevel, FromStrErr> {
+        Ok(match s {
+            "none" | "untrust" => TrustLevel::None,
+            "low" => TrustLevel::Low,
+            "medium" => TrustLevel::Medium,
+            "high" => TrustLevel::High,
+            "distrust" => TrustLevel::Distrust,
+            _ => return Err(FromStrErr),
+        })
+    }
+}
+
 impl std::convert::From<Level> for TrustLevel {
     fn from(l: Level) -> Self {
         match l {

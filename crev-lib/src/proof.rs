@@ -1,4 +1,5 @@
 use crate::ProofStore;
+use crate::TrustLevel;
 use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
@@ -46,13 +47,13 @@ pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf 
 pub fn store_id_trust_proof(
     proof: &crev_data::proof::Proof,
     ids: &[crev_data::Id],
-    proof_type: crate::TrustProofType,
+    trust_level: TrustLevel,
     commit: bool,
 ) -> crate::Result<()> {
     let local = crate::Local::auto_open()?;
     local.insert(&proof)?;
     if commit {
-        let commit_message = create_id_trust_commit_message(&ids, proof_type);
+        let commit_message = create_id_trust_commit_message(&ids, trust_level);
         local.proof_dir_commit(&commit_message)?;
     }
     Ok(())
@@ -60,7 +61,7 @@ pub fn store_id_trust_proof(
 
 fn create_id_trust_commit_message(
     ids: &[crev_data::Id],
-    proof_type: crate::TrustProofType,
+    trust_level: TrustLevel,
 ) -> String {
     let string_ids = ids
         .iter()
@@ -68,8 +69,15 @@ fn create_id_trust_commit_message(
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "Add {proof_type} for {ids}",
-        proof_type = proof_type,
+        "{proof_type} for {ids}",
+        proof_type = match trust_level {
+            TrustLevel::None => "Remove trust",
+            TrustLevel::Distrust => "Set distrust",
+            TrustLevel::Low |
+            TrustLevel::Medium |
+            TrustLevel::High => "Add trust",
+
+        },
         ids = string_ids
     )
 }

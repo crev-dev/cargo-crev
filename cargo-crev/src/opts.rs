@@ -361,6 +361,10 @@ pub struct IdTrust {
     /// Public IDs to create Trust Proof for
     pub public_ids: Vec<String>,
 
+    /// Shortcut for setting trust level without editing
+    #[structopt(long = "level")]
+    pub level: Option<crev_data::TrustLevel>,
+
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,
 }
@@ -369,6 +373,10 @@ pub struct IdTrust {
 pub struct TrustUrls {
     /// Public IDs or proof repo URLs to create Trust Proof for
     pub public_ids_or_urls: Vec<String>,
+
+    /// Shortcut for setting trust level without editing
+    #[structopt(long = "level")]
+    pub level: Option<crev_data::TrustLevel>,
 
     #[structopt(flatten)]
     pub common_proof_create: CommonProofCreate,

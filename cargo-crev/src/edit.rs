@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use crev_common::{run_with_shell_cmd, CancelledError};
-use crev_data::{proof, proof::content::ContentExt, Id, PublicId};
-use crev_lib::{local::Local, util::get_documentation_for, TrustProofType};
+use crev_data::{proof, proof::content::ContentExt};
+use crev_lib::{local::Local, util::get_documentation_for};
 use rprompt;
 use std::{
     env, ffi,
@@ -152,19 +152,4 @@ pub fn edit_readme(local: &Local) -> Result<()> {
     edit_file(&local.get_proofs_dir_path()?.join("README.md"))?;
     local.proof_dir_git_add_path(&PathBuf::from("README.md"))?;
     Ok(())
-}
-
-/// Opens editor with a new trust proof for given Ids
-///
-/// Currently ignores previous proofs
-pub fn build_trust_proof_interactively(
-    local: &Local,
-    from_id: &PublicId,
-    ids: Vec<Id>,
-    proof_type: TrustProofType,
-) -> Result<proof::trust::Trust> {
-    let trust = local.build_trust_proof(from_id, ids, proof_type)?;
-
-    // TODO: Look up previous trust proof?
-    Ok(edit_proof_content_iteractively(&trust, None, None)?)
 }
