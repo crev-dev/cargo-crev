@@ -433,7 +433,7 @@ impl Local {
     /// Changes the repo URL for the ID. Adopts existing temporary/local repo if any.
     /// Previous remote URL is abandoned.
     /// For crev id set-url command.
-    pub fn change_locked_id_url(&self, mut id: id::LockedId, git_https_url: &str, use_https_push: bool) -> Result<()> {
+    pub fn change_locked_id_url(&self, id: &mut id::LockedId, git_https_url: &str, use_https_push: bool) -> Result<()> {
         self.ensure_proofs_root_exists()?;
 
         let old_proof_dir = self.local_proofs_repo_path_for_id(&id.to_public_id().id);

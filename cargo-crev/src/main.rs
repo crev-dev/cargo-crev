@@ -600,11 +600,15 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
 fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::Error> {
     let local = Local::auto_open()?;
-    let locked_id = local.read_current_locked_id()?;
+    let mut locked_id = local.read_current_locked_id()?;
     let pub_id = locked_id.to_public_id().id.clone();
-    local.change_locked_id_url(locked_id, url, use_https_push)?;
+    local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
     local.save_current_id(&pub_id)?;
     local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+
+    if locked_id.has_no_passphrase() {
+        eprintln!("warning: there is no passphrase set. Use `cargo crev id passwd` to fix.");
+    }
     Ok(())
 }
 
@@ -627,10 +631,10 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
                     .filter(|id| id.url.is_none())
                     .filter_map(|id| local.read_locked_id(&id.id).ok())
                     .filter(|id| id.has_no_passphrase());
-                for locked_id in reusable_ids {
+                for mut locked_id in reusable_ids {
                     let id = locked_id.to_public_id().id;
                     eprintln!("Instead of setting up a new CrevID we'll reconfigure the existing one {}", id);
-                    local.change_locked_id_url(locked_id, url, use_https_push)?;
+                    local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
                     let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
                     change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
                     local.save_current_id(&id)?;
@@ -641,10 +645,10 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
             // if an old one couldn't be reconfigured automatically, help how to do it manually
             if let Some(example) = existing_usable.get(0) {
                 if local.get_current_userid().ok().map_or(false, |cur| cur == example.id) {
-                    eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev passwd`\n");
+                    eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n");
                 } else {
                     eprintln!("You can use existing CrevID with `cargo crev id switch {}`", example.id);
-                    eprintln!("and set it up with `cargo crev set-url` and `cargo crev passwd`\n");
+                    eprintln!("and set it up with `cargo crev set-url` and `cargo crev id passwd`\n");
                 }
             }
         }
@@ -670,6 +674,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
         println!("Your CrevID was created and will be printed below in an encrypted form.");
         println!("Make sure to back it up on another device, to prevent losing it.");
         println!("{}", res);
+    } else {
+        println!("Your CrevID is not protected with a passphrase. You should fix that with `cargo crev id passwd`");
     }
 
     let local = crev_lib::Local::auto_open()?;
@@ -776,12 +782,17 @@ fn change_passphrase(local: &Local, unlocked_id: &UnlockedId, passphrase: &str) 
 
     local.save_locked_id(&locked_id)?;
     local.save_current_id(unlocked_id.as_ref())?;
-    eprintln!("Passphrase changed successfully.");
-    if !locked_id.has_no_passphrase() {
-        println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
-        println!("Make sure to back it up on another device, to prevent losing it.");
-        println!("{}", locked_id);
+
+    if locked_id.has_no_passphrase() {
+        eprintln!("Passphrase disabled.");
+    } else {
+        eprintln!("Passphrase changed successfully.");
     }
+
+    println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
+    println!("Make sure to back it up on another device, to prevent losing it.");
+    println!("{}", locked_id);
+
     Ok(locked_id)
 }
 
