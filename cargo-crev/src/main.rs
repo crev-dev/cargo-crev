@@ -197,45 +197,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
 
-                if let Ok(existing) = Local::auto_open().and_then(|l| l.get_current_user_public_ids()) {
-                    if !existing.is_empty() {
-                        let existing = existing.into_iter().map(|id| format!("{} {}", id.id, id.url_display())).collect::<Vec<_>>();
-                        eprintln!("warning: you already have CrevID {}", existing.join(", "));
-                    }
-                }
-
-                if url.is_none() {
-                    if args.no_url {
-                        eprintln!("warning: creating CrevID without a URL.");
-                    } else {
-                        print_crev_proof_repo_fork_help();
-                        bail!("Try again with --url or --github-username");
-                    }
-                }
-
-                fn read_new_passphrase() -> io::Result<String> {
-                    println!("CrevID will be protected by a passphrase.");
-                    println!("You can change it later with `cargo crev id passwd`.");
-                    println!(
-                        "There's no way to recover your CrevID if you forget your passphrase."
-                    );
-                    term::read_new_passphrase()
-                }
-                let local = Local::auto_create_or_open()?;
-                let res = local
-                    .generate_id(url.as_deref(), args.use_https_push, read_new_passphrase)
-                    .map_err(|e| {
-                        print_crev_proof_repo_fork_help();
-                        e
-                    })?;
-                if !res.has_no_passphrase() {
-                    println!("Your CrevID was created and will be printed below in an encrypted form.");
-                    println!("Make sure to back it up on another device, to prevent losing it.");
-                    println!("{}", res);
-                }
-
-                let local = crev_lib::Local::auto_open()?;
-                let _ = ensure_known_owners_list_exists(&local);
+                generate_new_id_interactively(url.as_deref(), args.use_https_push, args.no_url)?;
             }
             opts::Id::Switch(args) => {
                 let local = Local::auto_open()?;
@@ -621,15 +583,80 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     Ok(CommandExitStatus::Success)
 }
 
+/// Interactive process of setting up a new CrevID
+fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_no_url: bool) -> Result<()> {
+    // Avoid creating new CrevID if it's not necessary
+    if let Ok(local) = Local::auto_open() {
+        if let Ok(existing) = local.get_current_user_public_ids() {
+            let existing_usable = existing.iter().filter(|id| id.url.is_some()).collect::<Vec<_>>();
+            if !existing_usable.is_empty() {
+                for id in &existing_usable {
+                    eprintln!("warning: you already have a CrevID {} {}", id.id, id.url_display());
+                }
+            }
+
+            // only try configuring existing Id if there is a URL to set,
+            // otherwise it'd remain in the unconfigured limbo
+            if let Some(url) = url {
+                let reusable_ids = existing.iter()
+                    .filter(|id| id.url.is_none())
+                    .filter_map(|id| local.read_locked_id(&id.id).ok())
+                    .filter(|id| id.has_no_passphrase());
+                for locked_id in reusable_ids {
+                    let id = locked_id.to_public_id().id;
+                    eprintln!("Instead of setting up a new CrevID we'll reconfigure the existing one {}", id);
+                    local.change_locked_id_url(locked_id, url, use_https_push)?;
+                    let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
+                    change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
+                    local.save_current_id(&id)?;
+                    return Ok(());
+                }
+            }
+
+            // if an old one couldn't be reconfigured automatically, help how to do it manually
+            if let Some(example) = existing_usable.get(0) {
+                if local.get_current_userid().ok().map_or(false, |cur| cur == example.id) {
+                    eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev passwd`\n");
+                } else {
+                    eprintln!("You can use existing CrevID with `cargo crev id switch {}`", example.id);
+                    eprintln!("and set it up with `cargo crev set-url` and `cargo crev passwd`\n");
+                }
+            }
+        }
+    }
+
+    if url.is_none() {
+        if allow_no_url {
+            eprintln!("warning: creating CrevID without a URL.");
+        } else {
+            print_crev_proof_repo_fork_help();
+            bail!("Then again with `cargo crev id new --url <new repo URL>`\nor `cargo crev id new --github-username <you>`");
+        }
+    }
+
+    let local = Local::auto_create_or_open()?;
+    let res = local
+        .generate_id(url, use_https_push, read_new_passphrase)
+        .map_err(|e| {
+            print_crev_proof_repo_fork_help();
+            e
+        })?;
+    if !res.has_no_passphrase() {
+        println!("Your CrevID was created and will be printed below in an encrypted form.");
+        println!("Make sure to back it up on another device, to prevent losing it.");
+        println!("{}", res);
+    }
+
+    let local = crev_lib::Local::auto_open()?;
+    let _ = ensure_known_owners_list_exists(&local);
+    Ok(())
+}
+
 fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::CommonProofCreate, trust_level: TrustLevel, edit_interactively: bool) -> Result<()> {
     let local = Local::auto_open()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
-    let trust = local.build_trust_proof(
-        unlocked_id.as_public_id(),
-        ids.to_vec(),
-        trust_level,
-    )?;
+    let trust = local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
 
     if edit_interactively {
         edit::edit_proof_content_iteractively(&trust, None, None)?;
@@ -677,10 +704,18 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 }
 
 fn print_crev_proof_repo_fork_help() {
+    eprintln!("Each CrevID is associated with a public git repository which stores reviews and trust proofs.");
     eprintln!("To create your proof repository, fork the template:\n\
     https://github.com/crev-dev/crev-proofs/fork\n\n\
 
     For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n");
+}
+
+fn read_new_passphrase() -> io::Result<String> {
+    println!("CrevID will be protected by a passphrase.");
+    println!("You can change it later with `cargo crev id passwd`.");
+    println!("There's no way to recover your CrevID if you forget your passphrase.");
+    term::read_new_passphrase()
 }
 
 fn current_id_change_passphrase() -> Result<LockedId> {
@@ -688,12 +723,11 @@ fn current_id_change_passphrase() -> Result<LockedId> {
     eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
     eprintln!("Now please enter the NEW passphrase.");
-    change_passphrase(&local, &unlocked_id)
+    change_passphrase(&local, &unlocked_id, &term::read_new_passphrase()?)
 }
 
-fn change_passphrase(local: &Local, unlocked_id: &UnlockedId) -> Result<LockedId> {
-    let passphrase = term::read_new_passphrase()?;
-    let locked_id = LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
+fn change_passphrase(local: &Local, unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
+    let locked_id = LockedId::from_unlocked_id(&unlocked_id, passphrase)?;
 
     local.save_locked_id(&locked_id)?;
     local.save_current_id(unlocked_id.as_ref())?;
