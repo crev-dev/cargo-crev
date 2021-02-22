@@ -102,6 +102,8 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
 }
 
 fn crate_review(args: opts::CrateReview) -> Result<()> {
+    ensure_crev_id_exists_or_make_one()?;
+
     handle_goto_mode_command(&args.common, |sel| {
         let is_advisory =
             args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
@@ -666,6 +668,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
 }
 
 fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::CommonProofCreate, trust_level: TrustLevel, edit_interactively: bool) -> Result<()> {
+    ensure_crev_id_exists_or_make_one()?;
+
     let local = Local::auto_open()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
@@ -690,6 +694,24 @@ fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::Common
             trust_level,
             !common_proof_create.no_commit,
         )?;
+    }
+    Ok(())
+}
+
+fn ensure_crev_id_exists_or_make_one() -> Result<()> {
+    let local = Local::auto_create_or_open()?;
+    if local.get_current_userid().is_err() {
+        let existing = local.get_current_user_public_ids().unwrap_or_default();
+        if existing.is_empty() {
+            eprintln!("note: Setting up a default CrevID. Run `cargo crev id new` to customize it.");
+            local.generate_id(None, false, &|| Ok(String::new()))?;
+        } else {
+            eprintln!("You need to select current CrevID. Try:");
+            for id in existing {
+                eprintln!("`cargo crev id switch {}`", id.id);
+            }
+            eprintln!("or `cargo crev id new` to create a new one");
+        }
     }
     Ok(())
 }
