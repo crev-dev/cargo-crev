@@ -81,14 +81,7 @@ pub fn get_crate_info(
 
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
-    let trust_set = if let Some(for_id) =
-        local.get_for_id_from_str_opt(common_opts.for_id.as_deref())?
-    {
-        db.calculate_trust_set(&for_id, &common_opts.trust_params.clone().into())
-    } else {
-        // when running without an id (explicit, or current), just use an empty trust set
-        crev_wot::TrustSet::default()
-    };
+    let trust_set = local.trust_set_for_id(common_opts.for_id.as_deref(), &common_opts.trust_params.clone().into(), &db)?;
 
     let repo = Repo::auto_open_cwd(common_opts.cargo_opts.clone())?;
     let pkg_id = repo.find_pkgid_by_crate_selector(&root_crate)?;

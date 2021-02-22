@@ -142,12 +142,7 @@ impl Repo {
         }
 
         let db = local.load_db()?;
-
-        let trust_set = if let Some(id) = local.get_for_id_from_str_opt(for_id.as_deref())? {
-            db.calculate_trust_set(&id, &params)
-        } else {
-            crev_wot::TrustSet::default()
-        };
+        let trust_set = local.trust_set_for_id(for_id.as_deref(), &params, &db)?;
         let ignore_list = fnv::FnvHashSet::default();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         Ok(verify_package_digest(

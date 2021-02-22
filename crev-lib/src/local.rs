@@ -721,6 +721,15 @@ impl Local {
         Ok(())
     }
 
+    pub fn trust_set_for_id(&self, for_id: Option<&str>, params: &crev_wot::TrustDistanceParams, db: &crev_wot::ProofDB) -> Result<crev_wot::TrustSet> {
+        Ok(if let Some(for_id) = self.get_for_id_from_str_opt(for_id)? {
+            db.calculate_trust_set(&for_id, params)
+        } else {
+            // when running without an id (explicit, or current), just use an empty trust set
+            crev_wot::TrustSet::default()
+        })
+    }
+
     /// Fetch proof repo URLs of trusted Ids
     pub fn fetch_trusted(
         &self,
