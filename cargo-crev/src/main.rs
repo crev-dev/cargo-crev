@@ -44,7 +44,15 @@ use crev_wot::{ProofDB, TrustSet, UrlOfId};
 
 pub fn repo_publish() -> Result<()> {
     let local = Local::auto_open()?;
-    let mut status = local.run_git(vec!["diff".into(), "--exit-code".into()])?;
+    let mut status = match local.run_git(vec!["diff".into(), "--exit-code".into()]) {
+        Err(err @ crev_lib::Error::GitUrlNotConfigured) => {
+            eprintln!("There is no public repo URL configured.");
+            print_crev_proof_repo_fork_help();
+            eprintln!("Run `cargo crev set-url <your public repo>` and try again.");
+            return Err(err.into());
+        },
+        res => res?,
+    };
 
     if status.code().unwrap_or(-2) == 1 {
         status = local.run_git(vec![
@@ -133,7 +141,9 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
             &args.diff,
             args.skip_activity_check || is_advisory || args.issue,
             args.cargo_opts.clone(),
-        )
+        )?;
+        eprintln!("Run `cargo crev publish` to upload the review");
+        Ok(())
     })?;
 
     Ok(())

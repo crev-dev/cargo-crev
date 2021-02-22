@@ -975,13 +975,13 @@ impl Local {
     /// Run arbitrary git command in `get_proofs_dir_path()`
     pub fn run_git(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
         let proof_dir_path = self.get_proofs_dir_path()?;
-        if !proof_dir_path.exists() {
-            let id = self.read_current_locked_id()?;
-            if let Some(u) = id.url {
+        let id = self.read_current_locked_id()?;
+        if let Some(u) = id.url {
+            if !proof_dir_path.exists() {
                 self.clone_proof_dir_from_git(&u.url, false)?;
-            } else {
-                return Err(Error::GitUrlNotConfigured);
             }
+        } else {
+            return Err(Error::GitUrlNotConfigured);
         }
 
         let status = std::process::Command::new("git")
