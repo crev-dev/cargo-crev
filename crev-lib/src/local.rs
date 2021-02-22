@@ -416,7 +416,7 @@ impl Local {
         let locked = self.read_locked_id(id)?;
         let mut i = 0;
         loop {
-            let passphrase = passphrase_callback()?;
+            let passphrase = if locked.has_no_passphrase() { String::new() } else { passphrase_callback()? };
             match locked.to_unlocked(&passphrase) {
                 Ok(o) => return Ok(o),
                 Err(e) => {

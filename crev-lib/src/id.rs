@@ -63,19 +63,23 @@ impl LockedId {
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
         use miscreant::aead::Aead;
 
-        let config = Config {
-            variant: argon2::Variant::Argon2id,
-            version: argon2::Version::Version13,
+        let config = if passphrase != "" {
+            Config {
+                variant: argon2::Variant::Argon2id,
+                version: argon2::Version::Version13,
 
-            hash_length: 64,
-            mem_cost: 4096,
-            time_cost: 192,
+                hash_length: 64,
+                mem_cost: 4096,
+                time_cost: 192,
 
-            lanes: num_cpus::get() as u32,
-            thread_mode: argon2::ThreadMode::Parallel,
+                lanes: num_cpus::get() as u32,
+                thread_mode: argon2::ThreadMode::Parallel,
 
-            ad: &[],
-            secret: &[],
+                ad: &[],
+                secret: &[],
+            }
+        } else {
+            Self::weak_passphrase_config()
         };
 
         let pwsalt = random_vec(32);
@@ -180,6 +184,28 @@ impl LockedId {
                 Err(Error::PubKeyMismatch)?;
             }
             Ok(result)
+        }
+    }
+
+    pub fn has_no_passphrase(&self) -> bool {
+        self.passphrase_config.iterations == 1 && self.to_unlocked("").is_ok()
+    }
+
+    /// Config for empty passphrase. User chose no security, so they're getting none.
+    fn weak_passphrase_config() -> Config<'static> {
+        Config {
+            variant: argon2::Variant::Argon2id,
+            version: argon2::Version::Version13,
+
+            hash_length: 64,
+            mem_cost: 16,
+            time_cost: 1,
+
+            lanes: 1,
+            thread_mode: argon2::ThreadMode::Parallel,
+
+            ad: &[],
+            secret: &[],
         }
     }
 }

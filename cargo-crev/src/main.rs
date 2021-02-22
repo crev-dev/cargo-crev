@@ -6,6 +6,7 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
+use crev_data::UnlockedId;
 use crev_data::proof::ContentExt;
 use crate::prelude::*;
 use crev_lib::id::LockedId;
@@ -214,6 +215,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
                 fn read_new_passphrase() -> io::Result<String> {
                     println!("CrevID will be protected by a passphrase.");
+                    println!("You can change it later with `cargo crev id passwd`.");
                     println!(
                         "There's no way to recover your CrevID if you forget your passphrase."
                     );
@@ -226,9 +228,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         print_crev_proof_repo_fork_help();
                         e
                     })?;
-                println!("Your CrevID was created and will be printed below in an encrypted form.");
-                println!("Make sure to back it up on another device, to prevent losing it.");
-                println!("{}", res);
+                if !res.has_no_passphrase() {
+                    println!("Your CrevID was created and will be printed below in an encrypted form.");
+                    println!("Make sure to back it up on another device, to prevent losing it.");
+                    println!("{}", res);
+                }
 
                 let local = crev_lib::Local::auto_open()?;
                 let _ = ensure_known_owners_list_exists(&local);
@@ -238,10 +242,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 local.switch_id(&args.id)?
             }
             opts::Id::Passwd => {
-                let res = current_id_change_passphrase()?;
-                println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
-                println!("Make sure to back it up on another device, to prevent losing it.");
-                println!("{}", res);
+                current_id_change_passphrase()?;
             }
             opts::Id::Current => {
                 let local = Local::auto_open()?;
@@ -687,12 +688,21 @@ fn current_id_change_passphrase() -> Result<LockedId> {
     eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
     eprintln!("Now please enter the NEW passphrase.");
+    change_passphrase(&local, &unlocked_id)
+}
+
+fn change_passphrase(local: &Local, unlocked_id: &UnlockedId) -> Result<LockedId> {
     let passphrase = term::read_new_passphrase()?;
     let locked_id = LockedId::from_unlocked_id(&unlocked_id, &passphrase)?;
 
     local.save_locked_id(&locked_id)?;
     local.save_current_id(unlocked_id.as_ref())?;
     eprintln!("Passphrase changed successfully.");
+    if !locked_id.has_no_passphrase() {
+        println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
+        println!("Make sure to back it up on another device, to prevent losing it.");
+        println!("{}", locked_id);
+    }
     Ok(locked_id)
 }
 
