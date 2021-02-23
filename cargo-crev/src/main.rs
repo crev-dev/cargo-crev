@@ -386,6 +386,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             set_trust_level_for_ids(&ids, &args.common_proof_create, args.level.unwrap_or(TrustLevel::Medium), args.level.is_none())?;
+            // Make sure we have reviews for the new Ids we're trusting
+            local.fetch_new_trusted(Default::default(), None)?;
         }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {

@@ -729,6 +729,31 @@ impl Local {
         })
     }
 
+    /// Fetch only repos that weren't fetched before
+    pub fn fetch_new_trusted(
+        &self,
+        trust_params: crate::TrustDistanceParams,
+        for_id: Option<&str>,
+    ) -> Result<()> {
+        let mut already_fetched_ids = HashSet::new();
+        let mut already_fetched_urls = remotes_checkouts_iter(self.cache_remotes_path())?.map(|(_, url)| url.url).collect();
+        let mut db = self.load_db()?;
+        let for_id = self.get_for_id_from_str(for_id)?;
+
+        loop {
+            let trust_set = db.calculate_trust_set(&for_id, &trust_params);
+            if !self.fetch_ids_not_fetched_yet(
+                trust_set.trusted_ids().cloned(),
+                &mut already_fetched_ids,
+                &mut already_fetched_urls,
+                &mut db,
+            ) {
+                break;
+            }
+        }
+        Ok(())
+    }
+
     /// Fetch proof repo URLs of trusted Ids
     pub fn fetch_trusted(
         &self,
@@ -813,7 +838,7 @@ impl Local {
                     });
                     already_fetched_urls.insert(url.clone());
                 } else {
-                    error!("Error: No URL for {}", id);
+                    warn!("URL for {} is not known yet", id);
                 }
                 already_fetched_ids.insert(id);
             }
@@ -1173,28 +1198,36 @@ impl ProofStore for Local {
     }
 }
 
-/// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
-fn proofs_iter_for_remotes_checkouts(
-    path: PathBuf,
-) -> Result<impl Iterator<Item = (proof::Proof, crev_wot::FetchSource)>> {
+/// Scans cache for checked out repos and their origin urls
+fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf, Url)>> {
     let dir = std::fs::read_dir(&path)?;
     Ok(dir
         .filter_map(|e| e.ok())
         .filter_map(|e| {
-            if let Ok(ty) = e.file_type() {
-                if ty.is_dir() {
-                    return Some(e.path());
-                }
+            let ty = e.file_type().ok()?;
+            if ty.is_dir() {
+                Some(e.path())
+            } else {
+                None
             }
-            None
         })
         .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
-            let fetch_source = crev_wot::FetchSource::Url(Arc::new(Url::new_git(origin.url()?)));
-            Some(proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone())))
-        })
-        .flat_map(|iter| iter))
+            let url = Url::new_git(origin.url()?);
+            Some((path, url.to_owned()))
+        }))
+}
+
+/// Scan a directory of git checkouts. Assumes fetch source is the origin URL.
+fn proofs_iter_for_remotes_checkouts(
+    path: PathBuf,
+) -> Result<impl Iterator<Item = (proof::Proof, crev_wot::FetchSource)>> {
+    Ok(remotes_checkouts_iter(path)?
+        .flat_map(|(path, url)| {
+            let fetch_source = crev_wot::FetchSource::Url(Arc::new(url));
+            proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone()))
+        }))
 }
 
 /// Scan a git checkout or any subdirectory obtained from a known URL
