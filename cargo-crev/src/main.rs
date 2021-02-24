@@ -110,7 +110,7 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
 }
 
 fn crate_review(args: opts::CrateReview) -> Result<()> {
-    ensure_crev_id_exists_or_make_one()?;
+    let local = ensure_crev_id_exists_or_make_one()?;
 
     handle_goto_mode_command(&args.common, |sel| {
         let is_advisory =
@@ -142,7 +142,11 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
             args.skip_activity_check || is_advisory || args.issue,
             args.cargo_opts.clone(),
         )?;
-        eprintln!("Run `cargo crev publish` to upload the review");
+        let has_public_url = local.read_current_locked_id().ok().map_or(false, |l| l.to_public_id().url.is_some());
+        if !has_public_url {
+            eprintln!("Your review is not shared yet. You need to set up a proof repository.");
+            eprintln!("Run `cargo crev publish` for more information.");
+        }
         Ok(())
     })?;
 
@@ -686,9 +690,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
 }
 
 fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::CommonProofCreate, trust_level: TrustLevel, edit_interactively: bool) -> Result<()> {
-    ensure_crev_id_exists_or_make_one()?;
-
-    let local = Local::auto_open()?;
+    let local = ensure_crev_id_exists_or_make_one()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
     let trust = local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
@@ -716,8 +718,9 @@ fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::Common
     Ok(())
 }
 
-fn ensure_crev_id_exists_or_make_one() -> Result<()> {
+fn ensure_crev_id_exists_or_make_one() -> Result<Local> {
     let local = Local::auto_create_or_open()?;
+
     if local.get_current_userid().is_err() {
         let existing = local.get_current_user_public_ids().unwrap_or_default();
         if existing.is_empty() {
@@ -731,7 +734,7 @@ fn ensure_crev_id_exists_or_make_one() -> Result<()> {
             eprintln!("or `cargo crev id new` to create a new one");
         }
     }
-    Ok(())
+    Ok(local)
 }
 
 fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {
