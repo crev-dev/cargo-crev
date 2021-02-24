@@ -1,5 +1,30 @@
 # Getting Started Guide
 
+## TL;DR
+
+```bash
+# setup
+cargo install cargo-crev
+cargo crev trust --level high https://github.com/dpc/crev-proofs
+cargo crev repo fetch all
+
+# verify
+cargo crev verify --show-all
+
+# review
+cargo crev open $crate_name
+cargo crev review $crate_name
+
+# share reviews
+# Fork this: https://github.com/crev-dev/crev-proofs/fork
+cargo crev id set-url https://github.com/$your_github_username/crev-proofs
+cargo crev publish
+
+# get more reviews
+cargo crev id query all
+cargo crev trust # insert other people's URLs or Ids here
+```
+
 ## Introduction
 
 [Crev](https://github.com/crev-dev/crev) is a system for verifying security and reliability of dependencies based on collaborative code reviews. Crev users review source code of packages/libraries/crates, and share their findings with others. Crev then uses Web of Trust select trusted [reviews](https://web.crev.dev/rust-reviews/crates/) and judge reputation of projects' dependencies.
@@ -25,9 +50,7 @@ In a similar way that `git` is typically used within a context of a local git re
 `cargo crev` is supposed to be used inside Rust `cargo` project. Before using `cargo crev`
 make sure to change current directory to a Rust project.
 
-## Using build-in help
-
-When installed `cargo-crev` can be run like this:
+## Using Subcommands
 
 ```text
 $ cargo crev
@@ -55,36 +78,11 @@ SUBCOMMANDS:
     verify     Shortcut for `crate verify`
 ```
 
-As you can see, by default `cargo crev` displays the built in help. Try it and
-scan briefly over `SUBCOMMANDS` section. It should give you a good overview
-of the available functionality.
-
-## Using Subcommands
-
 A subcommand determines the action taken by `cargo-crev`. Some subcommand of `cargo-crev` offer
 an additional level of subcommands. Some of these cascaded subcommands are provided by shortcuts,
 such as `verify` for `crate  verify`. For specific help regarding a subcommand use the `-h` flag.
 
 Note: You can abbreviate most `cargo-crev` subcommands. For example: `cargo crev c v`.
-
-```text
-$ cargo crev config -h
-cargo-crev-config 0.18.0
-Local configuration
-
-USAGE:
-    cargo crev config <SUBCOMMAND>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-SUBCOMMANDS:
-    completions    Completions
-    dir            Print the dir containing config files
-    edit           Edit the config file
-    help           Prints this message or the help of the given subcommand(s)
-```
 
 ## Verifying
 
@@ -145,9 +143,7 @@ make it doable.
 
 ## Fetching reviews from other users
 
-The easiest way to verify packages is to see if other people did that before.
-
-Let's fetch all the *proofs* from the author of `crev`:
+Reviews are stored in public git repositories of crev users. `cargo crev update` or `cargo crev repo fetch trusted` will automatically update known repositories. It's also possible to fetch them individually. Let's fetch all the *proofs* from the author of `crev`:
 
 ```text
 > cargo crev repo fetch url https://github.com/dpc/crev-proofs
@@ -160,32 +156,37 @@ This command does a `git fetch` from a publicly available *proof repository* of 
 user, and stores it in a local cache for future use. A *proof repository* is just a
 git repository containing *proofs*.
 
-Go ahead and re-run `cargo crev crate verify`. Chances are you're using crates
-that dpc have already reviewed. The `reviews` column will contain values bigger than zero.
-
 ## Building *trust proofs*
 
-Right now none of your crates is considered trusted yet, despite the fact that dpc might
-have reviewed them already. The reason is: you don't trust this user.
+It's possible that some crates have reviews, but the crates aren't trusted. This happens when you don't trust the reviewers.
 
 For most projects it is not possible to review all dependencies by yourself. You will have
-to trust some people. Let's crate a *trust proof* for dpc. You can always revoke this trust
-later if you wish.
+to trust some people. The fact of trusting a crev user is publicly recorded as a *trust proof*. This allows building a public network of trusted reviewers.
+
+You can trust a user specifically by their CrevID. This is the most secure option. To trust `dpc`, run:
 
 ```text
 $ cargo crev id trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
-Error: User config not-initialized. Use `crev id new` to generate CrevID.
 ```
 
-Oops. That's right. You can't sign a *proof* until you have your own identity.
+After you unlock your ID you'll be put into a text editor to create a *proof*:
+
+```text
+# Trust for FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE https://github.com/dpc/crev-proofs
+trust: medium
+comment: ""
+```
+
+You can edit it to customize the relationship. Editing the proof is modeled after editing a commit message through `git commit`.
+As you can see [helpful documentation](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-trust.md)
+is available in the editor.
 
 ## Creating a `CrevID`
 
-To create a `CrevID` you'll first need a github repository to serve
-as your public *proof repository*. Customarily the repository should be called `crev-proofs`.
+You can also be a reviewer, and other people will be able to use your reviews. You will need a public git repository to serve as your *proof repository*. Customarily the repository should be called `crev-proofs`.
 
-* GitHub users can just [fork a template](https://github.com/crev-dev/crev-proofs/fork).
-* Other users can do it manually. **Note**: `cargo-crev` requires the master branch to already exist, so the repository you have created
+* GitHub users can just [fork a template](https://github.com/crev-dev/crev-proofs/fork) (same [for GitLab](https://gitlab.com/crev-dev/crev-proofs)).
+* Other users can do it manually. **Note**: `cargo-crev` requires the master branch to already exist, so the repository you create
 has to contain at least one existing commit.
 
 Then run `cargo crev id new` like this:
@@ -198,7 +199,6 @@ There's no way to recover your CrevID if you forget your passphrase.
 Enter new passphrase:
 ```
 
-
 The command will ask you to encrypt your identity, and print out some encrypted data to back up. Please
 copy that data and store it somewhere reliable.
 
@@ -209,73 +209,11 @@ $ cargo crev id current
 2CxdPgo2cbKpAfaPmEjMXJnXa7pdQGBBeGsgXjBJHzA https://github.com/YOUR-USERNAME/crev-proofs
 ```
 
-Now, back to creating a *trust proof* for `dpc`.
+To push your changes (reviews, trust proofs) run:
 
-
-```text
-$  cargo crev id trust FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
-Enter passphrase to unlock:
+```bash
+cargo crev publish
 ```
-
-After you unlock your ID you'll be put into a text editor to create a *proof*:
-
-
-```text
-# Trust for FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE https://github.com/dpc/crev-proofs
-trust: medium
-comment: ""
-
-
-# # Creating Trust Proof
-# 
-# A Trust Proof records your trust in abilities and standards of another
-# entity using `crev` system.
-# 
-# ## Responsibility
-# 
-# While `crev` does not directly expose you to any harm from
-# entities you trust, adding untrustworthy entities into your
-# Web of Trust, might lower your overal security and/or reputation.
-# 
-# On the other hand, the more trustworthy entites in your Web of Trust,
-# the broader the reach of it and more data it can find.
-# 
-# Your Proofs are cryptographically signed and will circulate in the ecosystem.
-# While there is no explicit or implicity legal responsibiltity attached to
-# using `crev` system, other people will most probably use it to judge you,
-# your other work, etc.
-# 
-# ## Data fields
-# 
-# * `date` - proof timestamp
-# * `from` - proof author
-# * `ids` - objects of the trust relationship
-# * `trust` - trust level; possible values:
-#   * `high` - "for most practically purposes, I trust this ID as much or more
-#              than myself" eg. "my dayjob ID", "known and reputatable expert",
-#              "employee within my team"
-#   * `medium` - typical, normal level of trust
-#   * `low` - "I have some reservations about trusting this entity"
-#   * `none` - "I don't actually trust this entity"; use to overwrite trust from
-#              a previously issued Trust Proof
-#   * `distrust` - "I distrust this person and so should you"
-# * `comment` - human-readable information about this trust relationship,
-#              (eg. who are these entities, why do you trust them)
-# 
-# ## Further reading
-# 
-# See https://github.com/crev-dev/cargo-crev/wiki/Howto:-Create-Review-Proofs wiki
-# page for more information and Frequently Asked Questions, or join
-# https://gitter.im/dpc/crev discussion channel.
-```
-
-Editing the proof is modeled after editing a commit message through `git commit`.
-As you can see 
-[helpful documentation](https://github.com/crev-dev/cargo-crev/blob/master/crev-lib/rc/doc/editing-trust.md) 
-is available in the editor. Don't forget to read it at some point.
-
-When creating a *trust proof* you have to decide on the trust level,
-and optionally add a comment about the nature of this trust relationship.
 
 ## Transitive effective trust
 
@@ -299,23 +237,9 @@ For distrustful people, it seems scary at first, but it should not.
 We are trying to achieve the "impossible" here. We're not going to get much done if we are not reusing work of other people.
 And we should use any help we can get.
 
-
 If it still makes you worry, just be aware that `cargo crev` provides a lot of ways to configure the effective trust calculation, including
 control over depth of the *Web of Trust* and redundancy level required. Also, the effective transitive trust level of `c` is always lower
 or equal to the direct trust level of `b`.
-
-## Fetching updates
-
-Now that your *Web of Trust* (*WoT*) is built, you can fetch *proofs* from all the new and existing trusted users with:
-
-```text
-$ cargo crev repo fetch trusted
-Fetching https://github.com/oherrala/crev-proofs... OK
-Fetching https://github.com/dpc/crev-proofs... OK
-```
-
-You can also consider fetching *proofs* from all the users `crev` is aware of - even ones that
-are not part of your *WoT*. Use `cargo crev repo fetch all` for that.
 
 ## Reviewing code
 
@@ -350,8 +274,8 @@ set to a copy of the crate source code stored by `cargo` itself.
 You're now free to use `Vim` or any other commands and text editors to investigate the content of the crate.
 `tree -alh` or `ls` are a typical starting commands, followed by `vi <path_to_rs_file>`.
 
-Also consider using [`cargo tree`](https://crates.io/crates/cargo-tree) which is part of `cargo` as of `cargo 1.44.0`, 
-[`cargo-audit`](https://crates.io/crates/cargo-audit) and 
+Also consider using [`cargo tree`](https://crates.io/crates/cargo-tree) which is part of `cargo` as of `cargo 1.44.0`,
+[`cargo-audit`](https://crates.io/crates/cargo-audit) and
 [`cargo-outdated`](https://crates.io/crates/cargo-outdated).
 
 Now go ahead and review! It might be a novel experience, but it is the core of `crev` - we can not build
@@ -375,14 +299,17 @@ $ cargo crev open <crate> --cmd "code --wait -n" --cmd-save
 
 `--cmd-save` will make `crev` remember the `--cmd` paramter in the future, so it does not have to be
 repeated every time. The exact `--cmd` to use for each IDE can vary, and you can ask for help in figuring it out
-on the `crev`'s gitter channel. 
+on the `crev`'s gitter channel. You can change the command later with `cargo crev config edit`.
 
-After reviewing the code use the standard `cargo crev crate review <cratename>` to create the *review proof*.
+### Creating a review
 
-### Editing *review proof*
+After reviewing the code, create the *review proof*:
 
-Similarly to editing *trust proof*, you have to edit the *review proof* document.
+```bash
+cargo crev crate review <cratename>
+```
 
+Similarly to editing *trust proof*, you have to edit the *review proof* document when you create a review.
 
 ```text
 # Package Review of default 0.1.2
@@ -394,26 +321,26 @@ comment: ""
 
 
 # # Creating Package Review Proof
-# 
+#
 # A Package Review Proof records results of your review of a version/release
 # of a software package.
-# 
+#
 # ## Responsibility
-# 
+#
 # It is important that your review is truthful. At very least, make sure
 # to adjust the `thoroughness` and `understanding` correctly.
-# 
+#
 # Other users might use information you provide, to judge software quality
 # and trustworthiness.
-# 
+#
 # Your Proofs are cryptographically signed and will circulate in the ecosystem.
 # While there is no explicit or implicity legal responsibiltity attached to
 # using `crev` system, other people will most probably use it to judge you,
 # your other work, etc.
-# 
-# 
+#
+#
 # ## Data fields
-# 
+#
 (...)
 ```
 
@@ -452,9 +379,8 @@ As you might have already noticed, the document you are editing is not a complet
 `crev` proofs are Yaml documents, wrapped in GPG-like separators, and signed using
 the private key generated during `cargo crev id new`.
 
-Yaml is a popular serialization format. It is easy to read and easy to parse. It also
+Yaml is a popular serialization format. It is easy to read. It also
 makes the document format easily extendable in the future.
-
 
 Time to save the document and exit the editor.
 
