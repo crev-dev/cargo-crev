@@ -247,28 +247,35 @@ pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
     let crate_id = repo.find_pkgid_by_crate_selector(crate_sel)?;
-    let crate_ = repo.get_crate(&crate_id)?;
-    let crate_root = crate_.root();
+    let cargo_crate = repo.get_crate(&crate_id)?;
 
-    if cmd_save && cmd.is_none() {
-        bail!("Can't save cmd without specifying it");
+    if cmd_save {
+        if let Some(cmd) = &cmd {
+            local.store_config_open_cmd(cmd.clone())?;
+        } else {
+            bail!("Can't save cmd without specifying it");
+        }
     }
 
-    let open_cmd = if let Some(cmd) = cmd {
-        if cmd_save {
-            local.store_config_open_cmd(cmd.clone())?;
-        }
-        cmd
-    } else {
-        get_open_cmd(&local)?
+    let name = cargo_crate.name().to_string();
+    let version = cargo_crate.version();
+    let src_dir = cargo_crate.root();
+
+    // It's not safe to open Cargo's crate dir directly, because editor integration (like cargo check)
+    // could automatically start running crate's potentially malicious build script or proc macros.
+    let dest_dir = local.sanitized_crate_copy(PROJECT_SOURCE_CRATES_IO, &name, version, src_dir)?;
+
+    let open_cmd = match cmd {
+        Some(cmd) => cmd,
+        None => get_open_cmd(&local)?,
     };
     local.record_review_activity(
         PROJECT_SOURCE_CRATES_IO,
-        &crate_.name().to_string(),
-        &crate_.version(),
+        &name,
+        version,
         &crev_lib::ReviewActivity::new_full(),
     )?;
-    let status = crev_lib::util::run_with_shell_cmd(open_cmd.as_ref(), Some(crate_root))?;
+    let status = crev_lib::util::run_with_shell_cmd(open_cmd.as_ref(), Some(&dest_dir))?;
 
     if !status.success() {
         bail!("Shell returned {}", status);

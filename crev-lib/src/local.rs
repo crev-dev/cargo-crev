@@ -4,8 +4,7 @@ use crate::{
     util, Error, ProofStore, Result,
 };
 use crev_common::{
-    self,
-    sanitize_name_for_fs, sanitize_url_for_fs,
+    self, sanitize_name_for_fs, sanitize_url_for_fs,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
@@ -15,6 +14,7 @@ use crev_data::{
 };
 use default::default;
 use directories::ProjectDirs;
+use log::{debug, error, info, warn};
 use resiter::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -26,7 +26,6 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
-use log::{debug, info, warn, error};
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -282,6 +281,28 @@ impl Local {
     /// Cache where metadata about in-progress reviews (etc) is stored
     fn cache_activity_path(&self) -> PathBuf {
         self.cache_path.join("activity")
+    }
+
+    /// Path where to put copies of crates' source code
+    fn sanitized_crate_path(&self, source: &str, name: &str, version: &crev_data::Version) -> PathBuf {
+        let dir_name = format!("{}_{}_{}", name, version, source);
+        self.cache_path
+            .join("src")
+            .join(sanitize_name_for_fs(&dir_name))
+    }
+
+    /// Copy crate for review, neutralizing hidden or dangerous files
+    pub fn sanitized_crate_copy(&self, source: &str, name: &str, version: &crev_data::Version, src_dir: &Path) -> Result<PathBuf> {
+        let dest_dir = self.sanitized_crate_path(source, name, version);
+        let mut changes = Vec::new();
+        let _ = std::fs::create_dir_all(&dest_dir);
+        util::copy_dir_sanitized(src_dir, &dest_dir, &mut changes)
+            .map_err(|e| Error::CrateSourceSanitizationError(e))?;
+        if !changes.is_empty() {
+            let msg = format!("Some files were renamed by cargo-crev to prevent accidental code execution or hiding of code:\n\n{}", changes.join("\n"));
+            std::fs::write(dest_dir.join("README-CREV.txt"), msg)?;
+        }
+        Ok(dest_dir)
     }
 
     /// Yaml file path for in-progress review metadata

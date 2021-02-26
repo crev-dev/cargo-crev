@@ -119,6 +119,9 @@ pub enum Error {
     #[error("I/O: {}", _0)]
     IO(#[from] std::io::Error),
 
+    #[error("Error while copying crate sources: {}", _0)]
+    CrateSourceSanitizationError(std::io::Error),
+
     #[error("Error writing to {}: {}", _1.display(), _0)]
     FileWrite(std::io::Error, PathBuf),
 
