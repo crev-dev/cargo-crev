@@ -200,15 +200,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Id(args) => match args {
             opts::Id::New(args) => {
                 let url = match (args.url, args.github_username) {
-                    (Some(url), None) => {
-                        if !url.starts_with("https://") {
-                            bail!("URL must start with 'https://'");
-                        }
-                        Some(url)
-                    },
                     (None, Some(username)) => {
                         Some(format!("https://github.com/{}/crev-proofs", username))
                     }
+                    (Some(url), None) => Some(url),
                     (None, None) => None,
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
@@ -238,9 +233,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Id::SetUrl(args) => {
-                if !args.url.starts_with("https://") {
-                    bail!("URL must be https://");
-                }
+                validate_public_repo_url(&args.url)?;
                 match current_id_set_url(&args.url, args.use_https_push) {
                     Err(crev_lib::Error::CurrentIDNotSet)
                     | Err(crev_lib::Error::IDNotSpecifiedAndCurrentIDNotSet)
@@ -604,6 +597,15 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     Ok(CommandExitStatus::Success)
 }
 
+fn validate_public_repo_url(url: &str) -> Result<()> {
+    if !url.starts_with("https://") {
+        bail!("Proof repositories are for sharing reviews publicly, therefore they must be 'https://' git URLs\n\
+        If you need to use a different URL for pushing to the repository, you may change it later with\n
+        cargo crev repo git remote set-url --push origin <url>");
+    }
+    Ok(())
+}
+
 fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::Error> {
     let local = Local::auto_open()?;
     let mut locked_id = local.read_current_locked_id()?;
@@ -633,6 +635,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
             // only try configuring existing Id if there is a URL to set,
             // otherwise it'd remain in the unconfigured limbo
             if let Some(url) = url {
+                validate_public_repo_url(url)?;
+
                 let reusable_ids = existing.iter()
                     .filter(|id| id.url.is_none())
                     .filter_map(|id| local.read_locked_id(&id.id).ok())

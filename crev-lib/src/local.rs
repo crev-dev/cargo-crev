@@ -523,7 +523,7 @@ impl Local {
                 Some(git_url) => git_url,
                 None => {
                     warn!("Could not deduce `ssh` push url. Call:\n\
-                           cargo crev git remote set-url --push origin <url>\n\
+                           cargo crev repo git remote set-url --push origin <url>\n\
                            manually after the id is generated.");
                     git_https_url.to_string()
                 }
