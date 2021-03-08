@@ -21,7 +21,7 @@ use std::{
     collections::HashSet,
     ffi::OsString,
     fs,
-    io::{BufRead, Write},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     str::FromStr,
     sync::{Arc, Mutex},
@@ -359,7 +359,8 @@ impl Local {
     pub fn load_user_config(&self) -> Result<UserConfig> {
         let path = self.user_config_path();
 
-        let config_str = std::fs::read_to_string(&path)?;
+        let config_str = std::fs::read_to_string(&path)
+            .map_err(|e| Error::UserConfigLoadError(Box::new((path, e))))?;
 
         Ok(serde_yaml::from_str(&config_str).map_err(Error::UserConfigParse)?)
     }
@@ -1275,7 +1276,8 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         });
 
     fn parse_proofs(path: &Path) -> Result<Vec<proof::Proof>> {
-        Ok(proof::Proof::parse_from(std::fs::File::open(&path)?)?)
+        let mut file = BufReader::new(std::fs::File::open(&path)?);
+        Ok(proof::Proof::parse_from(&mut file)?)
     }
 
     file_iter

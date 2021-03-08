@@ -6,6 +6,7 @@ use crev_common::{
 };
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
+use std::io::BufReader;
 use std::{self, fmt, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
@@ -125,9 +126,12 @@ impl LockedId {
     }
 
     pub fn read_from_yaml_file(path: &Path) -> Result<Self> {
-        let file = std::fs::File::open(path)?;
+        let mut file = BufReader::new(
+            std::fs::File::open(path)
+                .map_err(|e| Error::IdLoadError(Box::new((path.into(), e))))?,
+        );
 
-        Ok(serde_yaml::from_reader(&file)?)
+        Ok(serde_yaml::from_reader(&mut file)?)
     }
 
     pub fn to_unlocked(&self, passphrase: &str) -> Result<UnlockedId> {

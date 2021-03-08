@@ -47,6 +47,12 @@ pub enum Error {
     #[error("User config already exists")]
     UserConfigAlreadyExists,
 
+    #[error("User config loading error '{}': {}", _0.0.display(), _0.1)]
+    UserConfigLoadError(Box<(PathBuf, std::io::Error)>),
+
+    #[error("Id loading error '{}': {}", _0.0.display(), _0.1)]
+    IdLoadError(Box<(PathBuf, std::io::Error)>),
+
     #[error("Id file not found.")]
     IDFileNotFound,
 

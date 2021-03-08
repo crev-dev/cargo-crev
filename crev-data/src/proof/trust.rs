@@ -43,7 +43,6 @@ impl fmt::Display for TrustLevel {
     }
 }
 
-
 #[derive(thiserror::Error, Debug)]
 #[error("Can't convert string to TrustLevel")]
 pub struct FromStrErr;
