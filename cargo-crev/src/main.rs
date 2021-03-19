@@ -208,7 +208,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     _ => bail!("Must provide either a github username or url, but not both."),
                 };
 
-                generate_new_id_interactively(url.as_deref(), args.use_https_push, args.no_url)?;
+                generate_new_id_interactively(url.as_deref(), args.use_https_push)?;
             }
             opts::Id::Switch(args) => {
                 let local = Local::auto_open()?;
@@ -239,7 +239,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     | Err(crev_lib::Error::IDNotSpecifiedAndCurrentIDNotSet)
                     | Err(crev_lib::Error::UserConfigNotInitialized) => {
                         eprintln!("set-url requires a CrevID set up, so we'll set up one now.");
-                        generate_new_id_interactively(Some(&args.url), args.use_https_push, false)?
+                        generate_new_id_interactively(Some(&args.url), args.use_https_push)?
                     }
                     res => res?,
                 }
@@ -621,7 +621,7 @@ fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::E
 }
 
 /// Interactive process of setting up a new CrevID
-fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_no_url: bool) -> Result<()> {
+fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Result<()> {
     // Avoid creating new CrevID if it's not necessary
     if let Ok(local) = Local::auto_open() {
         if let Ok(existing) = local.get_current_user_public_ids() {
@@ -665,12 +665,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool, allow_
     }
 
     if url.is_none() {
-        if allow_no_url {
-            eprintln!("warning: creating CrevID without a URL.");
-        } else {
-            print_crev_proof_repo_fork_help();
-            bail!("Then again with `cargo crev id new --url <new repo URL>`\nor `cargo crev id new --github-username <you>`");
-        }
+        print_crev_proof_repo_fork_help();
+        bail!("Then again with `cargo crev id new --url <new repo URL>`\nor `cargo crev id new --github-username <you>`");
     }
 
     let local = Local::auto_create_or_open()?;

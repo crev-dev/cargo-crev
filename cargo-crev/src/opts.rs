@@ -95,9 +95,6 @@ pub struct IdNew {
     #[structopt(long = "https-push")]
     /// Setup `https` instead of recommended `ssh`-based push url
     pub use_https_push: bool,
-    /// Create an identity without ability to publish anything
-    #[structopt(long = "no-url")]
-    pub no_url: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
