@@ -554,9 +554,14 @@ impl Local {
                 repo.remote_set_url("origin", &push_url)?;
             }
             Err(e) => {
+                let error_string = e.to_string();
+                // git2 seems to have a bug, and auth error is reported as GenericError
+                let is_auth_error = e.code() == git2::ErrorCode::Auth || error_string.contains("remote authentication required");
                 Err(Error::CouldNotCloneGitHttpsURL(Box::new((
                     git_https_url.to_string(),
-                    e.to_string(),
+                    if is_auth_error {
+                        "Proof repositories must be publicly-readable without authentication, but this one isn't".into()
+                    } else { error_string },
                 ))))?;
             }
         }

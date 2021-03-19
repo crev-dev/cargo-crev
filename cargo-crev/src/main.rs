@@ -48,7 +48,7 @@ pub fn repo_publish() -> Result<()> {
         Err(err @ crev_lib::Error::GitUrlNotConfigured) => {
             eprintln!("There is no public repo URL configured.");
             print_crev_proof_repo_fork_help();
-            eprintln!("Run `cargo crev set-url <your public repo>` and try again.");
+            eprintln!("Run `cargo crev id set-url <your public repo>` and try again.");
             return Err(err.into());
         },
         res => res?,
