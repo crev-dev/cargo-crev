@@ -87,13 +87,13 @@ pub struct CargoOpts {
 #[derive(Debug, StructOpt, Clone)]
 pub struct IdNew {
     #[structopt(long = "url")]
-    /// URL of a git repository to be associated with the new Id
+    /// Publicly-visible HTTPS URL of a git repository to be associated with the new Id
     pub url: Option<String>,
     #[structopt(long = "github-username")]
     /// Github username (instead of --url)
     pub github_username: Option<String>,
     #[structopt(long = "https-push")]
-    /// Setup `https` instead of recommended `ssh`-based push url
+    /// Use public HTTP URL for both pulling and pushing. Otherwise SSH is used for push
     pub use_https_push: bool,
 }
 
@@ -611,7 +611,7 @@ pub struct IdSetUrl {
     /// Setup `https` instead of recommended `ssh`-based push url
     pub use_https_push: bool,
 
-    /// https git URL to use for the new crev-proofs repo
+    /// Public read-only HTTPS git URL to use for the new crev-proofs repo
     pub url: String,
 }
 
@@ -651,7 +651,7 @@ pub enum Id {
     #[structopt(name = "passwd")]
     Passwd,
 
-    /// Change repo URL for the current Id
+    /// Change public HTTPS repo URL for the current Id
     #[structopt(name = "set-url")]
     SetUrl(IdSetUrl),
 
