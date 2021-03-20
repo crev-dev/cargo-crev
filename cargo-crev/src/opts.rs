@@ -576,9 +576,10 @@ pub struct CrateReview {
     #[structopt(long = "skip-activity-check")]
     pub skip_activity_check: bool,
 
-    #[structopt(long = "diff")]
+    /// Review the delta since the given version
+    #[structopt(long = "diff", name = "base-version")]
     #[allow(clippy::option_option)]
-    pub diff: Option<Option<crev_data::Version>>,
+    pub diff: Option<Option<Version>>,
 
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
