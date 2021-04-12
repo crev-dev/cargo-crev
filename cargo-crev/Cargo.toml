@@ -1,16 +1,17 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.19.2"
-description = "Scalable, social, Code REView system that we desperately need - Rust/cargo frontend"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
-documentation = "https://docs.rs/crev"
-repository = "https://github.com/crev-dev/cargo-crev"
+version = "0.19.3"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
+categories = ["development-tools::cargo-plugins"]
+default-run = "cargo-crev"
+description = "Distibuted Code REView system for verifying security and quality of Cargo dependencies"
+documentation = "https://docs.rs/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
-keywords = ["code", "review", "tool", "distributed", "cargo"]
+keywords = ["code", "review", "tool", "distributed", "security"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
-default-run = "cargo-crev"
+repository = "https://github.com/crev-dev/cargo-crev"
 
 [[bin]]
 name = "cargo-crev"

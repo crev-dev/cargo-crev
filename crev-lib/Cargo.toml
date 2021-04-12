@@ -1,15 +1,16 @@
 [package]
 edition = "2018"
 name = "crev-lib"
-version = "0.19.2"
-description = "Scalable, social, Code REView system that we desperately need - core library"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
-documentation = "https://docs.rs/crev"
+version = "0.19.3"
+description = "Library interface for programmatic access to crate reviews of cargo-crev"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
+documentation = "https://docs.rs/crev-lib"
 repository = "https://github.com/crev-dev/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
-keywords = ["code", "review", "tool", "distributed"]
+keywords = ["code", "review", "assessment", "dependency", "assurance"]
+categories = ["development-tools", "database"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
-readme = "../README.md"
+readme = "README.md"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.19" }
