@@ -23,6 +23,10 @@ cargo crev publish
 # get more reviews
 cargo crev id query all
 cargo crev trust # insert other people's URLs or Ids here
+
+# review just the parts that changed since
+cargo crev diff $crate_name | less
+cargo crev review --diff $previous_version -- $crate_name
 ```
 
 ## Introduction
