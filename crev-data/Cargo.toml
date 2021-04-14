@@ -1,15 +1,15 @@
 [package]
 edition = '2018'
 name = "crev-data"
-version = "0.19.0"
+version = "0.19.2"
 description = "Scalable, social, Code REView system that we desperately need - data types library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
-documentation = "https://docs.rs/crev"
-repository = "https://github.com/crev-dev/cargo-crev"
-homepage = "https://github.com/crev-dev/cargo-crev"
-keywords = ["code", "review", "tool", "distributed"]
+documentation = "https://docs.rs/crev-lib"
+homepage = "https://github.com/crev-dev/crev"
+keywords = ["code", "peer", "review", "verification", "dependencies"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
-readme = "../README.md"
+readme = "README.md"
+repository = "https://github.com/crev-dev/cargo-crev"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.19" }
