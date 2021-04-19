@@ -62,7 +62,7 @@ impl std::str::FromStr for LockedId {
 
 impl LockedId {
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
-        use miscreant::aead::Aead;
+        use miscreant::Aead;
 
         let config = if passphrase != "" {
             Config {
@@ -87,14 +87,14 @@ impl LockedId {
         let pwhash =
             argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config).map_err(Error::Passphrase)?;
 
-        let mut siv = miscreant::aead::Aes256SivAead::new(&pwhash);
+        let mut siv = miscreant::Aes256SivAead::new(&pwhash);
 
         let seal_nonce = random_vec(32);
 
         Ok(LockedId {
             version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
             public_key: unlocked_id.keypair.public.to_bytes().to_vec(),
-            sealed_secret_key: siv.seal(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
+            sealed_secret_key: siv.encrypt(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
             seal_nonce,
             url: unlocked_id.url().cloned(),
             passphrase_config: PassphraseConfig {
@@ -147,7 +147,7 @@ impl LockedId {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
                 Err(Error::UnsupportedVersion(*version))?;
             }
-            use miscreant::aead::Aead;
+            use miscreant::Aead;
 
             let mut config = Config {
                 variant: argon2::Variant::from_str(&passphrase_config.variant)?,
@@ -175,10 +175,10 @@ impl LockedId {
 
             let passphrase_hash =
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
-            let mut siv = miscreant::aead::Aes256SivAead::new(&passphrase_hash);
+            let mut siv = miscreant::Aes256SivAead::new(&passphrase_hash);
 
             let secret_key = siv
-                .open(&seal_nonce, &[], &sealed_secret_key)
+                .decrypt(&seal_nonce, &[], &sealed_secret_key)
                 .map_err(|_| Error::IncorrectPassphrase)?;
 
             assert!(!secret_key.is_empty());

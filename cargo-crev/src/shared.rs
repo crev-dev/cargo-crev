@@ -629,7 +629,7 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
     let mut count = 0;
     for metrics in iter_rs_files_in_dir(path)
-        .flat_map_ok(|path| geiger::find_unsafe_in_file(&path, geiger::IncludeTests::No))
+        .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
     {
         let counters = metrics?.counters;
         count += counters.functions.unsafe_
