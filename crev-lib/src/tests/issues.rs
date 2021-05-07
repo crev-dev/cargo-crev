@@ -1,10 +1,9 @@
 use super::*;
 
-use crev_data::Version;
 use crev_data::{
     proof,
     review::{Advisory, Issue, VersionRange},
-    TrustLevel, UnlockedId,
+    TrustLevel, UnlockedId, Version,
 };
 use crev_wot::FetchSource;
 

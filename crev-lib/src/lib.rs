@@ -9,7 +9,6 @@ pub mod staging;
 pub mod util;
 pub use crate::local::Local;
 pub use activity::{ReviewActivity, ReviewMode};
-use crev_data::Version;
 use crev_data::{
     self,
     id::IdError,
@@ -18,7 +17,7 @@ use crev_data::{
         trust::TrustLevel,
         CommonOps,
     },
-    Digest, Id,
+    Digest, Id, Version,
 };
 pub use crev_wot::TrustDistanceParams;
 use std::{

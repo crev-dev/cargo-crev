@@ -284,7 +284,12 @@ impl Local {
     }
 
     /// Path where to put copies of crates' source code
-    fn sanitized_crate_path(&self, source: &str, name: &str, version: &crev_data::Version) -> PathBuf {
+    fn sanitized_crate_path(
+        &self,
+        source: &str,
+        name: &str,
+        version: &crev_data::Version,
+    ) -> PathBuf {
         let dir_name = format!("{}_{}_{}", name, version, source);
         self.cache_path
             .join("src")
@@ -292,7 +297,13 @@ impl Local {
     }
 
     /// Copy crate for review, neutralizing hidden or dangerous files
-    pub fn sanitized_crate_copy(&self, source: &str, name: &str, version: &crev_data::Version, src_dir: &Path) -> Result<PathBuf> {
+    pub fn sanitized_crate_copy(
+        &self,
+        source: &str,
+        name: &str,
+        version: &crev_data::Version,
+        src_dir: &Path,
+    ) -> Result<PathBuf> {
         let dest_dir = self.sanitized_crate_path(source, name, version);
         let mut changes = Vec::new();
         let _ = std::fs::create_dir_all(&dest_dir);
@@ -438,7 +449,11 @@ impl Local {
         let locked = self.read_locked_id(id)?;
         let mut i = 0;
         loop {
-            let passphrase = if locked.has_no_passphrase() { String::new() } else { passphrase_callback()? };
+            let passphrase = if locked.has_no_passphrase() {
+                String::new()
+            } else {
+                passphrase_callback()?
+            };
             match locked.to_unlocked(&passphrase) {
                 Ok(o) => return Ok(o),
                 Err(e) => {
@@ -455,7 +470,12 @@ impl Local {
     /// Changes the repo URL for the ID. Adopts existing temporary/local repo if any.
     /// Previous remote URL is abandoned.
     /// For crev id set-url command.
-    pub fn change_locked_id_url(&self, id: &mut id::LockedId, git_https_url: &str, use_https_push: bool) -> Result<()> {
+    pub fn change_locked_id_url(
+        &self,
+        id: &mut id::LockedId,
+        git_https_url: &str,
+        use_https_push: bool,
+    ) -> Result<()> {
         self.ensure_proofs_root_exists()?;
 
         let old_proof_dir = self.local_proofs_repo_path_for_id(&id.to_public_id().id);
@@ -465,7 +485,10 @@ impl Local {
             if !new_proof_dir.exists() {
                 fs::rename(&old_proof_dir, &new_proof_dir)?;
             } else {
-                warn!("Abandoning old temporary repo in {}", old_proof_dir.display());
+                warn!(
+                    "Abandoning old temporary repo in {}",
+                    old_proof_dir.display()
+                );
             }
         }
 
@@ -511,7 +534,10 @@ impl Local {
     ) -> Result<()> {
         debug_assert!(git_https_url.starts_with("https://"));
         if git_https_url.starts_with("https://github.com/crev-dev/crev-proofs") {
-            return Err(Error::CouldNotCloneGitHttpsURL(Box::new((git_https_url.into(), "this is a template, fork it first".into()))));
+            return Err(Error::CouldNotCloneGitHttpsURL(Box::new((
+                git_https_url.into(),
+                "this is a template, fork it first".into(),
+            ))));
         }
 
         let proof_dir =
@@ -523,9 +549,11 @@ impl Local {
             match util::git::https_to_git_url(git_https_url) {
                 Some(git_url) => git_url,
                 None => {
-                    warn!("Could not deduce `ssh` push url. Call:\n\
+                    warn!(
+                        "Could not deduce `ssh` push url. Call:\n\
                            cargo crev repo git remote set-url --push origin <url>\n\
-                           manually after the id is generated.");
+                           manually after the id is generated."
+                    );
                     git_https_url.to_string()
                 }
             }
@@ -536,12 +564,15 @@ impl Local {
             match git2::Repository::open(&proof_dir) {
                 Ok(repo) => {
                     repo.remote_set_url("origin", &push_url)?;
-                },
+                }
                 Err(_) => {
-                    git2::Repository::init_opts(&proof_dir, git2::RepositoryInitOptions::new()
-                        .no_reinit(true)
-                        .origin_url(git_https_url))?;
-                },
+                    git2::Repository::init_opts(
+                        &proof_dir,
+                        git2::RepositoryInitOptions::new()
+                            .no_reinit(true)
+                            .origin_url(git_https_url),
+                    )?;
+                }
             }
             return Ok(());
         }
@@ -556,12 +587,15 @@ impl Local {
             Err(e) => {
                 let error_string = e.to_string();
                 // git2 seems to have a bug, and auth error is reported as GenericError
-                let is_auth_error = e.code() == git2::ErrorCode::Auth || error_string.contains("remote authentication required");
+                let is_auth_error = e.code() == git2::ErrorCode::Auth
+                    || error_string.contains("remote authentication required");
                 Err(Error::CouldNotCloneGitHttpsURL(Box::new((
                     git_https_url.to_string(),
                     if is_auth_error {
                         "Proof repositories must be publicly-readable without authentication, but this one isn't".into()
-                    } else { error_string },
+                    } else {
+                        error_string
+                    },
                 ))))?;
             }
         }
@@ -710,10 +744,7 @@ impl Local {
             }
         }
 
-        Ok(from_id.create_trust_proof(
-            &public_ids,
-            trust_level,
-        )?)
+        Ok(from_id.create_trust_proof(&public_ids, trust_level)?)
     }
 
     /// Fetch other people's proof repostiory from a git URL, into the current database on disk
@@ -747,13 +778,20 @@ impl Local {
         Ok(())
     }
 
-    pub fn trust_set_for_id(&self, for_id: Option<&str>, params: &crev_wot::TrustDistanceParams, db: &crev_wot::ProofDB) -> Result<crev_wot::TrustSet> {
-        Ok(if let Some(for_id) = self.get_for_id_from_str_opt(for_id)? {
-            db.calculate_trust_set(&for_id, params)
-        } else {
-            // when running without an id (explicit, or current), just use an empty trust set
-            crev_wot::TrustSet::default()
-        })
+    pub fn trust_set_for_id(
+        &self,
+        for_id: Option<&str>,
+        params: &crev_wot::TrustDistanceParams,
+        db: &crev_wot::ProofDB,
+    ) -> Result<crev_wot::TrustSet> {
+        Ok(
+            if let Some(for_id) = self.get_for_id_from_str_opt(for_id)? {
+                db.calculate_trust_set(&for_id, params)
+            } else {
+                // when running without an id (explicit, or current), just use an empty trust set
+                crev_wot::TrustSet::default()
+            },
+        )
     }
 
     /// Fetch only repos that weren't fetched before
@@ -763,7 +801,9 @@ impl Local {
         for_id: Option<&str>,
     ) -> Result<()> {
         let mut already_fetched_ids = HashSet::new();
-        let mut already_fetched_urls = remotes_checkouts_iter(self.cache_remotes_path())?.map(|(_, url)| url.url).collect();
+        let mut already_fetched_urls = remotes_checkouts_iter(self.cache_remotes_path())?
+            .map(|(_, url)| url.url)
+            .collect();
         let mut db = self.load_db()?;
         let for_id = self.get_for_id_from_str(for_id)?;
 
@@ -978,9 +1018,11 @@ impl Local {
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
         self.fetch_remote_git(dpc_url)
-            .map_err(|e| warn!("{}", e)).ok()
+            .map_err(|e| warn!("{}", e))
+            .ok()
             .map(|dir| {
-                let _ = self.import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
+                let _ = self
+                    .import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
                     .map_err(|e| warn!("{}", e));
             });
         fetched_urls.insert(dpc_url.to_owned());
@@ -998,7 +1040,8 @@ impl Local {
 
             match url {
                 Ok(url) => {
-                    let _ = self.get_fetch_source_for_url(Url::new_git(url))
+                    let _ = self
+                        .get_fetch_source_for_url(Url::new_git(url))
                         .map(|fetch_source| {
                             db.import_from_iter(
                                 proofs_iter_for_path(path.to_owned())
@@ -1250,11 +1293,10 @@ fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf
 fn proofs_iter_for_remotes_checkouts(
     path: PathBuf,
 ) -> Result<impl Iterator<Item = (proof::Proof, crev_wot::FetchSource)>> {
-    Ok(remotes_checkouts_iter(path)?
-        .flat_map(|(path, url)| {
-            let fetch_source = crev_wot::FetchSource::Url(Arc::new(url));
-            proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone()))
-        }))
+    Ok(remotes_checkouts_iter(path)?.flat_map(|(path, url)| {
+        let fetch_source = crev_wot::FetchSource::Url(Arc::new(url));
+        proofs_iter_for_path(path).map(move |p| (p, fetch_source.clone()))
+    }))
 }
 
 /// Scan a git checkout or any subdirectory obtained from a known URL

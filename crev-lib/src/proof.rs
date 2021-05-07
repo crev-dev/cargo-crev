@@ -1,5 +1,4 @@
-use crate::ProofStore;
-use crate::TrustLevel;
+use crate::{ProofStore, TrustLevel};
 use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
 
@@ -59,10 +58,7 @@ pub fn store_id_trust_proof(
     Ok(())
 }
 
-fn create_id_trust_commit_message(
-    ids: &[crev_data::Id],
-    trust_level: TrustLevel,
-) -> String {
+fn create_id_trust_commit_message(ids: &[crev_data::Id], trust_level: TrustLevel) -> String {
     let string_ids = ids
         .iter()
         .map(|id| id.to_string())
@@ -73,10 +69,7 @@ fn create_id_trust_commit_message(
         proof_type = match trust_level {
             TrustLevel::None => "Remove trust",
             TrustLevel::Distrust => "Set distrust",
-            TrustLevel::Low |
-            TrustLevel::Medium |
-            TrustLevel::High => "Add trust",
-
+            TrustLevel::Low | TrustLevel::Medium | TrustLevel::High => "Add trust",
         },
         ids = string_ids
     )
