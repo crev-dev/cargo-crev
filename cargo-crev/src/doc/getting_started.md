@@ -25,7 +25,7 @@ cargo crev id query all
 cargo crev trust # insert other people's URLs or Ids here
 
 # review just the parts that changed since
-cargo crev diff $crate_name | less
+cargo crev crate diff $crate_name | less
 cargo crev review --diff $previous_version -- $crate_name
 ```
 
@@ -452,5 +452,5 @@ There's already more functionality implemented in `cargo crev`,
 and even more will be continuously added in the future. Notably:
 
 * If you plan to share a `CrevId` between many computers, make sure to try `export` and `import` commands.
-* Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`diff` and `review --diff` commands).
+* Differential reviews are available, where instead of reviewing a whole crate, you can review a diff between already trusted and current version (`crate diff` and `review --diff` commands).
 * Security and serious flaws can be reported with `review --advisory` and are visible in the `issues` output of `verify`.
