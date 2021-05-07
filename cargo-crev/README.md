@@ -18,50 +18,59 @@
 
 # cargo-crev
 
-> A cryptographically verifiable **c**ode **rev**iew system for the cargo (Rust) package manager.
+> A cryptographically verifiable **c**ode **rev**iew system for the cargo (Rust)
+> package manager.
 
 ## Introduction
 
-[Crev](https://github.com/crev-dev/crev/) is a language and ecosystem agnostic, distributed **c**ode **rev**iew system.
+[Crev](https://github.com/crev-dev/crev/) is a language and ecosystem agnostic,
+distributed **c**ode **rev**iew system.
 
-`cargo-crev` is an implementation of Crev as a command line tool integrated with `cargo`. This tool helps Rust users evaluate the quality and trustworthiness of their package dependencies.
+`cargo-crev` is an implementation of Crev as a command line tool integrated with
+`cargo`. This tool helps Rust users evaluate the quality and trustworthiness of
+their package dependencies.
 
 ## Features
 
 `cargo-crev` can already:
 
-* warn you about untrustworthy crates and security vulnerabilities,
-* display useful metrics about your dependencies,
-* help you identify dependency-bloat,
-* allow you to review most suspicious dependencies and publish your findings,
-* use reviews produced by other users,
-* increase trustworthiness of your own code,
-* build a web of trust of other reputable users to help verify the code you use,
+- warn you about untrustworthy crates and security vulnerabilities,
+- display useful metrics about your dependencies,
+- help you identify dependency-bloat,
+- allow you to review most suspicious dependencies and publish your findings,
+- use reviews produced by other users,
+- increase trustworthiness of your own code,
+- build a web of trust of other reputable users to help verify the code you use,
 
 and many other things with many more to come.
 
 ## Getting started
 
-Static binaries are available from the [releases page](https://github.com/crev-dev/cargo-crev/releases).
+Static binaries are available from the [releases
+page](https://github.com/crev-dev/cargo-crev/releases).
 
-Follow the [`cargo-crev` - Getting Started Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
+Follow the [`cargo-crev` - Getting Started
+Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
-`cargo-crev` is a work in progress, but it should be usable at all times.
-Join our [matrix](https://matrix.to/#/#crev:matrix.org) or [gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help,
-report problems and feedback. Thank you!
+`cargo-crev` is a work in progress, but it should be usable at all times. Join
+our [matrix](https://matrix.to/#/#crev:matrix.org) or
+[gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help, report
+problems and feedback. Thank you\!
 
 ## Raise awareness
 
-If you're supportive of the cause, we would appreciate helping to raise awareness of the project. Consider putting the below note in the README of your Rust projects:
+If you're supportive of the cause, we would appreciate helping to raise
+awareness of the project. Consider putting the below note in the README of your
+Rust
+    projects:
 
-```
-It is recommended to always use [cargo-crev](https://github.com/crev-dev/cargo-crev)
-to verify the trustworthiness of each of your dependencies, including this one.
-```
+    It is recommended to always use [cargo-crev](https://github.com/crev-dev/cargo-crev)
+    to verify the trustworthiness of each of your dependencies, including this one.
 
-Thank you!
+Thank you\!
 
 ## Changelog
 
-Changelog can be found here: https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/CHANGELOG.md
+Changelog can be found here:
+<https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/CHANGELOG.md>
