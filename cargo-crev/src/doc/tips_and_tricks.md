@@ -2,7 +2,7 @@
 
 ### Find the most heavy dependencies
 
-```text,ignore
+``` text,ignore
 $ cargo crev crate verify --recursive
 status reviews     downloads    owner  issues lines  geiger flgs crate                version         latest_t
 pass    1  1   932599    973037  1  1   0/0      40       3      fuchsia-cprng        0.1.1           =
@@ -21,16 +21,19 @@ warn    0  1     7417    355870 85 42   0/0  813073   18826 CB   cargo          
 
 Explanation:
 
-`--recursive` will make the dependency scanner track the stats recursively (including all the dependencies).
+`--recursive` will make the dependency scanner track the stats recursively
+(including all the dependencies).
 
-As you can see `cargo` library brings 831 thousands lines of code with it, 18 thousands of which are `unsafe`.
-This code has 85 total owners on crates.io, within 42 distinct groups of ownership.
+As you can see `cargo` library brings 831 thousands lines of code with it, 18
+thousands of which are `unsafe`. This code has 85 total owners on crates.io,
+within 42 distinct groups of ownership.
 
-See `cargo crev crate verify --help` more details. This future is still under active development.
+See `cargo crev crate verify --help` more details. This future is still under
+active development.
 
 ### Find the top contributors
 
-```text,ignore
+``` text,ignore
 > cargo crev crate mvp
  26 FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE https://github.com/dpc/crev-proofs
  19 X98FCpyv5I7z-xv4u-xMWLsFgb_Y0cG7p5xNFHSjbLA https://github.com/kornelski/crev-proofs
@@ -49,18 +52,18 @@ See `cargo crev crate verify --help` more details. This future is still under ac
 
 Explanation:
 
-`cargo crev crate mvp` counts number of dependencies reviewed by each trusted ID. These
-are the people you doing most heavy work for you.
+`cargo crev crate mvp` counts number of dependencies reviewed by each trusted
+ID. These are the people you doing most heavy work for you.
 
-You can add `--trust none` argument to discover people that did review some of your dependencies,
-yet you still don't have them in your WoT.
-
+You can add `--trust none` argument to discover people that did review some of
+your dependencies, yet you still don't have them in your WoT.
 
 ### Deal with too many dependencies displayed at once
 
-`cargo crev verify` can be given flags and arguments to narrow down the crate selection.
+`cargo crev verify` can be given flags and arguments to narrow down the crate
+selection.
 
-```text,ignore
+``` text,ignore
 $ cargo crev crate verify structopt
 status reviews     downloads    owner  issues lines  geiger flgs crate                version         latest_t
 pass    1  2   883719   6669131  1/1    0/0     141      10      atty                 0.2.13          =
@@ -87,7 +90,7 @@ pass    1  2  1177413  10994523  1/1    0/0  160451     197 CB   winapi         
 
 An optional argument to verify only a given crate and its dependencies.
 
-```text,ignore
+``` text,ignore
 > cargo crev crate verify structopt --skip-indirect
 status reviews     downloads    owner  issues lines  geiger flgs crate                version         latest_t
 none    0  2   256588   1041610  0/1    0/0    2110       0      structopt            0.2.18          ↓0.2.16
@@ -101,7 +104,7 @@ Check the `cargo crev crate verify --help` output for more helpful flags.
 
 ### Use `cargo crev` to recommend dependencies
 
-```text,ignore
+``` text,ignore
 > cargo crev crate search logging
        3 rand
        2 log
@@ -115,7 +118,7 @@ Check the `cargo crev crate verify --help` output for more helpful flags.
        0 unicode-segmentation
 ```
 
-`cargo crev crate search <query>` will query crates.io for crate maching a given query, and then sort them
-from the most trustworthy.
+`cargo crev crate search <query>` will query crates.io for crate maching a given
+query, and then sort them from the most trustworthy.
 
 This features is still new and is planed to be expanded and improved.
