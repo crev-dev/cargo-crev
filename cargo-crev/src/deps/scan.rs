@@ -58,7 +58,11 @@ impl Scanner {
     pub fn new(root_crate: CrateSelector, args: &CrateVerify) -> Result<Scanner> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
-        let trust_set = local.trust_set_for_id(args.common.for_id.as_deref(), &args.common.trust_params.clone().into(), &db)?;
+        let trust_set = local.trust_set_for_id(
+            args.common.for_id.as_deref(),
+            &args.common.trust_params.clone().into(),
+            &db,
+        )?;
         let min_ignore_list = cargo_min_ignore_list();
         let full_ignore_list = cargo_full_ignore_list(false);
         let known_owners = read_known_owners_list().unwrap_or_else(|_| HashSet::new());

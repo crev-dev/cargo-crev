@@ -72,7 +72,9 @@ pub fn print_details(
 ) -> Result<()> {
     if cdep.accumulative.is_local_source_code {
         term.print(format_args!("{:6} ", "local"), None)?;
-    } else if !cdep.accumulative.has_trusted_ids && cdep.accumulative.trust == VerificationStatus::Insufficient {
+    } else if !cdep.accumulative.has_trusted_ids
+        && cdep.accumulative.trust == VerificationStatus::Insufficient
+    {
         term.print(format_args!("{:6} ", "N/A"), None)?;
     } else {
         term.print(

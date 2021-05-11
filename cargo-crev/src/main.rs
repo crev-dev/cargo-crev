@@ -7,8 +7,7 @@
 )]
 #![cfg_attr(feature = "documentation", feature(external_doc))]
 use crate::prelude::*;
-use crev_data::proof::ContentExt;
-use crev_data::UnlockedId;
+use crev_data::{proof::ContentExt, UnlockedId};
 use crev_lib::id::LockedId;
 
 use crev_lib::{self, local::Local};
@@ -50,7 +49,7 @@ pub fn repo_publish() -> Result<()> {
             print_crev_proof_repo_fork_help();
             eprintln!("Run `cargo crev id set-url <your public repo>` and try again.");
             return Err(err.into());
-        },
+        }
         res => res?,
     };
 
@@ -142,7 +141,10 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
             args.skip_activity_check || is_advisory || args.issue,
             args.cargo_opts.clone(),
         )?;
-        let has_public_url = local.read_current_locked_id().ok().map_or(false, |l| l.to_public_id().url.is_some());
+        let has_public_url = local
+            .read_current_locked_id()
+            .ok()
+            .map_or(false, |l| l.to_public_id().url.is_some());
         if !has_public_url {
             eprintln!("Your review is not shared yet. You need to set up a proof repository.");
             eprintln!("Run `cargo crev publish` for more information.");
@@ -266,13 +268,28 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Id::Trust(args) => {
-                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, args.level.unwrap_or(TrustLevel::Medium), args.level.is_none())?;
+                set_trust_level_for_ids(
+                    &ids_from_string(&args.public_ids)?,
+                    &args.common_proof_create,
+                    args.level.unwrap_or(TrustLevel::Medium),
+                    args.level.is_none(),
+                )?;
             }
             opts::Id::Untrust(args) => {
-                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, TrustLevel::None, true)?;
+                set_trust_level_for_ids(
+                    &ids_from_string(&args.public_ids)?,
+                    &args.common_proof_create,
+                    TrustLevel::None,
+                    true,
+                )?;
             }
             opts::Id::Distrust(args) => {
-                set_trust_level_for_ids(&ids_from_string(&args.public_ids)?, &args.common_proof_create, TrustLevel::Distrust, true)?;
+                set_trust_level_for_ids(
+                    &ids_from_string(&args.public_ids)?,
+                    &args.common_proof_create,
+                    TrustLevel::Distrust,
+                    true,
+                )?;
             }
             opts::Id::Query(cmd) => match cmd {
                 opts::IdQuery::Current { trust_params } => {
@@ -382,7 +399,12 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     eprintln!("warning: Could not find Id for URL {}", url);
                 }
             }
-            set_trust_level_for_ids(&ids, &args.common_proof_create, args.level.unwrap_or(TrustLevel::Medium), args.level.is_none())?;
+            set_trust_level_for_ids(
+                &ids,
+                &args.common_proof_create,
+                args.level.unwrap_or(TrustLevel::Medium),
+                args.level.is_none(),
+            )?;
             // Make sure we have reviews for the new Ids we're trusting
             local.fetch_new_trusted(Default::default(), None)?;
         }
@@ -625,10 +647,17 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
     // Avoid creating new CrevID if it's not necessary
     if let Ok(local) = Local::auto_open() {
         if let Ok(existing) = local.get_current_user_public_ids() {
-            let existing_usable = existing.iter().filter(|id| id.url.is_some()).collect::<Vec<_>>();
+            let existing_usable = existing
+                .iter()
+                .filter(|id| id.url.is_some())
+                .collect::<Vec<_>>();
             if !existing_usable.is_empty() {
                 for id in &existing_usable {
-                    eprintln!("warning: you already have a CrevID {} {}", id.id, id.url_display());
+                    eprintln!(
+                        "warning: you already have a CrevID {} {}",
+                        id.id,
+                        id.url_display()
+                    );
                 }
             }
 
@@ -637,13 +666,17 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             if let Some(url) = url {
                 validate_public_repo_url(url)?;
 
-                let reusable_ids = existing.iter()
+                let reusable_ids = existing
+                    .iter()
                     .filter(|id| id.url.is_none())
                     .filter_map(|id| local.read_locked_id(&id.id).ok())
                     .filter(|id| id.has_no_passphrase());
                 for mut locked_id in reusable_ids {
                     let id = locked_id.to_public_id().id;
-                    eprintln!("Instead of setting up a new CrevID we'll reconfigure the existing one {}", id);
+                    eprintln!(
+                        "Instead of setting up a new CrevID we'll reconfigure the existing one {}",
+                        id
+                    );
                     local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
                     let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
                     change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
@@ -654,11 +687,20 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
 
             // if an old one couldn't be reconfigured automatically, help how to do it manually
             if let Some(example) = existing_usable.get(0) {
-                if local.get_current_userid().ok().map_or(false, |cur| cur == example.id) {
+                if local
+                    .get_current_userid()
+                    .ok()
+                    .map_or(false, |cur| cur == example.id)
+                {
                     eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n");
                 } else {
-                    eprintln!("You can use existing CrevID with `cargo crev id switch {}`", example.id);
-                    eprintln!("and set it up with `cargo crev set-url` and `cargo crev id passwd`\n");
+                    eprintln!(
+                        "You can use existing CrevID with `cargo crev id switch {}`",
+                        example.id
+                    );
+                    eprintln!(
+                        "and set it up with `cargo crev set-url` and `cargo crev id passwd`\n"
+                    );
                 }
             }
         }
@@ -689,7 +731,12 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
     Ok(())
 }
 
-fn set_trust_level_for_ids(ids: &[Id], common_proof_create: &crate::opts::CommonProofCreate, trust_level: TrustLevel, edit_interactively: bool) -> Result<()> {
+fn set_trust_level_for_ids(
+    ids: &[Id],
+    common_proof_create: &crate::opts::CommonProofCreate,
+    trust_level: TrustLevel,
+    edit_interactively: bool,
+) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
@@ -724,7 +771,9 @@ fn ensure_crev_id_exists_or_make_one() -> Result<Local> {
     if local.get_current_userid().is_err() {
         let existing = local.get_current_user_public_ids().unwrap_or_default();
         if existing.is_empty() {
-            eprintln!("note: Setting up a default CrevID. Run `cargo crev id new` to customize it.");
+            eprintln!(
+                "note: Setting up a default CrevID. Run `cargo crev id new` to customize it."
+            );
             local.generate_id(None, false, &|| Ok(String::new()))?;
         } else {
             eprintln!("You need to select current CrevID. Try:");
@@ -761,10 +810,12 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 
 fn print_crev_proof_repo_fork_help() {
     eprintln!("Each CrevID is associated with a public git repository which stores reviews and trust proofs.");
-    eprintln!("To create your proof repository, fork the template:\n\
+    eprintln!(
+        "To create your proof repository, fork the template:\n\
     https://github.com/crev-dev/crev-proofs/fork\n\n\
 
-    For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n");
+    For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n"
+    );
 }
 
 fn read_new_passphrase() -> io::Result<String> {
@@ -776,13 +827,19 @@ fn read_new_passphrase() -> io::Result<String> {
 
 fn current_id_change_passphrase() -> Result<LockedId> {
     let local = Local::auto_open()?;
-    eprintln!("Please enter the OLD passphrase. If you don't know it, you will need to create a new Id.");
+    eprintln!(
+        "Please enter the OLD passphrase. If you don't know it, you will need to create a new Id."
+    );
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
     eprintln!("Now please enter the NEW passphrase.");
     change_passphrase(&local, &unlocked_id, &term::read_new_passphrase()?)
 }
 
-fn change_passphrase(local: &Local, unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
+fn change_passphrase(
+    local: &Local,
+    unlocked_id: &UnlockedId,
+    passphrase: &str,
+) -> Result<LockedId> {
     let locked_id = LockedId::from_unlocked_id(&unlocked_id, passphrase)?;
 
     local.save_locked_id(&locked_id)?;
@@ -815,13 +872,23 @@ fn main() {
         .filter_module("ignore", log::LevelFilter::Off)
         .filter_module("globset", log::LevelFilter::Off)
         .filter_module("reqwest", log::LevelFilter::Off)
-        .format(|buf, record| if record.level() == log::Level::Info {
-            writeln!(buf, "{}", record.args())
-        } else if record.level() > log::Level::Info {
-            writeln!(buf, "[{}:{}] {}", record.module_path().or_else(|| record.file()).unwrap_or("?"),
-                record.line().unwrap_or(0), record.args())
-        } else {
-            writeln!(buf, "{}: {}", record.level(), record.args())
+        .format(|buf, record| {
+            if record.level() == log::Level::Info {
+                writeln!(buf, "{}", record.args())
+            } else if record.level() > log::Level::Info {
+                writeln!(
+                    buf,
+                    "[{}:{}] {}",
+                    record
+                        .module_path()
+                        .or_else(|| record.file())
+                        .unwrap_or("?"),
+                    record.line().unwrap_or(0),
+                    record.args()
+                )
+            } else {
+                writeln!(buf, "{}: {}", record.level(), record.args())
+            }
         })
         .init();
     let opts = opts::Opts::from_args();

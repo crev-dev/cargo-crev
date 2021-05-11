@@ -1,5 +1,4 @@
-use crev_data::Version;
-use crev_data::{proof, Digest, PublicId};
+use crev_data::{proof, Digest, PublicId, Version};
 use crev_lib::*;
 use std::path::PathBuf;
 
