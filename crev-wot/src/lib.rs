@@ -13,11 +13,10 @@
 //! `crev-wot` is just an initial, reference implementation, and might
 //! evolve, be replaced or become just one of many available implementations.
 use chrono::{self, offset::Utc, DateTime};
-use crev_data::Version;
 use crev_data::{
     self,
     proof::{self, review, trust::TrustLevel, CommonOps, Content},
-    Digest, Id, Level, Url,
+    Digest, Id, Level, Url, Version,
 };
 use default::default;
 use log::debug;

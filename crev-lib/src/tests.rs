@@ -1,8 +1,7 @@
 use super::*;
-use crev_data::Version;
 use crev_data::{
     proof::{self, trust::TrustLevel, ContentExt},
-    Digest, Level, UnlockedId, Url,
+    Digest, Level, UnlockedId, Url, Version,
 };
 use crev_wot::{FetchSource, ProofDB};
 use default::default;

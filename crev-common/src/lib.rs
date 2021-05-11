@@ -294,8 +294,7 @@ where
 
 #[inline]
 pub fn store_str_to_file(path: &Path, s: &str) -> io::Result<()> {
-    store_to_file_with(path, |f| f.write_all(s.as_bytes()))
-        .and_then(|res| res)
+    store_to_file_with(path, |f| f.write_all(s.as_bytes())).and_then(|res| res)
 }
 
 pub fn store_to_file_with<E, F>(path: &Path, f: F) -> io::Result<Result<(), E>>

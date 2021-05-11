@@ -1,6 +1,5 @@
 use anyhow::{bail, Result};
-use crev_data::Level;
-use crev_data::Version;
+use crev_data::{Level, Version};
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 

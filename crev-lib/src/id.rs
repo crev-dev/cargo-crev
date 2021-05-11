@@ -6,8 +6,7 @@ use crev_common::{
 };
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
-use std::io::BufReader;
-use std::{self, fmt, path::Path};
+use std::{self, fmt, io::BufReader, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
@@ -121,8 +120,7 @@ impl LockedId {
     /// Write the Id to this file, overwriting it
     pub fn save_to(&self, path: &Path) -> Result<()> {
         let s = self.to_string();
-        crev_common::store_str_to_file(path, &s)
-            .map_err(|e| Error::FileWrite(e, path.into()))
+        crev_common::store_str_to_file(path, &s).map_err(|e| Error::FileWrite(e, path.into()))
     }
 
     pub fn read_from_yaml_file(path: &Path) -> Result<Self> {
