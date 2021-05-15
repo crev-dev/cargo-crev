@@ -5,7 +5,6 @@ use crev_common::{
 };
 use derive_builder::Builder;
 use ed25519_dalek::{self, PublicKey, SecretKey, Signer, Verifier};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
 
@@ -234,7 +233,7 @@ impl UnlockedId {
     }
 
     pub fn generate(url: Option<Url>) -> Self {
-        let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
+        let keypair = ed25519_dalek::Keypair::generate(&mut rand_v07::rngs::OsRng);
         Self {
             id: PublicId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
                 .expect("should be valid keypair"),
