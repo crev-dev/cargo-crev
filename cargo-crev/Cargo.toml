@@ -53,7 +53,6 @@ time = "0.2.25"
 tokei = "12.1.2"
 walkdir = "2.3.1"
 openssl-sys = { version = "0.9.60", features = ["vendored"] }
-failure = "0.1.8"
 git2 = "0.13.17"
 tempfile = "3.2.0"
 rprompt = "1.0.5"

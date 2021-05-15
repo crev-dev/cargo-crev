@@ -4,7 +4,6 @@ use crate::{deps::scan, edit, opts, opts::CrateSelector, prelude::*, repo::*};
 use anyhow::{format_err, Context, Result};
 use crev_data::proof;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
-use failure::Fail;
 use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
@@ -712,8 +711,7 @@ pub fn lookup_crates(query: &str, count: usize) -> Result<()> {
             per_page: 100,
             page: 1,
             query: Some(query.to_string()),
-        })
-        .map_err(|e| e.compat())?
+        })?
         .crates
         .iter()
         .map(|crate_| CrateStats {
