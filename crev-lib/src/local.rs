@@ -42,7 +42,7 @@ fn generete_salt() -> Vec<u8> {
 ///
 /// TODO: at some point this should no longer be neccessary
 fn backfill_salt() -> Vec<u8> {
-    crev_common::blake2b256sum(b"BACKFILLED_SUM")
+    crev_common::blake2b256sum(b"BACKFILLED_SUM").to_vec()
 }
 
 fn is_none_or_empty(s: &Option<String>) -> bool {
@@ -929,7 +929,7 @@ impl Local {
     /// Per-url directory in `cache_remotes_path()`
     pub fn get_remote_git_cache_path(&self, url: &str) -> Result<PathBuf> {
         let digest = crev_common::blake2b256sum(url.as_bytes());
-        let digest = crev_data::Digest::from_vec(digest);
+        let digest = crev_data::Digest::from(digest);
         let old_path = self.cache_remotes_path().join(digest.to_string());
         let new_path = self.cache_remotes_path().join(sanitize_url_for_fs(url));
 
