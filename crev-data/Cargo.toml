@@ -14,7 +14,7 @@ repository = "https://github.com/crev-dev/cargo-crev"
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.20" }
 chrono = "0.4.19"
-derive_builder = "0.9.0"
+derive_builder = "0.10.2"
 ed25519-dalek = "1.0.0"
 rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
 rand = "0.8.3"

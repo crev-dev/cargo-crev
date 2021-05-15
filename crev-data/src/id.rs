@@ -151,7 +151,7 @@ impl PublicId {
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
     }
 
     pub fn create_package_review_proof(
@@ -166,7 +166,7 @@ impl PublicId {
             .review(review)
             .comment(comment)
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
     }
 
     pub fn url_display(&self) -> &str {
