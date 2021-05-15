@@ -478,15 +478,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common_failures"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c84afb517ac0988b7e049e06c51511716f80d0f0233972fca666d3f14f80d8fb"
-dependencies = [
- "failure",
-]
-
-[[package]]
 name = "commoncrypto"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -619,7 +610,7 @@ dependencies = [
  "chrono",
  "crev-common",
  "crev-data",
- "crev-recursive-digest 0.4.0",
+ "crev-recursive-digest",
  "crev-wot",
  "default",
  "directories-next",
@@ -635,20 +626,6 @@ dependencies = [
  "serde_cbor",
  "serde_yaml",
  "thiserror",
- "walkdir",
-]
-
-[[package]]
-name = "crev-recursive-digest"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7902cde91068de5e0c34a5887db4b8e1918ccb7abd0dfae76f155a8c8d3042e1"
-dependencies = [
- "blake2",
- "digest 0.8.1",
- "failure",
- "failure_derive",
- "generic-array 0.12.4",
  "walkdir",
 ]
 
@@ -676,17 +653,6 @@ dependencies = [
  "serde",
  "serde_yaml",
  "thiserror",
-]
-
-[[package]]
-name = "crevsum"
-version = "0.3.1"
-dependencies = [
- "common_failures",
- "crev-common",
- "crev-recursive-digest 0.2.1",
- "hex 0.4.3",
- "structopt",
 ]
 
 [[package]]
