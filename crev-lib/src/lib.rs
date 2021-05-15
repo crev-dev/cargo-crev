@@ -49,6 +49,9 @@ pub enum Error {
     #[error("User config loading error '{}': {}", _0.0.display(), _0.1)]
     UserConfigLoadError(Box<(PathBuf, std::io::Error)>),
 
+    #[error("No valid home directory path could be retrieved from the operating system")]
+    NoHomeDirectory,
+
     #[error("Id loading error '{}': {}", _0.0.display(), _0.1)]
     IdLoadError(Box<(PathBuf, std::io::Error)>),
 
