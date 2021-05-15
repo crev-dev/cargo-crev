@@ -277,7 +277,6 @@ impl Repo {
     }
 
     pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
-        cargo::core::enable_nightly_features();
         let manifest_path = if let Some(ref path) = cargo_opts.manifest_path {
             path.to_owned()
         } else {
