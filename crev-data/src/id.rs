@@ -5,7 +5,6 @@ use crev_common::{
 };
 use derive_builder::Builder;
 use ed25519_dalek::{self, PublicKey, SecretKey, Signer, Verifier};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
 
@@ -152,7 +151,7 @@ impl PublicId {
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
     }
 
     pub fn create_package_review_proof(
@@ -167,7 +166,7 @@ impl PublicId {
             .review(review)
             .comment(comment)
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
     }
 
     pub fn url_display(&self) -> &str {
@@ -234,7 +233,7 @@ impl UnlockedId {
     }
 
     pub fn generate(url: Option<Url>) -> Self {
-        let keypair = ed25519_dalek::Keypair::generate(&mut OsRng);
+        let keypair = ed25519_dalek::Keypair::generate(&mut rand_v07::rngs::OsRng);
         Self {
             id: PublicId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
                 .expect("should be valid keypair"),

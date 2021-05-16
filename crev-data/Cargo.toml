@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "crev-data"
-version = "0.19.2"
+version = "0.20.0"
 description = "Scalable, social, Code REView system that we desperately need - data types library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"
@@ -12,11 +12,12 @@ readme = "README.md"
 repository = "https://github.com/crev-dev/cargo-crev"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "0.19" }
+crev-common = { path = "../crev-common", version = "0.20" }
 chrono = "0.4.19"
-derive_builder = "0.9.0"
+derive_builder = "0.10.2"
 ed25519-dalek = "1.0.0"
-rand = "0.7.3"
+rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
+rand = "0.8.3"
 semver = { version = "0.10.0", features = [ "serde" ] }
 serde = { version = "1.0.123", features = ["derive"] }
 serde_yaml = "0.8.17"

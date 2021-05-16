@@ -40,8 +40,8 @@ pub struct Proof {
     /// Common informations that should be in any  proof
     common_content: Common,
 
-    /// Digest
-    digest: Vec<u8>,
+    /// Digest (blake2b256)
+    digest: [u8; 32],
 }
 
 impl Proof {
@@ -86,8 +86,8 @@ impl Proof {
         self.signature.as_str()
     }
 
-    pub fn digest(&self) -> &[u8] {
-        self.digest.as_slice()
+    pub fn digest(&self) -> &[u8; 32] {
+        &self.digest
     }
 
     pub fn parse_content<T: ContentDeserialize>(&self) -> std::result::Result<T, Error> {

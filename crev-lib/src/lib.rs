@@ -49,6 +49,9 @@ pub enum Error {
     #[error("User config loading error '{}': {}", _0.0.display(), _0.1)]
     UserConfigLoadError(Box<(PathBuf, std::io::Error)>),
 
+    #[error("No valid home directory path could be retrieved from the operating system")]
+    NoHomeDirectory,
+
     #[error("Id loading error '{}': {}", _0.0.display(), _0.1)]
     IdLoadError(Box<(PathBuf, std::io::Error)>),
 
@@ -293,7 +296,7 @@ pub fn find_latest_trusted_version(
     db.get_pkg_reviews_for_name(source, name)
         .filter(|review| {
             verify_package_digest(
-                &Digest::from_vec(review.package.digest.clone()),
+                &Digest::from_vec(review.package.digest.clone()).unwrap(),
                 trust_set,
                 requirements,
                 &db,
@@ -315,7 +318,7 @@ pub fn dir_or_git_repo_verify(
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?)
+        Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap()
     };
 
     Ok(verify_package_digest(
@@ -336,7 +339,7 @@ pub fn dir_verify(
     trusted_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus> {
-    let digest = Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?);
+    let digest = Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap();
     Ok(verify_package_digest(
         &digest,
         trusted_set,
@@ -349,7 +352,7 @@ pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Re
     Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
         path,
         ignore_list,
-    )?))
+    )?).unwrap())
 }
 
 pub fn get_recursive_digest_for_git_dir(
@@ -372,7 +375,7 @@ pub fn get_recursive_digest_for_git_dir(
         paths.insert(entry_path);
     }
 
-    Ok(Digest::from_vec(util::get_recursive_digest_for_paths(
+    Ok(Digest::from(util::get_recursive_digest_for_paths(
         root_path, paths,
     )?))
 }
@@ -380,7 +383,7 @@ pub fn get_recursive_digest_for_git_dir(
 pub fn get_recursive_digest_for_paths(
     root_path: &Path,
     paths: fnv::FnvHashSet<PathBuf>,
-) -> Result<Vec<u8>> {
+) -> Result<crev_data::Digest> {
     Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
@@ -391,7 +394,7 @@ pub fn get_recursive_digest_for_dir(
     Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
         root_path,
         rel_path_ignore_list,
-    )?))
+    )?).unwrap())
 }
 
 #[cfg(test)]

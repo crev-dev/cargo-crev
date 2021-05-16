@@ -34,7 +34,7 @@ pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
 pub fn get_recursive_digest_for_paths(
     root_path: &Path,
     paths: fnv::FnvHashSet<PathBuf>,
-) -> std::result::Result<Vec<u8>, crev_recursive_digest::DigestError> {
+) -> std::result::Result<crev_data::Digest, crev_recursive_digest::DigestError> {
     let h = crev_recursive_digest::RecursiveDigest::<crev_common::Blake2b256, _, _>::new()
         .filter(|entry| {
             let rel_path = entry
@@ -45,7 +45,8 @@ pub fn get_recursive_digest_for_paths(
         })
         .build();
 
-    h.get_digest_of(root_path)
+    let digest_vec = h.get_digest_of(root_path)?;
+    Ok(crev_data::Digest::from_vec(digest_vec).unwrap())
 }
 
 pub fn get_recursive_digest_for_dir(

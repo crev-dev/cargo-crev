@@ -10,7 +10,7 @@ use std::{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StagingPathInfo {
-    blake_hash: Vec<u8>,
+    blake_hash: [u8; 32],
 }
 
 pub struct Staging {
@@ -103,7 +103,7 @@ impl Staging {
             .iter()
             .map(|(k, v)| proof::review::code::File {
                 path: k.to_owned(),
-                digest: v.blake_hash.clone(),
+                digest: v.blake_hash.to_vec(),
                 digest_type: "blake2b".into(),
             })
             .collect()

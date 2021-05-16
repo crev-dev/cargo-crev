@@ -1,5 +1,4 @@
 use crate::{deps::DownloadsStats, prelude::*};
-use failure::ResultExt;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     fs,
@@ -30,7 +29,7 @@ impl Cacheable for crates_io_api::CrateResponse {
         base.join("crate").join(format!("{}.json", name))
     }
     fn fetch(client: &crates_io_api::SyncClient, crate_: &str, _version: &str) -> Result<Self> {
-        Ok(client.get_crate(crate_).compat()?)
+        Ok(client.get_crate(crate_)?)
     }
 }
 
@@ -40,7 +39,7 @@ impl Cacheable for crates_io_api::Owners {
     }
     fn fetch(client: &crates_io_api::SyncClient, crate_: &str, _version: &str) -> Result<Self> {
         Ok(crates_io_api::Owners {
-            users: client.crate_owners(crate_).compat()?,
+            users: client.crate_owners(crate_)?,
         })
     }
 }

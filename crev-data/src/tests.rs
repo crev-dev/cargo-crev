@@ -188,7 +188,7 @@ pub fn generate_id_and_proof() -> Result<(UnlockedId, Proof)> {
             },
         ])
         .build()
-        .map_err(|e| Error::BuildingReview(e.into()))?;
+        .map_err(|e| Error::BuildingReview(e.to_string().into()))?;
 
     let proof = review.sign_by(&id)?;
 

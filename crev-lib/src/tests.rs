@@ -166,14 +166,14 @@ fn proofdb_distance() -> Result<()> {
 fn overwritting_reviews() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = UnlockedId::generate_for_git_url("https://a");
-    let digest = vec![0; 32];
+    let digest = [0; 32];
     let package = crev_data::proof::PackageInfo {
         id: proof::PackageVersionId::new(
             "source".into(),
             "name".into(),
             Version::parse("1.0.0").unwrap(),
         ),
-        digest: digest.clone(),
+        digest: digest.to_vec(),
         digest_type: crev_data::proof::default_digest_type(),
         revision: "".into(),
         revision_type: crev_data::proof::default_revision_type(),
@@ -197,7 +197,7 @@ fn overwritting_reviews() -> Result<()> {
         trustdb.import_from_iter(order.into_iter().map(|x| (x, url.clone())));
         assert_eq!(
             trustdb
-                .get_package_reviews_by_digest(&Digest::from_vec(digest.clone()))
+                .get_package_reviews_by_digest(&Digest::from(digest))
                 .map(|r| r.comment)
                 .collect::<Vec<_>>(),
             vec!["b".to_string()]
@@ -237,14 +237,14 @@ fn overwritting_reviews() -> Result<()> {
 fn dont_consider_an_empty_review_as_valid() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = UnlockedId::generate_for_git_url("https://a");
-    let digest = vec![0; 32];
+    let digest = [13; 32];
     let package = crev_data::proof::PackageInfo {
         id: proof::PackageVersionId::new(
             "source".into(),
             "name".into(),
             Version::parse("1.0.0").unwrap(),
         ),
-        digest: digest.clone(),
+        digest: digest.to_vec(),
         digest_type: crev_data::proof::default_digest_type(),
         revision: "".into(),
         revision_type: crev_data::proof::default_revision_type(),
@@ -267,7 +267,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
         redundancy: 1,
     };
     assert!(!verify_package_digest(
-        &Digest::from_vec(digest),
+        &Digest::from(digest),
         &trust_set,
         &verification_reqs,
         &trustdb

@@ -1,21 +1,31 @@
 use std::fmt;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
-pub struct Digest(Vec<u8>);
+pub struct Digest([u8; 32]);
+
+impl From<[u8; 32]> for Digest {
+    fn from(arr: [u8; 32]) -> Self {
+        Self(arr)
+    }
+}
 
 impl Digest {
-    pub fn from_vec(v: Vec<u8>) -> Self {
-        // we only need 256bit security
-        assert_eq!(v.len(), 32);
-        Digest(v)
-    }
-
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }
 
+    pub fn from_vec(vec: Vec<u8>) -> Option<Self> {
+        if vec.len() == 32 {
+            let mut out = [0; 32];
+            out.copy_from_slice(&vec);
+            Some(Self(out))
+        } else {
+            None
+        }
+    }
+
     pub fn into_vec(self) -> Vec<u8> {
-        self.0
+        self.as_slice().to_vec()
     }
 }
 
