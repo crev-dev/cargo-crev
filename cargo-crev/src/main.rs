@@ -34,7 +34,6 @@ mod review;
 mod shared;
 mod term;
 mod tokei;
-mod tui;
 
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id, TrustLevel};
@@ -414,11 +413,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 std::process::exit(status.code().unwrap_or(-159));
             }
             opts::Crate::Verify { crate_, opts } => {
-                return if opts.interactive {
-                    tui::verify_deps(crate_, opts)
-                } else {
-                    deps::verify_deps(crate_, opts)
-                };
+                deps::verify_deps(crate_, opts)?;
             }
             opts::Crate::Mvp { crate_, opts } => {
                 deps::crate_mvps(crate_, opts)?;
@@ -608,11 +603,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Update(args) => repo_update(args)?,
 
         opts::Command::Verify { crate_, opts } => {
-            return if opts.interactive {
-                tui::verify_deps(crate_, opts)
-            } else {
-                deps::verify_deps(crate_, opts)
-            };
+            deps::verify_deps(crate_, opts)?;
         }
     }
 

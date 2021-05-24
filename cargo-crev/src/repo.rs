@@ -316,15 +316,6 @@ impl Repo {
         })
     }
 
-    pub fn name(&self) -> std::borrow::Cow<'_, str> {
-        self.manifest_path
-            .parent()
-            .unwrap()
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-    }
-
     fn workspace(&self) -> CargoResult<Workspace<'_>> {
         Workspace::new(&self.manifest_path, &self.config)
     }

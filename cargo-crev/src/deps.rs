@@ -14,19 +14,9 @@ pub mod scan;
 
 #[derive(Copy, Clone, Debug)]
 /// Progress-bar kind of thing, you know?
-pub struct Progress {
+pub(crate) struct Progress {
     pub done: usize,
     pub total: usize,
-}
-
-impl Progress {
-    pub fn is_valid(self) -> bool {
-        self.done <= self.total
-    }
-
-    pub fn is_complete(self) -> bool {
-        self.done >= self.total
-    }
 }
 
 #[derive(Copy, Clone, Debug)]

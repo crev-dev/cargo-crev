@@ -336,7 +336,6 @@ dependencies = [
  "crev-lib",
  "crev-wot",
  "crossbeam",
- "crossterm",
  "env_logger",
  "fnv",
  "geiger",
@@ -356,7 +355,6 @@ dependencies = [
  "structopt",
  "tempfile",
  "term",
- "termimad",
  "thiserror",
  "time 0.2.26",
  "tokei",
@@ -754,98 +752,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossterm"
-version = "0.9.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21ac79357981b3c35917a377e6138729b66316db7649f9f96fbb517bb02361e5"
-dependencies = [
- "crossterm_cursor",
- "crossterm_input",
- "crossterm_screen",
- "crossterm_style",
- "crossterm_terminal",
- "crossterm_utils",
-]
-
-[[package]]
-name = "crossterm_cursor"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb4bfd085f17d83e6cd2943f0150d3b4331e465de8dba1750d1966192faf63dc"
-dependencies = [
- "crossterm_utils",
- "crossterm_winapi",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_input"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6dd255ca05a596bae31ec392fdb67a829509bb767213f00f37c6b62814db663"
-dependencies = [
- "crossterm_screen",
- "crossterm_utils",
- "crossterm_winapi",
- "libc",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_screen"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bf294484fc34c22d514c41afc0b97ce74e10ea54d6eb5fe4806d1e1ac0f7b76"
-dependencies = [
- "crossterm_utils",
- "crossterm_winapi",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_style"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "983596405fe738aac9645656b666073fe6e0a8bf088679b7e256916ee41b61f7"
-dependencies = [
- "crossterm_utils",
- "crossterm_winapi",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_terminal"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db8546b519e0c26aa1f43a4a4ea45ccb41eaca74b9a753ea1788f9ad90212636"
-dependencies = [
- "crossterm_cursor",
- "crossterm_utils",
- "crossterm_winapi",
- "libc",
-]
-
-[[package]]
-name = "crossterm_utils"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f874a71b2040c730669ddff805c9bc2a1a2f6de9d7f6aab2ae8d29ccbf8a0617"
-dependencies = [
- "crossterm_winapi",
- "libc",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_winapi"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b055e7cc627c452e6a9b977022f48a2db6f0ff73df446ca970f95eef9c381d45"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "crypto-hash"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1049,21 +955,21 @@ dependencies = [
 
 [[package]]
 name = "dirs"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13aea89a5c93364a98e9b37b2fa237effbb694d5cfe01c5b70941f7eb087d5e3"
-dependencies = [
- "cfg-if 0.1.10",
- "dirs-sys",
-]
-
-[[package]]
-name = "dirs"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
 dependencies = [
  "dirs-sys",
+]
+
+[[package]]
+name = "dirs-next"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
+dependencies = [
+ "cfg-if 1.0.0",
+ "dirs-sys-next",
 ]
 
 [[package]]
@@ -1867,15 +1773,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 
 [[package]]
-name = "minimad"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bb68220e9b707395ce69e6ee572d54b2fb41785f1e0d697ffb8bc6bf4118d55"
-dependencies = [
- "lazy_static",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2523,6 +2420,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61b3909d758bb75c79f23d4736fac9433868679d3ad2ea7a61e3c25cfda9a088"
+
+[[package]]
 name = "ryu"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2973,11 +2876,12 @@ dependencies = [
 
 [[package]]
 name = "term"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0863a3345e70f61d613eab32ee046ccd1bcc5f9105fe402c61fcd0c13eeb8b5"
+checksum = "c59df8ac95d96ff9bede18eb7300b0fda5e5d8d90960e76f8e14ae765eedbf1f"
 dependencies = [
- "dirs 2.0.2",
+ "dirs-next",
+ "rustversion",
  "winapi",
 ]
 
@@ -2998,18 +2902,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dfed899f0eb03f32ee8c6a0aabdb8a7949659e3466561fc0adf54e26d88c5f4"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "termimad"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f609fdfb858415c8b923de9b51820d18274b714fad021d8702b1f613217b9189"
-dependencies = [
- "crossbeam",
- "crossterm",
- "lazy_static",
- "minimad",
 ]
 
 [[package]]
@@ -3124,7 +3016,7 @@ dependencies = [
  "clap",
  "crossbeam-channel 0.5.1",
  "dashmap",
- "dirs 3.0.2",
+ "dirs",
  "encoding_rs_io",
  "env_logger",
  "grep-searcher",
