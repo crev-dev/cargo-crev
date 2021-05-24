@@ -31,7 +31,7 @@ atty = "0.2.14"
 cargo = "0.53.0"
 cargo-platform = "0.1.1"
 crates_io_api = "0.7"
-crossbeam = "0.7.3"
+crossbeam = "0.8.0"
 chrono = "0.4.19"
 env_logger = { version = "0.8.3", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.7"
