@@ -14,7 +14,7 @@
   <br>
 </p>
 
-![jesus, that's a lot of dependencies](https://i.imgflip.com/5b4bjr.jpg)
+![jesus, that's a lot of dependencies](https://i.imgflip.com/5b8fqd.jpg)
 
 # cargo-crev
 
