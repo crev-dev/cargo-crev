@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "crev-lib"
-version = "0.20.0"
+version = "0.20.1"
 description = "Library interface for programmatic access to crate reviews of cargo-crev"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 documentation = "https://docs.rs/crev-lib"
@@ -13,10 +13,10 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "0.20" }
+crev-common = { path = "../crev-common", version = "0.20.1" }
 miscreant = "0.5.2"
-crev-data = { path = "../crev-data", version = "0.20" }
-crev-wot = { path = "../crev-wot", version = "0.20" }
+crev-data = { path = "../crev-data", version = "0.20.1" }
+crev-wot = { path = "../crev-wot", version = "0.20.1" }
 blake2 = "0.8.1"
 chrono = "0.4.19"
 crev-recursive-digest = "0.4.0"
