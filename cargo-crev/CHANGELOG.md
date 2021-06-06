@@ -6,9 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.21.1](https://github.com/dpc/crev/compare/cargo-crev-v0.18.0...cargo-crev-v0.21.0) - 2020-05-29
 
-- The cargo-crev binary builds with a vendored openssl by default, this can be disabled by building it with `--no-default-features`
+- Lots of minor improvements
+- We're really sorry, but it takes a considerable effort to maintain a clean
+  CHANGELOG for a project still going through a lot of smaller and bigger changes.
 
 ## [0.18.0](https://github.com/dpc/crev/compare/cargo-crev-v0.16.1...cargo-crev-v0.17.0) - 2020-04-29
 
