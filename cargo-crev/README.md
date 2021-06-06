@@ -16,6 +16,8 @@
 
 ![jesus, that's a lot of dependencies](https://i.imgflip.com/5b8fqd.jpg)
 
+[image credit](https://jakelikesonions.com/post/158707858999/the-future-more-of-the-present)
+
 # cargo-crev
 
 > A cryptographically verifiable **c**ode **rev**iew system for the cargo (Rust)
