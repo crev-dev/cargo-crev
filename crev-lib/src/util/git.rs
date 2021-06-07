@@ -25,13 +25,14 @@ pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     let repo = split[4];
     let suffix = match domain {
         "git.sr.ht" => "",
-        _ => {
+        "github.com" | "gitlab.com" => {
             if repo.ends_with(".git") {
                 ""
             } else {
                 ".git"
             }
         }
+        _ => return None,
     };
 
     Some(GitUrlComponents {
@@ -122,4 +123,5 @@ fn https_to_git_url_test() {
         https_to_git_url("https://git.sr.ht/~ireas/crev-proofs"),
         Some("git@git.sr.ht:~ireas/crev-proofs".into())
     );
+    assert_eq!(https_to_git_url("https://example.com/foo/bar"), None);
 }
