@@ -196,6 +196,30 @@ fn print_ids<'a>(
     Ok(())
 }
 
+fn print_mvp_ids<'a>(
+    ids: impl Iterator<Item = (&'a Id, u64)>,
+    trust_set: &TrustSet,
+    db: &ProofDB,
+) -> Result<()> {
+    for (id, count) in ids {
+        let (status, url) = match db.lookup_url(id) {
+            UrlOfId::None => ("", ""),
+            UrlOfId::FromSelfVerified(url) => ("==", url.url.as_str()),
+            UrlOfId::FromSelf(url) => ("~=", url.url.as_str()),
+            UrlOfId::FromOthers(url) => ("??", url.url.as_str()),
+        };
+        println!(
+            "{:>3} {} {:6} {} {}",
+            count,
+            id,
+            trust_set.get_effective_trust_level(id),
+            status,
+            url,
+        );
+    }
+    Ok(())
+}
+
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
     match command {
         opts::Command::Id(args) => match args {

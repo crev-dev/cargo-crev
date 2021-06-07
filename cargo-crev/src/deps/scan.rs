@@ -33,7 +33,7 @@ use std::{
 // I know the code here is a mess.
 #[derive(Clone)]
 pub struct Scanner {
-    db: Arc<ProofDB>,
+    pub db: Arc<ProofDB>,
     pub trust_set: TrustSet,
     /// True if trust_set is not empty
     has_trusted_ids: bool,

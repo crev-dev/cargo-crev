@@ -287,6 +287,8 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
     args.common = common;
 
     let scanner = scan::Scanner::new(crate_, &args)?;
+    let trust_set = scanner.trust_set.clone();
+    let db = scanner.db.clone();
     let events = scanner.run();
 
     let mut mvps: HashMap<PublicId, u64> = HashMap::new();
@@ -301,9 +303,11 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
 
     mvps.sort_by(|a, b| a.1.cmp(&b.1).reverse());
 
-    for (id, count) in &mvps {
-        println!("{:>3} {} {}", count, id.id, id.url_display());
-    }
+    crate::print_mvp_ids(
+        mvps.iter().map(|(id, count)| (&id.id, *count)),
+        &trust_set,
+        &db,
+    )?;
 
     Ok(())
 }
