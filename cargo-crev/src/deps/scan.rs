@@ -34,7 +34,7 @@ use std::{
 #[derive(Clone)]
 pub struct Scanner {
     db: Arc<ProofDB>,
-    trust_set: TrustSet,
+    pub trust_set: TrustSet,
     /// True if trust_set is not empty
     has_trusted_ids: bool,
     min_ignore_list: fnv::FnvHashSet<PathBuf>,

@@ -1,5 +1,6 @@
 use crev_data::{proof, Digest, PublicId, Version};
 use crev_lib::*;
+use crev_wot::TrustSet;
 use std::path::PathBuf;
 
 use crate::{opts::*, prelude::*, shared::*, term};
@@ -311,6 +312,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut term = term::Term::new();
 
     let scanner = scan::Scanner::new(crate_, &args)?;
+    let trust_set = scanner.trust_set.clone();
     let events = scanner.run();
 
     // print header, only after `scanner` had a chance to download everything
@@ -381,6 +383,8 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         if crates_with_issues {
             eprintln!("Crates with issues found. Use `cargo crev repo query issue <crate> [<version>]` for details.");
         }
+
+        write_out_distrusted_ids_details(&mut std::io::stderr(), &trust_set)?;
     }
 
     Ok(if nb_unverified == 0 {
@@ -388,4 +392,20 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     } else {
         CommandExitStatus::VerificationFailed
     })
+}
+
+fn write_out_distrusted_ids_details(
+    stderr: &mut impl std::io::Write,
+    trust_set: &TrustSet,
+) -> Result<()> {
+    for (distrusted_id, details) in &trust_set.distrusted {
+        for reported_by in &details.reported_by {
+            write!(
+                stderr,
+                "Note: {} was ignored as distrusted by {}\n",
+                distrusted_id, reported_by
+            )?;
+        }
+    }
+    Ok(())
 }

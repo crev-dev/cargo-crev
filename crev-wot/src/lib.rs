@@ -1244,26 +1244,26 @@ impl<'a> UrlOfId<'a> {
 
 /// Details of a one Id that is trusted
 #[derive(Debug, Clone)]
-struct TrustedIdDetails {
+pub struct TrustedIdDetails {
     // distanc from the root of trust
-    distance: u64,
+    pub distance: u64,
     // effective, global trust from the root of the WoT
-    effective_trust_level: TrustLevel,
+    pub effective_trust_level: TrustLevel,
     /// People that reported trust for this id
-    reported_by: HashMap<Id, TrustLevel>,
+    pub reported_by: HashMap<Id, TrustLevel>,
 }
 
 /// Details of a one Id that is distrusted
 #[derive(Debug, Clone, Default)]
-struct DistrustedIdDetails {
+pub struct DistrustedIdDetails {
     /// People that reported distrust for this id
-    reported_by: HashSet<Id>,
+    pub reported_by: HashSet<Id>,
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct TrustSet {
-    trusted: HashMap<Id, TrustedIdDetails>,
-    distrusted: HashMap<Id, DistrustedIdDetails>,
+    pub trusted: HashMap<Id, TrustedIdDetails>,
+    pub distrusted: HashMap<Id, DistrustedIdDetails>,
 }
 
 impl TrustSet {
