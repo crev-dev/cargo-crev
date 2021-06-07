@@ -170,6 +170,7 @@ pub fn create_review_proof(
         &review,
         previous_date.as_ref(),
         diff_base_version.as_ref(),
+        None,
     )?;
 
     let proof = review.sign_by(&id)?;

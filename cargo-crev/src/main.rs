@@ -734,7 +734,12 @@ fn set_trust_level_for_ids(
     let trust = local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
 
     if edit_interactively {
-        edit::edit_proof_content_iteractively(&trust, None, None)?;
+        let extra_comment = if trust_level == TrustLevel::Distrust {
+            Some("WARNING: Distrust has severe consequences. Read documentation below.")
+        } else {
+            None
+        };
+        edit::edit_proof_content_iteractively(&trust, None, None, extra_comment)?;
     }
 
     let proof = trust.sign_by(&unlocked_id)?;
