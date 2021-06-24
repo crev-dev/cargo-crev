@@ -77,7 +77,7 @@ cargo crev crate verify --for-id <rootID>
 ```
 
 is the basic way to verify review status of all the packages from the
-perspective of the `rootID`. This can used locally be every developer. It can
+perspective of the `rootID`. This can be used locally by every developer. It can
 also be set up as a part of a CI pipeline - the returned exit code will signal
 the verification status.
 
