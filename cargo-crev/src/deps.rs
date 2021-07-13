@@ -10,6 +10,8 @@ use std::{
     ops::Add,
 };
 
+use self::scan::RequiredDetails;
+
 mod print_term;
 pub mod scan;
 
@@ -289,7 +291,7 @@ pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()
     let scanner = scan::Scanner::new(crate_, &args)?;
     let trust_set = scanner.trust_set.clone();
     let db = scanner.db.clone();
-    let events = scanner.run();
+    let events = scanner.run(&RequiredDetails::none());
 
     let mut mvps: HashMap<PublicId, u64> = HashMap::new();
 
@@ -317,7 +319,12 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let scanner = scan::Scanner::new(crate_, &args)?;
     let trust_set = scanner.trust_set.clone();
-    let events = scanner.run();
+    let events = scanner.run(&RequiredDetails {
+        geiger: args.columns.show_geiger(),
+        owners: args.columns.show_owners(),
+        downloads: args.columns.show_downloads() || args.columns.show_leftpad_index(),
+        loc: args.columns.show_loc() || args.columns.show_leftpad_index(),
+    });
 
     // print header, only after `scanner` had a chance to download everything
     if term.stderr_is_tty && term.stdout_is_tty {

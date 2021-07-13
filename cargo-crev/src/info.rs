@@ -1,8 +1,4 @@
-use crate::{
-    deps::{scan, AccumulativeCrateDetails},
-    opts::{CrateSelector, CrateVerify, CrateVerifyCommon},
-    Repo,
-};
+use crate::{Repo, deps::{AccumulativeCrateDetails, scan::{self, RequiredDetails}}, opts::{CrateSelector, CrateVerify, CrateVerifyCommon}};
 use anyhow::{bail, Result};
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
@@ -52,11 +48,12 @@ pub struct CrateInfoOutput {
 pub fn get_crate_deps_info(
     pkg_id: cargo::core::PackageId,
     common_opts: CrateVerifyCommon,
+    required_details: &RequiredDetails,
 ) -> Result<CrateInfoDepOutput> {
     let mut args = CrateVerify::default();
     args.common = common_opts;
     let scanner = scan::Scanner::new(CrateSelector::default(), &args)?;
-    let events = scanner.run();
+    let events = scanner.run(required_details);
 
     let stats = events
         .into_iter()
@@ -95,7 +92,7 @@ pub fn get_crate_info(
         deps: if root_crate.unrelated {
             None
         } else {
-            Some(get_crate_deps_info(pkg_id, common_opts)?)
+            Some(get_crate_deps_info(pkg_id, common_opts, &RequiredDetails::none())?)
         },
         alternatives: db
             .get_pkg_alternatives(&crev_pkg_id.id)

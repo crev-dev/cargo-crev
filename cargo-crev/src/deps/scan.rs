@@ -26,6 +26,25 @@ use std::{
     sync::{atomic, Arc, Mutex},
 };
 
+#[derive(Debug, Clone, Copy)]
+pub struct RequiredDetails {
+    pub geiger: bool,
+    pub owners: bool,
+    pub downloads: bool,
+    pub loc: bool,
+}
+
+impl RequiredDetails {
+    pub fn none() -> Self {
+        Self {
+            geiger: false,
+            owners: false,
+            downloads: false,
+            loc: false,
+        }
+    }
+}
+
 /// Dependency scaner
 ///
 /// Offloads dependency scanning to concurrent worker threads.
@@ -140,7 +159,7 @@ impl Scanner {
     }
 
     /// start computations on a new thread
-    pub fn run(self) -> Receiver<CrateStats> {
+    pub fn run(self, required_details: &RequiredDetails) -> Receiver<CrateStats> {
         if !self.has_trusted_ids {
             eprintln!("There are no trusted Ids. There is nothing to verify against.\nUse `cargo crev trust` to add trusted reviewers");
         }
@@ -176,6 +195,7 @@ impl Scanner {
             let mut self_clone = self.clone();
             let ready_tx_count = ready_tx_count.clone();
             let ready_tx_count_clone = ready_tx_count.clone();
+            let required_details = *required_details;
             std::thread::spawn({
                 move || {
                     pending_rx.into_iter().for_each(move |pkg_id: PackageId| {
@@ -197,7 +217,7 @@ impl Scanner {
                         let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
 
                         let details = self_clone
-                            .get_crate_details(&info)
+                            .get_crate_details(&info, &required_details)
                             .expect("Unable to scan crate");
                         {
                             let mut crate_details_by_id =
@@ -231,7 +251,7 @@ impl Scanner {
         ready_rx
     }
 
-    fn get_crate_details(&mut self, info: &CrateInfo) -> Result<CrateDetails> {
+    fn get_crate_details(&mut self, info: &CrateInfo, required_details: &RequiredDetails) -> Result<CrateDetails> {
         let pkg_name = info.id.name();
         let proof_pkg_id = proof::PackageId {
             source: "https://crates.io".into(),
@@ -240,7 +260,7 @@ impl Scanner {
 
         let pkg_version = info.id.version();
         info.download_if_needed(self.cargo_opts.clone())?;
-        let geiger_count = get_geiger_count(&info.root).ok();
+        let geiger_count = if required_details.geiger { get_geiger_count(&info.root).ok() } else { None };
         let is_local_source_code = !info.id.source_id().is_registry();
         let ignore_list = if is_local_source_code {
             &self.min_ignore_list
@@ -284,23 +304,20 @@ impl Scanner {
         };
 
         let crates_io = self.crates_io()?;
-        let downloads = crates_io.get_downloads_count(&pkg_name, &pkg_version).ok();
+        let downloads = if required_details.downloads { crates_io.get_downloads_count(&pkg_name, &pkg_version).ok() } else { None };
 
-        let owner_list = crates_io.get_owners(&pkg_name).ok();
-        let known_owners = match &owner_list {
-            Some(owner_list) => {
-                let total_owners_count = owner_list.len();
-                let known_owners_count = owner_list
-                    .iter()
-                    .filter(|o| self.known_owners.contains(o.as_str()))
-                    .count();
-                Some(CountWithTotal {
-                    count: known_owners_count as u64,
-                    total: total_owners_count as u64,
-                })
+        let owner_list = if required_details.owners { crates_io.get_owners(&pkg_name).ok() } else { None };
+        let known_owners = owner_list.as_ref().map(|owner_list| {
+            let total_owners_count = owner_list.len();
+            let known_owners_count = owner_list
+                .iter()
+                .filter(|o| self.known_owners.contains(o.as_str()))
+                .count();
+            CountWithTotal {
+                count: known_owners_count as u64,
+                total: total_owners_count as u64,
             }
-            None => None,
-        };
+        });
 
         let issues_from_trusted = self.db.get_open_issues_for_version(
             PROJECT_SOURCE_CRATES_IO,
@@ -323,7 +340,7 @@ impl Scanner {
             total: issues_from_all.len() as u64,
         };
 
-        let loc = crate::tokei::get_rust_line_count(&info.root).ok();
+        let loc = if required_details.loc { crate::tokei::get_rust_line_count(&info.root).ok() } else { None };
 
         let latest_trusted_version = crev_lib::find_latest_trusted_version(
             &self.trust_set,

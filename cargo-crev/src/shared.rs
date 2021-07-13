@@ -1,6 +1,6 @@
 // Here are the structs and functions which still need to be sorted
 //
-use crate::{deps::scan, edit, opts, opts::CrateSelector, prelude::*, repo::*};
+use crate::{deps::scan::{self, RequiredDetails}, edit, opts, opts::CrateSelector, prelude::*, repo::*};
 use anyhow::{format_err, Context, Result};
 use crev_data::proof;
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
@@ -179,7 +179,7 @@ pub fn edit_known_owners_list() -> Result<()> {
 
 pub fn clean_all_unclean_crates() -> Result<()> {
     let scanner = scan::Scanner::new(CrateSelector::default(), &opts::CrateVerify::default())?;
-    let events = scanner.run();
+    let events = scanner.run(&RequiredDetails::none());
 
     for stats in events.into_iter() {
         if stats.details.accumulative_own.is_local_source_code {
