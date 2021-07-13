@@ -6,12 +6,12 @@ use cargo::{
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
-        resolver::{features::RequestedFeatures, ResolveOpts},
+        resolver::{features::HasDevUnits, CliFeatures},
         source::SourceMap,
-        Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
+        FeatureValue, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
-    util::{self, important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
+    util::{important_paths::find_root_manifest_for_wd, CargoResult, Rustc},
 };
 use cargo_platform::Cfg;
 use petgraph::graph::NodeIndex;
@@ -108,7 +108,7 @@ impl Graph {
 }
 
 fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
-    let mut process = util::process(&rustc.path);
+    let mut process = rustc.process();
     process.arg("--print=cfg").env_remove("RUST_LOG");
     if let Some(ref s) = target {
         process.arg("--target").arg(s);
@@ -142,13 +142,15 @@ fn our_resolve<'a, 'cfg>(
     // the other methods
     let (packages, resolve) = ops::resolve_ws(workspace)?;
 
-    let resolve_opts = ResolveOpts {
-        dev_deps: !no_dev_dependencies,
-        features: RequestedFeatures {
-            features: Rc::new(features.iter().map(|s| s.into()).collect()),
-            all_features,
-            uses_default_features: !no_default_features,
-        },
+    let cli_features = CliFeatures {
+        features: Rc::new(
+            features
+                .iter()
+                .map(|s| FeatureValue::new(s.into()))
+                .collect(),
+        ),
+        all_features,
+        uses_default_features: !no_default_features,
     };
 
     let specs: Vec<_> = workspace
@@ -160,7 +162,12 @@ fn our_resolve<'a, 'cfg>(
     let resolve = ops::resolve_with_previous(
         registry,
         workspace,
-        &resolve_opts,
+        &cli_features,
+        if no_dev_dependencies {
+            HasDevUnits::No
+        } else {
+            HasDevUnits::Yes
+        },
         Some(&resolve),
         None,
         &specs,
