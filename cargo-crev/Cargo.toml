@@ -32,7 +32,7 @@ cargo = "0.54.0"
 cargo-platform = "0.1.1"
 crates_io_api = "0.7.2"
 crossbeam = "0.8.1"
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 env_logger = { version = "0.8.3", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.7"
 geiger = "0.4.7"

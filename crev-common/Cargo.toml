@@ -14,7 +14,7 @@ readme = "README.md"
 [dependencies]
 base64 = "0.13"
 blake2 = "0.8.1"
-chrono = "0.4.11"
+chrono = { version = "0.4.19", default-features = false, features = ["std", "clock"] }
 digest = "0.8.1"
 hex = "0.4.2"
 rprompt = "1.0.5"
