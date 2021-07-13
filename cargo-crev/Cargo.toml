@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.20.1"
+version = "0.21.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
@@ -22,10 +22,10 @@ name = "cargo_crev"
 path = "src/lib.rs"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "0.20" }
-crev-data = { path = "../crev-data", version = "0.20" }
-crev-wot = { path = "../crev-wot", version = "0.20" }
-crev-lib = { path = "../crev-lib", version = "0.20.1" }
+crev-common = { path = "../crev-common", version = "0.21" }
+crev-data = { path = "../crev-data", version = "0.21" }
+crev-wot = { path = "../crev-wot", version = "0.21" }
+crev-lib = { path = "../crev-lib", version = "0.21" }
 anyhow = "1.0.42"
 atty = "0.2.14"
 cargo = "0.54.0"
