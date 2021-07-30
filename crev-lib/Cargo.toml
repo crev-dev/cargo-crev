@@ -14,7 +14,7 @@ readme = "README.md"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.21" }
-miscreant = "0.5.2"
+miscreant = { package = "miscreant-aes-v05", version = "0.5.2" }
 crev-data = { path = "../crev-data", version = "0.21" }
 crev-wot = { path = "../crev-wot", version = "0.21" }
 blake2 = "0.8.1"
