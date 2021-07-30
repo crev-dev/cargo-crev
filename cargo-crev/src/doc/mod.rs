@@ -20,24 +20,24 @@
 ///
 /// See the list of modules for the list of documented topics.
 pub mod user {
-    #[doc(include = "getting_started.md")]
+    #[doc = include_str!("getting_started.md"))]
     pub mod getting_started {}
 
-    #[doc(include = "glossary.md")]
+    #[doc = include_str!("glossary.md"))]
     pub mod glossary {}
 
-    #[doc(include = "organizations.md")]
+    #[doc = include_str!("organizations.md"))]
     pub mod organizations {}
 
-    #[doc(include = "advisories.md")]
+    #[doc = include_str!("advisories.md"))]
     pub mod advisories {}
 
-    #[doc(include = "trust.md")]
+    #[doc = include_str!("trust.md"))]
     pub mod trust {}
 
-    #[doc(include = "cargo_specific.md")]
+    #[doc = include_str!("cargo_specific.md"))]
     pub mod cargo_specific {}
 
-    #[doc(include = "tips_and_tricks.md")]
+    #[doc = include_str!("tips_and_tricks.md"))]
     pub mod tips_and_tricks {}
 }
