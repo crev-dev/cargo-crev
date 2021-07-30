@@ -2,11 +2,9 @@ use rand::{self, Rng};
 use std::fmt;
 
 pub fn random_id_str() -> String {
-    let project_id: Vec<u8> = rand::thread_rng()
-        .sample_iter(&rand::distributions::Standard)
-        .take(32)
-        .collect();
-    crev_common::base64_encode(&project_id)
+    let mut out = [0u8; 32];
+    rand::thread_rng().fill(&mut out[..]);
+    crev_common::base64_encode(&out)
 }
 
 pub fn write_comment_proof(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
