@@ -35,14 +35,14 @@ pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {
 
 pub fn blake2b256sum(bytes: &[u8]) -> [u8; 32] {
     let mut hasher = Blake2b256::new();
-    hasher.input(bytes);
-    hasher.fixed_result().into()
+    hasher.update(bytes);
+    hasher.finalize_fixed().into()
 }
 
 pub fn blake2b256sum_file(path: &Path) -> io::Result<[u8; 32]> {
     let mut hasher = Blake2b256::new();
     read_file_to_digest_input(path, &mut hasher)?;
-    Ok(hasher.fixed_result().into())
+    Ok(hasher.finalize_fixed().into())
 }
 
 pub fn base64_decode<T: ?Sized + AsRef<[u8]>>(input: &T) -> Result<Vec<u8>, base64::DecodeError> {
@@ -158,7 +158,7 @@ pub fn is_set_empty<T>(t: &HashSet<T>) -> bool {
 
 pub fn read_file_to_digest_input(
     path: &Path,
-    input: &mut impl blake2::digest::Input,
+    input: &mut impl blake2::digest::Update,
 ) -> io::Result<()> {
     let file = std::fs::File::open(path)?;
 
@@ -167,7 +167,7 @@ pub fn read_file_to_digest_input(
     loop {
         let length = {
             let buffer = reader.fill_buf()?;
-            input.input(buffer);
+            input.update(buffer);
             buffer.len()
         };
         if length == 0 {
