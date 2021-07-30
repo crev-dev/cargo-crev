@@ -61,8 +61,6 @@ impl std::str::FromStr for LockedId {
 
 impl LockedId {
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
-        use miscreant::Aead;
-
         let config = if passphrase != "" {
             Config {
                 variant: argon2::Variant::Argon2id,
@@ -86,14 +84,25 @@ impl LockedId {
         let pwhash =
             argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config).map_err(Error::Passphrase)?;
 
-        let mut siv = miscreant::Aes256SivAead::new(&pwhash);
-
         let seal_nonce = random_vec(32);
+        let sealed_secret_key = {
+            use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE};
+
+            let secret = unlocked_id.keypair.secret.as_bytes();
+            let mut siv = aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&pwhash));
+            let mut buffer = vec![0; IV_SIZE + secret.len()];
+            buffer[IV_SIZE..].copy_from_slice(secret);
+            let tag = siv
+                .encrypt_in_place_detached(&[&[] as &[u8], &seal_nonce], &mut buffer[IV_SIZE..])
+                .expect("aes-encrypt");
+            buffer[..IV_SIZE].copy_from_slice(&tag);
+            buffer
+        };
 
         Ok(LockedId {
             version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
             public_key: unlocked_id.keypair.public.to_bytes().to_vec(),
-            sealed_secret_key: siv.encrypt(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
+            sealed_secret_key,
             seal_nonce,
             url: unlocked_id.url().cloned(),
             passphrase_config: PassphraseConfig {
@@ -145,8 +154,6 @@ impl LockedId {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
                 Err(Error::UnsupportedVersion(*version))?;
             }
-            use miscreant::Aead;
-
             let mut config = Config {
                 variant: argon2::Variant::from_str(&passphrase_config.variant)?,
                 version: argon2::Version::Version13,
@@ -173,11 +180,23 @@ impl LockedId {
 
             let passphrase_hash =
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
-            let mut siv = miscreant::Aes256SivAead::new(&passphrase_hash);
 
-            let secret_key = siv
-                .decrypt(&seal_nonce, &[], &sealed_secret_key)
+            let secret_key = {
+                use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE, Tag};
+
+                let mut siv =
+                    aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&passphrase_hash));
+                let mut buffer = sealed_secret_key.clone();
+                let tag = Tag::clone_from_slice(&buffer[..IV_SIZE]);
+                siv.decrypt_in_place_detached(
+                    &[&[] as &[u8], &seal_nonce],
+                    &mut buffer[IV_SIZE..],
+                    &tag,
+                )
                 .map_err(|_| Error::IncorrectPassphrase)?;
+                buffer.drain(..IV_SIZE);
+                buffer
+            };
 
             assert!(!secret_key.is_empty());
 
