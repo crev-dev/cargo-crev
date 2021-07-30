@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "crev-lib"
-version = "0.21.0"
+version = "0.21.1"
 description = "Library interface for programmatic access to crate reviews of cargo-crev"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 documentation = "https://docs.rs/crev-lib"
@@ -14,7 +14,6 @@ readme = "README.md"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.21" }
-miscreant = "0.5.2"
 crev-data = { path = "../crev-data", version = "0.21" }
 crev-wot = { path = "../crev-wot", version = "0.21" }
 blake2 = "0.8.1"
@@ -34,3 +33,4 @@ serde_yaml = "0.8.17"
 walkdir = "2.3.2"
 thiserror = "1.0.26"
 rayon = "1.5.1"
+aes-siv = "0.6.2"

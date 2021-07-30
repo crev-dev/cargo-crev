@@ -61,7 +61,8 @@ impl std::str::FromStr for LockedId {
 
 impl LockedId {
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
-        use miscreant::Aead;
+        use aes_siv::aead::Aead;
+        use aes_siv::aead::NewAead;
 
         let config = if passphrase != "" {
             Config {
@@ -82,18 +83,18 @@ impl LockedId {
             Self::weak_passphrase_config()
         };
 
-        let pwsalt = random_vec(32);
+        let pwsalt = random_vec(16);
         let pwhash =
             argon2::hash_raw(passphrase.as_bytes(), &pwsalt, &config).map_err(Error::Passphrase)?;
 
-        let mut siv = miscreant::Aes256SivAead::new(&pwhash);
+        let siv = aes_siv::Aes256SivAead::new(pwhash.as_slice().into());
 
-        let seal_nonce = random_vec(32);
+        let seal_nonce = random_vec(16);
 
         Ok(LockedId {
             version: CURRENT_LOCKED_ID_SERIALIZATION_VERSION,
             public_key: unlocked_id.keypair.public.to_bytes().to_vec(),
-            sealed_secret_key: siv.encrypt(&seal_nonce, &[], unlocked_id.keypair.secret.as_bytes()),
+            sealed_secret_key: siv.encrypt(seal_nonce.as_slice().into(), &unlocked_id.keypair.secret.as_bytes()[..]).expect("aes-encrypt"),
             seal_nonce,
             url: unlocked_id.url().cloned(),
             passphrase_config: PassphraseConfig {
@@ -145,7 +146,8 @@ impl LockedId {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
                 Err(Error::UnsupportedVersion(*version))?;
             }
-            use miscreant::Aead;
+            use aes_siv::aead::Aead;
+            use aes_siv::aead::NewAead;
 
             let mut config = Config {
                 variant: argon2::Variant::from_str(&passphrase_config.variant)?,
@@ -173,10 +175,10 @@ impl LockedId {
 
             let passphrase_hash =
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
-            let mut siv = miscreant::Aes256SivAead::new(&passphrase_hash);
+            let siv = aes_siv::Aes256SivAead::new(passphrase_hash.as_slice().into());
 
             let secret_key = siv
-                .decrypt(&seal_nonce, &[], &sealed_secret_key)
+                .decrypt(seal_nonce[..16].into(), sealed_secret_key.as_slice())
                 .map_err(|_| Error::IncorrectPassphrase)?;
 
             assert!(!secret_key.is_empty());
