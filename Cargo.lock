@@ -563,6 +563,7 @@ dependencies = [
  "crev-common",
  "derive_builder",
  "ed25519-dalek",
+ "rand 0.7.3",
  "rand 0.8.4",
  "semver 1.0.4",
  "serde",
