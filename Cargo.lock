@@ -233,9 +233,9 @@ checksum = "6c58ec36aac5066d5ca17df51b3e70279f5670a72102f5752cb7e7c856adfc70"
 
 [[package]]
 name = "cargo"
-version = "0.54.0"
+version = "0.55.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cbd976a733418564685769d03cca35bf228ddfc2c8a5e6771ca0f48ce80ae2e"
+checksum = "64675d9fe22972517547e58c297e1c5c9519f228ec7041a1ead90be00bbe3575"
 dependencies = [
  "anyhow",
  "atty",
@@ -247,7 +247,7 @@ dependencies = [
  "crossbeam-utils",
  "curl",
  "curl-sys",
- "env_logger",
+ "env_logger 0.8.4",
  "filetime",
  "flate2",
  "fwdansi",
@@ -259,6 +259,7 @@ dependencies = [
  "humantime",
  "ignore",
  "im-rc",
+ "itertools",
  "jobserver",
  "lazy_static",
  "lazycell",
@@ -272,7 +273,7 @@ dependencies = [
  "rand 0.8.4",
  "rustc-workspace-hack",
  "rustfix",
- "semver 0.10.0",
+ "semver 1.0.4",
  "serde",
  "serde_ignored",
  "serde_json",
@@ -291,7 +292,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-crev"
-version = "0.21.0"
+version = "0.21.1"
 dependencies = [
  "anyhow",
  "atty",
@@ -304,7 +305,7 @@ dependencies = [
  "crev-lib",
  "crev-wot",
  "crossbeam",
- "env_logger",
+ "env_logger 0.9.0",
  "fnv",
  "geiger",
  "git2",
@@ -540,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "crev-common"
-version = "0.21.0"
+version = "0.21.1"
 dependencies = [
  "base64",
  "blake2",
@@ -556,15 +557,14 @@ dependencies = [
 
 [[package]]
 name = "crev-data"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "chrono",
  "crev-common",
  "derive_builder",
  "ed25519-dalek",
- "rand 0.7.3",
  "rand 0.8.4",
- "semver 0.10.0",
+ "semver 1.0.4",
  "serde",
  "serde_yaml",
  "thiserror",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "crev-lib"
-version = "0.21.1"
+version = "0.22.0"
 dependencies = [
  "aes-siv",
  "blake2",
@@ -611,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "crev-wot"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "blake2",
  "chrono",
@@ -1014,6 +1014,18 @@ dependencies = [
  "humantime",
  "log",
  "regex",
+ "termcolor",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
  "termcolor",
 ]
 
@@ -1548,6 +1560,15 @@ name = "ipnet"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
+
+[[package]]
+name = "itertools"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itoa"
@@ -2379,21 +2400,20 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "394cec28fa623e00903caf7ba4fa6fb9a0e260280bb8cdbbba029611108a0190"
-dependencies = [
- "semver-parser 0.7.0",
- "serde",
-]
-
-[[package]]
-name = "semver"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
 dependencies = [
  "semver-parser 0.10.2",
+ "serde",
+]
+
+[[package]]
+name = "semver"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "568a8e6258aa33c13358f81fd834adb854c6f7c9468520910a9b1e8fac068012"
+dependencies = [
  "serde",
 ]
 
@@ -2881,7 +2901,7 @@ dependencies = [
  "dashmap",
  "dirs",
  "encoding_rs_io",
- "env_logger",
+ "env_logger 0.8.4",
  "grep-searcher",
  "ignore",
  "log",

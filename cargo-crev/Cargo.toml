@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.21.0"
+version = "0.21.1"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
@@ -23,17 +23,17 @@ path = "src/lib.rs"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "0.21" }
-crev-data = { path = "../crev-data", version = "0.21" }
-crev-wot = { path = "../crev-wot", version = "0.21" }
-crev-lib = { path = "../crev-lib", version = "0.21.1" }
+crev-data = { path = "../crev-data", version = "0.22" }
+crev-wot = { path = "../crev-wot", version = "0.22" }
+crev-lib = { path = "../crev-lib", version = "0.22" }
 anyhow = "1.0.42"
 atty = "0.2.14"
-cargo = "0.54.0"
+cargo = "0.55.0"
 cargo-platform = "0.1.1"
 crates_io_api = "0.7.2"
 crossbeam = "0.8.1"
 chrono = { version = "0.4.19", default-features = false }
-env_logger = { version = "0.8.3", default-features = false, features = ["termcolor", "atty", "humantime"] }
+env_logger = { version = "0.9.0", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.7"
 geiger = "0.4.7"
 lazy_static = "1.4.0"

@@ -580,7 +580,7 @@ impl Repo {
         let mut summaries = vec![];
         let version_str = version.map(ToString::to_string);
         let dependency_request =
-            Dependency::parse_no_deprecated(name, version_str.as_deref(), source.source_id())?;
+            Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
         source.query(&dependency_request, &mut |summary| {
             summaries.push(summary.clone())
