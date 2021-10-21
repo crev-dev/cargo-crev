@@ -1,7 +1,7 @@
 [package]
 edition = '2018'
 name = "cargo-crev"
-version = "0.21.1"
+version = "0.21.2"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
@@ -28,7 +28,7 @@ crev-wot = { path = "../crev-wot", version = "0.22" }
 crev-lib = { path = "../crev-lib", version = "0.22" }
 anyhow = "1.0.42"
 atty = "0.2.14"
-cargo = "0.55.0"
+cargo = "0.56.0"
 cargo-platform = "0.1.1"
 crates_io_api = "0.7.2"
 crossbeam = "0.8.1"
