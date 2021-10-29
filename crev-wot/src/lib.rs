@@ -1095,7 +1095,7 @@ impl ProofDB {
                 );
 
                 if current_trust_set.is_distrusted(candidate_id) {
-                    debug!("{} is distrusted", candidate_id);
+                    debug!("{} is distrusted by {}", candidate_id, current.id);
                     continue;
                 }
 
@@ -1104,7 +1104,7 @@ impl ProofDB {
                 // However banning by the same trust level node, does not prevent
                 // the node from banning others.
                 if direct_trust == TrustLevel::Distrust {
-                    debug!("Adding {} to distrusted list", candidate_id);
+                    debug!("Adding {} to distrusted list (via {})", candidate_id, current.id);
                     // We discard the result, because we actually want to make as much
                     // progress as possible before restaring building the WoT, and
                     // we will not visit any node that was marked as distrusted,
