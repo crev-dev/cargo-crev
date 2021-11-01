@@ -16,18 +16,18 @@ readme = "README.md"
 crev-common = { path = "../crev-common", version = "0.21.1" }
 crev-data = { path = "../crev-data", version = "0.22" }
 crev-wot = { path = "../crev-wot", version = "0.22" }
-blake2 = "0.9.1"
+blake2 = "0.9.2"
 chrono = { version = "0.4.19", default-features = false }
 crev-recursive-digest = "0.5"
 default = "0.1.2"
 directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
-git2 = "0.13.20"
+git2 = "0.13.23"
 log = "0.4.14"
 num_cpus = "1.13.0"
 resiter = "0.4.0"
 rust-argon2 = "0.8.3"
-serde = "1.0.123"
+serde = "1.0.130"
 serde_cbor = "0.11.1"
 serde_yaml = "0.8.17"
 walkdir = "2.3.2"
