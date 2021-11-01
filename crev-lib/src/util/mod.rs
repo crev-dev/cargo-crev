@@ -7,6 +7,8 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
+use std::borrow::Cow;
+use bstr::ByteSlice;
 
 pub mod git;
 
@@ -171,12 +173,72 @@ pub fn copy_dir_sanitized(
                 src_path.display()
             ));
         } else if ft.is_file() {
-            std::fs::copy(entry.path(), &dest_path)?;
+            // only obviously non-text files get a pass
+            if is_binary_file_extension(&dest_path) {
+                std::fs::copy(&src_path, &dest_path)?;
+            } else {
+                let input = std::fs::read(&src_path)?;
+                let output = escape_tricky_unicode(&input);
+                if output != input {
+                    changes.push(format!("Escaped potentially confusing UTF-8 in '{}'", src_path.display()));
+                }
+                std::fs::write(&dest_path, output)?;
+            }
         } else {
             assert!(ft.is_dir());
             let _ = std::fs::create_dir(&dest_path);
-            copy_dir_sanitized(&entry.path(), &dest_path, changes)?;
+            copy_dir_sanitized(&src_path, &dest_path, changes)?;
         }
     }
     Ok(())
+}
+
+fn is_binary_file_extension(path: &Path) -> bool {
+    path.extension().and_then(|e| e.to_str()) .map_or(false, |e| {
+        matches!(e.to_lowercase().as_str(), "bin" | "zip" | "gz" | "xz" | "bz2" | "jpg" | "jpeg" | "png" | "gif" | "exe" | "dll")
+    })
+}
+
+fn escape_tricky_unicode(input: &[u8]) -> Cow<[u8]> {
+    if input.is_ascii() {
+        return input.into();
+    }
+
+    let mut output = Vec::with_capacity(input.len());
+    for ch in input.utf8_chunks() {
+        output.extend_from_slice(escape_tricky_unicode_str(ch.valid()).as_bytes());
+        output.extend_from_slice(ch.invalid());
+    }
+    output.into()
+}
+
+fn escape_tricky_unicode_str(input: &str) -> Cow<str> {
+    if input.is_ascii() {
+        return input.into();
+    }
+
+    use std::fmt::Write;
+    let mut out = String::with_capacity(input.len());
+    for ch in input.chars() {
+        match ch {
+            // https://blog.rust-lang.org/2021/11/01/cve-2021-42574.html
+            '\u{202A}' | '\u{202B}' | '\u{202C}' | '\u{202D}' | '\u{202E}' | '\u{2066}' | '\u{2067}' | '\u{2068}' | '\u{2069}' => {
+                let _ = write!(&mut out, "\\u{{{:04x}}}", ch as u32);
+            } ,
+            _ => out.push(ch),
+        }
+    }
+    out.into()
+}
+
+#[test]
+fn escapes_unicode_bidi() {
+    let bidi_test = "\u{202A}\u{202B}\u{202C}\u{202D}\u{202E} | \u{2066} | \x00\u{2067} | \u{2068}\u{FFFF} | \u{2069}";
+    assert_eq!(
+        "\\u{202a}\\u{202b}\\u{202c}\\u{202d}\\u{202e} | \\u{2066} | \u{0}\\u{2067} | \\u{2068}\u{ffff} | \\u{2069}".as_bytes(),
+        &*escape_tricky_unicode(bidi_test.as_bytes()),
+    );
+
+    let binary_test = &b"ABC\0\0\0\x11\xff \xc0\xfa\xda"[..];
+    assert_eq!(binary_test, &*escape_tricky_unicode(binary_test));
 }

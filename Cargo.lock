@@ -287,7 +287,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-crev"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "anyhow",
  "atty",
@@ -575,10 +575,11 @@ dependencies = [
 
 [[package]]
 name = "crev-lib"
-version = "0.22.0"
+version = "0.22.1"
 dependencies = [
  "aes-siv",
  "blake2",
+ "bstr",
  "chrono",
  "crev-common",
  "crev-data",
