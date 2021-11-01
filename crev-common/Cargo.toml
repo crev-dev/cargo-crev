@@ -13,11 +13,11 @@ readme = "README.md"
 
 [dependencies]
 base64 = "0.13"
-blake2 = "0.9.1"
+blake2 = "0.9.2"
 chrono = { version = "0.4.19", default-features = false, features = ["std", "clock"] }
-hex = "0.4.2"
+hex = "0.4.3"
 rprompt = "1.0.5"
-serde = "1.0.123"
+serde = "1.0.130"
 serde_yaml = "0.8.11"
 shell-escape = "0.1.4"
 thiserror = "1.0.17"
