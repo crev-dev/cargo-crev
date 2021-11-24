@@ -822,6 +822,7 @@ pub enum Proof {
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(setting = structopt::clap::AppSettings::DeriveDisplayOrder)]
 #[structopt(setting = structopt::clap::AppSettings::DisableHelpSubcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Command {
     /// Local configuration
     #[structopt(name = "config")]

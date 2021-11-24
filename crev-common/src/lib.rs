@@ -118,10 +118,10 @@ pub fn sanitize_url_for_fs(url: &str) -> PathBuf {
 
     let trimmed = url.trim();
 
-    let stripped = if trimmed.starts_with("http://") {
-        &trimmed["http://".len()..]
-    } else if trimmed.starts_with("https://") {
-        &trimmed["https://".len()..]
+    let stripped = if let Some(t) = trimmed.strip_prefix("http://") {
+        t
+    } else if let Some(t) = trimmed.strip_prefix("https://") {
+        t
     } else {
         trimmed
     };

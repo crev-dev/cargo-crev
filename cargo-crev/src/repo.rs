@@ -329,10 +329,10 @@ impl Repo {
 
     // TODO: Do we even need it? We should just always use a default/empty
     // registry or something? We don't have anything custom to add.
-    fn registry<'a>(
-        &'a self,
+    fn registry(
+        &self,
         source_ids: impl Iterator<Item = SourceId>,
-    ) -> CargoResult<PackageRegistry<'a>> {
+    ) -> CargoResult<PackageRegistry<'_>> {
         let _lock = self.config.acquire_package_cache_lock()?;
         let mut registry = PackageRegistry::new(&self.config)?;
         registry.add_sources(source_ids)?;
@@ -501,7 +501,7 @@ impl Repo {
     }
     */
 
-    pub fn get_package_set<'a>(&'a self) -> Result<(PackageSet<'a>, Resolve)> {
+    pub fn get_package_set(&self) -> Result<(PackageSet<'_>, Resolve)> {
         let workspace = self.workspace()?;
 
         let mut registry = self.registry(vec![].into_iter())?;

@@ -1,4 +1,5 @@
 #![type_length_limit = "10709970"]
+#![allow(clippy::manual_range_contains)]
 
 pub mod activity;
 pub mod id;
@@ -216,10 +217,7 @@ pub enum VerificationStatus {
 
 impl VerificationStatus {
     pub fn is_verified(self) -> bool {
-        match self {
-            VerificationStatus::Verified => true,
-            _ => false,
-        }
+        self == VerificationStatus::Verified
     }
 
     pub fn min(self, other: Self) -> Self {

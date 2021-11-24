@@ -285,9 +285,10 @@ pub fn latest_trusted_version_string(
 }
 
 pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()> {
-    let mut args = CrateVerify::default();
-    args.common = common;
-
+    let args = CrateVerify {
+        common,
+        ..Default::default()
+    };
     let scanner = scan::Scanner::new(crate_, &args)?;
     let trust_set = scanner.trust_set.clone();
     let db = scanner.db.clone();

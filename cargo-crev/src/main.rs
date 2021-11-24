@@ -681,12 +681,12 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             if let Some(url) = url {
                 validate_public_repo_url(url)?;
 
-                let reusable_ids = existing
+                let reusable_id = existing
                     .iter()
                     .filter(|id| id.url.is_none())
                     .filter_map(|id| local.read_locked_id(&id.id).ok())
-                    .filter(|id| id.has_no_passphrase());
-                for mut locked_id in reusable_ids {
+                    .find(|id| id.has_no_passphrase());
+                if let Some(mut locked_id) = reusable_id {
                     let id = locked_id.to_public_id().id;
                     eprintln!(
                         "Instead of setting up a new CrevID we'll reconfigure the existing one {}",

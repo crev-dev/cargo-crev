@@ -320,8 +320,8 @@ impl ProofDB {
 
             write.wipe();
 
-            for (_, alt) in &self.package_alternatives {
-                for (_, signature) in alt {
+            for alt in self.package_alternatives.values() {
+                for signature in alt.values() {
                     write.record_from_proof(
                         &self.package_review_by_signature[&signature.value],
                         &signature.value,

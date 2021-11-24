@@ -50,8 +50,10 @@ pub fn get_crate_deps_info(
     common_opts: CrateVerifyCommon,
     required_details: &RequiredDetails,
 ) -> Result<CrateInfoDepOutput> {
-    let mut args = CrateVerify::default();
-    args.common = common_opts;
+    let args = CrateVerify {
+        common: common_opts,
+        ..Default::default()
+    };
     let scanner = scan::Scanner::new(CrateSelector::default(), &args)?;
     let events = scanner.run(required_details);
 
