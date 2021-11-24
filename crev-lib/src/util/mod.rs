@@ -105,7 +105,7 @@ fn mark_dangerous_name(
         "cargo.toml" => {
             changes
                 .push("Cargo.toml could cause IDEs automatically build dependencies".to_string());
-            return PathBuf::from("Cargo.toml.CREV");
+            return PathBuf::from("Cargo.CREV.toml");
         }
         ".cargo" => {
             changes.push(".cargo config can replace linkers, source of dependencies".to_string());
@@ -119,7 +119,11 @@ fn mark_dangerous_name(
             changes
                 .push("rust-toolchain file could unexpectedly replace your compiler".to_string());
             return PathBuf::from(format!("{}.CREV", orig_name));
-        }
+        },
+        ".cargo-ok" | ".cargo_vcs_info.json" | ".gitignore" => {
+            // they're safe
+            PathBuf::from(orig_name)
+        },
         n if n.starts_with(".") => {
             changes.push(format!("Hidden file: '{}'", orig_name));
             return PathBuf::from(format!("CREV{}", orig_name));
