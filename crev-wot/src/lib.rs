@@ -509,12 +509,12 @@ impl ProofDB {
         version: Option<&'d Version>,
     ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
         match (name, version) {
-            (Some(ref name), Some(ref version)) => {
+            (Some(name), Some(version)) => {
                 Box::new(self.get_advisories_for_version(source, name, version))
                     as Box<dyn Iterator<Item = _>>
             }
 
-            (Some(ref name), None) => Box::new(self.get_advisories_for_package(source, name)),
+            (Some(name), None) => Box::new(self.get_advisories_for_package(source, name)),
             (None, None) => Box::new(self.get_advisories_for_source(source)),
             (None, Some(_)) => panic!("Wrong usage"),
         }
@@ -558,7 +558,7 @@ impl ProofDB {
         version: &'d Version,
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_gte_version(source, name, version)
-            .filter(move |review| review.is_advisory_for(&version))
+            .filter(move |review| review.is_advisory_for(version))
     }
 
     pub fn get_advisories_for_package<'a, 'b, 'c: 'a>(
@@ -661,7 +661,7 @@ impl ProofDB {
         {
             // Add new issue reports created by the advisory
             if advisory.is_for_version_when_reported_in_version(
-                &queried_version,
+                queried_version,
                 &review.package.id.version,
             ) {
                 for id in &advisory.ids {
@@ -676,7 +676,7 @@ impl ProofDB {
             // Remove the reports that are already fixed
             for id in &advisory.ids {
                 if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
-                    let issues = std::mem::replace(&mut issue_marker.issues, HashSet::new());
+                    let issues = std::mem::take(&mut issue_marker.issues);
                     issue_marker.issues = issues
                         .into_iter()
                         .filter(|pkg_review_id| {
@@ -718,7 +718,7 @@ impl ProofDB {
                 !review.issues.is_empty()
                     || review.advisories.iter().any(|advi| {
                         advi.is_for_version_when_reported_in_version(
-                            &queried_version,
+                            queried_version,
                             &review.package.id.version,
                         )
                     })
@@ -766,7 +766,7 @@ impl ProofDB {
 
     fn add_code_review(&mut self, review: &review::Code, fetched_from: FetchSource) {
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), &from, &fetched_from);
+        self.record_url_from_from_field(&review.date_utc(), from, &fetched_from);
         for _file in &review.files {
             // not implemented right now; just ignore
         }
@@ -781,7 +781,7 @@ impl ProofDB {
         self.insertion_counter += 1;
 
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), &from, &fetched_from);
+        self.record_url_from_from_field(&review.date_utc(), from, &fetched_from);
 
         self.package_review_by_signature
             .entry(signature.to_owned())
@@ -844,11 +844,11 @@ impl ProofDB {
         version: Option<&'d Version>,
     ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
         match (name, version) {
-            (Some(ref name), Some(ref version)) => {
+            (Some(name), Some(version)) => {
                 Box::new(self.get_pkg_reviews_for_version(source, name, version))
                     as Box<dyn Iterator<Item = _>>
             }
-            (Some(ref name), None) => Box::new(self.get_pkg_reviews_for_name(source, name)),
+            (Some(name), None) => Box::new(self.get_pkg_reviews_for_name(source, name)),
             (None, None) => Box::new(self.get_pkg_reviews_for_source(source)),
             (None, Some(_)) => panic!("Wrong usage"),
         }
@@ -865,7 +865,7 @@ impl ProofDB {
             .cloned()
             .collect();
 
-        proofs.sort_by(|a, b| a.date_utc().cmp(&b.date_utc()));
+        proofs.sort_by_key(|a| a.date_utc());
 
         proofs
     }
@@ -882,7 +882,7 @@ impl ProofDB {
 
     fn add_trust(&mut self, trust: &proof::Trust, fetched_from: FetchSource) {
         let from = &trust.from();
-        self.record_url_from_from_field(&trust.date_utc(), &from, &fetched_from);
+        self.record_url_from_from_field(&trust.date_utc(), from, &fetched_from);
         for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
         }
@@ -890,7 +890,7 @@ impl ProofDB {
             // Others should not be making verified claims about this URL,
             // regardless of where these proofs were fetched from, because only
             // owner of the Id is authoritative.
-            self.record_url_from_to_field(&trust.date_utc(), &to)
+            self.record_url_from_to_field(&trust.date_utc(), to)
         }
     }
 
@@ -994,7 +994,7 @@ impl ProofDB {
                 self.add_package_review(&proof.parse_content()?, proof.signature(), fetched_from)
             }
             proof::Trust::KIND => self.add_trust(&proof.parse_content()?, fetched_from),
-            other => Err(Error::UnknownProofType(other.into()))?,
+            other => return Err(Error::UnknownProofType(other.into())),
         }
 
         Ok(())
@@ -1010,11 +1010,7 @@ impl ProofDB {
     }
 
     fn get_trust_list_of_id(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
-        if let Some(map) = self.trust_id_to_id.get(id) {
-            Some(map.iter().map(|(id, trust)| (trust.value, id)))
-        } else {
-            None
-        }
+        self.trust_id_to_id.get(id).map(|map| map.iter().map(|(id, trust)| (trust.value, id)))
         .into_iter()
         .flatten()
     }
@@ -1088,7 +1084,7 @@ impl ProofDB {
                 previous_iter_trust_level = current.effective_trust_level;
             }
 
-            for (direct_trust, candidate_id) in self.get_trust_list_of_id(&&current.id) {
+            for (direct_trust, candidate_id) in self.get_trust_list_of_id(&current.id) {
                 debug!(
                     "{} ({}) reports trust level for {}: {}",
                     current.id, current.effective_trust_level, candidate_id, direct_trust

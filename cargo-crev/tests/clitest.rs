@@ -1,5 +1,5 @@
-use std::io::Write;
 use std::ffi::*;
+use std::io::Write;
 use std::path::*;
 use std::process::*;
 
@@ -36,7 +36,7 @@ impl Cli {
             .arg("crev")
             .args(args)
             .spawn()
-            .expect(&format!("Failed to run {}", self.exe.display()));
+            .unwrap_or_else(|_| panic!("Failed to run {}", self.exe.display()));
 
         let stdin_data = stdin_data.into();
         let mut stdin = child.stdin.take().unwrap();

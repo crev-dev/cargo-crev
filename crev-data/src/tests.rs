@@ -236,7 +236,7 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
         a.as_public_id()
             .create_package_review_proof(package, Default::default(), "a".into())?;
     assert!(package.ensure_serializes_to_valid_proof().is_ok());
-    package.comment = std::iter::repeat("a").take(32_000).collect::<String>();
+    package.comment = "a".repeat(32_000);
     assert!(package.ensure_serializes_to_valid_proof().is_err());
     Ok(())
 }

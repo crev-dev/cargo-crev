@@ -41,8 +41,8 @@ pub fn create_review_proof(
     let diff_base_version = match crate_review_activity_check(
         &local,
         &pkg_id.name(),
-        &effective_crate_version,
-        &diff_version,
+        effective_crate_version,
+        diff_version,
         skip_activity_check,
     ) {
         Ok(res) => res,
@@ -76,7 +76,7 @@ pub fn create_review_proof(
     };
 
     let (digest_clean, vcs) =
-        check_package_clean_state(&repo, &crate_root, &crate_.name(), &effective_crate_version)?;
+        check_package_clean_state(&repo, crate_root, &crate_.name(), effective_crate_version)?;
 
     let diff_base = if let Some(ref diff_base_version) = diff_base_version {
         let crate_id = repo.find_pkgid(&crate_.name(), Some(diff_base_version), true)?;
@@ -84,7 +84,7 @@ pub fn create_review_proof(
         let crate_root = crate_.root();
 
         let (digest, vcs) =
-            check_package_clean_state(&repo, &crate_root, &crate_.name(), &diff_base_version)?;
+            check_package_clean_state(&repo, crate_root, &crate_.name(), diff_base_version)?;
 
         Some(proof::PackageInfo {
             id: proof::PackageVersionId::new(
@@ -208,7 +208,7 @@ pub fn find_previous_review_data(
         ));
     } else if let Some(diff_base_version) = diff_base_version {
         if let Some(base_review) =
-            db.get_pkg_review(PROJECT_SOURCE_CRATES_IO, name, &diff_base_version, &id.id)
+            db.get_pkg_review(PROJECT_SOURCE_CRATES_IO, name, diff_base_version, &id.id)
         {
             return Some((
                 None,
@@ -228,7 +228,7 @@ pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::P
     Ok(db
         .get_package_reviews_for_package(
             PROJECT_SOURCE_CRATES_IO,
-            crate_.name.as_ref().map(String::as_str),
+            crate_.name.as_deref(),
             crate_.version()?,
         )
         .cloned()

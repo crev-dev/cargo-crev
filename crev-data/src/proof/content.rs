@@ -16,8 +16,7 @@ pub trait CommonOps {
     fn common(&self) -> &Common;
 
     fn kind(&self) -> &str {
-        &self
-            .common()
+        self.common()
             .kind
             .as_ref()
             .expect("Common types are expected to always have the `kind` field backfilled")
@@ -46,10 +45,10 @@ pub trait CommonOps {
     fn ensure_kind_is(&self, kind: &str) -> ValidationResult<()> {
         let expected = self.kind();
         if expected != kind {
-            Err(ValidationError::InvalidKind(Box::new((
+            return Err(ValidationError::InvalidKind(Box::new((
                 expected.to_string(),
                 kind.to_string(),
-            ))))?;
+            ))));
         }
         Ok(())
     }
@@ -181,7 +180,7 @@ pub trait ContentExt: Content {
 
     fn sign_by(&self, id: &crate::id::UnlockedId) -> Result<Proof> {
         let body = self.serialize()?;
-        let signature = id.sign(&body.as_bytes());
+        let signature = id.sign(body.as_bytes());
         Ok(Proof {
             digest: crev_common::blake2b256sum(body.as_bytes()),
             body,
@@ -195,7 +194,7 @@ pub trait ContentExt: Content {
         let body = self.serialize()?;
         let signature = "somefakesignature";
         let proof = proof::Proof {
-            digest: crev_common::blake2b256sum(&body.as_bytes()),
+            digest: crev_common::blake2b256sum(body.as_bytes()),
             body,
             signature: crev_common::base64_encode(&signature),
             common_content: self.common().to_owned(),
@@ -203,7 +202,7 @@ pub trait ContentExt: Content {
         let parsed = proof::Proof::parse_from(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 
         if parsed.len() != 1 {
-            Err(Error::SerializedTooManyProofs(parsed.len()))?;
+            return Err(Error::SerializedTooManyProofs(parsed.len()));
         }
 
         Ok(())

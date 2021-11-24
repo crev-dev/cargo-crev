@@ -55,13 +55,13 @@ impl std::str::FromStr for LockedId {
     type Err = serde_yaml::Error;
 
     fn from_str(yaml_str: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(serde_yaml::from_str::<LockedId>(&yaml_str)?)
+        serde_yaml::from_str::<LockedId>(yaml_str)
     }
 }
 
 impl LockedId {
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
-        let config = if passphrase != "" {
+        let config = if !passphrase.is_empty() {
             Config {
                 variant: argon2::Variant::Argon2id,
                 version: argon2::Version::Version13,
@@ -152,7 +152,7 @@ impl LockedId {
         } = self;
         {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {
-                Err(Error::UnsupportedVersion(*version))?;
+                return Err(Error::UnsupportedVersion(*version));
             }
             let mut config = Config {
                 variant: argon2::Variant::from_str(&passphrase_config.variant)?,
@@ -189,7 +189,7 @@ impl LockedId {
                 let mut buffer = sealed_secret_key.clone();
                 let tag = Tag::clone_from_slice(&buffer[..IV_SIZE]);
                 siv.decrypt_in_place_detached(
-                    &[&[] as &[u8], &seal_nonce],
+                    &[&[] as &[u8], seal_nonce],
                     &mut buffer[IV_SIZE..],
                     &tag,
                 )
@@ -202,7 +202,7 @@ impl LockedId {
 
             let result = UnlockedId::new(url.clone(), secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {
-                Err(Error::PubKeyMismatch)?;
+                return Err(Error::PubKeyMismatch);
             }
             Ok(result)
         }

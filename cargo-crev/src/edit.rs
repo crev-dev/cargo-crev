@@ -2,7 +2,6 @@ use anyhow::{bail, Result};
 use crev_common::{run_with_shell_cmd, CancelledError};
 use crev_data::{proof, proof::content::ContentExt};
 use crev_lib::{local::Local, util::get_documentation_for};
-use rprompt;
 use std::{
     env, ffi,
     fmt::Write,
@@ -94,25 +93,25 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
 ) -> Result<C> {
     let mut text = String::new();
     if let Some(date) = previous_date {
-        write!(
+        writeln!(
             &mut text,
-            "# Overwriting existing proof created on {}\n",
+            "# Overwriting existing proof created on {}",
             date.to_rfc3339()
         )?;
     }
     let draft = content.to_draft();
 
-    write!(&mut text, "# {}\n", draft.title())?;
+    writeln!(&mut text, "# {}", draft.title())?;
     if let Some(extra_comment) = extra_comment {
-        write!(&mut text, "# {}\n", extra_comment)?;
+        writeln!(&mut text, "# {}", extra_comment)?;
     }
     if let Some(base_version) = base_version {
-        write!(&mut text, "# Diff base version: {}\n", base_version)?;
+        writeln!(&mut text, "# Diff base version: {}", base_version)?;
     }
-    text.write_str(&draft.body())?;
+    text.write_str(draft.body())?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
-        write!(&mut text, "# {}\n", line)?;
+        writeln!(&mut text, "# {}", line)?;
     }
     loop {
         text = edit_text_iteractively_until_writen_to(&text)?;

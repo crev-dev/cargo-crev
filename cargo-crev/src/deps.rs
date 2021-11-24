@@ -108,7 +108,7 @@ impl std::ops::Add<OwnerSetSet> for OwnerSetSet {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let mut set = self.0.clone();
+        let mut set = self.0;
         for (k, v) in other.0 {
             set.insert(k, v);
         }
@@ -411,9 +411,9 @@ fn write_out_distrusted_ids_details(
 ) -> Result<()> {
     for (distrusted_id, details) in &trust_set.distrusted {
         for reported_by in &details.reported_by {
-            write!(
+            writeln!(
                 stderr,
-                "Note: {} was ignored as distrusted by {}\n",
+                "Note: {} was ignored as distrusted by {}",
                 distrusted_id, reported_by
             )?;
         }

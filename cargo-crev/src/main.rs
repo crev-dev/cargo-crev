@@ -400,7 +400,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
             // Fetch the URLs
             for url in &urls {
-                local.fetch_url_into(&url, &mut db)?;
+                local.fetch_url_into(url, &mut db)?;
             }
 
             // Make reverse lookup for Ids based on their URLs
@@ -598,9 +598,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             if args.reset_date {
                                 content.set_date(&now);
                             }
-                            content.set_author(&id.as_public_id());
+                            content.set_author(id.as_public_id());
                             let proof = content.sign_by(&id)?;
-                            maybe_store(&local, &proof, &commit_msg, &args.common)?;
+                            maybe_store(&local, &proof, commit_msg, &args.common)?;
                         }
                         Err(e) => {
                             eprintln!("Ignoried unknwon proof - {}", e);
@@ -646,7 +646,7 @@ fn validate_public_repo_url(url: &str) -> Result<()> {
 fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::Error> {
     let local = Local::auto_open()?;
     let mut locked_id = local.read_current_locked_id()?;
-    let pub_id = locked_id.to_public_id().id.clone();
+    let pub_id = locked_id.to_public_id().id;
     local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
     local.save_current_id(&pub_id)?;
     local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
@@ -809,7 +809,7 @@ fn ensure_crev_id_exists_or_make_one() -> Result<Local> {
 fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {
     id_strings
         .iter()
-        .map(|s| match Id::crevid_from_str(&s) {
+        .map(|s| match Id::crevid_from_str(s) {
             Ok(s) => Ok(s),
             Err(e) => bail!("'{}' is not a valid crev Id: {}", s, e),
         })
@@ -860,7 +860,7 @@ fn change_passphrase(
     unlocked_id: &UnlockedId,
     passphrase: &str,
 ) -> Result<LockedId> {
-    let locked_id = LockedId::from_unlocked_id(&unlocked_id, passphrase)?;
+    let locked_id = LockedId::from_unlocked_id(unlocked_id, passphrase)?;
 
     local.save_locked_id(&locked_id)?;
     local.save_current_id(unlocked_id.as_ref())?;

@@ -6,9 +6,7 @@ use crate::term::{self, *};
 
 fn pad_left_manually(s: String, width: usize) -> String {
     if s.len() <= width {
-        let padding = std::iter::repeat(" ")
-            .take(width - s.len())
-            .collect::<String>();
+        let padding = " ".repeat(width - s.len());
         format!("{}{}", s, padding)
     } else {
         s
@@ -119,20 +117,18 @@ pub fn print_details(
                 ),
                 None,
             )?;
+        } else if let Some(known_owners) = &cdep.known_owners {
+            term.print(
+                format_args!("{:>2} ", known_owners.count),
+                term::known_owners_count_color(known_owners.count),
+            )?;
+            term.print(format_args!("{:>2} ", known_owners.total), None)?;
         } else {
-            if let Some(known_owners) = &cdep.known_owners {
-                term.print(
-                    format_args!("{:>2} ", known_owners.count),
-                    term::known_owners_count_color(known_owners.count),
-                )?;
-                term.print(format_args!("{:>2} ", known_owners.total), None)?;
-            } else {
-                term.print(
-                    format_args!("{:>2} ", "?"),
-                    term::known_owners_count_color(0),
-                )?;
-                term.print(format_args!("{:>2} ", "?"), None)?;
-            }
+            term.print(
+                format_args!("{:>2} ", "?"),
+                term::known_owners_count_color(0),
+            )?;
+            term.print(format_args!("{:>2} ", "?"), None)?;
         }
     }
 
@@ -197,7 +193,7 @@ pub fn print_dep(
 ) -> Result<()> {
     let details = stats.details();
 
-    print_details(&details, term, columns, recursive_mode)?;
+    print_details(details, term, columns, recursive_mode)?;
     if columns.show_geiger() {
         match details.accumulative.geiger_count {
             Some(geiger_count) => print!("{:>6} ", geiger_count),
@@ -226,7 +222,7 @@ pub fn print_dep(
         print!(
             "{:<12}",
             latest_trusted_version_string(
-                &stats.info.id.version(),
+                stats.info.id.version(),
                 &details.latest_trusted_version
             )
         );

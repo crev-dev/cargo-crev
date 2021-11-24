@@ -70,7 +70,7 @@ impl fmt::Display for Id {
 impl Id {
     pub fn new_crev(bytes: Vec<u8>) -> Result<Self, IdError> {
         if bytes.len() != 32 {
-            Err(IdError::WrongIdLength(bytes.len()))?;
+            return Err(IdError::WrongIdLength(bytes.len()));
         }
         Ok(Id::Crev { id: bytes })
     }
@@ -84,7 +84,7 @@ impl Id {
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<(), IdError> {
         match self {
             Id::Crev { id } => {
-                let pubkey = ed25519_dalek::PublicKey::from_bytes(&id)
+                let pubkey = ed25519_dalek::PublicKey::from_bytes(id)
                     .map_err(|e| IdError::InvalidPublicKey(e.to_string().into()))?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)
@@ -92,7 +92,7 @@ impl Id {
                 let signature = ed25519_dalek::Signature::try_from(sig_bytes.as_slice())
                     .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
                 pubkey
-                    .verify(&content, &signature)
+                    .verify(content, &signature)
                     .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
             }
         }
@@ -146,12 +146,12 @@ impl PublicId {
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
     ) -> crate::Result<proof::Trust> {
-        Ok(proof::TrustBuilder::default()
+        proof::TrustBuilder::default()
             .from(self.clone())
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))
     }
 
     pub fn create_package_review_proof(
@@ -160,13 +160,13 @@ impl PublicId {
         review: proof::review::Review,
         comment: String,
     ) -> crate::Result<proof::review::Package> {
-        Ok(proof::review::PackageBuilder::default()
+        proof::review::PackageBuilder::default()
             .from(self.clone())
             .package(package)
             .review(review)
             .comment(comment)
             .build()
-            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))?)
+            .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))
     }
 
     pub fn url_display(&self) -> &str {
@@ -246,6 +246,6 @@ impl UnlockedId {
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
     ) -> crate::Result<proof::Proof> {
-        self.id.create_trust_proof(ids, trust_level)?.sign_by(&self)
+        self.id.create_trust_proof(ids, trust_level)?.sign_by(self)
     }
 }

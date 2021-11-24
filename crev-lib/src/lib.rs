@@ -299,7 +299,7 @@ pub fn find_latest_trusted_version(
                 &Digest::from_vec(review.package.digest.clone()).unwrap(),
                 trust_set,
                 requirements,
-                &db,
+                db,
             )
             .is_verified()
         })
@@ -325,7 +325,7 @@ pub fn dir_or_git_repo_verify(
         &digest,
         trusted_set,
         requirements,
-        &db,
+        db,
     ))
 }
 
@@ -344,7 +344,7 @@ pub fn dir_verify(
         &digest,
         trusted_set,
         requirements,
-        &db,
+        db,
     ))
 }
 
@@ -367,7 +367,7 @@ pub fn get_recursive_digest_for_git_dir(
     status_opts.include_unmodified(true);
     status_opts.include_untracked(false);
     for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-        let entry_path = PathBuf::from(entry.path().ok_or_else(|| Error::GitEntryWithoutAPath)?);
+        let entry_path = PathBuf::from(entry.path().ok_or(Error::GitEntryWithoutAPath)?);
         if ignore_list.contains(&entry_path) {
             continue;
         };
@@ -375,9 +375,7 @@ pub fn get_recursive_digest_for_git_dir(
         paths.insert(entry_path);
     }
 
-    Ok(Digest::from(util::get_recursive_digest_for_paths(
-        root_path, paths,
-    )?))
+    Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
 pub fn get_recursive_digest_for_paths(

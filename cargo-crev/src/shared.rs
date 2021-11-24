@@ -390,7 +390,7 @@ pub fn check_package_clean_state(
     // having the cwd pulled from under them and confusing their
     // shells, we move all the entries in a dir, instead of the whole
     // dir. this is not a perfect solution, but better than nothing.
-    crev_common::fs::move_dir_content(&crate_root, &reviewed_pkg_dir)?;
+    crev_common::fs::move_dir_content(crate_root, &reviewed_pkg_dir)?;
     let crate_second_id = repo.find_pkgid(name, Some(version), true)?;
     let crate_second = repo.get_crate(&crate_second_id)?;
     let crate_root_second = crate_second.root();
@@ -400,7 +400,7 @@ pub fn check_package_clean_state(
     assert_eq!(version, crate_version_second);
 
     let digest_clean =
-        crev_lib::get_recursive_digest_for_dir(&crate_root, &cargo_min_ignore_list())?;
+        crev_lib::get_recursive_digest_for_dir(crate_root, &cargo_min_ignore_list())?;
     // if the `Cargo.lock` not exist in the clean package, we can ignore it being created
     // in the reviewed version; that's normal
     let ignore_cargo_lock = !crate_root.join("Cargo.lock").exists();
@@ -423,7 +423,7 @@ pub fn check_package_clean_state(
         std::fs::remove_dir_all(&reviewed_pkg_dir)?;
     }
 
-    let vcs = VcsInfoJson::read_from_crate_dir(&crate_root)?;
+    let vcs = VcsInfoJson::read_from_crate_dir(crate_root)?;
 
     Ok((digest_clean, vcs))
 }
@@ -435,7 +435,7 @@ pub fn find_advisories(crate_: &opts::CrateSelector) -> Result<Vec<proof::review
     Ok(db
         .get_advisories(
             PROJECT_SOURCE_CRATES_IO,
-            crate_.name.as_ref().map(String::as_str),
+            crate_.name.as_deref(),
             crate_.version()?,
         )
         .cloned()
@@ -456,7 +456,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     let local = crev_lib::Local::auto_create_or_open()?;
     let current_id = local.get_current_userid()?;
     let db = local.load_db()?;
-    let trust_set = db.calculate_trust_set(&current_id, &trust_distance_params);
+    let trust_set = db.calculate_trust_set(&current_id, trust_distance_params);
     let src_version = args
         .src
         .clone()
@@ -464,7 +464,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             crev_lib::find_latest_trusted_version(
                 &trust_set,
                 PROJECT_SOURCE_CRATES_IO,
-                &name,
+                name,
                 &requirements,
                 &db,
             )
@@ -475,8 +475,8 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 
     local.record_review_activity(
         PROJECT_SOURCE_CRATES_IO,
-        &name,
-        &dst_crate.version(),
+        name,
+        dst_crate.version(),
         &crev_lib::ReviewActivity::new_diff(&src_version),
     )?;
 
@@ -545,7 +545,7 @@ pub fn list_issues(args: &opts::RepoQueryIssue) -> Result<()> {
 
     for review in db.get_pkg_reviews_with_issues_for(
         PROJECT_SOURCE_CRATES_IO,
-        args.crate_.name.as_ref().map(String::as_str),
+        args.crate_.name.as_deref(),
         args.crate_.version()?,
         &trust_set,
         args.trust_level.into(),
@@ -680,11 +680,11 @@ pub fn maybe_store(
     }
 
     if !proof_create_opt.no_store {
-        local.insert(&proof)?;
+        local.insert(proof)?;
 
         if !proof_create_opt.no_commit {
             local
-                .proof_dir_commit(&commit_msg)
+                .proof_dir_commit(commit_msg)
                 .with_context(|| "Could not not automatically commit")?;
         }
     }

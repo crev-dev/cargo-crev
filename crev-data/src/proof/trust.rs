@@ -82,7 +82,7 @@ impl TrustLevel {
             "low" => TrustLevel::Low,
             "medium" => TrustLevel::Medium,
             "high" => TrustLevel::High,
-            _ => Err(Error::UnknownLevel(s.into()))?,
+            _ => return Err(Error::UnknownLevel(s.into())),
         })
     }
 }
@@ -197,7 +197,7 @@ impl proof::ContentWithDraft for Trust {
     }
 
     fn apply_draft(&self, s: &str) -> Result<Self> {
-        let draft = Draft::parse(&s)?;
+        let draft = Draft::parse(s)?;
 
         let mut copy = self.clone();
         copy.trust = draft.trust;
@@ -210,6 +210,6 @@ impl proof::ContentWithDraft for Trust {
 
 impl Draft {
     pub fn parse(s: &str) -> std::result::Result<Self, ParseError> {
-        serde_yaml::from_str(&s).map_err(ParseError::Draft)
+        serde_yaml::from_str(s).map_err(ParseError::Draft)
     }
 }

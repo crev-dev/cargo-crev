@@ -94,7 +94,7 @@ impl Client {
     }
 
     fn store_in_cache<T: Cacheable + Serialize>(&self, path: &Path, resp: &T) -> Result<()> {
-        crev_common::store_to_file_with(&path, |file| serde_json::to_writer(file, &resp))??;
+        crev_common::store_to_file_with(path, |file| serde_json::to_writer(file, &resp))??;
         Ok(())
     }
 

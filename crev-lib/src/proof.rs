@@ -50,9 +50,9 @@ pub fn store_id_trust_proof(
     commit: bool,
 ) -> crate::Result<()> {
     let local = crate::Local::auto_open()?;
-    local.insert(&proof)?;
+    local.insert(proof)?;
     if commit {
-        let commit_message = create_id_trust_commit_message(&ids, trust_level);
+        let commit_message = create_id_trust_commit_message(ids, trust_level);
         local.proof_dir_commit(&commit_message)?;
     }
     Ok(())

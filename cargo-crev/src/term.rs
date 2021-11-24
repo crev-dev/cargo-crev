@@ -110,7 +110,7 @@ impl Term {
 
 pub fn read_passphrase() -> io::Result<String> {
     if let Ok(pass) = env::var("CREV_PASSPHRASE") {
-        eprint!("Using passphrase set in CREV_PASSPHRASE\n");
+        eprintln!("Using passphrase set in CREV_PASSPHRASE");
         return Ok(pass);
     } else if let Some(cmd) = env::var_os("CREV_PASSPHRASE_CMD") {
         return Ok(
@@ -125,7 +125,7 @@ pub fn read_passphrase() -> io::Result<String> {
 
 pub fn read_new_passphrase() -> io::Result<String> {
     if let Ok(pass) = env::var("CREV_PASSPHRASE") {
-        eprint!("Using passphrase set in CREV_PASSPHRASE\n");
+        eprintln!("Using passphrase set in CREV_PASSPHRASE");
         return Ok(pass);
     }
     loop {

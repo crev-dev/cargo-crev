@@ -30,7 +30,7 @@ pub enum YAMLIOError {
 /// Now with a fixed offset of the current system timezone
 pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {
     let date = chrono::offset::Local::now();
-    date.with_timezone(&date.offset())
+    date.with_timezone(date.offset())
 }
 
 pub fn blake2b256sum(bytes: &[u8]) -> [u8; 32] {
@@ -231,7 +231,7 @@ pub fn run_with_shell_cmd_custom(
     arg: Option<&Path>,
     capture_stdout: bool,
 ) -> io::Result<std::process::Output> {
-    Ok(if cfg!(windows) {
+    if cfg!(windows) {
         // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes .arg()'s built-in escaping problematic:
         // https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
         // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode still works.
@@ -270,7 +270,7 @@ pub fn run_with_shell_cmd_custom(
     } else {
         process::Stdio::inherit()
     })
-    .output()?)
+    .output()
 }
 
 pub fn save_to_yaml_file<T>(path: &Path, t: &T) -> Result<(), YAMLIOError>
@@ -279,7 +279,7 @@ where
 {
     std::fs::create_dir_all(path.parent().ok_or(YAMLIOError::RootPath)?)?;
     let text = serde_yaml::to_string(t)?;
-    store_str_to_file(&path, &text)?;
+    store_str_to_file(path, &text)?;
     Ok(())
 }
 

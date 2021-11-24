@@ -100,7 +100,7 @@ pub struct Draft {
 
 impl Draft {
     pub fn parse(s: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(&s).map_err(ParseError::Draft)?)
+        Ok(serde_yaml::from_str(s).map_err(ParseError::Draft)?)
     }
 }
 
@@ -145,7 +145,7 @@ impl proof::ContentWithDraft for Code {
     }
 
     fn apply_draft(&self, s: &str) -> Result<Self> {
-        let draft = Draft::parse(&s)?;
+        let draft = Draft::parse(s)?;
 
         let mut copy = self.clone();
         copy.review = draft.review;

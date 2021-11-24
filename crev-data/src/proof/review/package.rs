@@ -145,7 +145,7 @@ pub struct Draft {
 
 impl Draft {
     pub fn parse(s: &str) -> std::result::Result<Self, ParseError> {
-        serde_yaml::from_str(&s).map_err(ParseError::Draft)
+        serde_yaml::from_str(s).map_err(ParseError::Draft)
     }
 }
 
@@ -179,26 +179,26 @@ impl proof::Content for Package {
 
         for alternative in &self.alternatives {
             if alternative.source.is_empty() {
-                Err(ValidationError::AlternativeSourceCanNotBeEmpty)?;
+                return Err(ValidationError::AlternativeSourceCanNotBeEmpty);
             }
             if alternative.name.is_empty() {
-                Err(ValidationError::AlternativeNameCanNotBeEmpty)?;
+                return Err(ValidationError::AlternativeNameCanNotBeEmpty);
             }
         }
         for issue in &self.issues {
             if issue.id.is_empty() {
-                Err(ValidationError::IssuesWithAnEmptyIDFieldAreNotAllowed)?;
+                return Err(ValidationError::IssuesWithAnEmptyIDFieldAreNotAllowed);
             }
         }
 
         for advisory in &self.advisories {
             if advisory.ids.is_empty() {
-                Err(ValidationError::AdvisoriesWithNoIDSAreNotAllowed)?;
+                return Err(ValidationError::AdvisoriesWithNoIDSAreNotAllowed);
             }
 
             for id in &advisory.ids {
                 if id.is_empty() {
-                    Err(ValidationError::AdvisoriesWithAnEmptyIDFieldAreNotAllowed)?;
+                    return Err(ValidationError::AdvisoriesWithAnEmptyIDFieldAreNotAllowed);
                 }
             }
         }
@@ -223,7 +223,7 @@ impl proof::ContentWithDraft for Package {
     }
 
     fn apply_draft(&self, s: &str) -> Result<Self, Error> {
-        let draft = Draft::parse(&s)?;
+        let draft = Draft::parse(s)?;
 
         let mut package = self.clone();
         package.review = draft.review;

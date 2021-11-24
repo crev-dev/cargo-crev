@@ -312,7 +312,7 @@ impl Repo {
             .unwrap_or_else(String::new)
             .split(',')
             .map(String::from)
-            .filter(|s| s != "")
+            .filter(|s| !s.is_empty())
             .collect();
 
         Ok(Repo {
@@ -362,11 +362,7 @@ impl Repo {
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
         let host = rustc.host.to_string();
 
-        let target = if let Some(ref target) = self.cargo_opts.target {
-            Some(target.as_ref().unwrap_or(&host).as_str())
-        } else {
-            None
-        };
+        let target = self.cargo_opts.target.as_ref().map(|target| target.as_ref().unwrap_or(&host).as_str());
 
         let cfgs = get_cfgs(&rustc, target)?;
         let graph = build_graph(&resolve, &packages, roots.into_iter(), target, &cfgs)?;
@@ -386,7 +382,7 @@ impl Repo {
         let crates_io = crates_io::Client::new(&local)?;
 
         self.for_every_non_local_dep_crate(|crate_| {
-            let _ = crates_io.get_downloads_count(&crate_.name(), &crate_.version());
+            let _ = crates_io.get_downloads_count(&crate_.name(), crate_.version());
             Ok(())
         })?;
 
@@ -449,7 +445,7 @@ impl Repo {
                 source.download(pkg.package_id())?;
             }
 
-            f(&pkg)?;
+            f(pkg)?;
         }
 
         Ok(())
@@ -510,14 +506,14 @@ impl Repo {
 
         let mut registry = self.registry(vec![].into_iter())?;
 
-        Ok(our_resolve(
+        our_resolve(
             &mut registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
             self.cargo_opts.no_dev_dependencies,
-        )?)
+        )
     }
 
     pub fn find_dependency_pkg_id_by_selector(
@@ -529,7 +525,7 @@ impl Repo {
 
         self.for_every_non_local_dep_crate_id(|pkg_id| {
             if name == pkg_id.name().as_str()
-                && (version.is_none() || version == Some(&pkg_id.version()))
+                && (version.is_none() || version == Some(pkg_id.version()))
             {
                 ret.push(pkg_id.to_owned());
             }
@@ -582,9 +578,7 @@ impl Repo {
         let dependency_request =
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
-        source.query(&dependency_request, &mut |summary| {
-            summaries.push(summary.clone())
-        })?;
+        source.query(&dependency_request, &mut |summary| summaries.push(summary))?;
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
         } else {
@@ -606,7 +600,7 @@ impl Repo {
                         .ok_or_else(|| format_err!("Could not find requested crate. Try updating cargo's registry index cache?"))?
                 )
         } else {
-            Ok(self.find_dependency_pkg_id_by_selector(&name, version)?
+            Ok(self.find_dependency_pkg_id_by_selector(name, version)?
                     .ok_or_else(|| format_err!("Could not find requested crate. Try `-u` if the crate is not a dependency."))?
                     )
         }

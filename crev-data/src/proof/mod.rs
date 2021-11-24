@@ -11,7 +11,6 @@ pub use revision::*;
 use std::{
     default, fmt,
     io::{self, BufRead},
-    mem,
 };
 pub use trust::*;
 
@@ -48,9 +47,9 @@ impl Proof {
     pub fn from_parts(body: String, signature: String) -> Result<Self> {
         let common_content: Common = serde_yaml::from_str(&body).map_err(ParseError::Proof)?;
         if common_content.kind.is_none() {
-            Err(Error::KindFieldMissing)?;
+            return Err(Error::KindFieldMissing);
         }
-        let digest = crev_common::blake2b256sum(&body.as_bytes());
+        let digest = crev_common::blake2b256sum(body.as_bytes());
         let signature = signature.trim().to_owned();
         Ok(Self {
             body,
@@ -65,11 +64,11 @@ impl Proof {
         let mut legacy_common_content: content::Common =
             serde_yaml::from_str(&body).map_err(ParseError::Proof)?;
         if legacy_common_content.kind.is_some() {
-            Err(Error::UnexpectedKindValueInALegacyFormat)?;
+            return Err(Error::UnexpectedKindValueInALegacyFormat);
         }
 
         legacy_common_content.kind = Some(type_name);
-        let digest = crev_common::blake2b256sum(&body.as_bytes());
+        let digest = crev_common::blake2b256sum(body.as_bytes());
         let signature = signature.trim().to_owned();
         Ok(Self {
             body,
@@ -242,64 +241,60 @@ impl Proof {
                             assert!(self.type_name.is_none());
                             self.stage = Stage::Body;
                         } else {
-                            Err(Error::ParsingErrorWhenLookingForStartOfCodeReviewProof)?;
+                            return Err(Error::ParsingErrorWhenLookingForStartOfCodeReviewProof);
                         }
                     }
                     Stage::Body => {
                         if self.type_name.is_some() {
                             if let Some(type_name) = is_legacy_signature_line(line) {
                                 if Some(type_name) != self.type_name {
-                                    Err(Error::ParsingErrorTypeNameMismatchInTheSignature)?;
+                                    return Err(Error::ParsingErrorTypeNameMismatchInTheSignature);
                                 }
                                 self.stage = Stage::Signature;
                             } else {
                                 self.body += line;
                                 self.body += "\n";
                             }
+                        } else if is_signature_line(line) {
+                            self.stage = Stage::Signature;
                         } else {
-                            if is_signature_line(line) {
-                                self.stage = Stage::Signature;
-                            } else {
-                                self.body += line;
-                                self.body += "\n";
-                            }
+                            self.body += line;
+                            self.body += "\n";
                         }
                         if self.body.len() > MAX_PROOF_BODY_LENGTH {
-                            Err(Error::ProofBodyTooLong)?;
+                            return Err(Error::ProofBodyTooLong);
                         }
                     }
                     Stage::Signature => {
                         if self.type_name.is_some() {
                             if let Some(type_name) = is_legacy_end_line(line) {
                                 if Some(&type_name) != self.type_name.as_ref() {
-                                    Err(Error::ParsingErrorTypeNameMismatchInTheFooter)?;
+                                    return Err(Error::ParsingErrorTypeNameMismatchInTheFooter);
                                 }
                                 self.stage = Stage::None;
                                 self.type_name = None;
                                 self.proofs.push(Proof::from_legacy_parts(
-                                    mem::replace(&mut self.body, String::new()),
-                                    mem::replace(&mut self.signature, String::new()),
+                                    std::mem::take(&mut self.body),
+                                    std::mem::take(&mut self.signature),
                                     type_name,
                                 )?);
                             } else {
                                 self.signature += line;
                                 self.signature += "\n";
                             }
+                        } else if is_end_line(line) {
+                            self.stage = Stage::None;
+                            self.proofs.push(Proof::from_parts(
+                                std::mem::take(&mut self.body),
+                                std::mem::take(&mut self.signature),
+                            )?);
                         } else {
-                            if is_end_line(line) {
-                                self.stage = Stage::None;
-                                self.proofs.push(Proof::from_parts(
-                                    mem::replace(&mut self.body, String::new()),
-                                    mem::replace(&mut self.signature, String::new()),
-                                )?);
-                            } else {
-                                self.signature += line;
-                                self.signature += "\n";
-                            }
+                            self.signature += line;
+                            self.signature += "\n";
                         }
 
                         if self.signature.len() > 2000 {
-                            Err(Error::SignatureTooLong)?;
+                            return Err(Error::SignatureTooLong);
                         }
                     }
                 }
@@ -308,7 +303,7 @@ impl Proof {
 
             fn finish(self) -> Result<Vec<Proof>> {
                 if self.stage != Stage::None {
-                    Err(Error::UnexpectedEOFWhileParsing)?;
+                    return Err(Error::UnexpectedEOFWhileParsing);
                 }
                 Ok(self.proofs)
             }

@@ -55,7 +55,7 @@ impl Repo {
 
         let config_path = repo.package_config_path();
         if config_path.exists() {
-            Err(Error::PathAlreadyExists(config_path.as_path().into()))?;
+            return Err(Error::PathAlreadyExists(config_path.as_path().into()));
         }
         util::store_to_file_with(&config_path, move |w| {
             serde_yaml::to_writer(
@@ -100,7 +100,7 @@ impl Repo {
 
     pub fn load_package_config(&self) -> Result<PackageConfig> {
         let config = self.try_load_package_config()?;
-        config.ok_or_else(|| Error::PackageConfigNotInitialized)
+        config.ok_or(Error::PackageConfigNotInitialized)
     }
 
     pub fn try_load_package_config(&self) -> Result<Option<PackageConfig>> {
@@ -138,11 +138,11 @@ impl Repo {
         requirements: &crate::VerificationRequirements,
     ) -> Result<crate::VerificationStatus> {
         if !allow_dirty && self.is_unclean()? {
-            Err(Error::GitRepositoryIsNotInACleanState)?;
+            return Err(Error::GitRepositoryIsNotInACleanState);
         }
 
         let db = local.load_db()?;
-        let trust_set = local.trust_set_for_id(for_id.as_deref(), &params, &db)?;
+        let trust_set = local.trust_set_for_id(for_id.as_deref(), params, &db)?;
         let ignore_list = fnv::FnvHashSet::default();
         let digest = crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)?;
         Ok(verify_package_digest(
@@ -155,20 +155,17 @@ impl Repo {
 
     pub fn package_digest(&mut self, allow_dirty: bool) -> Result<Digest> {
         if !allow_dirty && self.is_unclean()? {
-            Err(Error::GitRepositoryIsNotInACleanState)?;
+            return Err(Error::GitRepositoryIsNotInACleanState);
         }
 
         let ignore_list = HashSet::default();
-        Ok(crate::get_recursive_digest_for_git_dir(
-            &self.root_dir,
-            &ignore_list,
-        )?)
+        crate::get_recursive_digest_for_git_dir(&self.root_dir, &ignore_list)
     }
 
     fn is_unclean(&self) -> Result<bool> {
         let git_repo = git2::Repository::open(&self.root_dir)?;
         if git_repo.state() != git2::RepositoryState::Clean {
-            Err(Error::GitRepositoryIsNotInACleanState)?;
+            return Err(Error::GitRepositoryIsNotInACleanState);
         }
         let mut status_opts = git2::StatusOptions::new();
         status_opts.include_unmodified(true);

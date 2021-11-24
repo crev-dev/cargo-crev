@@ -87,8 +87,7 @@ impl Default for UserConfig {
 
 impl UserConfig {
     pub fn get_current_userid(&self) -> Result<&Id> {
-        self.get_current_userid_opt()
-            .ok_or_else(|| Error::CurrentIDNotSet)
+        self.get_current_userid_opt().ok_or(Error::CurrentIDNotSet)
     }
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
@@ -137,7 +136,7 @@ impl Local {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
         if !repo.root_path.exists() || !repo.user_config_path().exists() {
-            Err(Error::UserConfigNotInitialized)?;
+            return Err(Error::UserConfigNotInitialized);
         }
 
         *repo.user_config.lock().unwrap() = Some(repo.load_user_config()?);
@@ -152,7 +151,7 @@ impl Local {
 
         let config_path = repo.user_config_path();
         if config_path.exists() {
-            Err(Error::UserConfigAlreadyExists)?;
+            return Err(Error::UserConfigAlreadyExists);
         }
         let config: UserConfig = default();
         repo.store_user_config(&config)?;
@@ -194,14 +193,14 @@ impl Local {
 
     pub fn get_for_id_from_str(&self, id_str: Option<&str>) -> Result<Id> {
         self.get_for_id_from_str_opt(id_str)?
-            .ok_or_else(|| Error::IDNotSpecifiedAndCurrentIDNotSet)
+            .ok_or(Error::IDNotSpecifiedAndCurrentIDNotSet)
     }
 
     /// Load config, update which Id is the current one, and save.
     pub fn save_current_id(&self, id: &Id) -> Result<()> {
         let path = self.id_path(id);
         if !path.exists() {
-            Err(Error::IDFileNotFound)?;
+            return Err(Error::IDFileNotFound);
         }
 
         *self.cur_url.lock().unwrap() = None;
@@ -310,7 +309,7 @@ impl Local {
         let mut changes = Vec::new();
         let _ = std::fs::create_dir_all(&dest_dir);
         util::copy_dir_sanitized(src_dir, &dest_dir, &mut changes)
-            .map_err(|e| Error::CrateSourceSanitizationError(e))?;
+            .map_err(Error::CrateSourceSanitizationError)?;
         if !changes.is_empty() {
             let msg = format!("Some files were renamed by cargo-crev to prevent accidental code execution or hiding of code:\n\n{}", changes.join("\n"));
             std::fs::write(dest_dir.join("README-CREV.txt"), msg)?;
@@ -375,7 +374,7 @@ impl Local {
         let config_str = std::fs::read_to_string(&path)
             .map_err(|e| Error::UserConfigLoadError(Box::new((path, e))))?;
 
-        Ok(serde_yaml::from_str(&config_str).map_err(Error::UserConfigParse)?)
+        serde_yaml::from_str(&config_str).map_err(Error::UserConfigParse)
     }
 
     /// Writes the config to disk AND sets it as the current one
@@ -392,8 +391,7 @@ impl Local {
 
     /// Id in the config
     pub fn get_current_userid(&self) -> Result<Id> {
-        self.get_current_userid_opt()?
-            .ok_or_else(|| Error::CurrentIDNotSet)
+        self.get_current_userid_opt()?.ok_or(Error::CurrentIDNotSet)
     }
 
     /// Id in the config
@@ -404,7 +402,7 @@ impl Local {
 
     /// Just reads the yaml file, doesn't change any state
     pub fn read_locked_id(&self, id: &Id) -> Result<LockedId> {
-        let path = self.id_path(&id);
+        let path = self.id_path(id);
         LockedId::read_from_yaml_file(&path)
     }
 
@@ -418,7 +416,7 @@ impl Local {
     /// Just reads the yaml file, doesn't change any state
     pub fn read_current_locked_id(&self) -> Result<LockedId> {
         self.read_current_locked_id_opt()?
-            .ok_or_else(|| Error::CurrentIDNotSet)
+            .ok_or(Error::CurrentIDNotSet)
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change any state
@@ -437,7 +435,7 @@ impl Local {
         passphrase_callback: PassphraseFn<'_>,
     ) -> Result<UnlockedId> {
         self.read_current_unlocked_id_opt(passphrase_callback)?
-            .ok_or_else(|| Error::CurrentIDNotSet)
+            .ok_or(Error::CurrentIDNotSet)
     }
 
     /// Just reads the yaml file and unlocks it, doesn't change anything
@@ -497,7 +495,7 @@ impl Local {
         self.clone_proof_dir_from_git(git_https_url, use_https_push)?;
 
         id.url = Some(new_url);
-        self.save_locked_id(&id)?;
+        self.save_locked_id(id)?;
 
         // commit uncommitted changes, if there are any. Otherwise the next pull may fail
         let _ = self.proof_dir_commit("Setting up new CrevID URL");
@@ -591,14 +589,14 @@ impl Local {
                 // git2 seems to have a bug, and auth error is reported as GenericError
                 let is_auth_error = e.code() == git2::ErrorCode::Auth
                     || error_string.contains("remote authentication required");
-                Err(Error::CouldNotCloneGitHttpsURL(Box::new((
+                return Err(Error::CouldNotCloneGitHttpsURL(Box::new((
                     git_https_url.to_string(),
                     if is_auth_error {
                         "Proof repositories must be publicly-readable without authentication, but this one isn't".into()
                     } else {
                         error_string
                     },
-                ))))?;
+                ))));
             }
         }
 
@@ -638,7 +636,7 @@ impl Local {
 
     // Get path relative to `get_proofs_dir_path` to store the `proof`
     fn get_proof_rel_store_path(&self, proof: &proof::Proof, host_salt: &[u8]) -> PathBuf {
-        crate::proof::rel_store_path(&proof, host_salt)
+        crate::proof::rel_store_path(proof, host_salt)
     }
 
     /// Proof repo URL associated with the current user Id
@@ -721,7 +719,7 @@ impl Local {
         trust_level: TrustLevel,
     ) -> Result<proof::trust::Trust> {
         if ids.is_empty() {
-            Err(Error::NoIdsGiven)?;
+            return Err(Error::NoIdsGiven);
         }
 
         let mut db = self.load_db()?;
@@ -1019,14 +1017,11 @@ impl Local {
         eprintln!("Fetching...");
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
-        self.fetch_remote_git(dpc_url)
-            .map_err(|e| warn!("{}", e))
-            .ok()
-            .map(|dir| {
-                let _ = self
-                    .import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
-                    .map_err(|e| warn!("{}", e));
-            });
+        if let Ok(dir) = self.fetch_remote_git(dpc_url).map_err(|e| warn!("{}", e)) {
+            let _ = self
+                .import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
+                .map_err(|e| warn!("{}", e));
+        }
         fetched_urls.insert(dpc_url.to_owned());
 
         for entry in fs::read_dir(self.cache_remotes_path())? {
@@ -1065,7 +1060,7 @@ impl Local {
 
     fn url_for_repo(repo: &git2::Repository) -> Result<String> {
         let remote = repo.find_remote("origin")?;
-        let url = remote.url().ok_or_else(|| Error::OriginHasNoURL)?;
+        let url = remote.url().ok_or(Error::OriginHasNoURL)?;
         Ok(url.to_string())
     }
 
@@ -1179,7 +1174,7 @@ impl Local {
         read_new_passphrase: impl FnOnce() -> std::io::Result<String>,
     ) -> Result<id::LockedId> {
         if let Some(url) = url {
-            self.clone_proof_dir_from_git(&url, use_https_push)?;
+            self.clone_proof_dir_from_git(url, use_https_push)?;
         }
 
         let unlocked_id = crev_data::id::UnlockedId::generate(url.map(crev_data::Url::new_git));
@@ -1287,7 +1282,7 @@ fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
             let url = Url::new_git(origin.url()?);
-            Some((path, url.to_owned()))
+            Some((path, url))
         }))
 }
 
@@ -1355,7 +1350,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
                 None
             }
         })
-        .flat_map(|iter| iter)
+        .flatten()
 }
 
 #[test]

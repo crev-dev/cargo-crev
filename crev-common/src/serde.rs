@@ -107,7 +107,7 @@ pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
     assert_eq!(dropped_header, Some("---"));
 
     for line in lines {
-        f.write_str(&line)?;
+        f.write_str(line)?;
         f.write_str("\n")?;
     }
     Ok(())

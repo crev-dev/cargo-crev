@@ -1,14 +1,14 @@
+use bstr::ByteSlice;
 use crev_common::sanitize_name_for_fs;
 pub use crev_common::{run_with_shell_cmd, store_str_to_file, store_to_file_with};
 use crev_data::proof;
+use std::borrow::Cow;
 use std::{
     self,
     ffi::OsStr,
     io,
     path::{Path, PathBuf},
 };
-use std::borrow::Cow;
-use bstr::ByteSlice;
 
 pub mod git;
 
@@ -105,28 +105,28 @@ fn mark_dangerous_name(
         "cargo.toml" => {
             changes
                 .push("Cargo.toml could cause IDEs automatically build dependencies".to_string());
-            return PathBuf::from("Cargo.CREV.toml");
+            PathBuf::from("Cargo.CREV.toml")
         }
         ".cargo" => {
             changes.push(".cargo config can replace linkers, source of dependencies".to_string());
-            return PathBuf::from("CREV.cargo");
+            PathBuf::from("CREV.cargo")
         }
         "config" | "config.toml" if parent.file_name().unwrap() == "cargo" => {
             changes.push("cargo/config can replace linkers, source of dependencies".to_string());
-            return PathBuf::from("config.CREV");
+            PathBuf::from("config.CREV")
         }
         "rust-toolchain" | "rust-toolchain.toml" => {
             changes
                 .push("rust-toolchain file could unexpectedly replace your compiler".to_string());
-            return PathBuf::from(format!("{}.CREV", orig_name));
+            PathBuf::from(format!("{}.CREV", orig_name))
         },
         ".cargo-ok" | ".cargo_vcs_info.json" | ".gitignore" => {
             // they're safe
             PathBuf::from(orig_name)
         },
-        n if n.starts_with(".") => {
+        n if n.starts_with('.') => {
             changes.push(format!("Hidden file: '{}'", orig_name));
-            return PathBuf::from(format!("CREV{}", orig_name));
+            PathBuf::from(format!("CREV{}", orig_name))
         }
         n if n.len() > 250 => {
             let alt = sanitize_name_for_fs(orig_name).with_extension("CREV");

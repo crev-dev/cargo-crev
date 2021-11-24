@@ -47,7 +47,7 @@ fn build_proof_with_advisories(
         .build()
         .unwrap();
 
-    review.sign_by(&id).unwrap()
+    review.sign_by(id).unwrap()
 }
 
 fn build_proof_with_issues(id: &UnlockedId, version: Version, issues: Vec<Issue>) -> proof::Proof {
@@ -66,7 +66,7 @@ fn build_proof_with_issues(id: &UnlockedId, version: Version, issues: Vec<Issue>
         .build()
         .unwrap();
 
-    review.sign_by(&id).unwrap()
+    review.sign_by(id).unwrap()
 }
 
 #[test]
