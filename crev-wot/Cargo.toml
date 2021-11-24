@@ -19,5 +19,5 @@ chrono = { version = "0.4.19", default-features = false }
 default = "0.1.2"
 log = "0.4.14"
 serde = "1.0.130"
-serde_yaml = "0.8.17"
-thiserror = "1.0.26"
+serde_yaml = "0.8.21"
+thiserror = "1.0.30"
