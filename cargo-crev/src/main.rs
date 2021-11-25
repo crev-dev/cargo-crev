@@ -5,7 +5,6 @@
     feature = "documentation",
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
-#![cfg_attr(feature = "documentation", feature(external_doc))]
 use crate::prelude::*;
 use crev_data::{proof::ContentExt, UnlockedId};
 use crev_lib::id::LockedId;
