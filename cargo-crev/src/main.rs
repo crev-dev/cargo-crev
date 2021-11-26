@@ -832,7 +832,6 @@ fn print_crev_proof_repo_fork_help() {
     eprintln!(
         "To create your proof repository, fork the template:\n\
     https://github.com/crev-dev/crev-proofs/fork\n\n\
-
     For help visit: https://github.com/crev-dev/crev/wiki/Proof-Repository\n"
     );
 }

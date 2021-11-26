@@ -520,7 +520,10 @@ impl Local {
             );
             return Ok(());
         }
-        let _ = git2::Repository::init(&proof_dir)?;
+        if let Err(e) = git2::Repository::init(&proof_dir) {
+            warn!("Can't init repo in {}: {}", proof_dir.display(), e);
+            self.run_git(vec!["init".into(), "--initial-branch=master".into(), proof_dir.into()])?;
+        }
         Ok(())
     }
 
