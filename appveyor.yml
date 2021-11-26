@@ -33,13 +33,11 @@ environment:
       RELEASE: --release
       DEPLOY: true
 
-    - channel: stable
-      target: x86_64-pc-windows-msvc
     - channel: beta
       target: x86_64-pc-windows-msvc
     - channel: nightly
       target: x86_64-pc-windows-msvc
-    - channel: 1.51.0
+    - channel: 1.55.0
       target: x86_64-pc-windows-msvc
 
 before_deploy:
