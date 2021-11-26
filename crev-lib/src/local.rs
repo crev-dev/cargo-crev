@@ -1142,16 +1142,9 @@ impl Local {
             &[]
         };
 
-        let signature = repo.signature()?;
+        let signature = repo.signature().or_else(|_| git2::Signature::now("unconfigured", "nobody@crev.dev"))?;
 
-        repo.commit(
-            Some("HEAD"),
-            &signature,
-            &signature,
-            commit_msg,
-            &tree,
-            parents,
-        )?;
+        repo.commit(Some("HEAD"), &signature, &signature, commit_msg, &tree, parents)?;
 
         Ok(())
     }

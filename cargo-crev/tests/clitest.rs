@@ -26,6 +26,7 @@ impl Cli {
         }
     }
 
+    #[track_caller]
     pub fn run(&self, args: &[impl AsRef<OsStr>], stdin_data: impl Into<String>) -> Output {
         let mut child = Command::new(&self.exe)
             .env("CARGO_CREV_ROOT_DIR_OVERRIDE", self.home.path())
