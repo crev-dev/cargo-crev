@@ -642,6 +642,7 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
 ///
 /// This is to distinguish expected non-success results,
 /// from errors: unexpected failures.
+#[must_use]
 pub enum CommandExitStatus {
     // `verify deps` failed
     VerificationFailed,
