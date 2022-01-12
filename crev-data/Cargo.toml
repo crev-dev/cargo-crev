@@ -23,3 +23,6 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_yaml = "0.8.17"
 typed-builder = "0.9.0"
 thiserror = "1.0.26"
+
+[package.metadata.release]
+shared-version=true

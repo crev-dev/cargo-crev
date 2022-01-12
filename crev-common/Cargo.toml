@@ -22,3 +22,6 @@ serde_yaml = "0.8.11"
 shell-escape = "0.1.4"
 thiserror = "1.0.17"
 rand = "0.8.4"
+
+[package.metadata.release]
+shared-version=true

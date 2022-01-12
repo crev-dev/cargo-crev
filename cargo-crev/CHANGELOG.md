@@ -9,6 +9,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 <!-- next-url -->
 ## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...HEAD) - ReleaseDate
 
+- Use `cargo-release` to make our release process more reasonable.
 - Display better diagnostics for any digest mismatch.
 - Fix interactive use of `trust` and `id trust` to actually read the proofs edited
 
