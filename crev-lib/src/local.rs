@@ -125,7 +125,7 @@ impl Local {
     }
 
     /// Where the config is stored
-    pub fn get_root_path(&self) -> &Path {
+    pub fn config_root(&self) -> &Path {
         &self.config_path
     }
 
@@ -135,7 +135,7 @@ impl Local {
     }
 
     /// Where temporary files are stored
-    pub fn get_root_cache_dir(&self) -> &Path {
+    pub fn cache_root(&self) -> &Path {
         &self.cache_path
     }
 

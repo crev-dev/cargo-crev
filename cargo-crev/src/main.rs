@@ -503,7 +503,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Config(args) => match args {
             opts::Config::Dir => {
                 let local = crev_lib::Local::auto_create_or_open()?;
-                println!("{}", local.get_root_path().display());
+                println!("{}", local.config_root().display());
             }
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
