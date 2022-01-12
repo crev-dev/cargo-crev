@@ -3,7 +3,7 @@
       <img src="https://img.shields.io/travis/crev-dev/cargo-crev/master.svg?style=flat-square" alt="Travis CI Build Status">
   </a>
   <a href="https://crates.io/crates/cargo-crev">
-      <img src="http://meritbadge.herokuapp.com/cargo-crev?style=flat-square" alt="crates.io">
+      <img src="https://img.shields.io/crates/v/cargo-crev.svg?style=flat-square" alt="crates.io">
   </a>
   <a href="https://matrix.to/#/#crev:matrix.org">
     <img src="https://img.shields.io/matrix/crev:matrix.org.svg?server_fqdn=matrix.org&style=flat-square" alt="crev matrix channel">
