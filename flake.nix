@@ -33,6 +33,7 @@
     in rec {
       packages.cargo-crev = naersk-lib.buildPackage {
         name = "cargo-crev";
+        version = "0.21.4";
         src = ./.;
         targets = [ "cargo-crev" ];
         buildInputs = [ pkgs.openssl pkgs.perl ];
