@@ -1,8 +1,14 @@
 // Here are the structs and functions which still need to be sorted
 //
-use crate::{deps::scan::{self, RequiredDetails}, edit, opts, opts::CrateSelector, prelude::*, repo::*};
+use crate::{
+    deps::scan::{self, RequiredDetails},
+    edit, opts,
+    opts::CrateSelector,
+    prelude::*,
+    repo::*,
+};
 use anyhow::{format_err, Context, Result};
-use crev_data::proof;
+use crev_data::{proof, review::Package};
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
 use resiter::FlatMap;
 use serde::Deserialize;
@@ -177,7 +183,7 @@ pub fn edit_known_owners_list() -> Result<()> {
     Ok(())
 }
 
-pub fn clean_all_unclean_crates() -> Result<()> {
+pub fn clean_all_crates_with_digest_mismatch() -> Result<()> {
     let scanner = scan::Scanner::new(CrateSelector::default(), &opts::CrateVerify::default())?;
     let events = scanner.run(&RequiredDetails::none());
 
@@ -185,7 +191,7 @@ pub fn clean_all_unclean_crates() -> Result<()> {
         if stats.details.accumulative_own.is_local_source_code {
             continue;
         }
-        if stats.is_digest_unclean() {
+        if stats.has_digest_mismatch() {
             clean_crate(&CrateSelector::new(
                 Some(stats.info.id.name().to_string()),
                 Some(stats.info.id.version().to_owned()),
@@ -650,20 +656,16 @@ pub enum CommandExitStatus {
     Success,
 }
 
-pub fn is_digest_clean(
+pub fn get_crate_digest_mismatches(
     db: &crev_wot::ProofDB,
     name: &str,
     version: &Version,
     digest: &crev_data::Digest,
-) -> bool {
-    let mut at_least_one = false;
-    !db.get_package_reviews_for_package(PROJECT_SOURCE_CRATES_IO, Some(name), Some(version))
-        .map(|review| {
-            at_least_one = true;
-            review
-        })
-        .all(|review| review.package.digest != digest.as_slice())
-        || !at_least_one
+) -> Vec<Package> {
+    db.get_package_reviews_for_package(PROJECT_SOURCE_CRATES_IO, Some(name), Some(version))
+        .filter(|review| review.package.digest != digest.as_slice())
+        .cloned()
+        .collect()
 }
 
 pub fn maybe_store(

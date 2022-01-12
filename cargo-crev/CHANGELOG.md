@@ -8,6 +8,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Display better diagnostics for any digest mismatch.
 - Fix interactive use of `trust` and `id trust` to actually read the proofs edited
 
 ## [0.21.1](https://github.com/dpc/crev/compare/cargo-crev-v0.18.0...cargo-crev-v0.21.0) - 2020-05-29

@@ -1,4 +1,4 @@
-use crev_data::{proof, Digest, PublicId, Version};
+use crev_data::{proof, review, Digest, PublicId, Version};
 use crev_lib::*;
 use crev_wot::TrustSet;
 use std::path::PathBuf;
@@ -175,7 +175,8 @@ pub struct CrateDetails {
     pub leftpad_idx: u64,
     pub dependencies: Vec<proof::PackageVersionId>,
     pub rev_dependencies: Vec<proof::PackageVersionId>,
-    pub unclean_digest: bool,
+    // Someone reported a different digest, our local copy is possibly wrong
+    pub digest_mismatches: Vec<review::Package>,
     // own accumulative stats only
     pub accumulative_own: AccumulativeCrateDetails,
     // total recursive stats
@@ -242,8 +243,8 @@ pub struct CrateStats {
 }
 
 impl CrateStats {
-    pub fn is_digest_unclean(&self) -> bool {
-        self.details().unclean_digest
+    pub fn has_digest_mismatch(&self) -> bool {
+        !self.details.digest_mismatches.is_empty()
     }
 
     pub fn has_custom_build(&self) -> bool {
@@ -351,12 +352,12 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         })
         .collect::<Result<_>>()?;
 
-    let mut nb_unclean_digests = 0;
+    let mut num_crates_with_digest_mismatch = 0;
     let mut nb_unverified = 0;
     for dep in &deps {
         let details = dep.details();
-        if details.unclean_digest {
-            nb_unclean_digests += 1;
+        if dep.has_digest_mismatch() {
+            num_crates_with_digest_mismatch += 1;
         }
         if !details.accumulative.verified {
             nb_unverified += 1;
@@ -367,22 +368,34 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         }
     }
 
-    if nb_unclean_digests > 0 {
+    if num_crates_with_digest_mismatch > 0 {
         eprintln!(
-            "{} unclean package{} detected. Use `cargo crev crate clean <name>` to wipe the local source.",
-            nb_unclean_digests,
-            if nb_unclean_digests > 1 { "s" } else { "" },
+            "{} local crate{} with digest mismatch detected. Use `cargo crev crate clean [<name>]` to clean any potential unclean local copies. If problem persists, contact the reporter.",
+            num_crates_with_digest_mismatch,
+            if num_crates_with_digest_mismatch > 1 { "s" } else { "" },
         );
         for dep in deps {
-            if dep.is_digest_unclean() {
-                term.eprint(
-                    format_args!(
-                        "Unclean crate {} {}\n",
-                        &dep.info.id.name(),
-                        &dep.info.id.version()
-                    ),
-                    ::term::color::RED,
-                )?;
+            if dep.has_digest_mismatch() {
+                for mismatch in &dep.details.digest_mismatches {
+                    term.eprint(
+                        format_args!(
+                            "Crate {:<20} {:<10}; local digest: {} != {} reported by {} ({})\n",
+                            &dep.info.id.name(),
+                            &dep.info.id.version(),
+                            &dep.details
+                                .digest
+                                .clone()
+                                .map(|d| d.to_string())
+                                .unwrap_or_else(|| "-".to_string()),
+                            &Digest::from_bytes(&mismatch.package.digest)
+                                .map(|d| d.to_string())
+                                .unwrap_or_else(|| "-".to_string()),
+                            &mismatch.common.from.id,
+                            &mismatch.common.from.url_display(),
+                        ),
+                        ::term::color::RED,
+                    )?;
+                }
             }
         }
     }

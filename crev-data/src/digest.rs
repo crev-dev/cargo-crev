@@ -23,6 +23,15 @@ impl Digest {
             None
         }
     }
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() == 32 {
+            let mut out = [0; 32];
+            out.copy_from_slice(&bytes);
+            Some(Self(out))
+        } else {
+            None
+        }
+    }
 
     pub fn into_vec(self) -> Vec<u8> {
         self.as_slice().to_vec()

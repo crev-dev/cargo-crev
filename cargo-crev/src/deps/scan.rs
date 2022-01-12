@@ -7,8 +7,8 @@ use crate::{
     prelude::*,
     repo::Repo,
     shared::{
-        cargo_full_ignore_list, cargo_min_ignore_list, get_geiger_count, is_digest_clean,
-        read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
+        cargo_full_ignore_list, cargo_min_ignore_list, get_crate_digest_mismatches,
+        get_geiger_count, read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
     },
 };
 use cargo::core::PackageId;
@@ -251,7 +251,11 @@ impl Scanner {
         ready_rx
     }
 
-    fn get_crate_details(&mut self, info: &CrateInfo, required_details: &RequiredDetails) -> Result<CrateDetails> {
+    fn get_crate_details(
+        &mut self,
+        info: &CrateInfo,
+        required_details: &RequiredDetails,
+    ) -> Result<CrateDetails> {
         let pkg_name = info.id.name();
         let proof_pkg_id = proof::PackageId {
             source: "https://crates.io".into(),
@@ -260,7 +264,11 @@ impl Scanner {
 
         let pkg_version = info.id.version();
         info.download_if_needed(self.cargo_opts.clone())?;
-        let geiger_count = if required_details.geiger { get_geiger_count(&info.root).ok() } else { None };
+        let geiger_count = if required_details.geiger {
+            get_geiger_count(&info.root).ok()
+        } else {
+            None
+        };
         let is_local_source_code = !info.id.source_id().is_registry();
         let ignore_list = if is_local_source_code {
             &self.min_ignore_list
@@ -272,10 +280,10 @@ impl Scanner {
         } else {
             None
         };
-        let unclean_digest = digest
+        let digest_mismatches = digest
             .as_ref()
-            .map(|digest| !is_digest_clean(&self.db, &pkg_name, pkg_version, digest))
-            .unwrap_or(false);
+            .map(|digest| get_crate_digest_mismatches(&self.db, &pkg_name, pkg_version, digest))
+            .unwrap_or(vec![]);
         let verification_result = if let Some(digest) = digest.as_ref() {
             crev_lib::verify_package_digest(digest, &self.trust_set, &self.requirements, &self.db)
         } else {
@@ -304,9 +312,17 @@ impl Scanner {
         };
 
         let crates_io = self.crates_io()?;
-        let downloads = if required_details.downloads { crates_io.get_downloads_count(&pkg_name, pkg_version).ok() } else { None };
+        let downloads = if required_details.downloads {
+            crates_io.get_downloads_count(&pkg_name, pkg_version).ok()
+        } else {
+            None
+        };
 
-        let owner_list = if required_details.owners { crates_io.get_owners(&pkg_name).ok() } else { None };
+        let owner_list = if required_details.owners {
+            crates_io.get_owners(&pkg_name).ok()
+        } else {
+            None
+        };
         let known_owners = owner_list.as_ref().map(|owner_list| {
             let total_owners_count = owner_list.len();
             let known_owners_count = owner_list
@@ -340,7 +356,11 @@ impl Scanner {
             total: issues_from_all.len() as u64,
         };
 
-        let loc = if required_details.loc { crate::tokei::get_rust_line_count(&info.root).ok() } else { None };
+        let loc = if required_details.loc {
+            crate::tokei::get_rust_line_count(&info.root).ok()
+        } else {
+            None
+        };
 
         let latest_trusted_version = crev_lib::find_latest_trusted_version(
             &self.trust_set,
@@ -403,7 +423,7 @@ impl Scanner {
             version_reviews: version_review_count,
             downloads,
             known_owners,
-            unclean_digest,
+            digest_mismatches,
             leftpad_idx: downloads
                 .and_then(|d| d.recent.checked_div(accumulative_own.loc.unwrap_or(0)))
                 .unwrap_or(0),

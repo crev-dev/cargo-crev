@@ -454,7 +454,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Clean(args) => {
                 if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
-                    clean_all_unclean_crates()?;
+                    clean_all_crates_with_digest_mismatch()?;
                 } else {
                     handle_goto_mode_command(&args, |sel| clean_crate(sel))?;
                 }
