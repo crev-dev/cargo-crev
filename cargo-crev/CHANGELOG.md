@@ -7,7 +7,8 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-url -->
-## [Unreleased](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...HEAD) - ReleaseDate
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.22.2...HEAD) - ReleaseDate
+## [0.22.2](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...v0.22.2) - 2022-01-11
 
 - Use `cargo-release` to make our release process more reasonable.
 - Display better diagnostics for any digest mismatch.
