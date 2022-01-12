@@ -98,7 +98,8 @@ impl UserConfig {
 ///
 /// This managed IDs, local proof repository, etc.
 pub struct Local {
-    root_path: PathBuf,
+    config_path: PathBuf,
+    data_path: PathBuf,
     cache_path: PathBuf,
     cur_url: Mutex<Option<Url>>,
     user_config: Mutex<Option<UserConfig>>,
@@ -111,10 +112,12 @@ impl Local {
             None => ProjectDirs::from("", "", "crev"),
             Some(path) => ProjectDirs::from_path(path.into()),
         }.ok_or(Error::NoHomeDirectory)?;
-        let root_path = proj_dir.config_dir().into();
+        let config_path = proj_dir.config_dir().into();
+        let data_path = proj_dir.data_dir().into();
         let cache_path = proj_dir.cache_dir().into();
         Ok(Self {
-            root_path,
+            config_path,
+            data_path,
             cache_path,
             cur_url: Mutex::new(None),
             user_config: Mutex::new(None),
@@ -123,7 +126,12 @@ impl Local {
 
     /// Where the config is stored
     pub fn get_root_path(&self) -> &Path {
-        &self.root_path
+        &self.config_path
+    }
+
+    /// Where the data is stored
+    pub fn data_root(&self) -> &Path {
+        &self.data_path
     }
 
     /// Where temporary files are stored
@@ -135,8 +143,16 @@ impl Local {
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
-        if !repo.root_path.exists() || !repo.user_config_path().exists() {
+        if !repo.config_path.exists() || !repo.user_config_path().exists() {
             return Err(Error::UserConfigNotInitialized);
+        }
+        fs::create_dir_all(&repo.data_path)?;
+
+        // Before early 2022, proofs were in the config dir instead of the data dir.
+        let old_proofs = repo.config_path.join("proofs");
+        let new_proofs = repo.data_path.join("proofs");
+        if !new_proofs.exists() && old_proofs.exists() {
+            fs::rename(old_proofs, new_proofs)?;
         }
 
         *repo.user_config.lock().unwrap() = Some(repo.load_user_config()?);
@@ -146,7 +162,8 @@ impl Local {
     /// Fails if it already exists. See `auto_create_or_open()`
     pub fn auto_create() -> Result<Self> {
         let repo = Self::new()?;
-        fs::create_dir_all(&repo.root_path)?;
+        fs::create_dir_all(&repo.config_path)?;
+        fs::create_dir_all(&repo.data_path)?;
         fs::create_dir_all(&repo.cache_remotes_path())?;
 
         let config_path = repo.user_config_path();
@@ -219,7 +236,7 @@ impl Local {
 
     /// Same as get_root_path()
     pub fn user_dir_path(&self) -> PathBuf {
-        self.root_path.clone()
+        self.config_path.clone()
     }
 
     /// Directory where yaml files for user identities are stored
@@ -231,7 +248,7 @@ impl Local {
     ///
     /// This is separate from cache of other people's proofs
     pub fn user_proofs_path(&self) -> PathBuf {
-        self.root_path.join("proofs")
+        self.data_path.join("proofs")
     }
 
     /// Like `user_proofs_path` but checks if the dir exists
