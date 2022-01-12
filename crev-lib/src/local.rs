@@ -111,7 +111,8 @@ impl Local {
         let proj_dir = match std::env::var_os("CARGO_CREV_ROOT_DIR_OVERRIDE") {
             None => ProjectDirs::from("", "", "crev"),
             Some(path) => ProjectDirs::from_path(path.into()),
-        }.ok_or(Error::NoHomeDirectory)?;
+        }
+        .ok_or(Error::NoHomeDirectory)?;
         let config_path = proj_dir.config_dir().into();
         let data_path = proj_dir.data_dir().into();
         let cache_path = proj_dir.cache_dir().into();
@@ -539,7 +540,11 @@ impl Local {
         }
         if let Err(e) = git2::Repository::init(&proof_dir) {
             warn!("Can't init repo in {}: {}", proof_dir.display(), e);
-            self.run_git(vec!["init".into(), "--initial-branch=master".into(), proof_dir.into()])?;
+            self.run_git(vec![
+                "init".into(),
+                "--initial-branch=master".into(),
+                proof_dir.into(),
+            ])?;
         }
         Ok(())
     }
@@ -1159,9 +1164,18 @@ impl Local {
             &[]
         };
 
-        let signature = repo.signature().or_else(|_| git2::Signature::now("unconfigured", "nobody@crev.dev"))?;
+        let signature = repo
+            .signature()
+            .or_else(|_| git2::Signature::now("unconfigured", "nobody@crev.dev"))?;
 
-        repo.commit(Some("HEAD"), &signature, &signature, commit_msg, &tree, parents)?;
+        repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            commit_msg,
+            &tree,
+            parents,
+        )?;
 
         Ok(())
     }

@@ -2,9 +2,9 @@ use bstr::ByteSlice;
 use crev_common::sanitize_name_for_fs;
 pub use crev_common::{run_with_shell_cmd, store_str_to_file, store_to_file_with};
 use crev_data::proof;
-use std::borrow::Cow;
 use std::{
     self,
+    borrow::Cow,
     ffi::OsStr,
     io,
     path::{Path, PathBuf},
@@ -119,11 +119,11 @@ fn mark_dangerous_name(
             changes
                 .push("rust-toolchain file could unexpectedly replace your compiler".to_string());
             PathBuf::from(format!("{}.CREV", orig_name))
-        },
+        }
         ".cargo-ok" | ".cargo_vcs_info.json" | ".gitignore" => {
             // they're safe
             PathBuf::from(orig_name)
-        },
+        }
         n if n.starts_with('.') => {
             changes.push(format!("Hidden file: '{}'", orig_name));
             PathBuf::from(format!("CREV{}", orig_name))
@@ -184,7 +184,10 @@ pub fn copy_dir_sanitized(
                 let input = std::fs::read(&src_path)?;
                 let output = escape_tricky_unicode(&input);
                 if output != input {
-                    changes.push(format!("Escaped potentially confusing UTF-8 in '{}'", src_path.display()));
+                    changes.push(format!(
+                        "Escaped potentially confusing UTF-8 in '{}'",
+                        src_path.display()
+                    ));
                 }
                 std::fs::write(&dest_path, output)?;
             }
@@ -198,9 +201,24 @@ pub fn copy_dir_sanitized(
 }
 
 fn is_binary_file_extension(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()) .map_or(false, |e| {
-        matches!(e.to_lowercase().as_str(), "bin" | "zip" | "gz" | "xz" | "bz2" | "jpg" | "jpeg" | "png" | "gif" | "exe" | "dll")
-    })
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map_or(false, |e| {
+            matches!(
+                e.to_lowercase().as_str(),
+                "bin"
+                    | "zip"
+                    | "gz"
+                    | "xz"
+                    | "bz2"
+                    | "jpg"
+                    | "jpeg"
+                    | "png"
+                    | "gif"
+                    | "exe"
+                    | "dll"
+            )
+        })
 }
 
 fn escape_tricky_unicode(input: &[u8]) -> Cow<[u8]> {
@@ -226,9 +244,10 @@ fn escape_tricky_unicode_str(input: &str) -> Cow<str> {
     for ch in input.chars() {
         match ch {
             // https://blog.rust-lang.org/2021/11/01/cve-2021-42574.html
-            '\u{202A}' | '\u{202B}' | '\u{202C}' | '\u{202D}' | '\u{202E}' | '\u{2066}' | '\u{2067}' | '\u{2068}' | '\u{2069}' => {
+            '\u{202A}' | '\u{202B}' | '\u{202C}' | '\u{202D}' | '\u{202E}' | '\u{2066}'
+            | '\u{2067}' | '\u{2068}' | '\u{2069}' => {
                 let _ = write!(&mut out, "\\u{{{:04x}}}", ch as u32);
-            } ,
+            }
             _ => out.push(ch),
         }
     }

@@ -707,10 +707,7 @@ pub fn lookup_crates(query: &str, count: usize) -> Result<()> {
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
 
-    let client = SyncClient::new(
-        "cargo-crev",
-        std::time::Duration::from_secs(1)
-    )?;
+    let client = SyncClient::new("cargo-crev", std::time::Duration::from_secs(1))?;
     let mut stats: Vec<_> = client
         .crates(ListOptions {
             sort: Sort::Downloads,

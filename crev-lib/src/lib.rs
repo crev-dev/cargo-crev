@@ -347,10 +347,7 @@ pub fn dir_verify(
 }
 
 pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Result<Digest> {
-    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
-        path,
-        ignore_list,
-    )?).unwrap())
+    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap())
 }
 
 pub fn get_recursive_digest_for_git_dir(
@@ -390,7 +387,8 @@ pub fn get_recursive_digest_for_dir(
     Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
         root_path,
         rel_path_ignore_list,
-    )?).unwrap())
+    )?)
+    .unwrap())
 }
 
 #[cfg(test)]

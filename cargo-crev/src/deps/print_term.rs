@@ -221,10 +221,7 @@ pub fn print_dep(
     if columns.show_latest_trusted() {
         print!(
             "{:<12}",
-            latest_trusted_version_string(
-                stats.info.id.version(),
-                &details.latest_trusted_version
-            )
+            latest_trusted_version_string(stats.info.id.version(), &details.latest_trusted_version)
         );
     }
 
