@@ -71,6 +71,6 @@ pre-release-replacements = [
   {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=1},
   {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
-  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/{{tag_name}}...HEAD) - ReleaseDate", exactly=1},
+  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/{{tag_name}}...HEAD) - ReleaseDate\n\n", exactly=1},
 ]
 shared-version=true
