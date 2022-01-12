@@ -12,7 +12,6 @@ use cargo::{
     },
     ops,
     util::{
-        self,
         config::{Config, ConfigValue},
         important_paths::find_root_manifest_for_wd,
         CargoResult, Rustc,
