@@ -503,7 +503,15 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Config(args) => match args {
             opts::Config::Dir => {
                 let local = crev_lib::Local::auto_create_or_open()?;
-                println!("{}", local.get_root_path().display());
+                println!("{}", local.config_root().display());
+            }
+            opts::Config::DataDir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.data_root().display());
+            }
+            opts::Config::CacheDir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.cache_root().display());
             }
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
@@ -754,7 +762,8 @@ fn set_trust_level_for_ids(
     let local = ensure_crev_id_exists_or_make_one()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
-    let mut trust = local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
+    let mut trust =
+        local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
 
     if edit_interactively {
         let extra_comment = if trust_level == TrustLevel::Distrust {

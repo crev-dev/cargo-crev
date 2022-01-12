@@ -1,14 +1,19 @@
-use std::ffi::*;
-use std::io::Write;
-use std::path::*;
-use std::process::*;
+use std::{ffi::*, io::Write, path::*, process::*};
 
 #[test]
 fn creates_new_id_implicitly() {
     let c = Cli::new();
     let empty_id = c.run(&["id", "query", "own"], "");
     assert!(!empty_id.status.success(), "{:?}", empty_id);
-    let trust = c.run(&["id", "trust", "--level=medium", "FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE"], "");
+    let trust = c.run(
+        &[
+            "id",
+            "trust",
+            "--level=medium",
+            "FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE",
+        ],
+        "",
+    );
     assert!(trust.status.success(), "{:?}", trust);
     assert!(c.run(&["id", "query", "own"], "").status.success());
 }

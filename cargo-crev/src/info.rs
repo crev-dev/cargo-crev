@@ -1,4 +1,11 @@
-use crate::{Repo, deps::{AccumulativeCrateDetails, scan::{self, RequiredDetails}}, opts::{CrateSelector, CrateVerify, CrateVerifyCommon}};
+use crate::{
+    deps::{
+        scan::{self, RequiredDetails},
+        AccumulativeCrateDetails,
+    },
+    opts::{CrateSelector, CrateVerify, CrateVerifyCommon},
+    Repo,
+};
 use anyhow::{bail, Result};
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
@@ -94,7 +101,11 @@ pub fn get_crate_info(
         deps: if root_crate.unrelated {
             None
         } else {
-            Some(get_crate_deps_info(pkg_id, common_opts, &RequiredDetails::none())?)
+            Some(get_crate_deps_info(
+                pkg_id,
+                common_opts,
+                &RequiredDetails::none(),
+            )?)
         },
         alternatives: db
             .get_pkg_alternatives(&crev_pkg_id.id)

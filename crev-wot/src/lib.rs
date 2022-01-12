@@ -1010,9 +1010,11 @@ impl ProofDB {
     }
 
     fn get_trust_list_of_id(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
-        self.trust_id_to_id.get(id).map(|map| map.iter().map(|(id, trust)| (trust.value, id)))
-        .into_iter()
-        .flatten()
+        self.trust_id_to_id
+            .get(id)
+            .map(|map| map.iter().map(|(id, trust)| (trust.value, id)))
+            .into_iter()
+            .flatten()
     }
 
     pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> TrustSet {
@@ -1100,7 +1102,10 @@ impl ProofDB {
                 // However banning by the same trust level node, does not prevent
                 // the node from banning others.
                 if direct_trust == TrustLevel::Distrust {
-                    debug!("Adding {} to distrusted list (via {})", candidate_id, current.id);
+                    debug!(
+                        "Adding {} to distrusted list (via {})",
+                        candidate_id, current.id
+                    );
                     // We discard the result, because we actually want to make as much
                     // progress as possible before restaring building the WoT, and
                     // we will not visit any node that was marked as distrusted,

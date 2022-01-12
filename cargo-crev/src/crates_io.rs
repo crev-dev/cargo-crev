@@ -59,7 +59,7 @@ fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &Version) -
 
 impl Client {
     pub fn new(local: &crev_lib::Local) -> Result<Self> {
-        let cache_dir = local.get_root_cache_dir().join("crates_io");
+        let cache_dir = local.cache_root().join("crates_io");
         fs::create_dir_all(&cache_dir)?;
         Ok(Self {
             client: crates_io_api::SyncClient::new(

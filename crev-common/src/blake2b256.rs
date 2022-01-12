@@ -25,7 +25,10 @@ impl digest::FixedOutput for Blake2b256 {
         });
     }
 
-    fn finalize_into_reset(&mut self, out: &mut digest::generic_array::GenericArray<u8, Self::OutputSize>) {
+    fn finalize_into_reset(
+        &mut self,
+        out: &mut digest::generic_array::GenericArray<u8, Self::OutputSize>,
+    ) {
         self.0.finalize_variable_reset(|slice| {
             assert_eq!(slice.len(), 32);
             out.copy_from_slice(slice)

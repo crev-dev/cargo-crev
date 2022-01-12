@@ -753,6 +753,14 @@ pub enum Config {
     /// Print the dir containing config files
     #[structopt(name = "dir")]
     Dir,
+
+    /// Print the dir containing data files
+    #[structopt(name = "data-dir")]
+    DataDir,
+
+    /// Print the dir containing cache files
+    #[structopt(name = "cache-dir")]
+    CacheDir,
 }
 
 #[derive(Debug, StructOpt, Clone)]
