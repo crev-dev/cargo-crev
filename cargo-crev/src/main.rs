@@ -505,6 +505,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let local = crev_lib::Local::auto_create_or_open()?;
                 println!("{}", local.config_root().display());
             }
+            opts::Config::DataDir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.data_root().display());
+            }
+            opts::Config::CacheDir => {
+                let local = crev_lib::Local::auto_create_or_open()?;
+                println!("{}", local.cache_root().display());
+            }
             opts::Config::Edit => {
                 let local = crev_lib::Local::auto_create_or_open()?;
                 edit::edit_user_config(&local)?;
