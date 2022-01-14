@@ -64,7 +64,7 @@ pub struct Scanner {
     recursive: bool,
     crate_info_by_id: HashMap<PackageId, CrateInfo>,
     // all the packages that we might need to potentially analyse
-    all_crates_ids: Vec<PackageId>,
+    pub all_crates_ids: Vec<PackageId>,
     // packages that we will have to return to the caller
     selected_crates_ids: HashSet<PackageId>,
     cargo_opts: CargoOpts,

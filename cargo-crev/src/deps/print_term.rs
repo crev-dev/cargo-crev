@@ -1,19 +1,43 @@
 // Functions related to printing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
+
 use super::*;
 use crate::term::{self, *};
 
-fn pad_left_manually(s: String, width: usize) -> String {
-    if s.len() <= width {
-        let padding = " ".repeat(width - s.len());
-        format!("{}{}", s, padding)
-    } else {
-        s
+const CRATE_VERIFY_CRATE_COLUMN_TITLE: &'static str = "crate";
+const CRATE_VERIFY_VERSION_COLUMN_TITLE: &'static str = "version";
+
+#[derive(Copy, Clone, Debug)]
+pub struct VerifyOutputColumnWidths {
+    pub name: usize,
+    pub version: usize,
+}
+
+impl VerifyOutputColumnWidths {
+    pub fn from_pkgsids<'a>(pkgs_ids: impl Iterator<Item = &'a cargo::core::PackageId>) -> Self {
+        let (name, version) = pkgs_ids.fold(
+            (
+                CRATE_VERIFY_CRATE_COLUMN_TITLE.len(),
+                CRATE_VERIFY_VERSION_COLUMN_TITLE.len(),
+            ),
+            |(name, version), pkgid| {
+                (
+                    name.max(pkgid.name().len()),
+                    version.max(pkgid.version().to_string().len()),
+                )
+            },
+        );
+
+        Self { name, version }
     }
 }
 
-pub fn print_header(_term: &mut Term, columns: &CrateVerifyColumns) {
+pub fn print_header(
+    _term: &mut Term,
+    columns: &CrateVerifyColumns,
+    column_widths: VerifyOutputColumnWidths,
+) {
     eprint!("{:>6} ", "status");
 
     if columns.show_reviews() {
@@ -48,7 +72,12 @@ pub fn print_header(_term: &mut Term, columns: &CrateVerifyColumns) {
         eprint!("{:>4} ", "flgs");
     }
 
-    eprint!("{:<20} {:<12} ", "crate", "version");
+    let name_column_width = column_widths.name;
+    let version_column_width = column_widths.version;
+    eprint!(
+        "{:<name_column_width$} {:<version_column_width$} ",
+        "crate", "version"
+    );
 
     if columns.show_latest_trusted() {
         eprint!("{:<12}", "latest_t");
@@ -169,19 +198,22 @@ pub fn print_details(
     Ok(())
 }
 
-fn print_stats_crate_id(stats: &CrateStats, _term: &mut Term) {
+fn print_stats_crate_id(
+    stats: &CrateStats,
+    _term: &mut Term,
+    column_widths: VerifyOutputColumnWidths,
+) {
+    let name_column_width = column_widths.name;
+    let version_column_width = column_widths.version;
     print!(
-        "{:<20} {:<12}",
+        "{:name_column_width$} {:<version_column_width$} ",
         stats.info.id.name(),
-        pad_left_manually(
-            stats.info.id.version().to_string()
-                + if stats.info.id.source_id().is_registry() {
-                    ""
-                } else {
-                    "*"
-                },
-            15
-        )
+        stats.info.id.version().to_string()
+            + if stats.info.id.source_id().is_registry() {
+                ""
+            } else {
+                "*"
+            }
     );
 }
 
@@ -190,6 +222,7 @@ pub fn print_dep(
     term: &mut Term,
     columns: &CrateVerifyColumns,
     recursive_mode: bool,
+    column_widths: VerifyOutputColumnWidths,
 ) -> Result<()> {
     let details = stats.details();
 
@@ -216,7 +249,7 @@ pub fn print_dep(
         print!(" ");
     }
 
-    print_stats_crate_id(stats, term);
+    print_stats_crate_id(stats, term, column_widths);
 
     if columns.show_latest_trusted() {
         print!(

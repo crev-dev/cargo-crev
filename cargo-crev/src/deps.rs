@@ -313,7 +313,11 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut term = term::Term::new();
 
     let scanner = scan::Scanner::new(crate_, &args)?;
+    let column_widths =
+        print_term::VerifyOutputColumnWidths::from_pkgsids(scanner.all_crates_ids.iter());
+
     let trust_set = scanner.trust_set.clone();
+
     let events = scanner.run(&RequiredDetails {
         geiger: args.columns.show_geiger(),
         owners: args.columns.show_owners(),
@@ -323,7 +327,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     // print header, only after `scanner` had a chance to download everything
     if term.stderr_is_tty && term.stdout_is_tty {
-        print_term::print_header(&mut term, &args.columns);
+        print_term::print_header(&mut term, &args.columns, column_widths);
     }
 
     let mut crates_with_issues = false;
@@ -340,7 +344,13 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         })
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
-            print_term::print_dep(&stats, &mut term, &args.columns, args.recursive)?;
+            print_term::print_dep(
+                &stats,
+                &mut term,
+                &args.columns,
+                args.recursive,
+                column_widths,
+            )?;
             Ok(stats)
         })
         .collect::<Result<_>>()?;
@@ -367,12 +377,25 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
             num_crates_with_digest_mismatch,
             if num_crates_with_digest_mismatch > 1 { "s" } else { "" },
         );
+        let name_column_width = deps
+            .iter()
+            .filter(|dep| dep.has_digest_mismatch())
+            .map(|dep| dep.info.id.name().len())
+            .max()
+            .expect("at least one crate should be present");
+
+        let version_column_width = deps
+            .iter()
+            .filter(|dep| dep.has_digest_mismatch())
+            .map(|dep| dep.info.id.version().to_string().len())
+            .max()
+            .expect("at least one crate should be present");
         for dep in deps {
             if dep.has_digest_mismatch() {
                 for mismatch in &dep.details.digest_mismatches {
                     term.eprint(
                         format_args!(
-                            "Crate {:<20} {:<10}; local digest: {} != {} reported by {} ({})\n",
+                            "Crate {:<name_column_width$} {:<version_column_width$}; local digest: {} != {} reported by {} ({})\n",
                             &dep.info.id.name(),
                             &dep.info.id.version(),
                             &dep.details
