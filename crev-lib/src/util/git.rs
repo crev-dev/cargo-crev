@@ -1,4 +1,5 @@
 use crate::Result;
+use log::debug;
 use std::path::Path;
 
 #[derive(PartialEq, Debug, Default)]
@@ -60,6 +61,7 @@ pub fn clone<P: AsRef<Path>>(
     url: &str,
     path: P,
 ) -> std::result::Result<git2::Repository, git2::Error> {
+    debug!("Cloning {} to {}", url, path.as_ref().display());
     let fetch_options = default_fetch_options();
     git2::build::RepoBuilder::new()
         .fetch_options(fetch_options)

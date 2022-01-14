@@ -1,7 +1,6 @@
 // Functions related to printing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
-
 use super::*;
 use crate::term::{self, *};
 
