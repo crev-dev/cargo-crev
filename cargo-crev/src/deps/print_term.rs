@@ -1,8 +1,9 @@
-// Functions related to printing dependencies in the standard
+// Functions related to writeing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
 use super::*;
 use crate::term::{self, *};
+use std::{io, io::Write, write, writeln};
 
 const CRATE_VERIFY_CRATE_COLUMN_TITLE: &'static str = "crate";
 const CRATE_VERIFY_VERSION_COLUMN_TITLE: &'static str = "version";
@@ -36,61 +37,64 @@ pub fn print_header(
     _term: &mut Term,
     columns: &CrateVerifyColumns,
     column_widths: VerifyOutputColumnWidths,
-) {
-    eprint!("{:>6} ", "status");
+) -> Result<()> {
+    write!(io::stdout(), "{:>6} ", "status")?;
 
     if columns.show_reviews() {
-        eprint!("{:>7} ", "reviews");
+        write!(io::stdout(), "{:>7} ", "reviews")?;
     }
 
     if columns.show_issues() {
-        eprint!("{:>6} ", "issues");
+        write!(io::stdout(), "{:>6} ", "issues")?;
     }
 
     if columns.show_owners() {
-        eprint!("{:>5} ", "owner");
+        write!(io::stdout(), "{:>5} ", "owner")?;
     }
 
     if columns.show_downloads() {
-        eprint!("{:>14} ", "downloads");
+        write!(io::stdout(), "{:>14} ", "downloads")?;
     }
 
     if columns.show_loc() {
-        eprint!("{:>6} ", "loc");
+        write!(io::stdout(), "{:>6} ", "loc")?;
     }
 
     if columns.show_leftpad_index() {
-        eprint!("{:>5} ", "lpidx");
+        write!(io::stdout(), "{:>5} ", "lpidx")?;
     }
 
     if columns.show_geiger() {
-        eprint!("{:>6} ", "geiger");
+        write!(io::stdout(), "{:>6} ", "geiger")?;
     }
 
     if columns.show_flags() {
-        eprint!("{:>4} ", "flgs");
+        write!(io::stdout(), "{:>4} ", "flgs")?;
     }
 
     let name_column_width = column_widths.name;
     let version_column_width = column_widths.version;
-    eprint!(
+    write!(
+        io::stdout(),
         "{:<name_column_width$} {:<version_column_width$} ",
-        "crate", "version"
-    );
+        "crate",
+        "version"
+    )?;
 
     if columns.show_latest_trusted() {
-        eprint!("{:<12}", "latest_t");
+        write!(io::stdout(), "{:<12}", "latest_t")?;
     }
 
     if columns.show_digest() {
-        eprint!("digest");
+        write!(io::stdout(), "digest")?;
     }
 
-    eprintln!();
+    writeln!(io::stdout())?;
+    Ok(())
 }
 
 #[allow(clippy::collapsible_if)]
-pub fn print_details(
+pub fn write_details(
     cdep: &CrateDetails,
     term: &mut Term,
     columns: &CrateVerifyColumns,
@@ -110,10 +114,12 @@ pub fn print_details(
     }
 
     if columns.show_reviews() {
-        print!(
+        write!(
+            io::stdout(),
             "{:3} {:3} ",
-            cdep.version_reviews.count, cdep.version_reviews.total
-        );
+            cdep.version_reviews.count,
+            cdep.version_reviews.total
+        )?;
     }
 
     if columns.show_issues() {
@@ -185,26 +191,31 @@ pub fn print_details(
 
     if columns.show_loc() {
         match cdep.accumulative.loc {
-            Some(loc) => print!("{:>6} ", loc),
-            None => print!("{:>6} ", "err"),
+            Some(loc) => write!(io::stdout(), "{:>6} ", loc)?,
+            None => write!(io::stdout(), "{:>6} ", "err")?,
         }
     }
 
     if columns.show_leftpad_index() {
-        print!("{:>5} ", (cdep.leftpad_idx as f64).sqrt().round() as usize);
+        write!(
+            io::stdout(),
+            "{:>5} ",
+            (cdep.leftpad_idx as f64).sqrt().round() as usize
+        )?;
     }
 
     Ok(())
 }
 
-fn print_stats_crate_id(
+fn write_stats_crate_id(
     stats: &CrateStats,
     _term: &mut Term,
     column_widths: VerifyOutputColumnWidths,
-) {
+) -> Result<()> {
     let name_column_width = column_widths.name;
     let version_column_width = column_widths.version;
-    print!(
+    write!(
+        io::stdout(),
         "{:name_column_width$} {:<version_column_width$} ",
         stats.info.id.name(),
         stats.info.id.version().to_string()
@@ -213,7 +224,8 @@ fn print_stats_crate_id(
             } else {
                 "*"
             }
-    );
+    )?;
+    Ok(())
 }
 
 pub fn print_dep(
@@ -225,11 +237,11 @@ pub fn print_dep(
 ) -> Result<()> {
     let details = stats.details();
 
-    print_details(details, term, columns, recursive_mode)?;
+    write_details(details, term, columns, recursive_mode)?;
     if columns.show_geiger() {
         match details.accumulative.geiger_count {
-            Some(geiger_count) => print!("{:>6} ", geiger_count),
-            None => print!("{:>6} ", "err"),
+            Some(geiger_count) => write!(io::stdout(), "{:>6} ", geiger_count)?,
+            None => write!(io::stdout(), "{:>6} ", "err")?,
         }
     }
 
@@ -237,37 +249,39 @@ pub fn print_dep(
         if stats.has_custom_build() {
             term.print(format_args!("CB"), ::term::color::YELLOW)?;
         } else {
-            print!("__");
+            write!(io::stdout(), "__")?;
         }
 
         if stats.is_unmaintained() {
-            print!("UM");
+            write!(io::stdout(), "UM")?;
         } else {
-            print!("__");
+            write!(io::stdout(), "__")?;
         }
-        print!(" ");
+        write!(io::stdout(), " ")?;
     }
 
-    print_stats_crate_id(stats, term, column_widths);
+    write_stats_crate_id(stats, term, column_widths)?;
 
     if columns.show_latest_trusted() {
-        print!(
+        write!(
+            io::stdout(),
             "{:<12}",
             latest_trusted_version_string(stats.info.id.version(), &details.latest_trusted_version)
-        );
+        )?;
     }
 
     if columns.show_digest() {
-        print!(
+        write!(
+            io::stdout(),
             "{}",
             details
                 .digest
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or_else(|| "-".into())
-        );
+        )?;
     }
 
-    println!();
+    writeln!(io::stdout(), "")?;
     Ok(())
 }

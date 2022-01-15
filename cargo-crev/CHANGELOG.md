@@ -15,6 +15,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added command `config data-dir`.
 - Added command `config cache-dir`.
 - `crate verify`: better column width detection
+- Better broken pipe errors handling
 
 ## [0.22.2](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...v0.22.2) - 2022-01-11
 

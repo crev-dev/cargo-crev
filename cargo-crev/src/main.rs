@@ -13,6 +13,7 @@ use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
     io::{self, BufRead, Write},
+    panic,
     path::PathBuf,
 };
 use structopt::StructOpt;
@@ -923,12 +924,60 @@ fn main() {
         .init();
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
-    match run_command(command) {
+    handle_command_result_and_panics(|| run_command(command))
+}
+
+fn is_possibly_broken_pipe_msg(s: &str) -> bool {
+    s.contains("Broken pipe") || s.contains("os error 32")
+}
+
+/**
+ * Handle command exit code and broken pipe IO errors.
+ *
+ * Set appropriate error code to the execution result.
+ *
+ * Broken pipe usually means that the user left `less` or some other pager
+ * and it's best to ignore such errors in both results and panics.
+ */
+// See https://github.com/crev-dev/cargo-crev/issues/287
+fn handle_command_result_and_panics(
+    f: impl FnOnce() -> Result<CommandExitStatus> + panic::UnwindSafe,
+) -> ! {
+    let hook = panic::take_hook();
+
+    // skip printing panic msg on broken pipe panics
+    panic::set_hook(Box::new(move |panic_info| {
+        if !is_possibly_broken_pipe_msg(&panic_info.to_string()) {
+            (hook)(panic_info);
+        }
+    }));
+
+    if let Err(panic_err) = panic::catch_unwind(|| match (f)() {
         Ok(CommandExitStatus::Success) => {}
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
         Err(e) => {
+            if let Some(io_error) = e.root_cause().downcast_ref::<std::io::Error>() {
+                if io_error.kind() == std::io::ErrorKind::BrokenPipe {
+                    return;
+                }
+            }
             eprintln!("{:?}", e);
             std::process::exit(-2)
         }
+    }) {
+        let panic_str = if let Some(io_error) = panic_err.downcast_ref::<Box<&'static str>>() {
+            io_error.to_string()
+        } else if let Some(io_error) = panic_err.downcast_ref::<String>() {
+            io_error.to_string()
+        } else if let Some(io_error) = panic_err.downcast_ref::<&'static str>() {
+            io_error.to_string()
+        } else {
+            "".to_string()
+        };
+
+        if !is_possibly_broken_pipe_msg(&panic_str) {
+            panic::resume_unwind(panic_err);
+        }
     }
+    std::process::exit(0)
 }
