@@ -6,11 +6,10 @@ use cargo::{
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
-        resolver::{features::HasDevUnits, CliFeatures},
+        resolver::{features::RequestedFeatures, CliFeatures, ResolveOpts, VersionPreferences},
         source::SourceMap,
-        FeatureValue, Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
+        Package, PackageId, Resolve, SourceId, Workspace,
     },
-    ops,
     util::{
         config::{Config, ConfigValue},
         important_paths::find_root_manifest_for_wd,
@@ -23,7 +22,6 @@ use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
     env,
     path::PathBuf,
-    rc::Rc,
     str::{self, FromStr},
 };
 
@@ -130,7 +128,7 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
 }
 
 fn our_resolve<'a, 'cfg>(
-    registry: &mut PackageRegistry<'cfg>,
+    mut registry: PackageRegistry<'cfg>,
     workspace: &'a Workspace<'cfg>,
     features: &[String],
     all_features: bool,
@@ -144,6 +142,40 @@ fn our_resolve<'a, 'cfg>(
     // this one will create a `Cargo.lock` file if it didn't exist before
     // good? not good? it also uses the registry to make it possible
     // the other methods
+    // let mut registry = PackageRegistry::new(&workspace.config())?;
+    let _lock = workspace.config().acquire_package_cache_lock()?;
+    registry.lock_patches();
+    let summaries: Vec<_> = workspace
+        .members()
+        .map(|m| {
+            Ok((
+                m.summary().to_owned(),
+                ResolveOpts {
+                    dev_deps: !no_dev_dependencies,
+                    features: RequestedFeatures::CliFeatures(CliFeatures::from_command_line(
+                        features,
+                        all_features,
+                        !no_default_features,
+                    )?),
+                },
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let resolve = cargo::core::resolver::resolve(
+        &summaries,
+        workspace.root_replace(),
+        &mut registry,
+        &VersionPreferences::default(),
+        None,
+        false,
+    )?;
+
+    Ok((
+        cargo::ops::get_resolved_packages(&resolve, registry)?,
+        resolve,
+    ))
+
+    /* no_default_features doesn't work in this one
     let (packages, resolve) = ops::resolve_ws(workspace)?;
 
     let cli_features = CliFeatures {
@@ -179,6 +211,7 @@ fn our_resolve<'a, 'cfg>(
     )?;
 
     Ok((packages, resolve))
+        */
 
     /*
     // this method does not allow passing no_dev_dependencies
@@ -408,19 +441,21 @@ impl Repo {
         Ok(registry)
     }
 
-    pub fn get_dependency_graph(&self, roots: Vec<PackageId>) -> CargoResult<Graph> {
+    fn get_registry_from_workspace_members(&self) -> Result<(Workspace, PackageRegistry<'_>)> {
         let workspace = self.workspace()?;
-
-        let mut registry = self.registry(
+        let registry = self.registry(
             workspace
                 .members()
                 .map(|m| m.summary().source_id().to_owned()),
         )?;
-        // let root_sources: Vec<_> = roots.iter().map(|p| p.source_id().to_owned()).collect();
-        // let mut registry = self.registry(root_sources.into_iter())?;
+        Ok((workspace, registry))
+    }
+
+    pub fn get_dependency_graph(&self, roots: Vec<PackageId>) -> CargoResult<Graph> {
+        let (workspace, registry) = self.get_registry_from_workspace_members()?;
 
         let (packages, resolve) = our_resolve(
-            &mut registry,
+            registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
@@ -496,10 +531,10 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
+        let registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
 
         let (package_set, _resolve) = our_resolve(
-            &mut registry,
+            registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
@@ -537,10 +572,10 @@ impl Repo {
             .map(|m| m.summary().package_id())
             .collect();
 
-        let mut registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
+        let registry = self.registry(roots.iter().map(|pkgid| pkgid.source_id()))?;
 
         let (package_set, _resolve) = our_resolve(
-            &mut registry,
+            registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
@@ -575,12 +610,10 @@ impl Repo {
     */
 
     pub fn get_package_set(&self) -> Result<(PackageSet<'_>, Resolve)> {
-        let workspace = self.workspace()?;
-
-        let mut registry = self.registry(vec![].into_iter())?;
+        let (workspace, registry) = self.get_registry_from_workspace_members()?;
 
         our_resolve(
-            &mut registry,
+            registry,
             &workspace,
             &self.features_list,
             self.cargo_opts.all_features,
