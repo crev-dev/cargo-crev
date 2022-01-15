@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://matrix.to/#/#crev:matrix.org">
+  <a href="https://github.com/crev-dev/cargo-crev/discussions">
     <img src="https://img.shields.io/badge/Commmunity-discussion-blue?style=flat-square" alt="community discussion">
   </a>
   <a href="https://travis-ci.org/crev-dev/cargo-crev">
@@ -52,10 +52,9 @@ Follow the [`cargo-crev` - Getting Started
 Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
-`cargo-crev` is a work in progress, but it should be usable at all times. Join
-our [matrix](https://matrix.to/#/#crev:matrix.org) or
-[gitter](https://gitter.im/crev-dev/cargo-crev) channel, get help, report
-problems and feedback. Thank you\!
+`cargo-crev` is a work in progress, but it should be usable at all times.
+Use [discussions](https://github.com/crev-dev/cargo-crev/discussions)
+to get help, more information and report feedback. Thank you\!
 
 ## Raise awareness
 
