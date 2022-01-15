@@ -62,10 +62,9 @@ pub fn get_crate_deps_info(
         ..Default::default()
     };
     let scanner = scan::Scanner::new(CrateSelector::default(), &args)?;
-    let events = scanner.run(required_details);
+    let mut events = scanner.run(required_details);
 
     let stats = events
-        .into_iter()
         .find(|stats| stats.info.id == pkg_id)
         .expect("result");
 

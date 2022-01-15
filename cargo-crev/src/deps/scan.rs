@@ -15,15 +15,15 @@ use cargo::core::PackageId;
 use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, *};
-use crossbeam::{
-    self,
-    channel::{unbounded, Receiver},
-};
+use crossbeam::{self, channel::unbounded};
 use std::{
     collections::{HashMap, HashSet},
     default::Default,
     path::PathBuf,
-    sync::{atomic, Arc, Mutex},
+    sync::{
+        atomic::{self, AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -71,6 +71,32 @@ pub struct Scanner {
     graph: Arc<crate::repo::Graph>,
     crate_details_by_id: Arc<Mutex<HashMap<PackageId, CrateDetails>>>,
     pub roots: Vec<cargo::core::PackageId>,
+}
+
+// Something in (presumably) in the C bindings we're using is unsound and will SIGSEGV
+// if the threads are still running while the main thread terminated. To prevent that
+// we wrap all handles in this struct that will `join` them on `drop`.
+pub struct ScannerHandle {
+    threads: Vec<std::thread::JoinHandle<()>>,
+    canceled_flag: Arc<AtomicBool>,
+    ready_rx: crossbeam::channel::Receiver<CrateStats>,
+}
+
+impl Iterator for ScannerHandle {
+    type Item = CrateStats;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.ready_rx.recv().ok()
+    }
+}
+
+impl Drop for ScannerHandle {
+    fn drop(&mut self) {
+        self.canceled_flag.store(true, Ordering::SeqCst);
+        self.threads
+            .drain(..)
+            .for_each(|h| h.join().expect("deps scanner thread panicked"));
+    }
 }
 
 impl Scanner {
@@ -159,17 +185,17 @@ impl Scanner {
     }
 
     /// start computations on a new thread
-    pub fn run(self, required_details: &RequiredDetails) -> Receiver<CrateStats> {
+    pub fn run(self, required_details: &RequiredDetails) -> ScannerHandle {
         if !self.has_trusted_ids {
             eprintln!("There are no trusted Ids. There is nothing to verify against.\nUse `cargo crev trust` to add trusted reviewers");
         }
 
-        let (ready_tx, ready_rx) = unbounded();
-        // instead of properly traversing the graph
+        // TODO: instead of properly traversing the graph
         // to be able to calculate recursive stats,
         // we use pending channel to postpone working
         // on crates that need their dependencies to be
         // analyzed first
+        let (ready_tx, ready_rx) = crossbeam::channel::unbounded();
         let (pending_tx, pending_rx) = unbounded();
 
         let total_crates_len = self.selected_crate_count();
@@ -181,74 +207,87 @@ impl Scanner {
         // it once for all the worker threads, after we hit
         // the terminating condition
         let pending_tx = Arc::new(Mutex::new(Some(pending_tx)));
+        let canceled_flag = Arc::new(AtomicBool::new(false));
 
         if total_crates_len == 0 {
-            return ready_rx;
+            return ScannerHandle {
+                threads: vec![],
+                canceled_flag,
+                ready_rx,
+            };
         }
 
         let ready_tx_count = Arc::new(atomic::AtomicUsize::new(0));
-        for _ in 0..num_cpus::get() {
-            let pending_rx = pending_rx.clone();
-            let pending_tx = pending_tx.clone();
-            let ready_tx = ready_tx.clone();
-            let ready_tx_count = ready_tx_count.clone();
-            let mut self_clone = self.clone();
-            let ready_tx_count = ready_tx_count.clone();
-            let ready_tx_count_clone = ready_tx_count.clone();
-            let required_details = *required_details;
-            std::thread::spawn({
-                move || {
-                    pending_rx.into_iter().for_each(move |pkg_id: PackageId| {
-                        {
-                            let graph = &self_clone.graph;
-                            let crate_details_by_id =
-                                self_clone.crate_details_by_id.lock().unwrap();
+        let threads: Vec<_> = (0..num_cpus::get())
+            .map(|_| {
+                let pending_rx = pending_rx.clone();
+                let pending_tx = pending_tx.clone();
+                let ready_tx = ready_tx.clone();
+                let ready_tx_count = ready_tx_count.clone();
+                let mut self_clone = self.clone();
+                let ready_tx_count = ready_tx_count.clone();
+                let required_details = *required_details;
+                std::thread::spawn({
+                    let canceled_flag = canceled_flag.clone();
+                    move || {
+                        pending_rx.into_iter().for_each(move |pkg_id: PackageId| {
+                            if canceled_flag.load(Ordering::SeqCst) {
+                                *pending_tx.lock().unwrap() = None;
+                                return;
+                            }
 
-                            for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
-                                if !crate_details_by_id.contains_key(&dep_pkg_id) {
-                                    if let Some(pending_tx) = pending_tx.lock().unwrap().as_mut() {
-                                        pending_tx.send(pkg_id).unwrap();
+                            {
+                                let graph = &self_clone.graph;
+                                let crate_details_by_id =
+                                    self_clone.crate_details_by_id.lock().unwrap();
+
+                                for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
+                                    if !crate_details_by_id.contains_key(&dep_pkg_id) {
+                                        if let Some(pending_tx) =
+                                            pending_tx.lock().unwrap().as_mut()
+                                        {
+                                            pending_tx.send(pkg_id).unwrap();
+                                        }
+                                        return;
                                     }
-                                    return;
                                 }
                             }
-                        }
 
-                        let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
+                            let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
 
-                        let details = self_clone
-                            .get_crate_details(&info, &required_details)
-                            .expect("Unable to scan crate");
-                        {
-                            let mut crate_details_by_id =
-                                self_clone.crate_details_by_id.lock().unwrap();
-                            crate_details_by_id.insert(info.id, details.clone());
-                        }
-
-                        if self_clone.selected_crates_ids.contains(&pkg_id) {
-                            let stats = CrateStats { info, details };
-
-                            // ignore any problems if the receiver decided not to listen anymore
-                            let _ = ready_tx.send(stats);
-
-                            if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
-                                == total_crates_len
+                            let details = self_clone
+                                .get_crate_details(&info, &required_details)
+                                .expect("Unable to scan crate");
                             {
-                                // we processed all the crates, let all the workers terminate
-                                *pending_tx.lock().unwrap() = None;
+                                let mut crate_details_by_id =
+                                    self_clone.crate_details_by_id.lock().unwrap();
+                                crate_details_by_id.insert(info.id, details.clone());
                             }
-                        }
-                    });
 
-                    assert_eq!(
-                        ready_tx_count_clone.load(atomic::Ordering::SeqCst),
-                        total_crates_len
-                    );
-                }
-            });
+                            if self_clone.selected_crates_ids.contains(&pkg_id) {
+                                let stats = CrateStats { info, details };
+
+                                // ignore any problems if the receiver decided not to listen anymore
+                                let _ = ready_tx.send(stats);
+
+                                if ready_tx_count.fetch_add(1, atomic::Ordering::SeqCst) + 1
+                                    == total_crates_len
+                                {
+                                    // we processed all the crates, let all the workers terminate
+                                    *pending_tx.lock().unwrap() = None;
+                                }
+                            }
+                        });
+                    }
+                })
+            })
+            .collect();
+
+        ScannerHandle {
+            threads,
+            canceled_flag,
+            ready_rx,
         }
-
-        ready_rx
     }
 
     fn get_crate_details(

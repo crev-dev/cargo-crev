@@ -208,7 +208,7 @@ pub fn clean_all_crates_with_digest_mismatch() -> Result<()> {
     let scanner = scan::Scanner::new(CrateSelector::default(), &opts::CrateVerify::default())?;
     let events = scanner.run(&RequiredDetails::none());
 
-    for stats in events.into_iter() {
+    for stats in events {
         if stats.details.accumulative_own.is_local_source_code {
             continue;
         }

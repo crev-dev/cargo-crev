@@ -333,7 +333,6 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut crates_with_issues = false;
 
     let deps: Vec<_> = events
-        .into_iter()
         .filter(|stats| {
             !args.skip_known_owners
                 || stats
