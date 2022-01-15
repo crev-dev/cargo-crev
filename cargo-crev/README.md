@@ -9,11 +9,16 @@
       <img src="https://img.shields.io/crates/v/cargo-crev.svg?style=flat-square" alt="crates.io">
   </a>
   <br>
+  
 </p>
 
-![jesus, that's a lot of dependencies](https://i.imgflip.com/5b8fqd.jpg)
 
-[image credit](https://jakelikesonions.com/post/158707858999/the-future-more-of-the-present)
+<p align="center">
+  <img src="https://i.imgflip.com/5b8fqd.jpg" alt="jesus, that's a lot of dependencies" />
+  <br/>
+  <a href="https://jakelikesonions.com/post/158707858999/the-future-more-of-the-present">image credit</a>
+</p>
+
 
 # cargo-crev
 
