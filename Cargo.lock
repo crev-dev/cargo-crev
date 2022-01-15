@@ -310,6 +310,7 @@ dependencies = [
  "num_cpus",
  "openssl-sys",
  "petgraph",
+ "quote",
  "rayon",
  "resiter",
  "rpassword",
@@ -318,6 +319,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
+ "syn-inline-mod",
  "tempfile",
  "term",
  "thiserror",
@@ -2665,6 +2667,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "syn-inline-mod"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b670f535364c67358ecffb60b9f2579f9b45d3c71e8cca6d45d22ee0fadaa7eb"
+dependencies = [
+ "proc-macro2",
+ "syn",
 ]
 
 [[package]]

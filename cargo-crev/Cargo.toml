@@ -45,7 +45,7 @@ rpassword = "5"
 serde = "1.0.130"
 serde_json = "1.0.62"
 serde_yaml = "0.8.17"
-structopt = "0.3.21"
+structopt = "0.3.25"
 time = "0.3.4"
 tokei = "12.1.2"
 walkdir = "2.3.2"
@@ -56,6 +56,8 @@ rprompt = "1.0.5"
 thiserror = "1.0.30"
 log = "0.4.14"
 term = "0.7.0"
+syn-inline-mod = "0.5.0"
+quote = "1"
 
 [features]
 default = ["openssl-sys/vendored"]

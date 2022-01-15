@@ -682,6 +682,11 @@ pub enum Crate {
     #[structopt(name = "open")]
     Open(CrateOpen),
 
+    /// WIP: Expand the crate source using `cargo-expand` like functionality
+    // https://github.com/dtolnay/cargo-expand/issues/11
+    #[structopt(name = "expand")]
+    Expand(ReviewOrGotoCommon),
+
     /// Clean the source code directory of a crate (eg. after review)
     #[structopt(name = "clean")]
     Clean(ReviewOrGotoCommon),

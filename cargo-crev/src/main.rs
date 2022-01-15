@@ -447,6 +447,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Crate::Goto(args) => {
                 goto_crate_src(&args.crate_)?;
             }
+            opts::Crate::Expand(args) => {
+                expand_crate_src(&args.crate_)?;
+            }
             opts::Crate::Open(args) => {
                 handle_goto_mode_command(&args.common.clone(), |sel| {
                     crate_open(sel, args.cmd, args.cmd_save)

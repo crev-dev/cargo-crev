@@ -149,6 +149,27 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     exec_into(command)
 }
 
+pub fn expand_crate_src(selector: &opts::CrateSelector) -> Result<()> {
+    use quote::ToTokens;
+
+    let repo = Repo::auto_open_cwd_default()?;
+    selector.ensure_name_given()?;
+    let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
+    let crate_ = repo.get_crate(&crate_id)?;
+    let crate_dir = crate_.root();
+
+    // TODO: discover all the entrypoint, iterate over them, take care of formatting and
+    // comments
+    println!(
+        "{}",
+        syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs"))
+            .into_token_stream()
+            .to_string()
+    );
+
+    Ok(())
+}
+
 pub fn ensure_known_owners_list_exists(local: &crev_lib::Local) -> Result<()> {
     let path = local.get_proofs_dir_path()?.join(KNOWN_CARGO_OWNERS_FILE);
     if !path.exists() {
