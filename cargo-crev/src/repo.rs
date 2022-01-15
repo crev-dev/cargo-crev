@@ -133,7 +133,7 @@ fn our_resolve<'a, 'cfg>(
     features: &[String],
     all_features: bool,
     no_default_features: bool,
-    no_dev_dependencies: bool,
+    dev_dependencies: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
     // there is bunch of slightly different ways to do it,
     // so I leave some dead code around, in case I want to
@@ -151,7 +151,7 @@ fn our_resolve<'a, 'cfg>(
             Ok((
                 m.summary().to_owned(),
                 ResolveOpts {
-                    dev_deps: !no_dev_dependencies,
+                    dev_deps: dev_dependencies,
                     features: RequestedFeatures::CliFeatures(CliFeatures::from_command_line(
                         features,
                         all_features,
@@ -460,7 +460,7 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.no_dev_dependencies,
+            self.cargo_opts.dev_dependencies()?,
         )?;
 
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
@@ -539,7 +539,7 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.no_dev_dependencies,
+            self.cargo_opts.dev_dependencies()?,
         )?;
         let mut source = self.load_source()?;
 
@@ -580,7 +580,7 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.no_dev_dependencies,
+            self.cargo_opts.dev_dependencies()?,
         )?;
 
         for pkg_id in package_set.package_ids() {
@@ -618,7 +618,7 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.no_dev_dependencies,
+            self.cargo_opts.dev_dependencies()?,
         )
     }
 

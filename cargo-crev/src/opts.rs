@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use crev_data::{Level, Version};
-use std::{ffi::OsString, path::PathBuf};
+use std::{ffi::OsString, io::Write, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone, Default)]
@@ -59,19 +59,27 @@ pub struct CargoOpts {
     #[structopt(long = "features", value_name = "FEATURES")]
     /// [cargo] Space-separated list of features to activate
     pub features: Option<String>,
+
     #[structopt(long = "all-features")]
     /// [cargo] Activate all available features
     pub all_features: bool,
+
     #[structopt(long = "no-default-features")]
     /// [cargo] Do not activate the `default` feature
     pub no_default_features: bool,
+
+    #[structopt(long = "dev-dependencies")]
+    /// [cargo] Skip dev dependencies.
+    dev_dependencies: bool,
+
     #[structopt(long = "no-dev-dependencies")]
     /// [cargo] Skip dev dependencies.
-    pub no_dev_dependencies: bool,
-    #[structopt(long = "manifest-path", value_name = "PATH", parse(from_os_str))]
+    no_dev_dependencies: bool,
 
+    #[structopt(long = "manifest-path", value_name = "PATH", parse(from_os_str))]
     /// [cargo] Path to Cargo.toml
     pub manifest_path: Option<PathBuf>,
+
     #[structopt(short = "Z", value_name = "FLAG")]
 
     /// [cargo] Unstable (nightly-only) flags to Cargo
@@ -81,6 +89,19 @@ pub struct CargoOpts {
     /// [cargo] Skip targets other than specified (no value = autodetect)
     #[structopt(long = "target")]
     pub target: Option<Option<String>>,
+}
+
+impl CargoOpts {
+    pub fn dev_dependencies(&self) -> Result<bool> {
+        if self.dev_dependencies && self.no_dev_dependencies {
+            bail!("`--no-dev-dependencies` and `--dev-dependencies` can't be used together");
+        }
+        if self.no_dev_dependencies {
+            writeln!(std::io::stderr(), "`--no-dev-dependencies` is the default, is now ignored and will be removed in the future")?;
+        }
+
+        Ok(self.dev_dependencies)
+    }
 }
 
 #[derive(Debug, StructOpt, Clone)]
