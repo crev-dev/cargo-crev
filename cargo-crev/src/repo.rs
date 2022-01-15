@@ -336,7 +336,6 @@ fn prune_directory_source_replacements(
 
 /// A handle to the current Rust project
 pub struct Repo {
-    manifest_path: PathBuf,
     config: Config,
     cargo_opts: opts::CargoOpts,
     features_list: Vec<String>,
@@ -347,13 +346,16 @@ impl Repo {
         Self::auto_open_cwd(Default::default())
     }
 
-    pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
-        let manifest_path = if let Some(ref path) = cargo_opts.manifest_path {
+    pub fn get_manifest_path(&self) -> Result<PathBuf> {
+        Ok(if let Some(ref path) = self.cargo_opts.manifest_path {
             path.to_owned()
         } else {
             let cwd = env::current_dir()?;
             find_root_manifest_for_wd(&cwd)?
-        };
+        })
+    }
+
+    pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
         let mut config = Config::default()?;
         config.configure(
             0,
@@ -384,15 +386,14 @@ impl Repo {
             .collect();
 
         Ok(Repo {
-            manifest_path,
             config,
             features_list,
             cargo_opts,
         })
     }
 
-    fn workspace(&self) -> CargoResult<Workspace<'_>> {
-        Workspace::new(&self.manifest_path, &self.config)
+    fn workspace(&self) -> Result<Workspace<'_>> {
+        Workspace::new(&self.get_manifest_path()?, &self.config)
     }
 
     // TODO: Do we even need it? We should just always use a default/empty
@@ -668,8 +669,8 @@ impl Repo {
     ) -> Result<PackageId> {
         if unrelated {
             Ok(
-                    self.find_independent_pkg_id_by_selector(name, version)?
-                        .ok_or_else(|| format_err!("Could not find requested crate. Try updating cargo's registry index cache?"))?
+                self.find_independent_pkg_id_by_selector(name, version)?
+                    .ok_or_else(|| format_err!("Could not find requested crate. Try updating cargo's registry index cache?"))?
                 )
         } else {
             Ok(self.find_dependency_pkg_id_by_selector(name, version)?
