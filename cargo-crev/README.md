@@ -1,15 +1,12 @@
 <p align="center">
+  <a href="https://matrix.to/#/#crev:matrix.org">
+    <img src="https://img.shields.io/badge/Commmunity-discussion-blue?style=flat-square" alt="community discussion">
+  </a>
   <a href="https://travis-ci.org/crev-dev/cargo-crev">
       <img src="https://img.shields.io/travis/crev-dev/cargo-crev/master.svg?style=flat-square" alt="Travis CI Build Status">
   </a>
   <a href="https://crates.io/crates/cargo-crev">
       <img src="https://img.shields.io/crates/v/cargo-crev.svg?style=flat-square" alt="crates.io">
-  </a>
-  <a href="https://matrix.to/#/#crev:matrix.org">
-    <img src="https://img.shields.io/matrix/crev:matrix.org.svg?server_fqdn=matrix.org&style=flat-square" alt="crev matrix channel">
-  </a>
-  <a href="https://gitter.im/dpc/crev">
-    <img src="https://img.shields.io/gitter/room/dpc/crev.svg?style=flat-square" alt="crev gitter channel">
   </a>
   <br>
 </p>
