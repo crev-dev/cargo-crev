@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/crev-dev/cargo-crev/discussions">
-    <img src="https://img.shields.io/badge/Commmunity-discussion-blue?style=flat-square" alt="community discussion">
+    <img src="https://img.shields.io/badge/commmunity-discussion-blue?style=flat-square" alt="community discussion">
   </a>
   <a href="https://travis-ci.org/crev-dev/cargo-crev">
       <img src="https://img.shields.io/travis/crev-dev/cargo-crev/master.svg?style=flat-square" alt="Travis CI Build Status">
