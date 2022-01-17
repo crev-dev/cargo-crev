@@ -18,6 +18,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Better broken pipe errors handling
 - Fix `verify --no-dev-dependencies` being ignored
 - Deprecate `--no-dev-dependencies`. Make it the default. Introduce `--dev-dependencies` instead.
+- Fix binary releases by switching to Github Actions
 
 ## [0.22.2](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...v0.22.2) - 2022-01-11
 
