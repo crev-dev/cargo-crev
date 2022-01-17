@@ -626,11 +626,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Goto(args) => {
-            goto_crate_src(&args.crate_)?;
+            goto_crate_src(&args.crate_.auto_unrelated()?)?;
         }
         opts::Command::Open(args) => {
-            handle_goto_mode_command(&args.common.clone(), |sel| {
-                crate_open(sel, args.cmd, args.cmd_save)
+            handle_goto_mode_command(&args.common.clone(), |crate_| {
+                crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save)
             })?;
         }
         opts::Command::Publish => repo_publish()?,
