@@ -1,6 +1,8 @@
 use std::{ffi::*, io::Write, path::*, process::*};
 
 #[test]
+#[ignore]
+// TODO: rewrite to be a standalone binary
 fn creates_new_id_implicitly() {
     let c = Cli::new();
     let empty_id = c.run(&["id", "query", "own"], "");
