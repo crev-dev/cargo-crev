@@ -10,7 +10,7 @@ D="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 # Note that this requires 'cargo deb', which can be installed with
 # 'cargo install cargo-deb'.
 #
-# This should be run from the root of the ripgrep repo.
+# This should be run from the root of the cargo-crev repo.
 
 if ! command -V cargo-deb > /dev/null 2>&1; then
     echo "cargo-deb command missing" >&2
@@ -23,7 +23,7 @@ if ! command -V asciidoctor > /dev/null 2>&1; then
 fi
 
 # 'cargo deb' does not seem to provide a way to specify an asset that is
-# created at build time, such as ripgrep's man page. To work around this,
+# created at build time, such as cargo-crev's man page. To work around this,
 # we force a debug build, copy out the man page (and shell completions)
 # produced from that build, put it into a predictable location and then build
 # the deb, which knows where to look.
@@ -34,8 +34,8 @@ OUT_DIR="$("$D"/cargo-out-dir target/debug/)"
 mkdir -p "$DEPLOY_DIR"
 
 # Copy man page and shell completions.
-cp "$OUT_DIR"/{rg.1,rg.bash,rg.fish} "$DEPLOY_DIR/"
-cp complete/_rg "$DEPLOY_DIR/"
+cp "$OUT_DIR"/{cargo-crev.1,cargo-crev.bash,cargo-crev.fish} "$DEPLOY_DIR/"
+cp complete/_cargo-crev "$DEPLOY_DIR/"
 
 # Since we're distributing the dpkg, we don't know whether the user will have
 # PCRE2 installed, so just do a static build.

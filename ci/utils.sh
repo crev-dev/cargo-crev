@@ -8,9 +8,9 @@
 # to search for the build output.
 cargo_out_dir() {
     # This works by finding the most recent stamp file, which is produced by
-    # every ripgrep build.
+    # every cargo-crev build.
     target_dir="$1"
-    find "$target_dir" -name ripgrep-stamp -print0 \
+    find "$target_dir" -name cargo-crev-stamp -print0 \
       | xargs -0 ls -t \
       | head -n1 \
       | xargs dirname

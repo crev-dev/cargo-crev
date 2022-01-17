@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         build:
-        # We test ripgrep on a pinned version of Rust, along with the moving
+        # We test cargo-crev on a pinned version of Rust, along with the moving
         # targets of 'stable' and 'beta' for good measure.
         - pinned
         - stable
@@ -35,15 +35,17 @@ jobs:
         - nightly
         - nightly-musl
         - nightly-32
-        - nightly-mips
+        # FIXME: fails on `cargo` crate build
+        # - nightly-mips
         - nightly-arm
         - macos
-        - win-msvc
-        - win-gnu
+        # FIXME: openssl
+        # - win-msvc
+        # - win-gnu
         include:
         - build: pinned
           os: ubuntu-18.04
-          rust: 1.52.1
+          rust: 1.58.0
         - build: stable
           os: ubuntu-18.04
           rust: stable
@@ -61,10 +63,10 @@ jobs:
           os: ubuntu-18.04
           rust: nightly
           target: i686-unknown-linux-gnu
-        - build: nightly-mips
-          os: ubuntu-18.04
-          rust: nightly
-          target: mips64-unknown-linux-gnuabi64
+        # - build: nightly-mips
+        #   os: ubuntu-18.04
+        #   rust: nightly
+        #   target: mips64-unknown-linux-gnuabi64
         - build: nightly-arm
           os: ubuntu-18.04
           rust: nightly
@@ -77,12 +79,13 @@ jobs:
         - build: macos
           os: macos-latest
           rust: nightly
-        - build: win-msvc
-          os: windows-2019
-          rust: nightly
-        - build: win-gnu
-          os: windows-2019
-          rust: nightly-x86_64-gnu
+        # FIXME: openssl
+        # - build: win-msvc
+        #   os: windows-2019
+        #   rust: nightly
+        # - build: win-gnu
+        #   os: windows-2019
+        #   rust: nightly-x86_64-gnu
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -117,66 +120,16 @@ jobs:
         echo "cargo command is: ${{ env.CARGO }}"
         echo "target flag is: ${{ env.TARGET_FLAGS }}"
 
-    - name: Build ripgrep and all crates
+    - name: Build cargo-crev and all crates
       run: ${{ env.CARGO }} build --verbose --workspace ${{ env.TARGET_FLAGS }}
 
-    - name: Build ripgrep with PCRE2
-      run: ${{ env.CARGO }} build --verbose --workspace --features pcre2 ${{ env.TARGET_FLAGS }}
-
-    # This is useful for debugging problems when the expected build artifacts
-    # (like shell completions and man pages) aren't generated.
-    - name: Show build.rs stderr
-      shell: bash
-      run: |
-        set +x
-        stderr="$(find "${{ env.TARGET_DIR }}/debug" -name stderr -print0 | xargs -0 ls -t | head -n1)"
-        if [ -s "$stderr" ]; then
-          echo "===== $stderr ===== "
-          cat "$stderr"
-          echo "====="
-        fi
-        set -x
-
-    - name: Run tests with PCRE2 (sans cross)
-      if: matrix.target == ''
-      run: ${{ env.CARGO }} test --verbose --workspace --features pcre2 ${{ env.TARGET_FLAGS }}
-
-    - name: Run tests without PCRE2 (with cross)
+    - name: Run tests (with cross)
       # These tests should actually work, but they almost double the runtime.
       # Every integration test spins up qemu to run 'rg', and when PCRE2 is
       # enabled, every integration test is run twice: one with the default
       # regex engine and once with PCRE2.
       if: matrix.target != ''
       run: ${{ env.CARGO }} test --verbose --workspace ${{ env.TARGET_FLAGS }}
-
-    - name: Test for existence of build artifacts (Windows)
-      if: matrix.os == 'windows-2019'
-      shell: bash
-      run: |
-        outdir="$(ci/cargo-out-dir "${{ env.TARGET_DIR }}")"
-        ls "$outdir/_rg.ps1" && file "$outdir/_rg.ps1"
-
-    - name: Test for existence of build artifacts (Unix)
-      if: matrix.os != 'windows-2019'
-      shell: bash
-      run: |
-        outdir="$(ci/cargo-out-dir "${{ env.TARGET_DIR }}")"
-        # TODO: Check for the man page generation here. For whatever reason,
-        # it seems to be intermittently failing in CI. No idea why.
-        # for f in rg.bash rg.fish rg.1; do
-        for f in rg.bash rg.fish; do
-          # We could use file -E here, but it isn't supported on macOS.
-          ls "$outdir/$f" && file "$outdir/$f"
-        done
-
-    - name: Test zsh shell completions (Unix, sans cross)
-      # We could test this when using Cross, but we'd have to execute the
-      # 'rg' binary (done in test-complete) with qemu, which is a pain and
-      # doesn't really gain us much. If shell completion works in one place,
-      # it probably works everywhere.
-      if: matrix.target == '' && matrix.os != 'windows-2019'
-      shell: bash
-      run: ci/test-complete
 
   rustfmt:
     name: rustfmt
@@ -196,7 +149,7 @@ jobs:
         cargo fmt --all -- --check
 
   docs:
-    name: Docs
+    name: docs
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
