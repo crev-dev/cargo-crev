@@ -443,17 +443,17 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 deps::crate_mvps(crate_, opts)?;
             }
             opts::Crate::Info { crate_, opts } => {
-                info::print_crate_info(crate_, opts)?;
+                info::print_crate_info(crate_.auto_unrelated()?, opts)?;
             }
             opts::Crate::Goto(args) => {
-                goto_crate_src(&args.crate_)?;
+                goto_crate_src(&args.crate_.auto_unrelated()?)?;
             }
             opts::Crate::Expand(args) => {
-                expand_crate_src(&args.crate_)?;
+                expand_crate_src(&args.crate_.auto_unrelated()?)?;
             }
             opts::Crate::Open(args) => {
-                handle_goto_mode_command(&args.common.clone(), |sel| {
-                    crate_open(sel, args.cmd, args.cmd_save)
+                handle_goto_mode_command(&args.common.clone(), |crate_| {
+                    crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save)
                 })?;
             }
             opts::Crate::Clean(args) => {
@@ -463,7 +463,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     handle_goto_mode_command(&args, |sel| clean_crate(sel))?;
                 }
             }
-            opts::Crate::Dir(args) => show_dir(&args.common.crate_)?,
+            opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
 
             opts::Crate::Review(args) => crate_review(args)?,
             opts::Crate::Unreview(args) => {

@@ -19,6 +19,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fix `verify --no-dev-dependencies` being ignored
 - Deprecate `--no-dev-dependencies`. Make it the default. Introduce `--dev-dependencies` instead.
 - Fix binary releases by switching to Github Actions
+- Make `crate {goto,dir,open,expand}` assume `-u` outside of an existing Rust project.
 
 ## [0.22.2](https://github.com/dpc/crev/compare/cargo-crev-v0.21.4...v0.22.2) - 2022-01-11
 

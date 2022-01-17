@@ -2,6 +2,9 @@ use anyhow::{bail, Result};
 use crev_data::{Level, Version};
 use std::{ffi::OsString, io::Write, path::PathBuf};
 use structopt::StructOpt;
+use term::color;
+
+use crate::term::Term;
 
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateSelector {
@@ -38,9 +41,28 @@ impl CrateSelector {
             (None, None) => Ok(None),
         }
     }
-}
 
-impl CrateSelector {
+    /// If can't find manifest file in CWD, change to `-u`
+    ///
+    /// This is so some commands can conveniently work outside of any
+    /// Rust project.
+    pub fn auto_unrelated(self) -> Result<Self> {
+        let repo = crate::Repo::auto_open_cwd_default()?;
+
+        Ok(match repo.get_manifest_path() {
+            Ok(_) => self,
+            Err(e) => {
+                Term::new().eprintln(
+                    format_args!("Unable to find manifest: {e}. Assuming `-u` option."),
+                    Some(color::YELLOW),
+                )?;
+                CrateSelector {
+                    unrelated: true,
+                    ..self
+                }
+            }
+        })
+    }
     pub fn is_empty(&self) -> bool {
         self.name.is_none() && self.version.is_none()
     }

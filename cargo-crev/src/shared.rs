@@ -119,7 +119,8 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     };
     let repo = Repo::auto_open_cwd_default()?;
     selector.ensure_name_given()?;
-    let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
+
+    let crate_id = repo.find_pkgid_by_crate_selector(&selector)?;
     let crate_ = repo.get_crate(&crate_id)?;
     let crate_dir = crate_.root();
     let crate_name = crate_.name();

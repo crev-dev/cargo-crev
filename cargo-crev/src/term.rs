@@ -89,7 +89,6 @@ impl Term {
         Ok(())
     }
 
-    #[allow(unused)]
     pub fn eprint<C>(&mut self, fmt: Arguments<'_>, color: C) -> io::Result<()>
     where
         C: Into<Option<Color>>,
@@ -104,6 +103,17 @@ impl Term {
                 self.stdout_is_tty,
             )?;
         }
+        Ok(())
+    }
+
+    pub fn eprintln<C>(&mut self, fmt: Arguments<'_>, color: C) -> io::Result<()>
+    where
+        C: Into<Option<Color>>,
+    {
+        let color = color.into();
+        self.print(fmt, color)?;
+        self.print(format_args!("\n"), color)?;
+
         Ok(())
     }
 }
