@@ -20,7 +20,7 @@ on:
     # branches:
     # - ag/work
     tags:
-    - "[0-9]+.[0-9]+.[0-9]+"
+    - "v[0-9]+.[0-9]+.[0-9]+"
 jobs:
   create-release:
     name: create-release
@@ -39,7 +39,7 @@ jobs:
           # Apparently, this is the right way to get a tag name. Really?
           #
           # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
-          echo "CARGO_CREV_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "CARGO_CREV_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           echo "version is: ${{ env.CARGO_CREV_VERSION }}"
       - name: Create GitHub release
         id: release
