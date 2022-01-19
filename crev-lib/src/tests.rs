@@ -297,7 +297,7 @@ fn proofdb_distrust() -> Result<()> {
         a.create_signed_trust_proof(vec![b.as_public_id(), c.as_public_id()], TrustLevel::High)?;
     let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low)?;
     let d_to_c = d.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Distrust)?;
-    let c_to_e = c.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High)?;
+    let c_to_e = c.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::Low)?;
 
     let mut trustdb = ProofDB::new();
 

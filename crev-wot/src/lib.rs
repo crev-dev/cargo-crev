@@ -1068,10 +1068,13 @@ impl ProofDB {
         let mut previous_iter_trust_level = TrustLevel::High;
         current_trust_set.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
-        while let Some(current) = pending.iter().next().cloned() {
+        while let Some(current) = pending.iter().rev().next().cloned() {
             debug!("Traversing id: {:?}", current);
             pending.remove(&current);
 
+            // did we just move from processing higher effective trust level id to a lower ones?
+            // if so, now would be a good time to check if anyone got banned, and then restart processing
+            // of the WoT
             if current.effective_trust_level != previous_iter_trust_level {
                 debug!(
                     "No more nodes with effective_trust_level of {}",
@@ -1082,9 +1085,7 @@ impl ProofDB {
                     debug!("Some people got banned at the current trust level - restarting the WoT calculation");
                     break;
                 }
-            } else {
-                previous_iter_trust_level = current.effective_trust_level;
-            }
+            previous_iter_trust_level = current.effective_trust_level;
 
             for (direct_trust, candidate_id) in self.get_trust_list_of_id(&current.id) {
                 debug!(
