@@ -460,7 +460,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
                     clean_all_crates_with_digest_mismatch()?;
                 } else {
-                    handle_goto_mode_command(&args, |sel| clean_crate(sel))?;
+                    handle_goto_mode_command(&args, clean_crate)?;
                 }
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,

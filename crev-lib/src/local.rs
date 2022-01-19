@@ -779,10 +779,10 @@ impl Local {
     }
 
     /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
-    pub fn fetch_url_into(&self, url: &str, mut db: &mut crev_wot::ProofDB) -> Result<()> {
+    pub fn fetch_url_into(&self, url: &str, db: &mut crev_wot::ProofDB) -> Result<()> {
         info!("Fetching {}... ", url);
         let dir = self.fetch_remote_git(url)?;
-        self.import_proof_dir_and_print_counts(&dir, url, &mut db)?;
+        self.import_proof_dir_and_print_counts(&dir, url, db)?;
         let mut db = crev_wot::ProofDB::new();
         let url = Url::new_git(url);
         let fetch_source = self.get_fetch_source_for_url(url.clone())?;

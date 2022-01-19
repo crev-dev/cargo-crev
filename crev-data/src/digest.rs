@@ -26,7 +26,7 @@ impl Digest {
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() == 32 {
             let mut out = [0; 32];
-            out.copy_from_slice(&bytes);
+            out.copy_from_slice(bytes);
             Some(Self(out))
         } else {
             None

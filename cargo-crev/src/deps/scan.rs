@@ -225,7 +225,7 @@ impl Scanner {
                 let ready_tx = ready_tx.clone();
                 let ready_tx_count = ready_tx_count.clone();
                 let mut self_clone = self.clone();
-                let ready_tx_count = ready_tx_count.clone();
+                let ready_tx_count = ready_tx_count;
                 let required_details = *required_details;
                 std::thread::spawn({
                     let canceled_flag = canceled_flag.clone();
@@ -321,8 +321,7 @@ impl Scanner {
         };
         let digest_mismatches = digest
             .as_ref()
-            .map(|digest| get_crate_digest_mismatches(&self.db, &pkg_name, pkg_version, digest))
-            .unwrap_or(vec![]);
+            .map(|digest| get_crate_digest_mismatches(&self.db, &pkg_name, pkg_version, digest)).unwrap_or_default();
         let verification_result = if let Some(digest) = digest.as_ref() {
             crev_lib::verify_package_digest(digest, &self.trust_set, &self.requirements, &self.db)
         } else {

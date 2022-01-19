@@ -5,8 +5,8 @@ use super::*;
 use crate::term::{self, *};
 use std::{io, io::Write, write, writeln};
 
-const CRATE_VERIFY_CRATE_COLUMN_TITLE: &'static str = "crate";
-const CRATE_VERIFY_VERSION_COLUMN_TITLE: &'static str = "version";
+const CRATE_VERIFY_CRATE_COLUMN_TITLE: &str = "crate";
+const CRATE_VERIFY_VERSION_COLUMN_TITLE: &str = "version";
 
 #[derive(Copy, Clone, Debug)]
 pub struct VerifyOutputColumnWidths {
@@ -282,6 +282,6 @@ pub fn print_dep(
         )?;
     }
 
-    writeln!(io::stdout(), "")?;
+    writeln!(io::stdout())?;
     Ok(())
 }

@@ -120,7 +120,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     let repo = Repo::auto_open_cwd_default()?;
     selector.ensure_name_given()?;
 
-    let crate_id = repo.find_pkgid_by_crate_selector(&selector)?;
+    let crate_id = repo.find_pkgid_by_crate_selector(selector)?;
     let crate_ = repo.get_crate(&crate_id)?;
     let crate_dir = crate_.root();
     let crate_name = crate_.name();
@@ -128,7 +128,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     let local = crev_lib::Local::auto_create_or_open()?;
     local.record_review_activity(
         PROJECT_SOURCE_CRATES_IO,
-        &crate_.name().to_string(),
+        &crate_.name(),
         crate_version,
         &crev_lib::ReviewActivity::new_full(),
     )?;
@@ -144,7 +144,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
         .current_dir(crate_dir)
         .env("PWD", crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
-        .env(GOTO_CRATE_NAME_ENV, crate_name.to_string())
+        .env(GOTO_CRATE_NAME_ENV, crate_name)
         .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string());
 
     exec_into(command)
@@ -165,7 +165,6 @@ pub fn expand_crate_src(selector: &opts::CrateSelector) -> Result<()> {
         "{}",
         syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs"))
             .into_token_stream()
-            .to_string()
     );
 
     Ok(())

@@ -24,7 +24,7 @@ where
             crate::base64_decode(&string).map_err(|err| Error::custom(err.to_string()))
         })
         .and_then(|ref bytes| {
-            T::try_from(bytes)
+            <T as MyTryFromBytes>::try_from(bytes)
                 .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
 }
@@ -49,7 +49,7 @@ where
                 .map_err(|err: FromHexError| Error::custom(err.to_string()))
         })
         .and_then(|bytes: Vec<u8>| {
-            T::try_from(&bytes)
+            <T as MyTryFromBytes>::try_from(&bytes)
                 .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
         })
 }

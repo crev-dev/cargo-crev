@@ -41,14 +41,14 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn get_all_pkg_ids<'s>(&'s self) -> impl Iterator<Item = PackageId> + 's {
+    pub fn get_all_pkg_ids(&self) -> impl Iterator<Item = PackageId> + '_ {
         self.nodes.keys().cloned()
     }
 
-    pub fn get_dependencies_of<'s>(
-        &'s self,
+    pub fn get_dependencies_of(
+        &self,
         pkg_id: PackageId,
-    ) -> impl Iterator<Item = PackageId> + 's {
+    ) -> impl Iterator<Item = PackageId> + '_ {
         self.nodes
             .get(&pkg_id)
             .into_iter()
@@ -59,10 +59,10 @@ impl Graph {
             .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
     }
 
-    pub fn get_reverse_dependencies_of<'s>(
-        &'s self,
+    pub fn get_reverse_dependencies_of(
+        &self,
         pkg_id: PackageId,
-    ) -> impl Iterator<Item = PackageId> + 's {
+    ) -> impl Iterator<Item = PackageId> + '_ {
         self.nodes
             .get(&pkg_id)
             .into_iter()
@@ -351,7 +351,7 @@ fn prune_directory_source_replacements(
                         return true;
                     }
                 }
-                return false;
+                false
             })
             .flat_map(|leaf_node| {
                 petgraph::visit::Walker::iter(
@@ -411,8 +411,7 @@ impl Repo {
         // let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
         let features_list = cargo_opts
             .features
-            .clone()
-            .unwrap_or_else(String::new)
+            .clone().unwrap_or_default()
             .split(',')
             .map(String::from)
             .filter(|s| !s.is_empty())
