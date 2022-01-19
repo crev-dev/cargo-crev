@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+use super::{OverrideItem, OverrideItemDraft};
+
 const CURRENT_TRUST_PROOF_SERIALIZATION_VERSION: i64 = -1;
 
 fn cur_version() -> i64 {
@@ -98,6 +100,13 @@ pub struct Trust {
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
+    #[serde(
+        default = "Default::default",
+        skip_serializing_if = "Vec::is_empty",
+        rename = "override"
+    )]
+    #[builder(default = "Default::default()")]
+    pub override_: Vec<OverrideItem>,
 }
 
 impl TrustBuilder {
@@ -135,6 +144,10 @@ impl proof::CommonOps for Trust {
 
 impl Trust {
     pub const KIND: &'static str = "trust";
+
+    pub fn touch_date(&mut self) {
+        self.common.date = crev_common::now();
+    }
 }
 
 /// Like `Trust` but serializes for interactive editing
@@ -143,6 +156,12 @@ pub struct Draft {
     pub trust: TrustLevel,
     #[serde(default = "Default::default", skip_serializing_if = "String::is_empty")]
     comment: String,
+    #[serde(
+        default = "Default::default",
+        skip_serializing_if = "Vec::is_empty",
+        rename = "override"
+    )]
+    override_: Vec<OverrideItemDraft>,
 }
 
 impl From<Trust> for Draft {
@@ -150,6 +169,7 @@ impl From<Trust> for Draft {
         Draft {
             trust: trust.trust,
             comment: trust.comment,
+            override_: trust.override_.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -202,6 +222,7 @@ impl proof::ContentWithDraft for Trust {
         let mut copy = self.clone();
         copy.trust = draft.trust;
         copy.comment = draft.comment;
+        copy.override_ = draft.override_.into_iter().map(Into::into).collect();
 
         copy.validate_data()?;
         Ok(copy)

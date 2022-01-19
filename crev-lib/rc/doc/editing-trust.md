@@ -77,6 +77,7 @@ using them.
   - `distrust` - "I think this user is malicious/harmful";
 - `comment` - human-readable information about this trust relationship, (e.g.
   who are these entities, why do you trust them)
+- `override` - list of Ids from which to override (ignore) trust for target Id(s)
 
 # Other information
 

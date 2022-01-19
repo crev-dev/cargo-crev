@@ -12,7 +12,8 @@ use crev_lib::id::LockedId;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
-    io::{self, BufRead, Write},
+    fmt::Write as _,
+    io::{self, BufRead, Write as _},
     panic,
     path::PathBuf,
 };
@@ -138,6 +139,7 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
             &args.common_proof_create,
             &args.diff,
             args.skip_activity_check || is_advisory || args.issue,
+            args.overrides,
             args.cargo_opts.clone(),
         )?;
         let has_public_url = local
@@ -196,18 +198,22 @@ fn print_ids<'a>(
     Ok(())
 }
 
+fn url_to_status_str<'a>(id_url: &UrlOfId<'a>) -> (&'static str, &'a str) {
+    match id_url {
+        UrlOfId::None => ("", ""),
+        UrlOfId::FromSelfVerified(url) => ("==", url.url.as_str()),
+        UrlOfId::FromSelf(url) => ("~=", url.url.as_str()),
+        UrlOfId::FromOthers(url) => ("??", url.url.as_str()),
+    }
+}
+
 fn print_mvp_ids<'a>(
     ids: impl Iterator<Item = (&'a Id, u64)>,
     trust_set: &TrustSet,
     db: &ProofDB,
 ) -> Result<()> {
     for (id, count) in ids {
-        let (status, url) = match db.lookup_url(id) {
-            UrlOfId::None => ("", ""),
-            UrlOfId::FromSelfVerified(url) => ("==", url.url.as_str()),
-            UrlOfId::FromSelf(url) => ("~=", url.url.as_str()),
-            UrlOfId::FromOthers(url) => ("??", url.url.as_str()),
-        };
+        let (status, url) = url_to_status_str(&db.lookup_url(id));
         println!(
             "{:>3} {} {:6} {} {}",
             count,
@@ -296,6 +302,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     &args.common_proof_create,
                     args.level.unwrap_or(TrustLevel::Medium),
                     args.level.is_none(),
+                    args.overrides,
                 )?;
             }
             opts::Id::Untrust(args) => {
@@ -304,6 +311,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     &args.common_proof_create,
                     TrustLevel::None,
                     true,
+                    args.overrides,
                 )?;
             }
             opts::Id::Distrust(args) => {
@@ -312,6 +320,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     &args.common_proof_create,
                     TrustLevel::Distrust,
                     true,
+                    args.overrides,
                 )?;
             }
             opts::Id::Query(cmd) => match cmd {
@@ -427,6 +436,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 &args.common_proof_create,
                 args.level.unwrap_or(TrustLevel::Medium),
                 args.level.is_none(),
+                args.overrides,
             )?;
             // Make sure we have reviews for the new Ids we're trusting
             local.fetch_new_trusted(Default::default(), None)?;
@@ -496,6 +506,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         &args.common_proof_create,
                         &args.diff,
                         args.skip_activity_check || is_advisory || args.issue,
+                        args.overrides,
                         args.cargo_opts.clone(),
                     )
                 })?;
@@ -762,12 +773,27 @@ fn set_trust_level_for_ids(
     common_proof_create: &crate::opts::CommonProofCreate,
     trust_level: TrustLevel,
     edit_interactively: bool,
+    show_override_suggestions: bool,
 ) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
     let unlocked_id = local.read_current_unlocked_id(&term::read_passphrase)?;
 
-    let mut trust =
-        local.build_trust_proof(unlocked_id.as_public_id(), ids.to_vec(), trust_level)?;
+    let overrides = if ids.len() == 1 {
+        let db = local.load_db()?;
+
+        db.get_trust_proof_between(&unlocked_id.id.id, &ids[0])
+            .map(|trust_proof| trust_proof.override_.clone())
+            .unwrap_or(vec![])
+    } else {
+        vec![]
+    };
+
+    let mut trust = local.build_trust_proof(
+        unlocked_id.as_public_id(),
+        ids.to_vec(),
+        trust_level,
+        overrides,
+    )?;
 
     if edit_interactively {
         let extra_comment = if trust_level == TrustLevel::Distrust {
@@ -775,9 +801,28 @@ fn set_trust_level_for_ids(
         } else {
             None
         };
-        trust = edit::edit_proof_content_iteractively(&trust, None, None, extra_comment)?;
+        trust = edit::edit_proof_content_iteractively(&trust, None, None, extra_comment, |text| {
+            if show_override_suggestions && trust.override_.is_empty() {
+                writeln!(text, "# override:")?;
+            }
+
+            if show_override_suggestions {
+                let db = local.load_db()?;
+                for (id, trust_level) in ids.into_iter().flat_map(|id| db.get_reverse_trust_for(id))
+                {
+                    let (status, url) = url_to_status_str(&db.lookup_url(id));
+                    writeln!(text, "# - id-type: {}", "crev")?; // TODO: support other ids?
+                    writeln!(text, "#   id: {} # level: {}", id, trust_level)?;
+                    writeln!(text, "#   url: {} # {}", url, status)?;
+                    writeln!(text, "#   comment: \"\"")?;
+                }
+            }
+
+            Ok(())
+        })?;
     }
 
+    trust.touch_date();
     let proof = trust.sign_by(&unlocked_id)?;
 
     if common_proof_create.print_unsigned {

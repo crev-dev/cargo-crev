@@ -1,6 +1,9 @@
 use crate::{
-    proof,
-    proof::content::{ValidationError, ValidationResult},
+    proof::{
+        self,
+        content::{ValidationError, ValidationResult},
+        OverrideItem, OverrideItemDraft,
+    },
     serde_content_serialize, serde_draft_serialize, Error, Level, ParseError,
 };
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
@@ -8,7 +11,12 @@ use derive_builder::Builder;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, default::Default, fmt, ops};
+use std::{
+    collections::HashSet,
+    default::Default,
+    fmt::{self, Debug},
+    ops,
+};
 use typed_builder::TypedBuilder;
 
 const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
@@ -85,6 +93,13 @@ pub struct Package {
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
+    #[builder(default = "Default::default()")]
+    #[serde(
+        default = "Default::default",
+        skip_serializing_if = "Vec::is_empty",
+        rename = "override"
+    )]
+    pub override_: Vec<OverrideItem>,
 }
 
 impl PackageBuilder {
@@ -126,10 +141,16 @@ impl proof::CommonOps for Package {
     }
 }
 
+impl Package {
+    pub fn touch_date(&mut self) {
+        self.common.date = crev_common::now();
+    }
+}
+
 /// Like `Package` but serializes for interactive editing
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Draft {
-    #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
+    #[serde(default = "Default::default")]
     review: super::Review,
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub advisories: Vec<Advisory>,
@@ -141,6 +162,12 @@ pub struct Draft {
     pub flags: FlagsDraft,
     #[serde(default = "Default::default", skip_serializing_if = "is_set_empty")]
     pub alternatives: HashSet<proof::PackageId>,
+    #[serde(
+        default = "Default::default",
+        skip_serializing_if = "Vec::is_empty",
+        rename = "override"
+    )]
+    pub override_: Vec<OverrideItemDraft>,
 }
 
 impl Draft {
@@ -169,6 +196,7 @@ impl From<Package> for Draft {
                 package.alternatives
             },
             flags: package.flags.into(),
+            override_: package.override_.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -236,6 +264,7 @@ impl proof::ContentWithDraft for Package {
             .filter(|a| !a.name.is_empty())
             .collect();
         package.flags = draft.flags.into();
+        package.override_ = draft.override_.into_iter().map(Into::into).collect();
 
         package.validate_data()?;
         Ok(package)

@@ -67,6 +67,8 @@ using them.
     data fields
 - `comment` - human-readable information about this review (e.g. why it was
   done, how, and `rating` explanation)
+- `override` - list of Ids from which to override (ignore) reviews for target
+   package
 
 # Other information
 

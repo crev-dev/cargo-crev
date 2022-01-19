@@ -89,7 +89,8 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
     content: &C,
     previous_date: Option<&proof::Date>,
     base_version: Option<&crev_data::Version>,
-    extra_comment: Option<&str>,
+    extra_leading_comment: Option<&str>,
+    extra_follow_content_fn: impl FnOnce(&mut String) -> Result<()>,
 ) -> Result<C> {
     let mut text = String::new();
     if let Some(date) = previous_date {
@@ -102,13 +103,14 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
     let draft = content.to_draft();
 
     writeln!(&mut text, "# {}", draft.title())?;
-    if let Some(extra_comment) = extra_comment {
+    if let Some(extra_comment) = extra_leading_comment {
         writeln!(&mut text, "# {}", extra_comment)?;
     }
     if let Some(base_version) = base_version {
         writeln!(&mut text, "# Diff base version: {}", base_version)?;
     }
     text.write_str(draft.body())?;
+    (extra_follow_content_fn)(&mut text)?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
         writeln!(&mut text, "# {}", line)?;

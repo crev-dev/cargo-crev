@@ -397,6 +397,10 @@ pub struct CrateVerify {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct IdTrust {
+    #[structopt(long = "overrides")]
+    /// Enable overrides suggestions
+    pub overrides: bool,
+
     /// Public IDs to create Trust Proof for
     pub public_ids: Vec<String>,
 
@@ -410,6 +414,10 @@ pub struct IdTrust {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct TrustUrls {
+    #[structopt(long = "overrides")]
+    /// Enable overrides suggestions
+    pub overrides: bool,
+
     /// Public IDs or proof repo URLs to create Trust Proof for
     pub public_ids_or_urls: Vec<String>,
 
@@ -617,6 +625,10 @@ pub struct CrateReview {
 
     #[structopt(long = "skip-activity-check")]
     pub skip_activity_check: bool,
+
+    #[structopt(long = "overrides")]
+    /// Enable overrides suggestions
+    pub overrides: bool,
 
     /// Review the delta since the given version
     #[structopt(long = "diff", name = "base-version")]

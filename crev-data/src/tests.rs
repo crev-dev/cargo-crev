@@ -1,6 +1,6 @@
 use crate::{
     id::UnlockedId,
-    proof::{self, ContentExt, Proof},
+    proof::{self, Content, ContentExt, ContentWithDraft, Proof},
     Error, Result, Url,
 };
 use semver::Version;
@@ -232,11 +232,58 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
         revision_type: proof::default_revision_type(),
     };
 
-    let mut package =
-        a.as_public_id()
-            .create_package_review_proof(package, Default::default(), "a".into())?;
+    let mut package = a.as_public_id().create_package_review_proof(
+        package,
+        Default::default(),
+        vec![],
+        "a".into(),
+    )?;
     assert!(package.ensure_serializes_to_valid_proof().is_ok());
     package.comment = "a".repeat(32_000);
     assert!(package.ensure_serializes_to_valid_proof().is_err());
+    Ok(())
+}
+
+#[test]
+pub fn parse_package_overrides() -> Result<()> {
+    let s = r#"
+version: -1
+date: "2018-12-18T23:10:21.111854021-08:00"
+from:
+  id-type: crev
+  id: FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE
+  url: "https://github.com/dpc/crev-proofs"
+package:
+  source: "https://crates.io"
+  name: log
+  version: 0.4.6
+  digest: BhDmOOjfESqs8i3z9qsQANH8A39eKklgQKuVtrwN-Tw
+review:
+  thoroughness: low
+  understanding: medium
+  rating: positive
+override:
+  - id-type: crev
+    id: "-sApEowWcAS9J0R7aO18cghvhLBpuMhyeUuWQq_fits"
+    url: "https://github.com/foo/bar"
+    comment: TEST
+"#;
+
+    let proof: proof::package::Package = serde_yaml::from_str(&s).expect("deserialization failed");
+
+    proof.validate_data()?;
+
+    let draft = proof.to_draft();
+
+    assert_eq!(proof.override_.len(), 1);
+    assert!(draft.body.contains("override:"));
+    assert!(draft
+        .body
+        .contains("-sApEowWcAS9J0R7aO18cghvhLBpuMhyeUuWQq_fits"));
+
+    let new_proof = proof.apply_draft(&draft.body)?;
+
+    assert_eq!(proof.override_.len(), new_proof.override_.len());
+
     Ok(())
 }

@@ -9,7 +9,7 @@ use crev_common::{
 };
 use crev_data::{
     id::UnlockedId,
-    proof::{self, trust::TrustLevel},
+    proof::{self, trust::TrustLevel, OverrideItem},
     Id, PublicId, Url,
 };
 use default::default;
@@ -742,6 +742,7 @@ impl Local {
         from_id: &PublicId,
         ids: Vec<Id>,
         trust_level: TrustLevel,
+        override_: Vec<OverrideItem>,
     ) -> Result<proof::trust::Trust> {
         if ids.is_empty() {
             return Err(Error::NoIdsGiven);
@@ -769,7 +770,7 @@ impl Local {
             }
         }
 
-        Ok(from_id.create_trust_proof(&public_ids, trust_level)?)
+        Ok(from_id.create_trust_proof(&public_ids, trust_level, override_)?)
     }
 
     /// Fetch other people's proof repostiory from a git URL, into the current database on disk

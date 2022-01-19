@@ -3,11 +3,12 @@
 pub use crate::proof::content::{
     Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
 };
-use crate::{Error, ParseError, Result};
+use crate::{Error, ParseError, PublicId, Result};
 use chrono::{self, prelude::*};
 pub use package_info::*;
 pub use review::{Code as CodeReview, Package as PackageReview, *};
 pub use revision::*;
+use serde::{Deserialize, Serialize};
 use std::{
     default, fmt,
     io::{self, BufRead},
@@ -344,4 +345,49 @@ pub fn default_revision_type() -> String {
 
 fn equals_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
+}
+
+/// A particular ID to override judgment of
+///
+/// Used to correct (well, discard really) specific judgments without
+/// loosing the overall work.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OverrideItem {
+    #[serde(flatten)]
+    pub id: PublicId,
+    #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
+    pub comment: String,
+}
+
+/// Like [`OverrideItem`] but with a different serialization.
+///
+/// When editing a draft in code editor, we don't want
+/// to skip empty `comments` to show to the user they exist and encourage
+/// to fill them.
+///
+/// Unfortunately we need another type for it (just like [`Draft`] itself).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OverrideItemDraft {
+    #[serde(flatten)]
+    pub id: PublicId,
+    #[serde(default = "Default::default")]
+    pub comment: String,
+}
+
+impl From<OverrideItem> for OverrideItemDraft {
+    fn from(item: OverrideItem) -> Self {
+        Self {
+            id: item.id,
+            comment: item.comment,
+        }
+    }
+}
+
+impl From<OverrideItemDraft> for OverrideItem {
+    fn from(item: OverrideItemDraft) -> Self {
+        Self {
+            id: item.id,
+            comment: item.comment,
+        }
+    }
 }

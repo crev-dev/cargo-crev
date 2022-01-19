@@ -1,4 +1,7 @@
-use crate::{proof, proof::ContentExt, Url};
+use crate::{
+    proof::{self, ContentExt, OverrideItem},
+    Url,
+};
 use crev_common::{
     self,
     serde::{as_base64, from_base64},
@@ -145,11 +148,13 @@ impl PublicId {
         &self,
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
+        override_: Vec<OverrideItem>,
     ) -> crate::Result<proof::Trust> {
         proof::TrustBuilder::default()
             .from(self.clone())
             .trust(trust_level)
             .ids(ids.into_iter().cloned().collect())
+            .override_(override_)
             .build()
             .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))
     }
@@ -158,12 +163,14 @@ impl PublicId {
         &self,
         package: proof::PackageInfo,
         review: proof::review::Review,
+        override_: Vec<OverrideItem>,
         comment: String,
     ) -> crate::Result<proof::review::Package> {
         proof::review::PackageBuilder::default()
             .from(self.clone())
             .package(package)
             .review(review)
+            .override_(override_)
             .comment(comment)
             .build()
             .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))
@@ -245,7 +252,10 @@ impl UnlockedId {
         &self,
         ids: impl IntoIterator<Item = &'a PublicId>,
         trust_level: proof::trust::TrustLevel,
+        override_: Vec<OverrideItem>,
     ) -> crate::Result<proof::Proof> {
-        self.id.create_trust_proof(ids, trust_level)?.sign_by(self)
+        self.id
+            .create_trust_proof(ids, trust_level, override_)?
+            .sign_by(self)
     }
 }

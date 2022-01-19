@@ -224,6 +224,13 @@ impl AlternativesData {
     }
 }
 
+pub type TimestampedTrustDetails = Timestamped<TrustDetails>;
+#[derive(Debug, Clone)]
+pub struct TrustDetails {
+    level: TrustLevel,
+    override_: HashSet<Id>,
+}
+
 /// In memory database tracking information from proofs
 ///
 /// After population, used for calculating the effective trust set, etc.
@@ -234,7 +241,12 @@ impl AlternativesData {
 /// of some kind.
 pub struct ProofDB {
     /// who -(trusts)-> whom
-    trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>,
+    trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustDetails>>,
+    /// who -(is being trusted by -> whom
+    reverse_trust_id_to_id: HashMap<Id, HashMap<Id, TimestampedTrustLevel>>,
+
+    /// (source, target) -> -(trust via)-> trust proof certificate
+    ids_to_trust_proof_signatures: HashMap<(Id, Id), TimestampedSignature>,
 
     /// Id->URL mapping verified by Id's signature
     /// boolean is whether it's been fetched from the same URL, or local trusted repo,
@@ -247,6 +259,9 @@ pub struct ProofDB {
     // all reviews are here
     package_review_by_signature: HashMap<Signature, review::Package>,
 
+    // all trust proofs here
+    trust_proofs_by_signature: HashMap<Signature, proof::Trust>,
+
     // we can get the to the review through the signature from these two
     package_review_signatures_by_package_digest:
         HashMap<Vec<u8>, HashMap<PkgVersionReviewId, TimestampedSignature>>,
@@ -257,6 +272,9 @@ pub struct ProofDB {
         BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
 
     package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
+
+    // given an Id of an author, get the list of all package version id that were produced by it
+    from_id_to_package_reviews: HashMap<Id, HashSet<proof::PackageVersionId>>,
 
     // original data about pkg alternatives
     // for every package_id, we store a map of ids that had alternatives for it,
@@ -277,6 +295,9 @@ impl Default for ProofDB {
     fn default() -> Self {
         ProofDB {
             trust_id_to_id: default(),
+            reverse_trust_id_to_id: default(),
+            ids_to_trust_proof_signatures: default(),
+            trust_proofs_by_signature: default(),
             url_by_id_self_reported: default(),
             url_by_id_reported_by_others: default(),
             package_review_signatures_by_package_digest: default(),
@@ -285,6 +306,7 @@ impl Default for ProofDB {
             package_reviews: default(),
             package_alternatives: default(),
             package_flags: default(),
+            from_id_to_package_reviews: default(),
 
             insertion_counter: 0,
             derived_alternatives: sync::RwLock::new(AlternativesData::new()),
@@ -803,6 +825,11 @@ impl ProofDB {
             .and_modify(|s| s.update_to_more_recent(&timestamp_signature))
             .or_insert_with(|| timestamp_signature.clone());
 
+        self.from_id_to_package_reviews
+            .entry(review.common.from.id.clone())
+            .or_default()
+            .insert(pkg_review_id.package_version_id.clone());
+
         self.package_reviews
             .entry(review.package.id.id.source.clone())
             .or_default()
@@ -870,21 +897,62 @@ impl ProofDB {
         proofs
     }
 
-    fn add_trust_raw(&mut self, from: &Id, to: &Id, date: DateTime<Utc>, trust: TrustLevel) {
-        let tl = TimestampedTrustLevel { value: trust, date };
+    fn add_trust_raw(
+        &mut self,
+        from: &Id,
+        to: &Id,
+        date: DateTime<Utc>,
+        trust_proof: &proof::Trust,
+        signature: &str,
+    ) {
+        let trust = TrustDetails {
+            level: trust_proof.trust,
+            override_: trust_proof
+                .override_
+                .iter()
+                .map(|o| o.id.id.clone())
+                .collect(),
+        };
+
+        let tl = TimestampedTrustLevel {
+            value: trust.level,
+            date,
+        };
+        let td = TimestampedTrustDetails { value: trust, date };
+
+        self.trust_proofs_by_signature
+            .insert(signature.to_owned(), trust_proof.to_owned());
+
+        let signature = TimestampedSignature {
+            value: signature.to_owned(),
+            date,
+        };
+
+        self.ids_to_trust_proof_signatures
+            .entry((from.to_owned(), to.to_owned()))
+            .and_modify(|e| e.update_to_more_recent(&signature))
+            .or_insert_with(|| signature);
+
         self.trust_id_to_id
             .entry(from.to_owned())
             .or_insert_with(HashMap::new)
             .entry(to.to_owned())
+            .and_modify(|e| e.update_to_more_recent(&td))
+            .or_insert_with(|| td);
+
+        self.reverse_trust_id_to_id
+            .entry(to.to_owned())
+            .or_insert_with(HashMap::new)
+            .entry(from.to_owned())
             .and_modify(|e| e.update_to_more_recent(&tl))
             .or_insert_with(|| tl);
     }
 
-    fn add_trust(&mut self, trust: &proof::Trust, fetched_from: FetchSource) {
+    fn add_trust(&mut self, trust: &proof::Trust, signature: &str, fetched_from: FetchSource) {
         let from = &trust.from();
         self.record_url_from_from_field(&trust.date_utc(), from, &fetched_from);
         for to in &trust.ids {
-            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust.trust);
+            self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust, signature);
         }
         for to in &trust.ids {
             // Others should not be making verified claims about this URL,
@@ -900,6 +968,19 @@ impl ProofDB {
             .chain(self.url_by_id_reported_by_others.keys())
             .cloned()
             .collect()
+    }
+
+    pub fn get_reverse_trust_for<'id, 's: 'id>(
+        &'s self,
+        id: &'id Id,
+    ) -> impl Iterator<Item = (&'id Id, TrustLevel)> + 's {
+        self.reverse_trust_id_to_id
+            .get(id)
+            .into_iter()
+            .flat_map(|map| {
+                map.into_iter()
+                    .map(|(id, trust_level)| (id, trust_level.value))
+            })
     }
 
     /// Get all Ids that authored a proof (with total count)
@@ -993,7 +1074,9 @@ impl ProofDB {
             proof::PackageReview::KIND => {
                 self.add_package_review(&proof.parse_content()?, proof.signature(), fetched_from)
             }
-            proof::Trust::KIND => self.add_trust(&proof.parse_content()?, fetched_from),
+            proof::Trust::KIND => {
+                self.add_trust(&proof.parse_content()?, proof.signature(), fetched_from)
+            }
             other => return Err(Error::UnknownProofType(other.into())),
         }
 
@@ -1009,12 +1092,38 @@ impl ProofDB {
         }
     }
 
-    fn get_trust_list_of_id(&self, id: &Id) -> impl Iterator<Item = (TrustLevel, &Id)> {
+    fn get_trust_details_list_of_id(&self, id: &Id) -> impl Iterator<Item = (&TrustDetails, &Id)> {
         self.trust_id_to_id
             .get(id)
-            .map(|map| map.iter().map(|(id, trust)| (trust.value, id)))
+            .map(|map| map.iter().map(|(id, trust)| (&trust.value, id)))
             .into_iter()
             .flatten()
+    }
+
+    pub fn get_trust_proof_between(&self, from: &Id, to: &Id) -> Option<&proof::Trust> {
+        self.ids_to_trust_proof_signatures
+            .get(&(from.to_owned(), to.to_owned()))
+            .and_then(|sig| self.trust_proofs_by_signature.get(&sig.value))
+    }
+
+    fn get_package_reviews_by_author<'iter, 's: 'iter, 'id: 'iter>(
+        &'s self,
+        id: &'id Id,
+    ) -> impl Iterator<Item = &'s review::Package> + 'iter {
+        self.from_id_to_package_reviews
+            .get(id)
+            .into_iter()
+            .flat_map(move |set| {
+                set.iter()
+                    .map(move |package_version_id| PkgVersionReviewId {
+                        from: id.clone(),
+                        package_version_id: package_version_id.clone(),
+                    })
+            })
+            .map(move |pkg_version_review_id| {
+                &self.package_review_by_signature
+                    [&self.package_review_signatures_by_pkg_review_id[&pkg_version_review_id].value]
+            })
     }
 
     pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> TrustSet {
@@ -1024,7 +1133,7 @@ impl ProofDB {
         // distrusted Ids
         loop {
             let prev_distrusted_len = distrusted.len();
-            let trust_set = self.calculate_trust_set_internal(for_id, params, distrusted);
+            let trust_set = self.calculate_trust_set_inner_loop(for_id, params, distrusted);
             if trust_set.distrusted.len() <= prev_distrusted_len {
                 return trust_set;
             }
@@ -1035,7 +1144,7 @@ impl ProofDB {
     /// Calculate the effective trust levels for IDs inside a WoT.
     ///
     /// This is one of the most important functions in `crev-wot`.
-    fn calculate_trust_set_internal(
+    fn calculate_trust_set_inner_loop(
         &self,
         for_id: &Id,
         params: &TrustDistanceParams,
@@ -1085,9 +1194,25 @@ impl ProofDB {
                     debug!("Some people got banned at the current trust level - restarting the WoT calculation");
                     break;
                 }
+            }
             previous_iter_trust_level = current.effective_trust_level;
 
-            for (direct_trust, candidate_id) in self.get_trust_list_of_id(&current.id) {
+            for pkg_review in self.get_package_reviews_by_author(&current.id) {
+                for override_ in &pkg_review.override_ {
+                    current_trust_set
+                        .package_review_ignore_override
+                        .entry(PkgVersionReviewId {
+                            from: override_.id.id.clone(),
+                            package_version_id: pkg_review.package.id.clone(),
+                        })
+                        .or_default()
+                        .insert(current.id.clone(), current.effective_trust_level);
+                }
+            }
+
+            for (trust_details, candidate_id) in self.get_trust_details_list_of_id(&current.id) {
+                let direct_trust = trust_details.level;
+                let current_overrides = &trust_details.override_;
                 debug!(
                     "{} ({}) reports trust level for {}: {}",
                     current.id, current.effective_trust_level, candidate_id, direct_trust
@@ -1098,6 +1223,20 @@ impl ProofDB {
                     continue;
                 }
 
+                if let Some(existing_override) = current_trust_set
+                    .trust_ignore_overrides
+                    .get(&(current.id.clone(), candidate_id.clone()))
+                {
+                    if current.effective_trust_level
+                        < existing_override.max_level().expect("must not be empty")
+                    {
+                        debug!(
+                            "Trust between {} and {} was overriden and thus ignored",
+                            current.id, candidate_id
+                        );
+                        continue;
+                    }
+                }
                 // Note: lower trust node can ban higher trust node, but only
                 // if it wasn't banned by a higher trust node beforehand.
                 // However banning by the same trust level node, does not prevent
@@ -1115,6 +1254,15 @@ impl ProofDB {
                         .record_distrusted_id(candidate_id.clone(), current.id.clone());
 
                     continue;
+                }
+
+                for override_item in current_overrides {
+                    let trust_ignore_override = (override_item.clone(), candidate_id.clone());
+                    current_trust_set
+                        .trust_ignore_overrides
+                        .entry(trust_ignore_override)
+                        .or_default()
+                        .insert(current.id.clone(), current.effective_trust_level);
                 }
 
                 // Note: we keep visiting nodes, even banned ones, just like they were originally
@@ -1266,6 +1414,12 @@ pub struct DistrustedIdDetails {
 pub struct TrustSet {
     pub trusted: HashMap<Id, TrustedIdDetails>,
     pub distrusted: HashMap<Id, DistrustedIdDetails>,
+
+    // "ignore trust from `Id` to `Id`, as overriden by some other Ids with an effective `TrustLevel`s
+    pub trust_ignore_overrides: HashMap<(Id, Id), OverrideSourcesDetails>,
+
+    // "ignore specific package review by `Id`, as overriden by some other Ids with an effective `TrustLevel`s
+    pub package_review_ignore_override: HashMap<PkgVersionReviewId, OverrideSourcesDetails>,
 }
 
 impl TrustSet {
@@ -1403,6 +1557,24 @@ impl Default for TrustDistanceParams {
             medium_trust_distance: 1,
             low_trust_distance: 5,
         }
+    }
+}
+
+/// List of authors recommending override (ignore) trust / package review with their effective
+/// trust level.
+#[derive(Debug, Clone, Default)]
+pub struct OverrideSourcesDetails(HashMap<Id, TrustLevel>);
+
+impl OverrideSourcesDetails {
+    pub fn insert(&mut self, id: Id, level: TrustLevel) {
+        self.0
+            .entry(id)
+            .and_modify(|prev_level| *prev_level = level.max(*prev_level))
+            .or_insert(level);
+    }
+
+    pub fn max_level(&self) -> Option<TrustLevel> {
+        self.0.iter().map(|e| e.1).max().copied()
     }
 }
 

@@ -20,6 +20,7 @@ use crev_data::{
     },
     Digest, Id, Version,
 };
+use crev_wot::PkgVersionReviewId;
 pub use crev_wot::TrustDistanceParams;
 use std::{
     collections::{HashMap, HashSet},
@@ -250,6 +251,18 @@ pub fn verify_package_digest(
 ) -> VerificationStatus {
     let reviews: HashMap<Id, review::Package> = db
         .get_package_reviews_by_digest(digest)
+        .filter(|review| {
+            match trust_set
+                .package_review_ignore_override
+                .get(&PkgVersionReviewId::from(review))
+            {
+                Some(reporters) => {
+                    reporters.max_level().unwrap_or(TrustLevel::None)
+                        <= trust_set.get_effective_trust_level(&review.common.from.id)
+                }
+                None => true,
+            }
+        })
         .map(|review| (review.from().id.clone(), review))
         .collect();
     // Faster somehow maybe?
