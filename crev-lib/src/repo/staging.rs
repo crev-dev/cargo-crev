@@ -73,7 +73,7 @@ impl Staging {
             .strip_prefix(&self.root_path)
             .map_err(|_| Error::PathNotInStageRootPath)?
             .to_owned();
-        println!("Adding {}", path.display());
+        log::info!("Adding {}", path.display());
         self.entries.insert(
             path,
             StagingPathInfo {
@@ -91,7 +91,7 @@ impl Staging {
             .strip_prefix(&self.root_path)
             .map_err(|_| Error::PathNotInStageRootPath)?
             .to_owned();
-        println!("Removing {}", path.display());
+        log::info!("Removing {}", path.display());
 
         self.entries.remove(&path);
 

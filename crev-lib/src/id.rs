@@ -172,10 +172,10 @@ impl LockedId {
             if let Some(lanes) = passphrase_config.lanes {
                 config.lanes = lanes;
             } else {
-                eprintln!(
+                log::error!(
                     "`lanes` not configured. Old bug. See: https://github.com/crev-dev/cargo-crev/issues/151"
                 );
-                eprintln!("Using `lanes: {}`", config.lanes);
+                log::info!("Using `lanes: {}`", config.lanes);
             }
 
             let passphrase_hash =

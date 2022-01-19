@@ -798,7 +798,7 @@ impl Local {
                 }
                 None => "copy from another repo",
             };
-            println!("{:>8} {} ({})", count, id, verified_state);
+            info!("{:>8} {} ({})", count, id, verified_state);
         }
         Ok(())
     }
@@ -1029,7 +1029,7 @@ impl Local {
             (false, false) => "no updates".into(),
         };
 
-        eprintln!("{:<60} {}", url, msg);
+        info!("{:<60} {}", url, msg);
         Ok(())
     }
 
@@ -1039,7 +1039,7 @@ impl Local {
         let mut fetched_urls = HashSet::new();
         let mut db = self.load_db()?;
 
-        eprintln!("Fetching...");
+        info!("Fetching...");
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
         if let Ok(dir) = self.fetch_remote_git(dpc_url).map_err(|e| warn!("{}", e)) {

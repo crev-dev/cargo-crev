@@ -180,10 +180,11 @@ impl Repo {
         Ok(unclean_found)
     }
 
+    /// Uses `log::info` to "print"
     pub fn status(&mut self) -> Result<()> {
         let staging = self.staging()?;
         for (k, _v) in staging.entries.iter() {
-            println!("{}", k.display());
+            log::info!("{}", k.display());
         }
 
         Ok(())
