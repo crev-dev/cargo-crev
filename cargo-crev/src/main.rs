@@ -361,7 +361,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     let trust_set = db.calculate_trust_set(&for_id, &trust_params.into());
 
                     print_ids(
-                        trust_set.trusted_ids().filter(|id| {
+                        trust_set.iter_trusted_ids().filter(|id| {
                             trust_set.get_effective_trust_level(id)
                                 >= trust_level.trust_level.into()
                         }),

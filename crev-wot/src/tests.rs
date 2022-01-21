@@ -8,6 +8,40 @@ use std::sync::Arc;
 
 mod issues;
 
+fn trust_proof(from: &UnlockedId, to: &UnlockedId, level: TrustLevel) -> Result<proof::Proof> {
+    Ok(from.create_signed_trust_proof(vec![to.as_public_id()], level, vec![])?)
+}
+
+fn trust_high(from: &UnlockedId, to: &UnlockedId) -> Result<proof::Proof> {
+    trust_proof(from, to, TrustLevel::High)
+}
+
+fn trust_medium(from: &UnlockedId, to: &UnlockedId) -> Result<proof::Proof> {
+    trust_proof(from, to, TrustLevel::Medium)
+}
+
+fn trust_low(from: &UnlockedId, to: &UnlockedId) -> Result<proof::Proof> {
+    trust_proof(from, to, TrustLevel::Low)
+}
+
+fn trust_distrust(from: &UnlockedId, to: &UnlockedId) -> Result<proof::Proof> {
+    trust_proof(from, to, TrustLevel::Distrust)
+}
+
+// https://stackoverflow.com/a/27582993
+macro_rules! collection {
+    // map-like
+    ($($k:expr => $v:expr),* $(,)?) => {{
+        use std::iter::{Iterator, IntoIterator};
+        Iterator::collect(IntoIterator::into_iter([$(($k, $v),)*]))
+    }};
+    // set-like
+    ($($v:expr),* $(,)?) => {{
+        use std::iter::{Iterator, IntoIterator};
+        Iterator::collect(IntoIterator::into_iter([$($v,)*]))
+    }};
+}
+
 // Exact distance of flooding the web of trust graph is configurable,
 // with the edges distance corresponding to the trust level.
 #[test]
@@ -26,47 +60,35 @@ fn proofdb_distance() -> Result<()> {
         low_trust_distance: 100,
         max_distance: 111,
     };
-
-    let a_to_b = a.create_signed_trust_proof(vec![b.as_public_id()], TrustLevel::High, vec![])?;
-    let b_to_c = b.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Medium, vec![])?;
-    let c_to_d = c.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low, vec![])?;
-    let d_to_e = d.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::High, vec![])?;
-
     let mut trustdb = ProofDB::new();
 
     trustdb.import_from_iter(
-        vec![a_to_b, b_to_c, c_to_d, d_to_e]
-            .into_iter()
-            .map(|x| (x, url.clone())),
+        vec![
+            trust_high(&a, &b)?,
+            trust_medium(&b, &c)?,
+            trust_low(&c, &d)?,
+            trust_high(&d, &e)?,
+        ]
+        .into_iter()
+        .map(|x| (x, url.clone())),
     );
 
-    let trust_set: HashSet<crev_data::Id> = trustdb
-        .calculate_trust_set(a.as_ref(), &distance_params)
-        .trusted_ids()
-        .cloned()
-        .collect();
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-    assert!(trust_set.contains(a.as_ref()));
-    assert!(trust_set.contains(b.as_ref()));
-    assert!(trust_set.contains(c.as_ref()));
-    assert!(trust_set.contains(d.as_ref()));
-    assert!(!trust_set.contains(e.as_ref()));
+    assert_eq!(
+        trust_set.get_trusted_ids_refs(),
+        collection![a.as_ref(), b.as_ref(), c.as_ref(), d.as_ref()]
+    );
 
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Medium, vec![])?;
+    trustdb.import_from_iter(vec![(trust_medium(&b, &d)?, url)].into_iter());
 
-    trustdb.import_from_iter(vec![(b_to_d, url)].into_iter());
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-    let trust_set: HashSet<_> = trustdb
-        .calculate_trust_set(a.as_ref(), &distance_params)
-        .trusted_ids()
-        .cloned()
-        .collect();
+    assert_eq!(
+        trust_set.get_trusted_ids_refs(),
+        collection![a.as_ref(), b.as_ref(), c.as_ref(), d.as_ref(), e.as_ref()]
+    );
 
-    assert!(trust_set.contains(a.as_ref()));
-    assert!(trust_set.contains(b.as_ref()));
-    assert!(trust_set.contains(c.as_ref()));
-    assert!(trust_set.contains(d.as_ref()));
-    assert!(trust_set.contains(e.as_ref()));
     Ok(())
 }
 
@@ -160,56 +182,37 @@ fn proofdb_distrust() -> Result<()> {
         low_trust_distance: 100,
         max_distance: 10000,
     };
-
-    let a_to_bc = a.create_signed_trust_proof(
-        vec![b.as_public_id(), c.as_public_id()],
-        TrustLevel::High,
-        vec![],
-    )?;
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Low, vec![])?;
-    let d_to_c =
-        d.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::Distrust, vec![])?;
-    let c_to_e = c.create_signed_trust_proof(vec![e.as_public_id()], TrustLevel::Low, vec![])?;
-
     let mut trustdb = ProofDB::new();
 
     trustdb.import_from_iter(
-        vec![a_to_bc, b_to_d, d_to_c, c_to_e]
-            .into_iter()
-            .map(|x| (x, url.clone())),
+        vec![
+            trust_high(&a, &b)?,
+            trust_high(&a, &c)?,
+            trust_low(&b, &d)?,
+            trust_distrust(&d, &c)?,
+            trust_low(&c, &e)?,
+        ]
+        .into_iter()
+        .map(|x| (x, url.clone())),
     );
 
-    let trust_set: HashSet<_> = trustdb
-        .calculate_trust_set(a.as_ref(), &distance_params)
-        .trusted_ids()
-        .cloned()
-        .collect();
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-    assert!(trust_set.contains(a.as_ref()));
-    assert!(trust_set.contains(b.as_ref()));
-    assert!(!trust_set.contains(c.as_ref()));
-    assert!(trust_set.contains(d.as_ref()));
-    assert!(!trust_set.contains(e.as_ref()));
+    assert_eq!(
+        trust_set.get_trusted_ids_refs(),
+        collection![a.as_ref(), b.as_ref(), d.as_ref()]
+    );
 
     // This introduces a tie between nodes banning each other.
     // Both should be removed from the trust_set.
-    let e_to_d =
-        e.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::Distrust, vec![])?;
+    trustdb.import_from_iter(vec![(trust_distrust(&e, &d)?, url)].into_iter());
 
-    trustdb.import_from_iter(vec![(e_to_d, url)].into_iter());
+    let trust_set = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-    let trust_set: HashSet<_> = trustdb
-        .calculate_trust_set(a.as_ref(), &distance_params)
-        .trusted_ids()
-        .cloned()
-        .collect();
-
-    assert!(trust_set.contains(a.as_ref()));
-    assert!(trust_set.contains(b.as_ref()));
-    assert!(!trust_set.contains(c.as_ref()));
-    assert!(!trust_set.contains(d.as_ref()));
-    assert!(!trust_set.contains(e.as_ref()));
-
+    assert_eq!(
+        trust_set.get_trusted_ids_refs(),
+        collection![a.as_ref(), b.as_ref()]
+    );
     Ok(())
 }
 
@@ -228,65 +231,73 @@ fn proofdb_trust_ignore_override() -> Result<()> {
         max_distance: 10000,
     };
 
-    // a trust b and c, but c more, c overrides (ignores) trust of b in d
-    let a_to_b = a.create_signed_trust_proof(vec![b.as_public_id()], TrustLevel::Medium, vec![])?;
-    let a_to_c = a.create_signed_trust_proof(vec![c.as_public_id()], TrustLevel::High, vec![])?;
-
-    let b_to_d = b.create_signed_trust_proof(vec![d.as_public_id()], TrustLevel::High, vec![])?;
-
-    let c_to_d = {
-        let mut c_to_d_unsigned =
-            c.id.create_trust_proof(vec![d.as_public_id()], TrustLevel::None, vec![])?;
-        c_to_d_unsigned.override_.push(OverrideItem {
-            id: b.as_public_id().clone(),
-            comment: "".into(),
-        });
-        c_to_d_unsigned.sign_by(&c)?
-    };
-
     let mut trustdb = ProofDB::new();
 
     trustdb.import_from_iter(
-        vec![a_to_b, a_to_c.clone(), b_to_d.clone(), c_to_d.clone()]
-            .into_iter()
-            .map(|x| (x, url.clone())),
+        vec![
+            // a trust b and c, but c more, c overrides (ignores) trust of b in d
+            trust_medium(&a, &b)?,
+            trust_high(&a, &c)?,
+            trust_high(&b, &d)?,
+            {
+                let mut c_to_d_unsigned =
+                    c.id.create_trust_proof(vec![d.as_public_id()], TrustLevel::None, vec![])?;
+                c_to_d_unsigned.override_.push(OverrideItem {
+                    id: b.as_public_id().clone(),
+                    comment: "".into(),
+                });
+                c_to_d_unsigned.sign_by(&c)?
+            },
+        ]
+        .into_iter()
+        .map(|x| (x, url.clone())),
     );
 
     let trust_set: TrustSet = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
-    let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
 
     assert!(trust_set
         .trust_ignore_overrides
         .contains_key(&(b.id.id.clone(), d.id.id.clone())));
-    assert!(trusted_ids.contains(a.as_ref()));
-    assert!(trusted_ids.contains(b.as_ref()));
-    assert!(trusted_ids.contains(c.as_ref()));
-    assert!(!trusted_ids.contains(d.as_ref()));
+
+    assert_eq!(
+        trust_set.get_trusted_ids_refs(),
+        collection![a.as_ref(), b.as_ref(), c.as_ref()]
+    );
 
     // had the `a` trusted `b` at the same level as `c`, the override to ignore `b`'s trust in `d`
     // would not have effect from PoV of `a`
     {
-        let a_to_b =
-            a.create_signed_trust_proof(vec![b.as_public_id()], TrustLevel::High, vec![])?;
-
         let mut trustdb = ProofDB::new();
 
         trustdb.import_from_iter(
-            vec![a_to_b, a_to_c, b_to_d, c_to_d]
-                .into_iter()
-                .map(|x| (x, url.clone())),
+            vec![
+                // a trust b and c, but c more, c overrides (ignores) trust of b in d
+                trust_high(&a, &b)?,
+                trust_high(&a, &c)?,
+                trust_high(&b, &d)?,
+                {
+                    let mut c_to_d_unsigned =
+                        c.id.create_trust_proof(vec![d.as_public_id()], TrustLevel::None, vec![])?;
+                    c_to_d_unsigned.override_.push(OverrideItem {
+                        id: b.as_public_id().clone(),
+                        comment: "".into(),
+                    });
+                    c_to_d_unsigned.sign_by(&c)?
+                },
+            ]
+            .into_iter()
+            .map(|x| (x, url.clone())),
         );
 
         let trust_set: TrustSet = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
-        let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
 
         assert!(trust_set
             .trust_ignore_overrides
             .contains_key(&(b.id.id.clone(), d.id.id.clone())));
-        assert!(trusted_ids.contains(a.as_ref()));
-        assert!(trusted_ids.contains(b.as_ref()));
-        assert!(trusted_ids.contains(c.as_ref()));
-        assert!(trusted_ids.contains(d.as_ref()));
+        assert_eq!(
+            trust_set.get_trusted_ids_refs(),
+            collection![a.as_ref(), b.as_ref(), c.as_ref(), d.as_ref()]
+        );
     }
     Ok(())
 }

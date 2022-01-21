@@ -1423,8 +1423,16 @@ pub struct TrustSet {
 }
 
 impl TrustSet {
-    pub fn trusted_ids(&self) -> impl Iterator<Item = &Id> {
+    pub fn iter_trusted_ids(&self) -> impl Iterator<Item = &Id> {
         self.trusted.keys()
+    }
+
+    pub fn get_trusted_ids(&self) -> HashSet<crev_data::Id> {
+        self.iter_trusted_ids().cloned().collect()
+    }
+
+    pub fn get_trusted_ids_refs(&self) -> HashSet<&crev_data::Id> {
+        self.iter_trusted_ids().collect()
     }
 
     pub fn is_trusted(&self, id: &Id) -> bool {

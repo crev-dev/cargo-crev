@@ -836,7 +836,7 @@ impl Local {
         loop {
             let trust_set = db.calculate_trust_set(&for_id, &trust_params);
             if !self.fetch_ids_not_fetched_yet(
-                trust_set.trusted_ids().cloned(),
+                trust_set.iter_trusted_ids().cloned(),
                 &mut already_fetched_ids,
                 &mut already_fetched_urls,
                 &mut db,
@@ -861,7 +861,7 @@ impl Local {
         loop {
             let trust_set = db.calculate_trust_set(&for_id, &trust_params);
             if !self.fetch_ids_not_fetched_yet(
-                trust_set.trusted_ids().cloned(),
+                trust_set.iter_trusted_ids().cloned(),
                 &mut already_fetched_ids,
                 &mut already_fetched_urls,
                 &mut db,

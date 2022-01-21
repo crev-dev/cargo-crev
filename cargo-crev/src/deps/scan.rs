@@ -154,7 +154,7 @@ impl Scanner {
             .cloned()
             .collect();
 
-        let has_trusted_ids = trust_set.trusted_ids().next().is_some();
+        let has_trusted_ids = trust_set.iter_trusted_ids().next().is_some();
 
         Ok(Scanner {
             db: Arc::new(db),

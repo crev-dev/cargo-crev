@@ -267,7 +267,7 @@ pub fn verify_package_digest(
         .collect();
     // Faster somehow maybe?
     let reviews_by: HashSet<Id, _> = reviews.keys().cloned().collect();
-    let trusted_ids: HashSet<_> = trust_set.trusted_ids().cloned().collect();
+    let trusted_ids: HashSet<_> = trust_set.get_trusted_ids();
     let matching_reviewers = trusted_ids.intersection(&reviews_by);
     let mut trust_count = 0;
     let mut negative_count = 0;
