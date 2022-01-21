@@ -5,7 +5,6 @@ use crev_data::{
     review::{Advisory, Issue, VersionRange},
     TrustLevel, UnlockedId, Version,
 };
-use crev_wot::FetchSource;
 
 const SOURCE: &str = "SOURCE_ID";
 const NAME: &str = "name";

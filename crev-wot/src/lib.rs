@@ -1583,3 +1583,6 @@ fn db_is_send_sync() {
     fn is<T: Send + Sync>() {}
     is::<ProofDB>();
 }
+
+#[cfg(test)]
+mod tests;
