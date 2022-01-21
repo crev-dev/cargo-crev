@@ -45,10 +45,7 @@ impl Graph {
         self.nodes.keys().cloned()
     }
 
-    pub fn get_dependencies_of(
-        &self,
-        pkg_id: PackageId,
-    ) -> impl Iterator<Item = PackageId> + '_ {
+    pub fn get_dependencies_of(&self, pkg_id: PackageId) -> impl Iterator<Item = PackageId> + '_ {
         self.nodes
             .get(&pkg_id)
             .into_iter()
@@ -411,7 +408,8 @@ impl Repo {
         // let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
         let features_list = cargo_opts
             .features
-            .clone().unwrap_or_default()
+            .clone()
+            .unwrap_or_default()
             .split(',')
             .map(String::from)
             .filter(|s| !s.is_empty())

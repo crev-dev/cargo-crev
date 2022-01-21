@@ -321,7 +321,8 @@ impl Scanner {
         };
         let digest_mismatches = digest
             .as_ref()
-            .map(|digest| get_crate_digest_mismatches(&self.db, &pkg_name, pkg_version, digest)).unwrap_or_default();
+            .map(|digest| get_crate_digest_mismatches(&self.db, &pkg_name, pkg_version, digest))
+            .unwrap_or_default();
         let verification_result = if let Some(digest) = digest.as_ref() {
             crev_lib::verify_package_digest(digest, &self.trust_set, &self.requirements, &self.db)
         } else {

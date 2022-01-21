@@ -163,8 +163,7 @@ pub fn expand_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     // comments
     println!(
         "{}",
-        syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs"))
-            .into_token_stream()
+        syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs")).into_token_stream()
     );
 
     Ok(())
