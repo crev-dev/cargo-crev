@@ -2,8 +2,8 @@
   <a href="https://github.com/crev-dev/cargo-crev/discussions">
     <img src="https://img.shields.io/badge/commmunity-discussion-blue?style=flat-square" alt="community discussion">
   </a>
-  <a href="https://travis-ci.org/crev-dev/cargo-crev">
-      <img src="https://img.shields.io/travis/crev-dev/cargo-crev/master.svg?style=flat-square" alt="Travis CI Build Status">
+  <a href="https://github.com/crev-dev/cargo-crev/actions/workflows/ci.yml">
+      <img src="https://github.com/crev-dev/cargo-crev/workflows/ci/badge.svg" alt="Github Actions CI Build Status">
   </a>
   <a href="https://crates.io/crates/cargo-crev">
       <img src="https://img.shields.io/crates/v/cargo-crev.svg?style=flat-square" alt="crates.io">
