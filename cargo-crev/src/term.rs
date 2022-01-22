@@ -30,8 +30,8 @@ pub fn known_owners_count_color(count: u64) -> Option<color::Color> {
 /// Helper to control (possibly) colored output
 pub struct Term {
     pub stdout_is_tty: bool,
-    pub stderr_is_tty: bool,
-    pub stdin_is_tty: bool,
+    stderr_is_tty: bool,
+    stdin_is_tty: bool,
     stdout: Option<Box<StdoutTerminal>>,
     #[allow(unused)]
     stderr: Option<Box<StderrTerminal>>,
@@ -115,6 +115,14 @@ impl Term {
         self.print(format_args!("\n"), color)?;
 
         Ok(())
+    }
+
+    pub(crate) fn is_interactive(&self) -> bool {
+        self.stderr_is_tty && self.stdout_is_tty
+    }
+
+    pub(crate) fn is_input_interactive(&self) -> bool {
+        self.stdin_is_tty
     }
 }
 

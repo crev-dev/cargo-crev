@@ -55,7 +55,7 @@ pub struct Scanner {
     pub db: Arc<ProofDB>,
     pub trust_set: TrustSet,
     /// True if trust_set is not empty
-    has_trusted_ids: bool,
+    pub has_trusted_ids: bool,
     min_ignore_list: fnv::FnvHashSet<PathBuf>,
     full_ignore_list: fnv::FnvHashSet<PathBuf>,
     local: Arc<crev_lib::Local>,

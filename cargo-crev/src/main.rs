@@ -882,7 +882,7 @@ fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {
 fn load_stdin_with_prompt() -> Result<Vec<u8>> {
     let term = term::Term::new();
 
-    if term.stdin_is_tty {
+    if term.is_input_interactive() {
         eprintln!("Paste in the text and press Ctrl+D.")
     }
     let mut s = vec![];

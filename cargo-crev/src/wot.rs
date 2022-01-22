@@ -16,7 +16,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
         &db,
     )?;
 
-    if term.stderr_is_tty && term.stdout_is_tty {
+    if term.is_interactive() {
         writeln!(
             io::stderr(),
             "{:^43}          {:>6} {:>4}",

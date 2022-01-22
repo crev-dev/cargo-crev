@@ -1,7 +1,8 @@
+use ::term::color::YELLOW;
 use crev_data::{proof, review, Digest, PublicId, Version};
 use crev_lib::*;
 use crev_wot::TrustSet;
-use std::path::PathBuf;
+use std::{io, io::Write as _, path::PathBuf};
 
 use crate::{opts::*, prelude::*, shared::*, term};
 use cargo::core::PackageId;
@@ -318,6 +319,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut term = term::Term::new();
 
     let scanner = scan::Scanner::new(crate_, &args)?;
+    let has_trusted_ids = scanner.has_trusted_ids;
     let column_widths =
         print_term::VerifyOutputColumnWidths::from_pkgsids(scanner.all_crates_ids.iter());
 
@@ -331,7 +333,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     });
 
     // print header, only after `scanner` had a chance to download everything
-    if term.stderr_is_tty && term.stdout_is_tty {
+    if term.is_interactive() {
         print_term::print_header(&mut term, &args.columns, column_widths)?;
     }
 
@@ -420,7 +422,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         }
     }
 
-    if term.stderr_is_tty && term.stdout_is_tty {
+    if term.is_interactive() {
         if !args.columns.any_selected() {
             eprintln!("Some columns were hidden. Use one or more `--show-<column>` to print more details. Use `--help` for list of available columns and other options and help. Use `--show-all` to just display everything.");
         }
@@ -430,6 +432,11 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         }
 
         write_out_distrusted_ids_details(&mut std::io::stderr(), &trust_set)?;
+
+        if !has_trusted_ids {
+            term.eprint(format_args!("NOTE: "), YELLOW)?;
+            write!(io::stderr(), "No trusted Ids available. Nothing to verify against. Use `cargo crev trust` to add trusted reviewers or visit https://github.com/crev-dev/cargo-crev/discussions/ for help.")?;
+        }
     }
 
     Ok(if nb_unverified == 0 {
