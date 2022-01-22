@@ -310,22 +310,30 @@ impl TrustSet {
                     continue;
                 }
 
+                let prev_trust_details = current_trust_set.trusted.get(&candidate_id).cloned();
+
                 if current_trust_set.record_trusted_id(
                     candidate_id.clone(),
                     current.id.clone(),
                     candidate_total_distance,
                     effective_trust_level,
                 ) {
+                    // to avoid visiting same node multiple times, remove
+                    // any existing pending `Visit` using previous trust details
+                    if let Some(prev_trust_details) = prev_trust_details {
+                        pending.remove(&Visit {
+                            id: candidate_id.clone(),
+                            distance: prev_trust_details.distance,
+                            effective_trust_level: prev_trust_details.effective_trust_level,
+                        });
+                    }
                     let visit = Visit {
                         effective_trust_level,
                         distance: candidate_total_distance,
                         id: candidate_id.to_owned(),
                     };
-                    if pending.insert(visit.clone()) {
-                        debug!("{:?} inserted for visit", visit);
-                    } else {
-                        debug!("{:?} alreading pending", visit);
-                    }
+                    // we've just removed it above, so can't return true
+                    assert!(pending.insert(visit));
                 }
             }
         }
@@ -371,7 +379,7 @@ impl TrustSet {
 
     /// Record that an Id is reported as trusted
     ///
-    /// Returns `true` if this actually added or changed the `subject` details,
+    /// Returns `true` if this this ID details changed in a way,
     /// which requires revising it's own downstream trusted Id details in the graph algorithm for it.
     fn record_trusted_id(
         &mut self,
@@ -396,31 +404,29 @@ impl TrustSet {
                 });
                 true
             }
-            Entry::Occupied(mut entry) => {
-                let mut changed = false;
-                let details = entry.get_mut();
-                if details.distance > distance {
-                    details.distance = distance;
-                    changed = true;
+            Entry::Occupied(mut prev) => {
+                let mut needs_revisit = false;
+                let prev = prev.get_mut();
+                if prev.distance > distance {
+                    prev.distance = distance;
+                    needs_revisit = true;
                 }
-                if details.effective_trust_level < effective_trust_level {
-                    details.effective_trust_level = effective_trust_level;
-                    changed = true;
+                if prev.effective_trust_level < effective_trust_level {
+                    prev.effective_trust_level = effective_trust_level;
+                    needs_revisit = true;
                 }
-                match details.reported_by.entry(reported_by) {
+                match prev.reported_by.entry(reported_by) {
                     Entry::Vacant(entry) => {
                         entry.insert(effective_trust_level);
-                        changed = true;
                     }
                     Entry::Occupied(mut entry) => {
                         let level = entry.get_mut();
                         if *level < effective_trust_level {
                             *level = effective_trust_level;
-                            changed = true;
                         }
                     }
                 }
-                changed
+                needs_revisit
             }
         }
     }
