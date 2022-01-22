@@ -148,7 +148,7 @@ pub struct IdSwitch {
 /// Parameters describing trust graph traversal
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct TrustDistanceParams {
-    #[structopt(long = "depth", default_value = "10")]
+    #[structopt(long = "depth", default_value = "20")]
     /// [trust-graph-traversal] Maximum allowed distance from the root identity when traversing trust graph
     pub depth: u64,
 
