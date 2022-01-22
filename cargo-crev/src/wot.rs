@@ -18,7 +18,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
     if term.stderr_is_tty && term.stdout_is_tty {
         writeln!(
             io::stderr(),
-            "{:^43}   {:<6}        {:<6}",
+            "{:^43}   {:<6}         {:<6}",
             "TRUST-FROM-ID",
             "TRUST",
             "DISTANCE"
@@ -43,7 +43,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
 
                 writeln!(
                     io::stdout(),
-                    "   {:<6}        {:<6}",
+                    "   {:<6}         {:<6}",
                     node.effective_trust,
                     node.total_distance,
                 )?;
@@ -71,7 +71,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                 }
                 if edge.ignored_overriden {
                     write!(io::stdout(), "; ")?;
-                    term.print(format_args!("-overriden"), YELLOW)?;
+                    term.print(format_args!("overriden"), YELLOW)?;
                 }
                 if edge.ignored_too_far {
                     write!(io::stdout(), "; ")?;
