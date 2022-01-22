@@ -674,6 +674,7 @@ pub enum CommandExitStatus {
     VerificationFailed,
     // Success, exit code 0
     Success,
+    CommandExitCode(i32),
 }
 
 pub fn get_crate_digest_mismatches(

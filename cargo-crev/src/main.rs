@@ -12,6 +12,7 @@ use crev_lib::id::LockedId;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
+    ffi::OsString,
     fmt::Write as _,
     io::{self, BufRead, Write as _},
     panic,
@@ -42,20 +43,30 @@ use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
 use crev_wot::{ProofDB, TrustSet, UrlOfId};
 
+/// Additional functions to extend `Local` by behaviors
+/// that are `cargo-crev` specific, like printing
+/// helpful diagnostic messages.
+trait LocalExt {
+    fn run_git_verbose(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus>;
+}
+
+impl LocalExt for Local {
+    fn run_git_verbose(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
+        match self.run_git(args) {
+            Ok(o) => Ok(o),
+            Err(crev_lib::Error::GitUrlNotConfigured) => {
+                bail!("Id has no public URL set. Run `cargo crev id set-url <your-public-git-proof-repo>` and try again. See https://github.com/crev-dev/cargo-crev/discussions for help.");
+            }
+            Err(e) => Err(e)?,
+        }
+    }
+}
 pub fn repo_publish() -> Result<()> {
     let local = Local::auto_open()?;
-    let mut status = match local.run_git(vec!["diff".into(), "--exit-code".into()]) {
-        Err(err @ crev_lib::Error::GitUrlNotConfigured) => {
-            eprintln!("There is no public repo URL configured.");
-            print_crev_proof_repo_fork_help();
-            eprintln!("Run `cargo crev id set-url <your public repo>` and try again.");
-            return Err(err.into());
-        }
-        res => res?,
-    };
+    let mut status = local.run_git_verbose(vec!["diff".into(), "--exit-code".into()])?;
 
     if status.code().unwrap_or(-2) == 1 {
-        status = local.run_git(vec![
+        status = local.run_git_verbose(vec![
             "commit".into(),
             "-a".into(),
             "-m".into(),
@@ -64,17 +75,17 @@ pub fn repo_publish() -> Result<()> {
     }
 
     if status.code().unwrap_or(-1) == 0 {
-        status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+        status = local.run_git_verbose(vec!["pull".into(), "--rebase".into()])?;
     }
     if status.code().unwrap_or(-1) == 0 {
-        status = local.run_git(vec!["push".into()])?;
+        status = local.run_git_verbose(vec!["push".into()])?;
     }
     std::process::exit(status.code().unwrap_or(-159));
 }
 
 fn repo_update(args: opts::Update) -> Result<()> {
     let local = Local::auto_open()?;
-    let status = local.run_git(vec!["pull".into(), "--rebase".into()])?;
+    let status = local.run_git_verbose(vec!["pull".into(), "--rebase".into()])?;
     if !status.success() {
         std::process::exit(status.code().unwrap_or(-159));
     }
@@ -569,8 +580,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Repo::Git(git) => {
                 let local = Local::auto_open()?;
-                let status = local.run_git(git.args)?;
-                std::process::exit(status.code().unwrap_or(-159));
+                let status = local.run_git_verbose(git.args)?;
+                return Ok(CommandExitStatus::CommandExitCode(
+                    status.code().unwrap_or(-159),
+                ));
             }
             opts::Repo::Query(args) => match args {
                 opts::RepoQuery::Review(args) => list_reviews(&args.crate_)?,
@@ -1006,6 +1019,7 @@ fn handle_command_result_and_panics(
     if let Err(panic_err) = panic::catch_unwind(|| match (f)() {
         Ok(CommandExitStatus::Success) => {}
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
+        Ok(CommandExitStatus::CommandExitCode(code)) => std::process::exit(code),
         Err(e) => {
             if let Some(io_error) = e.root_cause().downcast_ref::<std::io::Error>() {
                 if io_error.kind() == std::io::ErrorKind::BrokenPipe {
