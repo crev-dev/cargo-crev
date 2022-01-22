@@ -447,8 +447,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 let status = run_diff(&args)?;
                 std::process::exit(status.code().unwrap_or(-159));
             }
-            opts::Crate::Verify { crate_, opts } => {
-                return deps::verify_deps(crate_, opts);
+            opts::Crate::Verify(opts) => {
+                return deps::verify_deps(opts.crate_, opts.opts);
             }
             opts::Crate::Mvp { crate_, opts, wot } => {
                 deps::crate_mvps(crate_, opts, wot)?;
@@ -654,8 +654,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 crate::wot::print_log(wot)?;
             }
         },
-        opts::Command::Verify { crate_, opts } => {
-            return deps::verify_deps(crate_, opts);
+        opts::Command::Verify(opts) => {
+            return deps::verify_deps(opts.crate_, opts.opts);
         }
     }
 

@@ -734,6 +734,15 @@ pub enum Id {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct CrateVerifyFull {
+    #[structopt(flatten)]
+    pub opts: CrateVerify,
+
+    #[structopt(flatten)]
+    pub crate_: CrateSelector,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum Crate {
     /// Start a shell in source directory of a crate under review
     #[structopt(name = "goto")]
@@ -764,13 +773,7 @@ pub enum Crate {
 
     /// Verify dependencies
     #[structopt(name = "verify")]
-    Verify {
-        #[structopt(flatten)]
-        opts: CrateVerify,
-
-        #[structopt(flatten)]
-        crate_: CrateSelector,
-    },
+    Verify(CrateVerifyFull),
 
     /// Most valuable players (reviewers)
     #[structopt(name = "mvp")]
@@ -965,13 +968,7 @@ pub enum Command {
 
     /// Shortcut for `crate verify`
     #[structopt(name = "verify")]
-    Verify {
-        #[structopt(flatten)]
-        opts: CrateVerify,
-
-        #[structopt(flatten)]
-        crate_: CrateSelector,
-    },
+    Verify(CrateVerifyFull),
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`
