@@ -305,6 +305,7 @@ dependencies = [
  "fnv",
  "geiger",
  "git2",
+ "itertools",
  "lazy_static",
  "log",
  "num_cpus",

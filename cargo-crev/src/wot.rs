@@ -4,6 +4,7 @@ use crate::{opts::WotOpts, term, url_to_status_str};
 use ::term::color::{BLUE, GREEN, RED, YELLOW};
 use anyhow::Result;
 use crev_wot::TraverseLogItem::{Edge, Node};
+use itertools::Itertools;
 
 pub fn print_log(wot_opts: WotOpts) -> Result<()> {
     let mut term = term::Term::new();
@@ -77,6 +78,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                 if edge.ignored_overriden {
                     write!(io::stdout(), "; ")?;
                     term.print(format_args!("overriden"), YELLOW)?;
+                    write!(io::stdout(), " by {}", edge.overriden_by.iter().join(", "))?;
                 }
                 if edge.ignored_too_far {
                     write!(io::stdout(), "; ")?;

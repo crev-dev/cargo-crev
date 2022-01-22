@@ -47,6 +47,7 @@ pub struct TraverseLogEdge {
     pub relative_distance: Option<u64>,
     pub total_distance: Option<u64>,
     pub distrusted_by: HashSet<Id>,
+    pub overriden_by: HashSet<Id>,
 
     pub no_change: bool,
     pub ignored_distrusted: bool,
@@ -215,19 +216,19 @@ impl TrustSet {
                 let too_far = candidate_total_distance.map(|d| params.max_distance < d);
                 let trust_too_low = effective_trust_level == TrustLevel::None;
 
-                let overriden = if let Some(existing_override) = current_trust_set
+                let overriden_by = if let Some(existing_override) = current_trust_set
                     .trust_ignore_overrides
                     .get(&(current.id.clone(), candidate_id.clone()))
                 {
                     if current.effective_trust_level
                         < existing_override.max_level().expect("must not be empty")
                     {
-                        true
+                        existing_override.0.keys().cloned().collect()
                     } else {
-                        false
+                        HashSet::new()
                     }
                 } else {
-                    false
+                    HashSet::new()
                 };
 
                 current_trust_set.log_traverse(TraverseLogEdge {
@@ -238,11 +239,12 @@ impl TrustSet {
                     relative_distance: candidate_distance_from_current,
                     total_distance: candidate_total_distance,
                     distrusted_by: distrusted_by.clone(),
+                    overriden_by: overriden_by.clone(),
 
                     ignored_distrusted: !distrusted_by.is_empty(),
                     ignored_too_far: too_far.unwrap_or(true),
                     ignored_trust_too_low: trust_too_low,
-                    ignored_overriden: overriden,
+                    ignored_overriden: !overriden_by.is_empty(),
 
                     // to be changed if there was actually a change
                     no_change: true,
@@ -263,7 +265,7 @@ impl TrustSet {
                     continue;
                 }
 
-                if overriden {
+                if !overriden_by.is_empty() {
                     debug!(
                         "{} trust for {} was ignored (overriden)",
                         current.id, candidate_id
