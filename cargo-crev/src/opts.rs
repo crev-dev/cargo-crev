@@ -942,6 +942,10 @@ pub enum Command {
     /// Add a Trust proof by an Id or a URL
     Trust(TrustUrls),
 
+    /// Web of Trust
+    #[structopt(name = "wot")]
+    Wot(Wot),
+
     /// Shortcut for `crate goto`
     #[structopt(name = "goto")]
     Goto(ReviewOrGotoCommon),
@@ -961,10 +965,6 @@ pub enum Command {
     /// Shortcut for `repo update`
     #[structopt(name = "update")]
     Update(Update),
-
-    /// Web of Trust
-    #[structopt(name = "wot")]
-    Wot(Wot),
 
     /// Shortcut for `crate verify`
     #[structopt(name = "verify")]
