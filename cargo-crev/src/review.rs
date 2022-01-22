@@ -211,9 +211,14 @@ pub fn create_review_proof(
     let proof = review.sign_by(&id)?;
 
     let commit_msg = format!(
-        "Add review for {crate} v{version}",
+        "{add_or_overwrite} review for {crate} v{version}",
         crate = &crate_.name(),
-        version = effective_crate_version
+        version = effective_crate_version,
+        add_or_overwrite = if previous_date.is_some() {
+            "Overwrite"
+        } else {
+            "Add"
+        },
     );
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)
 }
