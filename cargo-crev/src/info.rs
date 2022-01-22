@@ -3,7 +3,7 @@ use crate::{
         scan::{self, RequiredDetails},
         AccumulativeCrateDetails,
     },
-    opts::{CrateSelector, CrateVerify, CrateVerifyCommon},
+    opts::{CrateSelector, CrateVerify, CrateVerifyCommon, WotOpts},
     Repo,
 };
 use anyhow::{bail, Result};
@@ -79,6 +79,7 @@ pub fn get_crate_deps_info(
 pub fn get_crate_info(
     root_crate: CrateSelector,
     common_opts: CrateVerifyCommon,
+    wot_opts: WotOpts,
 ) -> Result<CrateInfoOutput> {
     if root_crate.name.is_none() {
         bail!("Crate selector required");
@@ -87,8 +88,8 @@ pub fn get_crate_info(
     let local = crev_lib::Local::auto_create_or_open()?;
     let db = local.load_db()?;
     let trust_set = local.trust_set_for_id(
-        common_opts.for_id.as_deref(),
-        &common_opts.trust_params.clone().into(),
+        wot_opts.for_id.as_deref(),
+        &wot_opts.trust_params.clone().into(),
         &db,
     )?;
 
@@ -121,8 +122,12 @@ pub fn get_crate_info(
     })
 }
 
-pub fn print_crate_info(root_crate: CrateSelector, args: CrateVerifyCommon) -> Result<()> {
-    let info = get_crate_info(root_crate, args)?;
+pub fn print_crate_info(
+    root_crate: CrateSelector,
+    args: CrateVerifyCommon,
+    wot_opts: WotOpts,
+) -> Result<()> {
+    let info = get_crate_info(root_crate, args, wot_opts)?;
     serde_yaml::to_writer(io::stdout(), &info)?;
     println!();
 

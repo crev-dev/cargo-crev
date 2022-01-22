@@ -624,6 +624,7 @@ dependencies = [
  "crev-common",
  "crev-data",
  "default",
+ "itertools",
  "log",
  "serde",
  "serde_yaml",

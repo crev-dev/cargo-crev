@@ -104,8 +104,8 @@ impl Scanner {
         let local = crev_lib::Local::auto_create_or_open()?;
         let db = local.load_db()?;
         let trust_set = local.trust_set_for_id(
-            args.common.for_id.as_deref(),
-            &args.common.trust_params.clone().into(),
+            args.wot.for_id.as_deref(),
+            &args.wot.trust_params.clone().into(),
             &db,
         )?;
         let min_ignore_list = cargo_min_ignore_list();

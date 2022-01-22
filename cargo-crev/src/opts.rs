@@ -240,16 +240,19 @@ pub struct Update {
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
-pub struct CrateVerifyCommon {
+pub struct WotOpts {
     #[structopt(flatten)]
     pub trust_params: TrustDistanceParams,
-
-    #[structopt(flatten)]
-    pub requirements: VerificationRequirements,
 
     #[structopt(long = "for-id")]
     /// Root identity to calculate the Web of Trust for [default: current user id]
     pub for_id: Option<String>,
+}
+
+#[derive(Debug, StructOpt, Clone, Default)]
+pub struct CrateVerifyCommon {
+    #[structopt(flatten)]
+    pub requirements: VerificationRequirements,
 
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
@@ -371,6 +374,9 @@ Column description:
 pub struct CrateVerify {
     #[structopt(flatten)]
     pub common: CrateVerifyCommon,
+
+    #[structopt(flatten)]
+    pub wot: WotOpts,
 
     #[structopt(flatten)]
     pub columns: CrateVerifyColumns,
@@ -771,6 +777,10 @@ pub enum Crate {
     Mvp {
         #[structopt(flatten)]
         opts: CrateVerifyCommon,
+
+        #[structopt(flatten)]
+        wot: WotOpts,
+
         #[structopt(flatten)]
         crate_: CrateSelector,
     },
@@ -792,6 +802,10 @@ pub enum Crate {
     Info {
         #[structopt(flatten)]
         opts: CrateVerifyCommon,
+
+        #[structopt(flatten)]
+        wot: WotOpts,
+
         #[structopt(flatten)]
         crate_: CrateSelector,
     },
@@ -888,6 +902,16 @@ pub enum Proof {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub enum Wot {
+    /// Create a new Id
+    #[structopt(name = "log")]
+    Log {
+        #[structopt(flatten)]
+        wot: WotOpts,
+    },
+}
+
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(setting = structopt::clap::AppSettings::DeriveDisplayOrder)]
 #[structopt(setting = structopt::clap::AppSettings::DisableHelpSubcommand)]
 #[allow(clippy::large_enum_variant)]
@@ -934,6 +958,10 @@ pub enum Command {
     /// Shortcut for `repo update`
     #[structopt(name = "update")]
     Update(Update),
+
+    /// Web of Trust
+    #[structopt(name = "wot")]
+    Wot(Wot),
 
     /// Shortcut for `crate verify`
     #[structopt(name = "verify")]

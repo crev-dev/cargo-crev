@@ -278,9 +278,14 @@ pub fn latest_trusted_version_string(
     }
 }
 
-pub fn crate_mvps(crate_: CrateSelector, common: CrateVerifyCommon) -> Result<()> {
+pub fn crate_mvps(
+    crate_: CrateSelector,
+    common: CrateVerifyCommon,
+    wot_opts: WotOpts,
+) -> Result<()> {
     let args = CrateVerify {
         common,
+        wot: wot_opts,
         ..Default::default()
     };
     let scanner = scan::Scanner::new(crate_, &args)?;

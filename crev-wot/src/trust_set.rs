@@ -1,4 +1,5 @@
 use super::*;
+use itertools::Itertools;
 
 /// Details of a one Id that is trusted
 #[derive(Debug, Clone)]
@@ -18,8 +19,50 @@ pub struct DistrustedIdDetails {
     pub reported_by: HashSet<Id>,
 }
 
+#[derive(Debug, Clone)]
+pub enum TraverseLogItem {
+    Node(TraverseLogNode),
+    Edge(TraverseLogEdge),
+}
+
+impl From<TraverseLogEdge> for TraverseLogItem {
+    fn from(e: TraverseLogEdge) -> Self {
+        TraverseLogItem::Edge(e)
+    }
+}
+impl From<TraverseLogNode> for TraverseLogItem {
+    fn from(e: TraverseLogNode) -> Self {
+        TraverseLogItem::Node(e)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TraverseLogEdge {
+    pub from: Id,
+    pub to: Id,
+    pub direct_trust: TrustLevel,
+    pub effective_trust: TrustLevel,
+    pub relative_distance: Option<u64>,
+    pub total_distance: Option<u64>,
+    pub distrusted_by: HashSet<Id>,
+
+    pub ignored_distrusted: bool,
+    pub ignored_trust_too_low: bool,
+    pub ignored_overriden: bool,
+    pub ignored_too_far: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct TraverseLogNode {
+    pub id: Id,
+    pub effective_trust: TrustLevel,
+    pub total_distance: u64,
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct TrustSet {
+    pub traverse_log: Vec<TraverseLogItem>,
+
     pub trusted: HashMap<Id, TrustedIdDetails>,
     pub distrusted: HashMap<Id, DistrustedIdDetails>,
 
@@ -44,6 +87,10 @@ impl TrustSet {
             }
             distrusted = trust_set.distrusted;
         }
+    }
+
+    fn log_traverse(&mut self, item: impl Into<TraverseLogItem>) {
+        self.traverse_log.push(item.into());
     }
 
     /// Calculate the effective trust levels for IDs inside a WoT.
@@ -85,6 +132,11 @@ impl TrustSet {
         while let Some(current) = pending.iter().rev().next().cloned() {
             debug!("Traversing id: {:?}", current);
             pending.remove(&current);
+            current_trust_set.log_traverse(TraverseLogNode {
+                id: current.id.clone(),
+                effective_trust: current.effective_trust_level,
+                total_distance: current.distance,
+            });
 
             // did we just move from processing higher effective trust level id to a lower ones?
             // if so, now would be a good time to check if anyone got banned, and then restart processing
@@ -118,29 +170,83 @@ impl TrustSet {
             for (trust_details, candidate_id) in db.get_trust_details_list_of_id(&current.id) {
                 let direct_trust = trust_details.level;
                 let current_overrides = &trust_details.override_;
+
+                // Note: we keep visiting nodes, even banned ones, just like they were originally
+                // reported
+                let effective_trust_level =
+                    std::cmp::min(direct_trust, current.effective_trust_level);
                 debug!(
-                    "{} ({}) reports trust level for {}: {}",
-                    current.id, current.effective_trust_level, candidate_id, direct_trust
+                    "Effective trust for {} {}",
+                    candidate_id, effective_trust_level
                 );
 
-                if current_trust_set.is_distrusted(candidate_id) {
-                    debug!("{} is distrusted by {}", candidate_id, current.id);
-                    continue;
-                }
+                let candidate_distance_from_current =
+                    params.distance_by_level(effective_trust_level);
 
-                if let Some(existing_override) = current_trust_set
+                let candidate_total_distance = candidate_distance_from_current
+                    .map(|rel_distance| rel_distance + current.distance);
+
+                let distrusted_by = current_trust_set
+                    .distrusted
+                    .get(candidate_id)
+                    .map(ToOwned::to_owned)
+                    .map(|details| details.reported_by)
+                    .unwrap_or_else(|| HashSet::new());
+
+                let too_far = candidate_total_distance.map(|d| params.max_distance < d);
+                let trust_too_low = effective_trust_level == TrustLevel::None;
+
+                let overriden = if let Some(existing_override) = current_trust_set
                     .trust_ignore_overrides
                     .get(&(current.id.clone(), candidate_id.clone()))
                 {
                     if current.effective_trust_level
                         < existing_override.max_level().expect("must not be empty")
                     {
-                        debug!(
-                            "Trust between {} and {} was overriden and thus ignored",
-                            current.id, candidate_id
-                        );
-                        continue;
+                        true
+                    } else {
+                        false
                     }
+                } else {
+                    false
+                };
+
+                current_trust_set.log_traverse(TraverseLogEdge {
+                    from: current.id.clone(),
+                    to: candidate_id.clone(),
+                    direct_trust,
+                    effective_trust: effective_trust_level,
+                    relative_distance: candidate_distance_from_current,
+                    total_distance: candidate_total_distance,
+                    distrusted_by: distrusted_by.clone(),
+
+                    ignored_distrusted: !distrusted_by.is_empty(),
+                    ignored_too_far: too_far.unwrap_or(true),
+                    ignored_trust_too_low: trust_too_low,
+                    ignored_overriden: overriden,
+                });
+
+                debug!(
+                    "{} ({}) reports trust level for {}: {}",
+                    current.id, current.effective_trust_level, candidate_id, direct_trust
+                );
+
+                if !distrusted_by.is_empty() {
+                    debug!(
+                        "{} is distrusted by {} (reported_by: {})",
+                        candidate_id,
+                        current.id,
+                        distrusted_by.iter().map(|id| id.to_string()).join(", ")
+                    );
+                    continue;
+                }
+
+                if overriden {
+                    debug!(
+                        "{} trust for {} was ignored (overriden)",
+                        current.id, candidate_id
+                    );
+                    continue;
                 }
                 // Note: lower trust node can ban higher trust node, but only
                 // if it wasn't banned by a higher trust node beforehand.
@@ -170,16 +276,7 @@ impl TrustSet {
                         .insert(current.id.clone(), current.effective_trust_level);
                 }
 
-                // Note: we keep visiting nodes, even banned ones, just like they were originally
-                // reported
-                let effective_trust_level =
-                    std::cmp::min(direct_trust, current.effective_trust_level);
-                debug!(
-                    "Effective trust for {} {}",
-                    candidate_id, effective_trust_level
-                );
-
-                if effective_trust_level == TrustLevel::None {
+                if trust_too_low {
                     continue;
                 } else if effective_trust_level < TrustLevel::None {
                     unreachable!(
@@ -188,14 +285,14 @@ impl TrustSet {
                 }
 
                 let candidate_distance_from_current =
-                    if let Some(v) = params.distance_by_level(effective_trust_level) {
+                    if let Some(v) = candidate_distance_from_current {
                         v
                     } else {
                         debug!("Not traversing {}: trust too low", candidate_id);
                         continue;
                     };
-
-                let candidate_total_distance = current.distance + candidate_distance_from_current;
+                let candidate_total_distance =
+                    candidate_total_distance.expect("should not be empty");
 
                 debug!(
                     "Distance of {} from {}: {}. Total distance from root: {}.",
@@ -205,7 +302,7 @@ impl TrustSet {
                     candidate_total_distance
                 );
 
-                if candidate_total_distance > params.max_distance {
+                if too_far.expect("should not be empty") {
                     debug!(
                         "Total distance of {}: {} higher than max_distance: {}.",
                         candidate_id, candidate_total_distance, params.max_distance

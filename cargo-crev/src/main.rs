@@ -35,6 +35,7 @@ mod review;
 mod shared;
 mod term;
 mod tokei;
+mod wot;
 
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id, TrustLevel};
@@ -449,11 +450,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Crate::Verify { crate_, opts } => {
                 return deps::verify_deps(crate_, opts);
             }
-            opts::Crate::Mvp { crate_, opts } => {
-                deps::crate_mvps(crate_, opts)?;
+            opts::Crate::Mvp { crate_, opts, wot } => {
+                deps::crate_mvps(crate_, opts, wot)?;
             }
-            opts::Crate::Info { crate_, opts } => {
-                info::print_crate_info(crate_.auto_unrelated()?, opts)?;
+            opts::Crate::Info { crate_, opts, wot } => {
+                info::print_crate_info(crate_.auto_unrelated()?, opts, wot)?;
             }
             opts::Crate::Goto(args) => {
                 goto_crate_src(&args.crate_.auto_unrelated()?)?;
@@ -648,6 +649,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Review(args) => crate_review(args)?,
         opts::Command::Update(args) => repo_update(args)?,
 
+        opts::Command::Wot(args) => match args {
+            opts::Wot::Log { wot } => {
+                crate::wot::print_log(wot)?;
+            }
+        },
         opts::Command::Verify { crate_, opts } => {
             return deps::verify_deps(crate_, opts);
         }
