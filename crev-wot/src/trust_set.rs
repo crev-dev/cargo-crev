@@ -48,6 +48,7 @@ pub struct TraverseLogEdge {
     pub total_distance: Option<u64>,
     pub distrusted_by: HashSet<Id>,
 
+    pub no_change: bool,
     pub ignored_distrusted: bool,
     pub ignored_trust_too_low: bool,
     pub ignored_overriden: bool,
@@ -242,6 +243,9 @@ impl TrustSet {
                     ignored_too_far: too_far.unwrap_or(true),
                     ignored_trust_too_low: trust_too_low,
                     ignored_overriden: overriden,
+
+                    // to be changed if there was actually a change
+                    no_change: true,
                 });
 
                 debug!(
@@ -336,6 +340,14 @@ impl TrustSet {
                     candidate_total_distance,
                     effective_trust_level,
                 ) {
+                    if let Some(TraverseLogItem::Edge(edge)) =
+                        current_trust_set.traverse_log.last_mut()
+                    {
+                        edge.no_change = false;
+                    } else {
+                        unreachable!("Wrong type of last TraverseLogItem");
+                    }
+
                     // to avoid visiting same node multiple times, remove
                     // any existing pending `Visit` using previous trust details
                     if let Some(prev_trust_details) = prev_trust_details {

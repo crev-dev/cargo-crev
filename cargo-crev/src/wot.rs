@@ -18,19 +18,19 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
     if term.stderr_is_tty && term.stdout_is_tty {
         writeln!(
             io::stderr(),
-            "{:^43}   {:<6}         {:<6}",
+            "{:^43}          {:>6} {:>4}",
             "TRUST-FROM-ID",
             "TRUST",
-            "DISTANCE"
+            "DIST"
         )?;
         writeln!(io::stderr(), "\\_ status URL",)?;
         writeln!(
             io::stderr(),
-            "  {:^43} {:<6} {:<6} +{:<5} ; notes",
+            "  {:^43} {:>6} {:>6} +{:<3} notes",
             "TRUST-TO-ID",
             "D.TRST",
             "E.TRST",
-            "DIST"
+            "DIS"
         )?;
         writeln!(io::stderr(), "  \\_ status URL",)?;
     }
@@ -43,7 +43,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
 
                 writeln!(
                     io::stdout(),
-                    "   {:<6}         {:<6}",
+                    "          {:>6} {:>4}",
                     node.effective_trust,
                     node.total_distance,
                 )?;
@@ -58,13 +58,18 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
 
                 write!(
                     io::stdout(),
-                    " {:<6} {:<6} +{:<5} ",
+                    " {:>6} {:>6} {:>4} ",
                     edge.direct_trust,
                     edge.effective_trust,
                     edge.relative_distance
-                        .map(|d| d.to_string())
+                        .map(|d| format!("+{}", d))
                         .unwrap_or_else(|| "inf".into()),
                 )?;
+                if edge.no_change {
+                    term.print(format_args!("no change"), YELLOW)?;
+                } else {
+                    term.print(format_args!("queued"), GREEN)?;
+                }
                 if edge.ignored_distrusted {
                     write!(io::stdout(), "; ")?;
                     term.print(format_args!("distrusted"), RED)?;
