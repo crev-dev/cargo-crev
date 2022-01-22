@@ -981,8 +981,8 @@ pub enum MainCommand {
     #[structopt(name = "crev")]
     #[structopt(after_help = r#"All commands can be abbreviated.
 
-Join Matrix channel for more help at https://matrix.to/#/#crev:matrix.org
-Read user documentation at https://docs.rs/crate/cargo-crev
+Help and feedback: https://github.com/crev-dev/cargo-crev/discussions/
+User documentation: https://docs.rs/crate/cargo-crev
         "#)]
     Crev(Command),
 }
