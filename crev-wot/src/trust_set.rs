@@ -1,3 +1,5 @@
+use std::cmp;
+
 use super::*;
 use itertools::Itertools;
 
@@ -106,7 +108,7 @@ impl TrustSet {
         ///
         /// Order of field is important, since we use the `Ord` trait
         /// to visit nodes breadth-first with respect to trust level
-        #[derive(PartialOrd, Ord, Eq, PartialEq, Clone, Debug)]
+        #[derive(Eq, PartialEq, Clone, Debug)]
         struct Visit {
             /// Effective transitive trust level of the node
             effective_trust_level: TrustLevel,
@@ -114,6 +116,22 @@ impl TrustSet {
             distance: u64,
             /// Id we're visit
             id: Id,
+        }
+
+        impl cmp::Ord for Visit {
+            fn cmp(&self, other: &Self) -> cmp::Ordering {
+                self.effective_trust_level
+                    .cmp(&other.effective_trust_level)
+                    .reverse()
+                    .then(self.distance.cmp(&other.distance))
+                    .then_with(|| self.id.cmp(&other.id))
+            }
+        }
+
+        impl cmp::PartialOrd for Visit {
+            fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+                Some(self.cmp(other))
+            }
         }
 
         let mut pending = BTreeSet::new();
@@ -129,7 +147,7 @@ impl TrustSet {
         let mut previous_iter_trust_level = TrustLevel::High;
         current_trust_set.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
-        while let Some(current) = pending.iter().rev().next().cloned() {
+        while let Some(current) = pending.iter().next().cloned() {
             debug!("Traversing id: {:?}", current);
             pending.remove(&current);
             current_trust_set.log_traverse(TraverseLogNode {
