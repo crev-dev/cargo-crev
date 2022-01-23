@@ -7,7 +7,10 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-url -->
-## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.22.2...HEAD) - ReleaseDate
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.23.0...HEAD) - ReleaseDate
+
+
+## [0.23.0](https://github.com/crev-dev/cargo-crev/compare/v0.22.2...v0.23.0) - 2022-01-22
 
 - Ignore cargo directory source replacements - this essentially ignores `cargo vendor` and `cargo crev` will not read vendored sources
 - Proofs moved from the config directory (e.g. ~/.config/crev/proofs)
