@@ -21,7 +21,7 @@ log = "0.4.14"
 serde = "1.0.130"
 serde_yaml = "0.8.21"
 thiserror = "1.0.30"
-itertools = "0.10"
+itertools = "0.10.3"
 
 [package.metadata.release]
 shared-version=true
