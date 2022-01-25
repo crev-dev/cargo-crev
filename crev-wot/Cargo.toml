@@ -1,5 +1,4 @@
 [package]
-edition = "2018"
 name = "crev-wot"
 version = "0.23.0"
 description = "Scalable, social, Code REView system that we desperately need - Web of Trust library"
@@ -10,6 +9,7 @@ homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["web-of-trust", "dependency", "peer", "review", "identity"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
+edition = "2021"
 
 [dependencies]
 crev-common = { path = "../crev-common", version = "^0.23.0"}
