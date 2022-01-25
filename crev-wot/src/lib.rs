@@ -982,7 +982,7 @@ impl ProofDB {
             .get(id)
             .into_iter()
             .flat_map(|map| {
-                map.into_iter()
+                map.iter()
                     .map(|(id, trust_level)| (id, trust_level.value))
             })
     }

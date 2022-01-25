@@ -269,7 +269,7 @@ override:
     comment: TEST
 "#;
 
-    let proof: proof::package::Package = serde_yaml::from_str(&s).expect("deserialization failed");
+    let proof: proof::package::Package = serde_yaml::from_str(s).expect("deserialization failed");
 
     proof.validate_data()?;
 

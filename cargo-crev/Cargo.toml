@@ -1,5 +1,4 @@
 [package]
-edition = '2018'
 name = "cargo-crev"
 version = "0.23.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
@@ -12,6 +11,8 @@ keywords = ["code", "review", "tool", "distributed", "security"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/crev-dev/cargo-crev"
+edition = "2021"
+rust-version = "1.58" # cost of latest cargo
 
 [[bin]]
 name = "cargo-crev"

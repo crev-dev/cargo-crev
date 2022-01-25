@@ -211,7 +211,7 @@ impl TrustSet {
                     .get(candidate_id)
                     .map(ToOwned::to_owned)
                     .map(|details| details.reported_by)
-                    .unwrap_or_else(|| HashSet::new());
+                    .unwrap_or_else(HashSet::new);
 
                 let too_far = candidate_total_distance.map(|d| params.max_distance < d);
                 let trust_too_low = effective_trust_level == TrustLevel::None;
@@ -334,7 +334,7 @@ impl TrustSet {
                     continue;
                 }
 
-                let prev_trust_details = current_trust_set.trusted.get(&candidate_id).cloned();
+                let prev_trust_details = current_trust_set.trusted.get(candidate_id).cloned();
 
                 if current_trust_set.record_trusted_id(
                     candidate_id.clone(),

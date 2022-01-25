@@ -89,7 +89,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                     term.print(format_args!("trust too low"), YELLOW)?;
                 }
 
-                writeln!(io::stdout(), "")?;
+                writeln!(io::stdout())?;
 
                 writeln!(io::stdout(), "  \\_ {} {}", status, url)?;
             }

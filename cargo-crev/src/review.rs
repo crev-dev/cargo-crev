@@ -192,11 +192,11 @@ pub fn create_review_proof(
                 for review in db.get_package_reviews_for_package(
                     PROJECT_SOURCE_CRATES_IO,
                     Some(&pkg_id.name()),
-                    Some(&pkg_id.version()),
+                    Some(pkg_id.version()),
                 ) {
                     let id = &review.common.from.id;
                     let (status, url) = url_to_status_str(&db.lookup_url(id));
-                    writeln!(text, "# - id-type: {}", "crev")?; // TODO: support other ids?
+                    writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
                     writeln!(text, "#   id: {}", id)?;
                     writeln!(text, "#   url: {} # {}", url, status)?;
                     writeln!(text, "#   comment: \"\"")?;
