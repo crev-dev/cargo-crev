@@ -981,10 +981,7 @@ impl ProofDB {
         self.reverse_trust_id_to_id
             .get(id)
             .into_iter()
-            .flat_map(|map| {
-                map.iter()
-                    .map(|(id, trust_level)| (id, trust_level.value))
-            })
+            .flat_map(|map| map.iter().map(|(id, trust_level)| (id, trust_level.value)))
     }
 
     /// Get all Ids that authored a proof (with total count)

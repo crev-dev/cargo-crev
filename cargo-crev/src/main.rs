@@ -801,7 +801,8 @@ fn set_trust_level_for_ids(
         let db = local.load_db()?;
 
         db.get_trust_proof_between(&unlocked_id.id.id, &ids[0])
-            .map(|trust_proof| trust_proof.override_.clone()).unwrap_or_default()
+            .map(|trust_proof| trust_proof.override_.clone())
+            .unwrap_or_default()
     } else {
         vec![]
     };
@@ -826,8 +827,7 @@ fn set_trust_level_for_ids(
 
             if show_override_suggestions {
                 let db = local.load_db()?;
-                for (id, trust_level) in ids.iter().flat_map(|id| db.get_reverse_trust_for(id))
-                {
+                for (id, trust_level) in ids.iter().flat_map(|id| db.get_reverse_trust_for(id)) {
                     let (status, url) = url_to_status_str(&db.lookup_url(id));
                     writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
                     writeln!(text, "#   id: {} # level: {}", id, trust_level)?;
