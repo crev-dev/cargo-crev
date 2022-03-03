@@ -21,7 +21,7 @@ rand = { version = "0.8.4", package = "rand" }
 semver = { version = "1.0.4", features = [ "serde" ] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_yaml = "0.8.17"
-typed-builder = "0.9.0"
+typed-builder = "0.10.0"
 thiserror = "1.0.30"
 
 [package.metadata.release]
