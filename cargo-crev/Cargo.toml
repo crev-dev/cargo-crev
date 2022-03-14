@@ -1,6 +1,6 @@
 [package]
 name = "cargo-crev"
-version = "0.23.0"
+version = "0.23.1"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
