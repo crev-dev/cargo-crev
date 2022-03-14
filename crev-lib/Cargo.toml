@@ -22,7 +22,7 @@ crev-recursive-digest = "0.5"
 default = "0.1.2"
 directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
-git2 = "0.13.23"
+git2 = ">=0.13, <15"
 log = "0.4.14"
 num_cpus = "1.13.0"
 resiter = "0.4.0"
