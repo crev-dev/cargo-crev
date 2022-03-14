@@ -552,7 +552,7 @@ dependencies = [
 
 [[package]]
 name = "crev-common"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "base64",
  "blake2",
