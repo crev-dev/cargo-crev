@@ -146,6 +146,7 @@ jobs:
         components: rustfmt
     - name: Check formatting
       run: |
+        rustfmt --version
         cargo fmt --all -- --check
 
   docs:
