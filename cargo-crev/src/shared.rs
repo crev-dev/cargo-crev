@@ -730,11 +730,12 @@ pub fn lookup_crates(query: &str, count: usize) -> Result<()> {
 
     let client = SyncClient::new("cargo-crev", std::time::Duration::from_secs(1))?;
     let mut stats: Vec<_> = client
-        .crates(CratesQuery::builder()
-            .sort(Sort::Downloads)
-            .page_size(100)
-            .search(query.to_string())
-            .build()
+        .crates(
+            CratesQuery::builder()
+                .sort(Sort::Downloads)
+                .page_size(100)
+                .search(query.to_string())
+                .build(),
         )?
         .crates
         .iter()
