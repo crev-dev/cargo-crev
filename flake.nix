@@ -26,9 +26,9 @@
     let
       pkgs = nixpkgs.legacyPackages."${system}";
       fenix-pkgs = fenix.packages.${system};
-      fenix-channel = fenix-pkgs.complete;
+      fenix-channel = fenix-pkgs.stable;
       naersk-lib = naersk.lib."${system}".override {
-        inherit (fenix-pkgs.minimal) cargo rustc;
+        inherit (fenix-channel) cargo rustc;
       };
     in rec {
       packages.cargo-crev = naersk-lib.buildPackage {
