@@ -184,6 +184,10 @@ pub struct Diff {
     #[structopt(long = "dst")]
     pub dst: Option<Version>,
 
+    /// This crate is not neccesarily a dependency of the current cargo project
+    #[structopt(long = "unrelated", short = "u")]
+    pub unrelated: bool,
+
     #[structopt(flatten)]
     pub requirements: VerificationRequirements,
 
