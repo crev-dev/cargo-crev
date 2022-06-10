@@ -6,10 +6,11 @@ use cargo::{
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
-        resolver::{features::RequestedFeatures, CliFeatures, ResolveOpts, VersionPreferences},
+        resolver::{CliFeatures, HasDevUnits},
         source::SourceMap,
-        Package, PackageId, Resolve, SourceId, Workspace,
+        Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
+    ops,
     util::{
         config::{Config, ConfigValue},
         important_paths::find_root_manifest_for_wd,
@@ -132,59 +133,11 @@ fn our_resolve<'a, 'cfg>(
     no_default_features: bool,
     dev_dependencies: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
-    // there is bunch of slightly different ways to do it,
-    // so I leave some dead code around, in case I want to
-    // try the other ones, in some near future
-
-    // this one will create a `Cargo.lock` file if it didn't exist before
-    // good? not good? it also uses the registry to make it possible
-    // the other methods
-    // let mut registry = PackageRegistry::new(&workspace.config())?;
     let _lock = workspace.config().acquire_package_cache_lock()?;
-    registry.lock_patches();
-    let summaries: Vec<_> = workspace
-        .members()
-        .map(|m| {
-            Ok((
-                m.summary().to_owned(),
-                ResolveOpts {
-                    dev_deps: dev_dependencies,
-                    features: RequestedFeatures::CliFeatures(CliFeatures::from_command_line(
-                        features,
-                        all_features,
-                        !no_default_features,
-                    )?),
-                },
-            ))
-        })
-        .collect::<Result<Vec<_>>>()?;
-    let resolve = cargo::core::resolver::resolve(
-        &summaries,
-        workspace.root_replace(),
-        &mut registry,
-        &VersionPreferences::default(),
-        None,
-        false,
-    )?;
+    let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
 
-    Ok((
-        cargo::ops::get_resolved_packages(&resolve, registry)?,
-        resolve,
-    ))
-
-    /* no_default_features doesn't work in this one
-    let (packages, resolve) = ops::resolve_ws(workspace)?;
-
-    let cli_features = CliFeatures {
-        features: Rc::new(
-            features
-                .iter()
-                .map(|s| FeatureValue::new(s.into()))
-                .collect(),
-        ),
-        all_features,
-        uses_default_features: !no_default_features,
-    };
+    let cli_features =
+        CliFeatures::from_command_line(features, all_features, !no_default_features)?;
 
     let specs: Vec<_> = workspace
         .members()
@@ -193,13 +146,13 @@ fn our_resolve<'a, 'cfg>(
         .collect();
 
     let resolve = ops::resolve_with_previous(
-        registry,
+        &mut registry,
         workspace,
         &cli_features,
-        if no_dev_dependencies {
-            HasDevUnits::No
-        } else {
+        if dev_dependencies {
             HasDevUnits::Yes
+        } else {
+            HasDevUnits::No
         },
         Some(&resolve),
         None,
@@ -208,38 +161,6 @@ fn our_resolve<'a, 'cfg>(
     )?;
 
     Ok((packages, resolve))
-        */
-
-    /*
-    // this method does not allow passing no_dev_dependencies
-    let specs: Vec<_> = roots
-        .map(|id| PackageIdSpec::from_package_id(id))
-        .collect();
-
-    ops::resolve_ws_precisely(
-        workspace,
-        features,
-        all_features,
-        no_default_features,
-        &specs,
-    )
-    */
-
-    /*
-    // this does not update/create `Cargo.lock` AFAIU
-    let method = Method::Required {
-        dev_deps: !no_dev_dependencies,
-        features: Rc::new(features.iter().map(|s| InternedString::new(s)).collect()),
-        all_features,
-        uses_default_features: !no_default_features,
-    };
-
-    let specs: Vec<_> = roots
-        .map(|id| PackageIdSpec::from_package_id(id))
-        .collect();
-
-    ops::resolve_ws_with_method(workspace, method, &specs)
-    */
 }
 
 fn build_graph<'a>(
@@ -387,6 +308,7 @@ impl Repo {
 
     pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
         let mut config = Config::default()?;
+
         config.configure(
             0,
             /* quiet */ false,
