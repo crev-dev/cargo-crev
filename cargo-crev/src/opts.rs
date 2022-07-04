@@ -161,6 +161,12 @@ pub struct TrustDistanceParams {
     /// [trust-graph-traversal] Cost of traversing trust graph edge of low trust level
     #[structopt(long = "low-cost", default_value = "5")]
     pub low_cost: u64,
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of none trust level
+    #[structopt(long = "none-cost", default_value = "21")]
+    pub none_cost: u64,
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of distrust trust level
+    #[structopt(long = "distrust-cost", default_value = "21")]
+    pub distrust_cost: u64,
 }
 
 impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
@@ -170,6 +176,8 @@ impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
             high_trust_distance: params.high_cost,
             medium_trust_distance: params.medium_cost,
             low_trust_distance: params.low_cost,
+            none_trust_distance: params.none_cost,
+            distrust_distance: params.distrust_cost,
         }
     }
 }

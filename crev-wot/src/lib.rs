@@ -1197,6 +1197,8 @@ pub struct TrustDistanceParams {
     pub high_trust_distance: u64,
     pub medium_trust_distance: u64,
     pub low_trust_distance: u64,
+    pub none_trust_distance: u64,
+    pub distrust_distance: u64,
 }
 
 impl TrustDistanceParams {
@@ -1206,14 +1208,16 @@ impl TrustDistanceParams {
             high_trust_distance: 1,
             medium_trust_distance: 1,
             low_trust_distance: 1,
+            none_trust_distance: 1,
+            distrust_distance: 1,
         }
     }
 
     fn distance_by_level(&self, level: TrustLevel) -> Option<u64> {
         use crev_data::proof::trust::TrustLevel::*;
         Some(match level {
-            Distrust => return Option::None,
-            None => return Option::None,
+            Distrust => self.distrust_distance,
+            None => self.none_trust_distance,
             Low => self.low_trust_distance,
             Medium => self.medium_trust_distance,
             High => self.high_trust_distance,
@@ -1228,6 +1232,8 @@ impl Default for TrustDistanceParams {
             high_trust_distance: 0,
             medium_trust_distance: 1,
             low_trust_distance: 5,
+            none_trust_distance: 11,
+            distrust_distance: 11,
         }
     }
 }

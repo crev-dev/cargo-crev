@@ -58,6 +58,8 @@ fn proofdb_distance() -> Result<()> {
         high_trust_distance: 1,
         medium_trust_distance: 10,
         low_trust_distance: 100,
+        none_trust_distance: 112,
+        distrust_distance: 112,
         max_distance: 111,
     };
     let mut trustdb = ProofDB::new();
@@ -180,6 +182,8 @@ fn proofdb_distrust() -> Result<()> {
         high_trust_distance: 1,
         medium_trust_distance: 10,
         low_trust_distance: 100,
+        none_trust_distance: 10001,
+        distrust_distance: 10001,
         max_distance: 10000,
     };
     let mut trustdb = ProofDB::new();
@@ -228,6 +232,8 @@ fn proofdb_trust_ignore_override() -> Result<()> {
         high_trust_distance: 1,
         medium_trust_distance: 10,
         low_trust_distance: 100,
+        none_trust_distance: 10001,
+        distrust_distance: 10001,
         max_distance: 10000,
     };
 
