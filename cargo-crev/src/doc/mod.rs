@@ -7,9 +7,9 @@
 /// a continous work in progress, and can be incorrect
 /// or stale.
 ///
-/// Writing a high quality documentation is
+/// Writing high quality documentation is
 /// a lot of work. Please help us! If you spot any
-/// mistakes or ways to improve it:
+/// mistakes or ways to make improvements:
 ///
 /// 1. Open
 /// [user documentation source code directory](https://github.com/crev-dev/cargo-crev/tree/master/cargo-crev/src/doc),
