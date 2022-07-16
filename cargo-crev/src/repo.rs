@@ -397,13 +397,6 @@ impl Repo {
         Ok(graph)
     }
 
-    pub fn update_source(&self) -> Result<()> {
-        let mut source = self.load_source()?;
-        let _lock = self.config.acquire_package_cache_lock()?;
-        source.update()?;
-        Ok(())
-    }
-
     pub fn update_counts(&self) -> Result<()> {
         let local = crev_lib::Local::auto_create_or_open()?;
         let crates_io = crates_io::Client::new(&local)?;
@@ -603,7 +596,9 @@ impl Repo {
         let dependency_request =
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
-        source.query(&dependency_request, &mut |summary| summaries.push(summary))?;
+        if !source.query(&dependency_request, &mut |summary| summaries.push(summary)).is_ready() {
+            source.block_until_ready()?;
+        }
         let summary = if let Some(version) = version {
             summaries.iter().find(|s| s.version() == version)
         } else {
