@@ -1,6 +1,6 @@
 [package]
 name = "cargo-crev"
-version = "0.23.2"
+version = "0.23.3"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
@@ -27,7 +27,7 @@ crev-common = { path = "../crev-common", version = "^0.23"}
 crev-data = { path = "../crev-data", version = "^0.23"}
 crev-wot = { path = "../crev-wot", version = "^0.23"}
 crev-lib = { path = "../crev-lib", version = "^0.23.0"}
-anyhow = "1.0.53"
+anyhow = "1.0.58"
 atty = "0.2.14"
 cargo = "0.63.1"
 cargo-platform = "0.1.2"
@@ -36,14 +36,14 @@ crossbeam = "0.8.1"
 chrono = { version = "0.4.19", default-features = false }
 env_logger = { version = "0.9.0", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.7"
-geiger = "0.4.7"
-itertools = "0.10"
+geiger = "0.4.9"
+itertools = "0.10.3"
 lazy_static = "1.4.0"
 num_cpus = "1.13.0"
 petgraph = "0.6.0"
 rayon = "1.5.1"
 resiter = "0.4.0"
-rpassword = "6.0.1"
+rpassword = "7.0.0"
 serde = "1.0.130"
 serde_json = "1.0.62"
 serde_yaml = "0.8.17"
@@ -55,11 +55,11 @@ openssl-sys = "0.9.65"
 git2 = ">=0.13, <15"
 tempfile = "3.3.0"
 rprompt = "1.0.5"
-thiserror = "1.0.30"
-log = "0.4.14"
+thiserror = "1.0.31"
+log = "0.4.17"
 term = "0.7.0"
 syn-inline-mod = "0.5.0"
-quote = "1.0.15"
+quote = "1.0.20"
 
 [features]
 default = ["openssl-sys/vendored"]
