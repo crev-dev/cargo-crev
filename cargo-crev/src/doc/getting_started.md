@@ -103,7 +103,7 @@ subcommands are provided by shortcuts, such as `verify` for `crate verify`. For
 specific help regarding a subcommand use the `-h` flag.
 
 Note: You can abbreviate most `cargo-crev` subcommands. For example: `cargo crev
-c v`.
+cr v`.
 
 ## Verifying
 
