@@ -1,0 +1,52 @@
+# This is a basic workflow to help you get started with Actions
+
+name: "CI (nix)"
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v3
+
+      - name: Cache install Nix packages
+        uses: mtoohey31/cache-flake-attrs@v2
+        with:
+          key: ${{ runner.os }}-nix-${{ hashFiles('./flake.lock', './flake.nix') }}-lint
+          flake_paths: ".#devShells.x86_64-linux.lint"
+
+      # run the same check that git `pre-commit` hook would, just in case
+      - name: Commit check
+        run: nix develop --ignore-environment --extra-experimental-features nix-command --extra-experimental-features flakes .#lint --command ./misc/git-hooks/pre-commit
+
+
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v3
+
+      - name: Cache install Nix packages
+        uses: mtoohey31/cache-flake-attrs@v2
+        with:
+          key: ${{ runner.os }}-nix-${{ hashFiles('./flake.lock', './flake.nix', './Cargo.lock') }}-deps
+          flake_paths: ".#deps"
+          
+      - name: Run tests
+        run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#ci

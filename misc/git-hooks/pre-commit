@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -e
+
+>&2 echo "Checking *.nix files..."
+nixpkgs-fmt --check $(git ls-files | egrep '*.nix$')
+
+
+>&2 echo "Checking Rust projects files..."
+# Note: avoid `cargo fmt --all` so we don't need extra stuff in `ci` shell
+# so that CI is faster
+rustfmt --edition 2021 --check $(git ls-files | egrep '*.rs$')
+
+
+>&2 echo "Checking shell script files ..."
+
+for path in $(git ls-files | egrep '*.sh$')  ; do
+  shellcheck --severity=warning $path
+done

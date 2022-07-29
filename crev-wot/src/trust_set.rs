@@ -214,7 +214,8 @@ impl TrustSet {
                     .unwrap_or_else(HashSet::new);
 
                 let too_far = candidate_total_distance.map(|d| params.max_distance < d);
-                let trust_too_low = too_far.unwrap_or(true) && effective_trust_level == TrustLevel::None;
+                let trust_too_low =
+                    too_far.unwrap_or(true) && effective_trust_level == TrustLevel::None;
 
                 let overriden_by = if let Some(existing_override) = current_trust_set
                     .trust_ignore_overrides
