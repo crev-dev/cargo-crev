@@ -496,7 +496,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             )
         })
         .ok_or_else(|| format_err!("No previously reviewed version found"))?;
-    let src_crate_id = repo.find_pkgid(name, Some(&src_version), args.unrelated)?;
+    let src_crate_id = repo.find_pkgid(name, Some(&src_version), true)?;
     let src_crate = repo.get_crate(&src_crate_id)?;
 
     local.record_review_activity(
