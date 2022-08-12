@@ -100,15 +100,7 @@ pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
     t: &T,
     f: &mut dyn fmt::Write,
 ) -> fmt::Result {
-    // TODO: Don't serialize to string, and instead serialize to writer
-    let yaml_document = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;
-    let mut lines = yaml_document.lines();
-    let dropped_header = lines.next();
-    assert_eq!(dropped_header, Some("---"));
 
-    for line in lines {
-        f.write_str(line)?;
-        f.write_str("\n")?;
-    }
-    Ok(())
+    let s = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;
+    f.write_str(&s)
 }
