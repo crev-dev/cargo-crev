@@ -29,7 +29,7 @@ crev-wot = { path = "../crev-wot", version = "^0.23"}
 crev-lib = { path = "../crev-lib", version = "^0.23.0"}
 anyhow = "1.0.58"
 atty = "0.2.14"
-cargo = "0.63.1"
+cargo = "0.64.0"
 cargo-platform = "0.1.2"
 crates_io_api = "0.8.0"
 crossbeam = "0.8.1"

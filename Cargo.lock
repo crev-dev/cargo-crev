@@ -226,9 +226,9 @@ checksum = "6c58ec36aac5066d5ca17df51b3e70279f5670a72102f5752cb7e7c856adfc70"
 
 [[package]]
 name = "cargo"
-version = "0.63.1"
+version = "0.64.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d092a7c3e3aaa66469b2233b58c0bf330419dad9c423165f2b9cf1c57dc9f2e"
+checksum = "7019448b7d0ffe19d4ab26a340d2efe6da8cf86c8cc01a352b90853e31cd8f7c"
 dependencies = [
  "anyhow",
  "atty",
