@@ -36,7 +36,11 @@ pub fn create_review_proof(
     let crate_root = crate_.root();
     let effective_crate_version = crate_.version();
 
-    assert!(!crate_root.starts_with(std::env::current_dir()?));
+    assert!(
+        !std::env::current_dir()?.starts_with(crate_root),
+        "Cannot create review proof while inside {}.",
+        crate_root.display(),
+    );
     let local = Local::auto_open()?;
 
     let diff_base_version = match crate_review_activity_check(
