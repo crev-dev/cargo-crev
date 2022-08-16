@@ -232,7 +232,11 @@ pub fn clean_crate(selector: &CrateSelector) -> Result<()> {
     let crate_root = crate_.root();
 
     assert!(crate_root.is_absolute());
-    assert!(!crate_root.starts_with(std::env::current_dir()?));
+    assert!(
+        !std::env::current_dir()?.starts_with(crate_root),
+        "Cannot delete {} while inside that directory.",
+        crate_root.display(),
+    );
 
     if crate_root.is_dir() {
         std::fs::remove_dir_all(&crate_root)?;
