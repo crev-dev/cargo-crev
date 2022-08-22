@@ -91,7 +91,7 @@ pub struct CargoOpts {
     pub no_default_features: bool,
 
     #[structopt(long = "dev-dependencies")]
-    /// [cargo] Skip dev dependencies.
+    /// [cargo] Activate dev dependencies.
     dev_dependencies: bool,
 
     #[structopt(long = "no-dev-dependencies")]
