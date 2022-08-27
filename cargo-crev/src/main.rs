@@ -41,7 +41,7 @@ mod wot;
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
-use crev_wot::{ProofDB, TrustSet, UrlOfId};
+use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
 
 /// Additional functions to extend `Local` by behaviors
 /// that are `cargo-crev` specific, like printing
@@ -114,6 +114,95 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
     }
     for review in iter {
         println!("---\n{}", review);
+    }
+
+    Ok(())
+}
+
+pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
+    let local = crev_lib::Local::auto_open()?;
+    let db = local.load_db()?;
+
+    let mut iter = Box::new(db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO))
+        as Box<dyn Iterator<Item = &proof::review::Package>>;
+
+    let author_id = crev_data::id::Id::crevid_from_str(&args.author)?;
+    iter = Box::new(iter.filter(move |r| r.common.from.id == author_id));
+
+    if let Some(crate_) = args.crate_.as_ref() {
+        iter = Box::new(iter.filter(move |r| &r.package.id.id.name == crate_));
+        if let Some(version) = args.version.as_ref() {
+            iter = Box::new(iter.filter(move |r| &r.package.id.version == version));
+        }
+    }
+
+    let sign_id = local.read_current_unlocked_id(&term::read_passphrase)?;
+
+    for orig_review in iter {
+        if !args.skip_reissue_check {
+            // check if already reissued this review previously to prevent bloating the db
+            if db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO).any(
+                |review: &proof::review::Package| {
+                    review.common.from.id == sign_id.id.id && review.package == orig_review.package
+                },
+            ) {
+                println!(
+                    "Review of crate {crate_} v{version} rev {rev} from id {orig_id} is already \
+                     signed by current id. Skipping reissue. Use `--skip-reissue-check` to override.",
+                    crate_ = &orig_review.package.id.id.name,
+                    version = &orig_review.package.id.version,
+                    rev = &orig_review.package.revision,
+                    orig_id =  &orig_review.common.from.id
+                );
+                continue;
+            }
+        }
+
+        let pkg_review_id = PkgVersionReviewId::from(orig_review);
+        let orig_proof_digest = match db.get_proof_digest_by_pkg_review_id(&pkg_review_id) {
+            Some(digest) => digest,
+            None => {
+                println!(
+                    "Missing proof digest on review of {crate_} v{version}. Skipping",
+                    crate_ = &orig_review.package.id.id.name,
+                    version = &orig_review.package.id.version
+                );
+                continue;
+            }
+        };
+
+        println!(
+            "Reissuing review of crate {crate_} v{version} from crev id {id}",
+            crate_ = &orig_review.package.id.id.name,
+            version = &orig_review.package.id.version,
+            id = &orig_review.common.from.id
+        );
+
+        let mut reissue_review = orig_review.clone();
+
+        reissue_review.touch_date();
+        reissue_review.change_from(sign_id.id.to_owned());
+        reissue_review.ensure_kind_is_backfilled();
+        reissue_review.set_original_reference(proof::content::OriginalReference {
+            proof: orig_proof_digest.0.into(),
+            comment: args.comment.clone(),
+        });
+
+        let proof = reissue_review.sign_by(&sign_id)?;
+
+        let commit_msg = format!(
+            "Signed existing review for {crate} v{version} with different id\n\n\
+             New id: {new_id}\n\
+             Previous id: {orig_id}\n\
+             Previous proof digest: {digest_base64}\n",
+            crate = &reissue_review.package.id.id.name,
+            version = &reissue_review.package.id.version,
+            new_id = &reissue_review.common.from.id,
+            orig_id = &orig_review.common.from.id,
+            digest_base64 = crev_common::base64_encode(&orig_proof_digest.0)
+        );
+
+        maybe_store(&local, &proof, &commit_msg, &args.common_proof_create)?;
     }
 
     Ok(())
@@ -647,6 +736,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Proof(args) => match args {
             opts::Proof::Find(args) => {
                 proof_find(args)?;
+            }
+            opts::Proof::Reissue(args) => {
+                proof_reissue(args)?;
             }
         },
         opts::Command::Goto(args) => {

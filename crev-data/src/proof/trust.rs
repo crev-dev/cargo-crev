@@ -119,6 +119,7 @@ impl TrustBuilder {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
+                original: None,
             });
         }
         self
