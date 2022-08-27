@@ -1,7 +1,8 @@
 use crate::{
     activity::ReviewActivity,
     id::{self, LockedId, PassphraseFn},
-    util, Error, ProofStore, Result,
+    util::{self, git::is_unrecoverable},
+    Error, ProofStore, Result,
 };
 use crev_common::{
     self, sanitize_name_for_fs, sanitize_url_for_fs,
@@ -784,6 +785,7 @@ impl Local {
         info!("Fetching {}... ", url);
         let dir = self.fetch_remote_git(url)?;
         self.import_proof_dir_and_print_counts(&dir, url, db)?;
+
         let mut db = crev_wot::ProofDB::new();
         let url = Url::new_git(url);
         let fetch_source = self.get_fetch_source_for_url(url.clone())?;
@@ -987,14 +989,23 @@ impl Local {
     pub fn fetch_remote_git(&self, url: &str) -> Result<PathBuf> {
         let dir = self.get_remote_git_cache_path(url)?;
 
-        if dir.exists() {
-            let repo = git2::Repository::open(&dir)?;
-            util::git::fetch_and_checkout_git_repo(&repo)?
-        } else {
-            util::git::clone(url, &dir)?;
+        let inner = || {
+            if dir.exists() {
+                let repo = git2::Repository::open(&dir)?;
+                util::git::fetch_and_checkout_git_repo(&repo)
+            } else {
+                util::git::clone(url, &dir).map(drop)
+            }
+        };
+        match inner() {
+            Ok(()) => Ok(dir),
+            Err(err) if is_unrecoverable(&err) => {
+                debug!("Deleting {}, because {err}", dir.display());
+                self.delete_remote_cache_directory(&dir);
+                Err(err.into())
+            }
+            Err(err) => Err(err.into()),
         }
-
-        Ok(dir)
     }
 
     /// Fetches and imports to the given db
@@ -1254,6 +1265,23 @@ impl Local {
             }
             None => Box::new(vec![].into_iter()),
         }
+    }
+
+    #[rustfmt::skip]
+    fn delete_remote_cache_directory(&self, path_to_delete: &Path) {
+        let cache_dir = self.cache_remotes_path();
+        assert!(path_to_delete.starts_with(&cache_dir));
+
+        // Try to be atomic by renaming the directory first (so that it won't leave half-deleted dir if the command is interrupted)
+        let file_name = path_to_delete.file_name().and_then(|f| f.to_str()).unwrap_or_default();
+        let file_name = format!("{file_name}.deleting");
+        let tmp_path = path_to_delete.with_file_name(file_name);
+
+        let path_to_delete = match std::fs::rename(path_to_delete, &tmp_path) {
+            Ok(_) => &tmp_path,
+            Err(_) => path_to_delete,
+        };
+        let _ = std::fs::remove_dir_all(path_to_delete);
     }
 }
 
