@@ -1,54 +1,42 @@
 {
-  description = "cargo-crev";
+  description = "Cryptographically verifiable Code REviews";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
-
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-
+    flake-utils.url = "github:numtide/flake-utils";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    naersk = {
-      url = "github:nix-community/naersk";
-      inputs.nixpkgs.follows = "nixpkgs";
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
     };
   };
 
-  outputs = { self, naersk, nixpkgs, flake-utils, flake-compat, fenix, crane }:
+  outputs = { self, nixpkgs, flake-utils, flake-compat, fenix, crane }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
         };
         lib = pkgs.lib;
-        fenix-pkgs = fenix.packages.${system};
-        fenix-channel = fenix-pkgs.complete;
 
-        craneLib = (crane.mkLib pkgs).overrideScope' (final: prev: {
-          cargo = fenix-channel.cargo;
-          rustc = fenix-channel.rustc;
-        });
+        fenix-channel = fenix.packages.${system}.stable;
 
-        commonArgs = {
-          src = ./.;
-          buildInputs = [
-            pkgs.openssl
-            pkgs.perl
-          ];
-          nativeBuildInputs = [
-            pkgs.pkgconfig
-            fenix-channel.rustc
-          ];
-        };
+        fenix-toolchain = (fenix-channel.withComponents [
+          "rustc"
+          "cargo"
+          "clippy"
+          "rust-analysis"
+          "rust-src"
+          "rustfmt"
+          "llvm-tools-preview"
+        ]);
+
+        craneLib = crane.lib.${system}.overrideToolchain fenix-toolchain;
 
         # filter source code at path `src` to include only the list of `modules`
         filterModules = modules: src:
@@ -72,25 +60,85 @@
             inherit src;
           };
 
+        # Filter only files needed to build project dependencies
+        #
+        # To get good build times it's vitally important to not have to
+        # rebuild derivation needlessly. The way Nix caches things
+        # is very simple: if any input file changed, derivation needs to
+        # be rebuild.
+        #
+        # For this reason this filter function strips the `src` from
+        # any files that are not relevant to the build.
+        #
+        # Lile `filterWorkspaceFiles` but doesn't even need *.rs files
+        # (because they are not used for building dependencies)
+        filterWorkspaceDepsBuildFiles = src: filterSrcWithRegexes [ "Cargo.lock" "Cargo.toml" ".*/Cargo.toml" ] src;
+
+        # Filter only files relevant to building the workspace
+        filterWorkspaceFiles = src: filterSrcWithRegexes [ "Cargo.lock" "Cargo.toml" ".*/Cargo.toml" ".*\.rs" ".*/rc/doc/.*\.md" ".*\.txt" ] src;
+
+        filterSrcWithRegexes = regexes: src:
+          let
+            basePath = toString src + "/";
+          in
+          lib.cleanSourceWith {
+            filter = (path: type:
+              let
+                relPath = lib.removePrefix basePath (toString path);
+                includePath =
+                  (type == "directory") ||
+                  lib.any
+                    (re: builtins.match re relPath != null)
+                    regexes;
+              in
+              # uncomment to debug:
+                # builtins.trace "${relPath}: ${lib.boolToString includePath}"
+              includePath
+            );
+            inherit src;
+          };
+
+        commonArgs = {
+          src = filterWorkspaceFiles ./.;
+
+          buildInputs = with pkgs; [
+            openssl
+            fenix-channel.rustc
+            fenix-channel.clippy
+          ];
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+            perl
+          ];
+
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
+          CI = "true";
+          HOME = "/tmp";
+        };
+
         workspaceDeps = craneLib.buildDepsOnly (commonArgs // {
-          pname = "cargo-crev-workspace-deps";
+          src = filterWorkspaceDepsBuildFiles ./.;
+          pname = "workspace-deps";
+          buildPhaseCargoCommand = "cargo doc && cargo check --profile release --all-targets && cargo build --profile release --all-targets";
+          doCheck = false;
         });
 
-        workspaceAll = craneLib.cargoBuild (commonArgs // {
-          cargoArtifacts = workspaceDeps;
-          doCheck = true;
-        });
-
-        # a function to define both package and container build for a given binary
-        pkg = { name, dir, extraDirs ? [ ] }: rec {
+        # a function to define cargo&nix package, listing
+        # all the dependencies (as dir) to help limit the
+        # amount of things that need to rebuild when some
+        # file change
+        pkg = { name ? null, dir, port ? 8000, extraDirs ? [ ] }: rec {
           package = craneLib.buildPackage (commonArgs // {
             cargoArtifacts = workspaceDeps;
-            pname = name;
 
             src = filterModules ([ dir ] ++ extraDirs) ./.;
 
-            cargoExtraArgs = "--bin ${name}";
+            # if needed we will check the whole workspace at once with `workspaceBuild`
             doCheck = false;
+          } // lib.optionalAttrs (name != null) {
+            pname = name;
+            cargoExtraArgs = "--bin ${name}";
           });
 
           container = pkgs.dockerTools.buildLayeredImage {
@@ -101,23 +149,53 @@
                 "${package}/bin/${name}"
               ];
               ExposedPorts = {
-                "8000/tcp" = { };
+                "${builtins.toString port}/tcp" = { };
               };
             };
           };
         };
 
+        workspaceBuild = craneLib.cargoBuild (commonArgs // {
+          pname = "workspace-build";
+          cargoArtifacts = workspaceDeps;
+          doCheck = false;
+        });
+
+        workspaceTest = craneLib.cargoBuild (commonArgs // {
+          pname = "workspace-test";
+          cargoArtifacts = workspaceBuild;
+          doCheck = true;
+        });
+
+        # Note: can't use `cargoClippy` because it implies `--all-targets`, while
+        # we can't build benches on stable
+        # See: https://github.com/ipetkov/crane/issues/64
+        workspaceClippy = craneLib.cargoBuild (commonArgs // {
+          pname = "workspace-clippy";
+          cargoArtifacts = workspaceBuild;
+
+          cargoBuildCommand = "cargo clippy --profile release --no-deps --lib --bins --tests --examples --workspace -- --deny warnings";
+          doInstallCargoArtifacts = false;
+          doCheck = false;
+        });
+
+        workspaceDoc = craneLib.cargoBuild (commonArgs // {
+          pname = "workspace-doc";
+          cargoArtifacts = workspaceBuild;
+          cargoBuildCommand = "env RUSTDOCFLAGS='-D rustdoc::broken_intra_doc_links' cargo doc --no-deps --document-private-items && cp -a target/doc $out";
+          doCheck = false;
+        });
+
         cargo-crev = pkg {
           name = "cargo-crev";
           dir = "cargo-crev";
           extraDirs = [
-            "crev-lib"
-            "crev-data"
-            "crev-wot"
             "crev-common"
+            "crev-data"
+            "crev-lib"
+            "crev-wot"
           ];
         };
-
       in
       {
         packages = {
@@ -125,53 +203,34 @@
           cargo-crev = cargo-crev.package;
 
           deps = workspaceDeps;
-          ci = workspaceAll;
+          workspaceBuild = workspaceBuild;
+          workspaceClippy = workspaceClippy;
+          workspaceTest = workspaceTest;
+          workspaceDoc = workspaceDoc;
         };
 
+        # `nix develop`
         devShells = {
-          default =
-            pkgs.mkShell {
-              buildInputs = workspaceDeps.buildInputs;
-              nativeBuildInputs = workspaceDeps.nativeBuildInputs ++ [
+          default = pkgs.mkShell {
+            buildInputs = commonArgs.buildInputs;
+            nativeBuildInputs = commonArgs.nativeBuildInputs ++ (with pkgs;
+              [
+                fenix-toolchain
+                fenix.packages.${system}.rust-analyzer
+              ]);
+            RUST_SRC_PATH = "${fenix-channel.rust-src}/lib/rustlib/src/rust/library";
+            shellHook = ''
+              # auto-install git hooks
+              for hook in misc/git-hooks/* ; do ln -sf "../../$hook" "./.git/hooks/" ; done
+              ${pkgs.git}/bin/git config commit.template misc/git-hooks/commit-template.txt
 
-                # extra binaries here
-                fenix-pkgs.rust-analyzer
-                fenix-channel.rustc
-                fenix-channel.cargo
-
-                # Lints
-                # Note: we're using nixpkgs's `rustfmt` to avoid pulling in whole
-                # `fenix-channel` into CI
-                pkgs.rustfmt
-                pkgs.rnix-lsp
-                pkgs.nodePackages.bash-language-server
-
-                # Nix
-                pkgs.nixpkgs-fmt
-                pkgs.shellcheck
-
-                # Utils
-                pkgs.git
-                pkgs.gh
-                pkgs.cargo-udeps
-              ];
-
-              RUST_SRC_PATH = "${fenix-channel.rust-src}/lib/rustlib/src/rust/library";
-              shellHook = ''
-                for hook in misc/git-hooks/* ; do ln -sf "../../$hook" "./.git/hooks/" ; done
-                ${pkgs.git}/bin/git config commit.template misc/git-hooks/commit-template.txt
-              '';
-            };
-
-          # this shell is used only in CI lints, so it should contain minimum amount
-          # of stuff to avoid building and caching things we don't need
-          lint = pkgs.mkShell {
-            nativeBuildInputs = [
-              pkgs.rustfmt
-              pkgs.nixpkgs-fmt
-              pkgs.shellcheck
-              pkgs.git
-            ];
+              # workaround https://github.com/rust-lang/cargo/issues/11020
+              cargo_cmd_bins=( $(ls $HOME/.cargo/bin/cargo-{clippy,udeps,llvm-cov} 2>/dev/null) )
+              if (( ''${#cargo_cmd_bins[@]} != 0 )); then
+                echo "Warning: Detected binaries that might conflict with reproducible environment: ''${cargo_cmd_bins[@]}" 1>&2
+                echo "Warning: Considering deleting them. See https://github.com/rust-lang/cargo/issues/11020 for details" 1>&2
+              fi
+            '';
           };
         };
       });

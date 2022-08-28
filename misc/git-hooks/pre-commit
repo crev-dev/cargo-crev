@@ -2,18 +2,40 @@
 
 set -e
 
+git_ls_files="$(git ls-files)"
+
 >&2 echo "Checking *.nix files..."
-nixpkgs-fmt --check $(git ls-files | egrep '*.nix$')
+# shellcheck disable=SC2046
+nixpkgs-fmt --check $(echo "$git_ls_files" | grep -E '.*\.nix$')
 
 
 >&2 echo "Checking Rust projects files..."
 # Note: avoid `cargo fmt --all` so we don't need extra stuff in `ci` shell
 # so that CI is faster
-rustfmt --edition 2021 --check $(git ls-files | egrep '*.rs$')
+# shellcheck disable=SC2046
+rustfmt --edition 2021 --check $(echo "$git_ls_files" | grep -E '.*\.rs$')
 
 
 >&2 echo "Checking shell script files ..."
-
-for path in $(git ls-files | egrep '*.sh$')  ; do
+for path in $(echo "$git_ls_files" | grep -E '.*\.sh$')  ; do
   shellcheck --severity=warning $path
 done
+
+errors=""
+for path in $(echo "$git_ls_files" | grep -v -E '.*\.ods'); do
+  # extra branches for clarity
+  if [ ! -s "$path" ]; then
+     # echo "$path is empty"
+     true
+  elif [ -z "$(tail -c 1 < "$path")" ]; then
+     # echo "$path ends with a newline or with a null byte"
+     true
+  else
+    echo "$path doesn't end with a newline" 1>&2
+    errors="true"
+  fi
+done
+
+if [ -n "$errors" ]; then
+  exit 1
+fi
