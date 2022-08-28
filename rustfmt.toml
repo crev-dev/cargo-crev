@@ -1,2 +1,1 @@
 edition = "2018"
-imports_granularity="Crate"

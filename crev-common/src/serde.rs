@@ -100,7 +100,6 @@ pub fn write_as_headerless_yaml<T: self::serde::Serialize>(
     t: &T,
     f: &mut dyn fmt::Write,
 ) -> fmt::Result {
-
     let s = serde_yaml::to_string(t).map_err(|_| fmt::Error)?;
     f.write_str(&s)
 }

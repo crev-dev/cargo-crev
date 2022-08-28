@@ -1,2 +1,2 @@
 edition = "2018"
-imports_granularity="Crate"
+# imports_granularity="Crate"
