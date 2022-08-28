@@ -237,6 +237,17 @@
               fi
             '';
           };
+
+          # this shell is used only in CI, so it should contain minimum amount
+          # of stuff to avoid building and caching things we don't need
+          lint = pkgs.mkShell {
+            nativeBuildInputs = [
+              pkgs.rustfmt
+              pkgs.nixpkgs-fmt
+              pkgs.shellcheck
+              pkgs.git
+            ];
+          };
         };
       });
 }
