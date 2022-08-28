@@ -47,8 +47,8 @@ jobs:
       - name: Build workspace
         run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#workspaceBuild
 
-      - name: Clippy workspace
-        run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#workspaceClippy
+      # - name: Clippy workspace
+      #   run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#workspaceClippy
 
       - name: Run cargo doc
         run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#workspaceDoc
