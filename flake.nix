@@ -207,6 +207,10 @@
           workspaceClippy = workspaceClippy;
           workspaceTest = workspaceTest;
           workspaceDoc = workspaceDoc;
+
+          container = {
+            cargo-crev = cargo-crev.container;
+          };
         };
 
         # `nix develop`
