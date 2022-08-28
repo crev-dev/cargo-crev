@@ -1,4 +1,5 @@
 use crate::Result;
+use git2::{ErrorClass, ErrorCode};
 use log::debug;
 use std::path::Path;
 
@@ -45,15 +46,25 @@ pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     })
 }
 
-pub fn fetch_and_checkout_git_repo(repo: &git2::Repository) -> Result<()> {
+pub fn is_unrecoverable(err: &git2::Error) -> bool {
+    matches!(
+        (err.class(), err.code()),
+        // GitHub's way of saying 404
+        (ErrorClass::Http, ErrorCode::Auth) |
+        (ErrorClass::Repository, ErrorCode::NotFound) |
+        // corrupted loose reference
+        (ErrorClass::Reference, ErrorCode::GenericError)
+    )
+}
+
+pub fn fetch_and_checkout_git_repo(repo: &git2::Repository) -> Result<(), git2::Error> {
     let mut fetch_options = default_fetch_options();
     repo.find_remote("origin")?
         .fetch(&["master"], Some(&mut fetch_options), None)?;
     repo.set_head("FETCH_HEAD")?;
     let mut opts = git2::build::CheckoutBuilder::new();
     opts.force();
-    repo.checkout_head(Some(&mut opts))?;
-    Ok(())
+    repo.checkout_head(Some(&mut opts))
 }
 
 /// Make a git clone with the default fetch options
