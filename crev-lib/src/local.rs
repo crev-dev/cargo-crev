@@ -1134,9 +1134,8 @@ impl Local {
     /// and cache content.
     pub fn load_db(&self) -> Result<crev_wot::ProofDB> {
         let mut db = crev_wot::ProofDB::new();
-        if let Some(id) = self.read_current_locked_id_opt()? {
-            let pub_id = id.to_public_id();
-            db.record_tusted_url_from_own_id(&pub_id);
+        for local_id in self.get_current_user_public_ids()? {
+            db.record_trusted_url_from_own_id(&local_id);
         }
         db.import_from_iter(
             self.all_local_proofs()

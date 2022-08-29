@@ -1033,7 +1033,7 @@ impl ProofDB {
         }
     }
 
-    pub fn record_tusted_url_from_own_id(&mut self, own_id: &crev_data::PublicId) {
+    pub fn record_trusted_url_from_own_id(&mut self, own_id: &crev_data::PublicId) {
         self.record_url_from_from_field(&Utc::now(), own_id, &FetchSource::LocalUser);
     }
 
