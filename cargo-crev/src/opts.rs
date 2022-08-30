@@ -866,6 +866,30 @@ pub struct ProofFind {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct ProofReissue {
+    #[structopt(name = "crate", long = "crate")]
+    pub crate_: Option<String>,
+
+    #[structopt(name = "vers", long = "vers")]
+    pub version: Option<Version>,
+
+    /// Reissue all proofs by a crev Id. Mandatory.
+    #[structopt(name = "author", long = "author")]
+    pub author: String,
+
+    /// Comment for human readers. Mandatory.
+    #[structopt(name = "comment", long = "comment")]
+    pub comment: String,
+
+    /// Skip check if we already reissued a review using the current id
+    #[structopt(long = "skip-reissue-check")]
+    pub skip_reissue_check: bool,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Repo {
     /// Publish to remote repository
@@ -914,6 +938,9 @@ pub enum Proof {
     /// Find a proof
     #[structopt(name = "find")]
     Find(ProofFind),
+    /// Reissue proofs with current id
+    #[structopt(name = "reissue")]
+    Reissue(ProofReissue),
 }
 
 #[derive(Debug, StructOpt, Clone)]

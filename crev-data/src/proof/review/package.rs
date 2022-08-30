@@ -1,7 +1,7 @@
 use crate::{
     proof::{
         self,
-        content::{ValidationError, ValidationResult},
+        content::{OriginalReference, ValidationError, ValidationResult},
         OverrideItem, OverrideItemDraft,
     },
     serde_content_serialize, serde_draft_serialize, Error, Level, ParseError,
@@ -112,6 +112,7 @@ impl PackageBuilder {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
+                original: None,
             });
         }
         self
@@ -144,6 +145,21 @@ impl proof::CommonOps for Package {
 impl Package {
     pub fn touch_date(&mut self) {
         self.common.date = crev_common::now();
+    }
+
+    pub fn change_from(&mut self, id: crate::PublicId) {
+        self.common.from = id;
+    }
+
+    pub fn set_original_reference(&mut self, orig_reference: OriginalReference) {
+        self.common.original = Some(orig_reference);
+    }
+
+    pub fn ensure_kind_is_backfilled(&mut self) {
+        if self.common.kind.is_none() {
+            // backfill "kind" for old reviews. Don't use common().kind() here, it will panic.
+            self.common.kind = Some(self.kind().to_string());
+        }
     }
 }
 
