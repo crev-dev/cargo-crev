@@ -26,6 +26,9 @@ const MAX_PROOF_BODY_LENGTH: usize = 32_000;
 pub type Date = chrono::DateTime<FixedOffset>;
 pub type DateUtc = chrono::DateTime<Utc>;
 
+#[derive(Debug, Clone)]
+pub struct Digest(pub [u8; 32]);
+
 /// Serialized Proof
 ///
 /// A signed proof containing some signed `Content`
@@ -41,6 +44,7 @@ pub struct Proof {
     common_content: Common,
 
     /// Digest (blake2b256)
+    /// TODO: Use Digest newtype here
     digest: [u8; 32],
 }
 

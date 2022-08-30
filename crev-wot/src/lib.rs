@@ -93,6 +93,7 @@ type TimestampedUrl = Timestamped<Url>;
 type TimestampedTrustLevel = Timestamped<TrustLevel>;
 type TimestampedReview = Timestamped<review::Review>;
 type TimestampedSignature = Timestamped<Signature>;
+type TimestampedDigest = Timestamped<proof::Digest>;
 type TimestampedFlags = Timestamped<proof::Flags>;
 
 impl From<proof::Trust> for TimestampedTrustLevel {
@@ -271,6 +272,9 @@ pub struct ProofDB {
         HashMap<Vec<u8>, HashMap<PkgVersionReviewId, TimestampedSignature>>,
     package_review_signatures_by_pkg_review_id: HashMap<PkgVersionReviewId, TimestampedSignature>,
 
+    // given a pkg_review_id, get proof digest
+    proof_digest_by_pkg_review_id: HashMap<PkgVersionReviewId, TimestampedDigest>,
+
     // pkg_review_id by package information, nicely grouped
     package_reviews:
         BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
@@ -306,6 +310,7 @@ impl Default for ProofDB {
             url_by_id_reported_by_others: default(),
             package_review_signatures_by_package_digest: default(),
             package_review_signatures_by_pkg_review_id: default(),
+            proof_digest_by_pkg_review_id: default(),
             package_review_by_signature: default(),
             package_reviews: default(),
             package_alternatives: default(),
@@ -515,6 +520,13 @@ impl ProofDB {
             .get(uniq)?
             .value;
         self.package_review_by_signature.get(signature)
+    }
+
+    pub fn get_proof_digest_by_pkg_review_id(
+        &self,
+        uniq: &PkgVersionReviewId,
+    ) -> Option<&proof::Digest> {
+        Some(&self.proof_digest_by_pkg_review_id.get(uniq)?.value)
     }
 
     pub fn get_pkg_review<'a, 'b, 'c: 'a, 'd: 'a>(
@@ -803,6 +815,7 @@ impl ProofDB {
         review: &review::Package,
         signature: &str,
         fetched_from: FetchSource,
+        proof_digest: proof::Digest,
     ) {
         self.insertion_counter += 1;
 
@@ -815,6 +828,7 @@ impl ProofDB {
 
         let pkg_review_id = PkgVersionReviewId::from(review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
+        let timestamp_proof_digest = TimestampedDigest::from((review.date(), proof_digest));
         let timestamp_flags = TimestampedFlags::from((review.date(), review.flags.clone()));
 
         self.package_review_signatures_by_package_digest
@@ -828,6 +842,11 @@ impl ProofDB {
             .entry(pkg_review_id.clone())
             .and_modify(|s| s.update_to_more_recent(&timestamp_signature))
             .or_insert_with(|| timestamp_signature.clone());
+
+        self.proof_digest_by_pkg_review_id
+            .entry(pkg_review_id.clone())
+            .and_modify(|s| s.update_to_more_recent(&timestamp_proof_digest))
+            .or_insert_with(|| timestamp_proof_digest.clone());
 
         self.from_id_to_package_reviews
             .entry(review.common.from.id.clone())
@@ -1072,9 +1091,12 @@ impl ProofDB {
             .expect("All proofs were supposed to be valid here");
         match proof.kind() {
             proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?, fetched_from),
-            proof::PackageReview::KIND => {
-                self.add_package_review(&proof.parse_content()?, proof.signature(), fetched_from)
-            }
+            proof::PackageReview::KIND => self.add_package_review(
+                &proof.parse_content()?,
+                proof.signature(),
+                fetched_from,
+                proof::Digest(*proof.digest()),
+            ),
             proof::Trust::KIND => {
                 self.add_trust(&proof.parse_content()?, proof.signature(), fetched_from)
             }
