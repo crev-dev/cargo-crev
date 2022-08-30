@@ -9,6 +9,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 <!-- next-url -->
 ## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.23.0...HEAD) - ReleaseDate
 
+- Added command "proof reissue" to reissue reviews under a different id.
+  The original proof will be referenced in the new proof under the "original:" field
 - Fix crash on systems with libgit2 v1.4
 - Fix the `crate clean` working directory check.
 - Fix the `crate review` working directory check.
