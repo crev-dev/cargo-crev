@@ -7,6 +7,7 @@ use crev_common::{
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
 use std::{self, fmt, io::BufReader, path::Path};
+use aes_siv::KeyInit;
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
@@ -89,7 +90,7 @@ impl LockedId {
             use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE};
 
             let secret = unlocked_id.keypair.secret.as_bytes();
-            let mut siv = aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&pwhash));
+            let mut siv = aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&pwhash));
             let mut buffer = vec![0; IV_SIZE + secret.len()];
             buffer[IV_SIZE..].copy_from_slice(secret);
             let tag = siv
@@ -185,7 +186,7 @@ impl LockedId {
                 use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE, Tag};
 
                 let mut siv =
-                    aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&passphrase_hash));
+                    aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&passphrase_hash));
                 let mut buffer = sealed_secret_key.clone();
                 let tag = Tag::clone_from_slice(&buffer[..IV_SIZE]);
                 siv.decrypt_in_place_detached(
