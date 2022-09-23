@@ -1,4 +1,5 @@
 use crate::{Error, Result};
+use aes_siv::KeyInit;
 use argon2::{self, Config};
 use crev_common::{
     rand::random_vec,
@@ -7,7 +8,6 @@ use crev_common::{
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
 use std::{self, fmt, io::BufReader, path::Path};
-use aes_siv::KeyInit;
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
