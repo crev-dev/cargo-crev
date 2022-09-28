@@ -148,6 +148,10 @@ pub struct IdSwitch {
 /// Parameters describing trust graph traversal
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct TrustDistanceParams {
+    /// [trust-graph-traversal] Consider only direct trust relationships
+    #[structopt(long = "direct")]
+    pub direct: bool,
+
     #[structopt(long = "depth", default_value = "20")]
     /// [trust-graph-traversal] Maximum allowed distance from the root identity when traversing trust graph
     pub depth: u64,
@@ -171,13 +175,24 @@ pub struct TrustDistanceParams {
 
 impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
     fn from(params: TrustDistanceParams) -> Self {
-        crev_lib::TrustDistanceParams {
-            max_distance: params.depth,
-            high_trust_distance: params.high_cost,
-            medium_trust_distance: params.medium_cost,
-            low_trust_distance: params.low_cost,
-            none_trust_distance: params.none_cost,
-            distrust_distance: params.distrust_cost,
+        if params.direct {
+            crev_lib::TrustDistanceParams {
+                max_distance: 1,
+                high_trust_distance: 1,
+                medium_trust_distance: 1,
+                low_trust_distance: 1,
+                none_trust_distance: 1000,
+                distrust_distance: 1000,
+            }
+        } else {
+            crev_lib::TrustDistanceParams {
+                max_distance: params.depth,
+                high_trust_distance: params.high_cost,
+                medium_trust_distance: params.medium_cost,
+                low_trust_distance: params.low_cost,
+                none_trust_distance: params.none_cost,
+                distrust_distance: params.distrust_cost,
+            }
         }
     }
 }
