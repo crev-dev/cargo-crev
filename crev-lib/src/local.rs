@@ -759,7 +759,8 @@ impl Local {
                 }
                 crev_wot::UrlOfId::FromOthers(maybe_url) => {
                     let maybe_url = maybe_url.url.clone();
-                    self.fetch_url_into(&maybe_url, &mut db)?;
+                    // Ignore errors - if we weren't able to fetch it, that's OK.
+                    let _ = self.fetch_url_into(&maybe_url, &mut db);
                     db.lookup_url(&id).from_self()
                 }
                 crev_wot::UrlOfId::None => None,

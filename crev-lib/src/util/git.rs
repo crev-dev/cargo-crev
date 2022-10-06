@@ -60,7 +60,7 @@ pub fn is_unrecoverable(err: &git2::Error) -> bool {
 pub fn fetch_and_checkout_git_repo(repo: &git2::Repository) -> Result<(), git2::Error> {
     let mut fetch_options = default_fetch_options();
     repo.find_remote("origin")?
-        .fetch(&["master"], Some(&mut fetch_options), None)?;
+        .fetch::<String>(&[], Some(&mut fetch_options), None)?;
     repo.set_head("FETCH_HEAD")?;
     let mut opts = git2::build::CheckoutBuilder::new();
     opts.force();
