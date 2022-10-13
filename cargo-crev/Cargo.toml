@@ -34,7 +34,7 @@ cargo-platform = "0.1.2"
 crates_io_api = "0.8.0"
 crossbeam = "0.8.1"
 chrono = { version = "0.4.19", default-features = false }
-env_logger = { version = "0.9.0", default-features = false, features = ["termcolor", "atty", "humantime"] }
+env_logger = { version = "0.9.1", default-features = false, features = ["termcolor", "atty", "humantime"] }
 fnv = "1.0.7"
 geiger = "0.4.9"
 itertools = "0.10.3"
@@ -45,7 +45,7 @@ rayon = "1.5.1"
 resiter = "0.4.0"
 rpassword = "7.0.0"
 serde = "1.0.130"
-serde_json = "1.0.62"
+serde_json = "1.0.86"
 serde_yaml = "0.9.13"
 structopt = "0.3.25"
 time = "0.3.6"

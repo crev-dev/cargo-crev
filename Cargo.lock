@@ -252,7 +252,7 @@ dependencies = [
  "crossbeam-utils",
  "curl",
  "curl-sys",
- "env_logger 0.9.0",
+ "env_logger 0.9.1",
  "filetime",
  "flate2",
  "fwdansi",
@@ -312,7 +312,7 @@ dependencies = [
  "crev-lib",
  "crev-wot",
  "crossbeam",
- "env_logger 0.9.0",
+ "env_logger 0.9.1",
  "fnv",
  "geiger",
  "git2",
@@ -1066,9 +1066,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
+checksum = "c90bf5f19754d10198ccb95b70664fc925bd1fc090a0fd9a6ebc54acc8cd6272"
 dependencies = [
  "atty",
  "humantime",
@@ -2538,9 +2538,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.85"
+version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
+checksum = "41feea4228a6f1cd09ec7a3593a682276702cd67b5273544757dae23c096f074"
 dependencies = [
  "itoa 1.0.3",
  "ryu",
