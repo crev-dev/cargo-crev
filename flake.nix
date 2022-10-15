@@ -105,6 +105,9 @@
             openssl
             fenix-channel.rustc
             fenix-channel.clippy
+          ] ++ lib.optionals stdenv.isDarwin [
+            libiconv
+            darwin.apple_sdk.frameworks.Security
           ];
 
           nativeBuildInputs = with pkgs; [
