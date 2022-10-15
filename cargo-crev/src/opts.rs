@@ -454,7 +454,8 @@ pub struct TrustUrls {
     /// Public IDs or proof repo URLs to create Trust Proof for
     pub public_ids_or_urls: Vec<String>,
 
-    /// Shortcut for setting trust level without editing
+    /// Shortcut for setting trust level without editing.
+    /// Possible values are: "none" or "untrust", "low", "medium", "high" and "distrust".
     #[structopt(long = "level")]
     pub level: Option<crev_data::TrustLevel>,
 
