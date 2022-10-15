@@ -107,7 +107,10 @@
             fenix-channel.clippy
           ] ++ lib.optionals stdenv.isDarwin [
             libiconv
+            curl
+            libgit2
             darwin.apple_sdk.frameworks.Security
+            darwin.apple_sdk.frameworks.CoreFoundation
           ];
 
           nativeBuildInputs = with pkgs; [
