@@ -327,7 +327,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let events = scanner.run(&RequiredDetails {
         geiger: args.columns.show_geiger(),
-        owners: args.columns.show_owners(),
+        owners: args.columns.show_owners() || args.skip_known_owners,
         downloads: args.columns.show_downloads() || args.columns.show_leftpad_index(),
         loc: args.columns.show_loc() || args.columns.show_leftpad_index(),
     });
