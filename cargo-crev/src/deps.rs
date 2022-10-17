@@ -340,14 +340,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut crates_with_issues = false;
 
     let deps: Vec<_> = events
-        .filter(|stats| {
-            !args.skip_known_owners
-                || stats
-                    .details
-                    .known_owners
-                    .map(|it| it.count == 0)
-                    .unwrap_or(true)
-        })
+        .filter(|stats| !args.skip_known_owners || !crate_has_known_owner(stats))
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
             print_term::print_dep(
@@ -460,4 +453,11 @@ fn write_out_distrusted_ids_details(
         }
     }
     Ok(())
+}
+
+fn crate_has_known_owner(stats: &CrateStats) -> bool {
+    match stats.details.known_owners {
+        Some(known_owners) => known_owners.count > 0,
+        None => false,
+    }
 }
