@@ -346,7 +346,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
                     .details
                     .known_owners
                     .map(|it| it.count == 0)
-                    .unwrap_or(false)
+                    .unwrap_or(true)
         })
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
