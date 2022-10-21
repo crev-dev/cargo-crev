@@ -20,7 +20,7 @@ rprompt = "1.0.5"
 serde = "1.0.139"
 serde_yaml = "0.9.13"
 shell-escape = "0.1.5"
-thiserror = "1.0.31"
+thiserror = "1.0.37"
 rand = "0.8.5"
 
 [package.metadata.release]
