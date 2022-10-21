@@ -22,7 +22,7 @@ semver = { version = "1.0.14", features = [ "serde" ] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_yaml = "0.9.13"
 typed-builder = "0.10.0"
-thiserror = "1.0.30"
+thiserror = "1.0.37"
 
 [package.metadata.release]
 shared-version=true
