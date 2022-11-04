@@ -24,7 +24,7 @@ directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
 git2 = ">=0.13, <0.16"
 log = "0.4.14"
-num_cpus = "1.13.0"
+num_cpus = "1.14.0"
 resiter = "0.4.0"
 rust-argon2 = "1.0.0"
 serde = "1.0.147"
