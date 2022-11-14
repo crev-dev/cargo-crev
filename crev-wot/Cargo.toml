@@ -15,7 +15,7 @@ edition = "2021"
 crev-common = { path = "../crev-common", version = "^0.23.2"}
 crev-data = { path = "../crev-data", version = "^0.23"}
 blake2 = "0.9.2"
-chrono = { version = "0.4.19", default-features = false }
+chrono = { version = "0.4.23", default-features = false }
 default = "0.1.2"
 log = "0.4.14"
 serde = "1.0.147"
