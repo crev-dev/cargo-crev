@@ -17,7 +17,7 @@ crev-common = { path = "../crev-common", version = "^0.23.2"}
 crev-data = { path = "../crev-data", version = "^0.23"}
 crev-wot = { path = "../crev-wot", version = "^0.23"}
 blake2 = "0.9.2"
-chrono = { version = "0.4.19", default-features = false }
+chrono = { version = "0.4.23", default-features = false }
 crev-recursive-digest = "0.5"
 default = "0.1.2"
 directories = { version = "2", package = "directories-next" }
