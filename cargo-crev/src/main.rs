@@ -538,8 +538,6 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 args.level.is_none(),
                 args.overrides,
             )?;
-            // Make sure we have reviews for the new Ids we're trusting
-            local.fetch_new_trusted(Default::default(), None)?;
         }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {
