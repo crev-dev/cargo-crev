@@ -942,14 +942,18 @@ impl Local {
             drop(tx);
 
             for (url, res) in rx.into_iter() {
-                res.and_then(|dir| {
-                    self.import_proof_dir_and_print_counts(&dir, &url, db)?;
-                    something_was_fetched = true;
-                    Ok(())
-                })
-                .unwrap_or_else(|e| {
-                    error!("Error: Failed to fetch {}: {}", url, e);
-                });
+                let dir = match res {
+                    Ok(dir) => dir,
+                    Err(e) => {
+                        error!("Error: Failed to get dir for repo {}: {}", url, e);
+                        continue;
+                    },
+                };
+                if let Err(e) = self.import_proof_dir_and_print_counts(&dir, &url, db) {
+                    error!("Error: Failed to fetch {}: {} ({})", url, e, dir.display());
+                    continue;
+                }
+                something_was_fetched = true;
             }
         });
         something_was_fetched
