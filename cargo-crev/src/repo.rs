@@ -587,7 +587,7 @@ impl Repo {
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
         if !source
-            .query(&dependency_request, &mut |summary| summaries.push(summary))
+            .query(&dependency_request, cargo::core::QueryKind::Exact, &mut |summary| summaries.push(summary))
             .is_ready()
         {
             source.block_until_ready()?;
@@ -663,34 +663,34 @@ mod tests {
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),
-                ConfigValue::String("my-vendor-source".into(), Definition::Cli),
+                ConfigValue::String("my-vendor-source".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let directory_replacement = ConfigValue::Table(
             [(
                 "directory".into(),
-                ConfigValue::String("vendor".into(), Definition::Cli),
+                ConfigValue::String("vendor".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let registry_replacement = ConfigValue::Table(
             [(
                 "registry".into(),
-                ConfigValue::String("path/to/registry".into(), Definition::Cli),
+                ConfigValue::String("path/to/registry".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let source_table = ConfigValue::Table(
@@ -702,7 +702,7 @@ mod tests {
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let mut config_table = [("source".into(), source_table)].iter().cloned().collect();
@@ -712,7 +712,7 @@ mod tests {
                 .iter()
                 .cloned()
                 .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
         let expected_config_table = [("source".into(), expected_source_table)]
             .iter()
@@ -743,45 +743,45 @@ mod tests {
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),
-                ConfigValue::String("my-vendor-source".into(), Definition::Cli),
+                ConfigValue::String("my-vendor-source".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let nested_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),
-                ConfigValue::String("nested-vendor-source".into(), Definition::Cli),
+                ConfigValue::String("nested-vendor-source".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let directory_replacement = ConfigValue::Table(
             [(
                 "directory".into(),
-                ConfigValue::String("vendor".into(), Definition::Cli),
+                ConfigValue::String("vendor".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let registry_replacement = ConfigValue::Table(
             [(
                 "registry".into(),
-                ConfigValue::String("path/to/registry".into(), Definition::Cli),
+                ConfigValue::String("path/to/registry".into(), Definition::Cli(None)),
             )]
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let source_table = ConfigValue::Table(
@@ -794,7 +794,7 @@ mod tests {
             .iter()
             .cloned()
             .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
 
         let mut config_table = [("source".into(), source_table)].iter().cloned().collect();
@@ -804,7 +804,7 @@ mod tests {
                 .iter()
                 .cloned()
                 .collect(),
-            Definition::Cli,
+            Definition::Cli(None),
         );
         let expected_config_table = [("source".into(), expected_source_table)]
             .iter()
