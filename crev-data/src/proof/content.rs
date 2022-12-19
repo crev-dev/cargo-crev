@@ -163,10 +163,12 @@ pub struct Draft {
 }
 
 impl Draft {
+    #[must_use]
     pub fn title(&self) -> &str {
         &self.title
     }
 
+    #[must_use]
     pub fn body(&self) -> &str {
         &self.body
     }
@@ -210,7 +212,7 @@ pub trait ContentExt: Content {
             digest: crev_common::blake2b256sum(body.as_bytes()),
             body,
             signature: crev_common::base64_encode(&signature),
-            common_content: self.common().to_owned(),
+            common_content: self.common().clone(),
         };
         let parsed = proof::Proof::parse_from(std::io::Cursor::new(proof.to_string().as_bytes()))?;
 

@@ -14,7 +14,7 @@ fn build_advisory(id: impl Into<String>, range: VersionRange) -> Advisory {
     Advisory::builder()
         .range(range)
         .ids(vec![id.clone()])
-        .comment(format!("comment for {}", id))
+        .comment(format!("comment for {id}"))
         .build()
 }
 
@@ -22,7 +22,7 @@ fn build_issue(id: impl Into<String>) -> Issue {
     let id = id.into();
     Issue::builder()
         .id(id.clone())
-        .comment(format!("issue {}", id))
+        .comment(format!("issue {id}"))
         .build()
 }
 
@@ -35,11 +35,11 @@ fn build_proof_with_advisories(
         id: proof::PackageVersionId::new(SOURCE.into(), NAME.into(), version),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: proof::default_revision_type(),
     };
     let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
+        .from(id.id.clone())
         .package(package_info)
         .comment("comment".into())
         .advisories(advisories)
@@ -54,11 +54,11 @@ fn build_proof_with_issues(id: &UnlockedId, version: Version, issues: Vec<Issue>
         id: proof::PackageVersionId::new("SOURCE_ID".to_owned(), NAME.into(), version),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: proof::default_revision_type(),
     };
     let review = proof::review::PackageBuilder::default()
-        .from(id.id.to_owned())
+        .from(id.id.clone())
         .package(package_info)
         .comment("comment".into())
         .issues(issues)

@@ -28,7 +28,7 @@ fn lock_and_unlock() -> Result<()> {
     let id_restored: UnlockedId =
         serde_yaml::from_str::<id::LockedId>(&id_stored)?.to_unlocked("pass")?;
 
-    println!("{}", id_stored);
+    println!("{id_stored}");
 
     assert_eq!(id.id.id, id_restored.id.id);
     Ok(())
@@ -108,7 +108,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
             "name".into(),
             Version::parse("1.0.0").unwrap(),
         ),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: crev_data::proof::default_revision_type(),
         digest: digest.to_vec(),
         digest_type: crev_data::proof::default_digest_type(),

@@ -10,7 +10,7 @@ pub use review::{Code as CodeReview, Package as PackageReview, *};
 pub use revision::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    default, fmt,
+    fmt,
     io::{self, BufRead},
 };
 pub use trust::*;
@@ -82,14 +82,17 @@ impl Proof {
             digest,
         })
     }
+    #[must_use]
     pub fn body(&self) -> &str {
         self.body.as_str()
     }
 
+    #[must_use]
     pub fn signature(&self) -> &str {
         self.signature.as_str()
     }
 
+    #[must_use]
     pub fn digest(&self) -> &[u8; 32] {
         &self.digest
     }
@@ -213,24 +216,13 @@ impl Proof {
             }
         }
 
+        #[derive(Default)]
         struct State {
             stage: Stage,
             body: String,
             signature: String,
             type_name: Option<String>,
             proofs: Vec<Proof>,
-        }
-
-        impl default::Default for State {
-            fn default() -> Self {
-                State {
-                    stage: Default::default(),
-                    body: Default::default(),
-                    signature: Default::default(),
-                    type_name: None,
-                    proofs: vec![],
-                }
-            }
         }
 
         impl State {
@@ -335,6 +327,7 @@ fn equals_default_digest_type(s: &str) -> bool {
     s == default_digest_type()
 }
 
+#[must_use]
 pub fn default_digest_type() -> String {
     "blake2b".into()
 }
@@ -343,6 +336,7 @@ fn equals_default_revision_type(s: &str) -> bool {
     s == default_revision_type()
 }
 
+#[must_use]
 pub fn default_revision_type() -> String {
     "git".into()
 }

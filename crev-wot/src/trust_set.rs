@@ -210,8 +210,7 @@ impl TrustSet {
                     .distrusted
                     .get(candidate_id)
                     .map(ToOwned::to_owned)
-                    .map(|details| details.reported_by)
-                    .unwrap_or_else(HashSet::new);
+                    .map_or_else(HashSet::new, |details| details.reported_by);
 
                 let too_far = candidate_total_distance.map(|d| params.max_distance < d);
                 let trust_too_low =
@@ -363,7 +362,7 @@ impl TrustSet {
                     let visit = Visit {
                         effective_trust_level,
                         distance: candidate_total_distance,
-                        id: candidate_id.to_owned(),
+                        id: candidate_id.clone(),
                     };
                     // we've just removed it above, so can't return true
                     assert!(pending.insert(visit));
@@ -378,18 +377,22 @@ impl TrustSet {
         self.trusted.keys()
     }
 
+    #[must_use]
     pub fn get_trusted_ids(&self) -> HashSet<crev_data::Id> {
         self.iter_trusted_ids().cloned().collect()
     }
 
+    #[must_use]
     pub fn get_trusted_ids_refs(&self) -> HashSet<&crev_data::Id> {
         self.iter_trusted_ids().collect()
     }
 
+    #[must_use]
     pub fn is_trusted(&self, id: &Id) -> bool {
         self.trusted.contains_key(id)
     }
 
+    #[must_use]
     pub fn is_distrusted(&self, id: &Id) -> bool {
         self.distrusted.contains_key(id)
     }
@@ -464,11 +467,13 @@ impl TrustSet {
         }
     }
 
+    #[must_use]
     pub fn get_effective_trust_level(&self, id: &Id) -> TrustLevel {
         self.get_effective_trust_level_opt(id)
             .unwrap_or(TrustLevel::None)
     }
 
+    #[must_use]
     pub fn get_effective_trust_level_opt(&self, id: &Id) -> Option<TrustLevel> {
         self.trusted
             .get(id)

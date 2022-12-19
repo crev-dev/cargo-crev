@@ -168,11 +168,11 @@ pub fn generate_id_and_proof() -> Result<(UnlockedId, Proof)> {
         ),
         digest: vec![0, 1, 2, 3],
         digest_type: proof::default_digest_type(),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: proof::default_revision_type(),
     };
     let review = proof::review::CodeBuilder::default()
-        .from(id.id.to_owned())
+        .from(id.id.clone())
         .package(package_info)
         .comment("comment".into())
         .files(vec![
@@ -200,7 +200,7 @@ pub fn sign_proof_review() -> Result<()> {
     let (_id, proof) = generate_id_and_proof()?;
 
     proof.verify()?;
-    println!("{}", proof);
+    println!("{proof}");
 
     Ok(())
 }
@@ -228,7 +228,7 @@ pub fn ensure_serializes_to_valid_proof_works() -> Result<()> {
         ),
         digest,
         digest_type: proof::default_digest_type(),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: proof::default_revision_type(),
     };
 

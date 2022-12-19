@@ -108,7 +108,7 @@ impl From<proof::Trust> for TimestampedTrustLevel {
 impl<'a, T: proof::WithReview + Content + CommonOps> From<&'a T> for TimestampedReview {
     fn from(review: &T) -> Self {
         TimestampedReview {
-            value: review.review().to_owned(),
+            value: review.review().clone(),
             date: review.date_utc(),
         }
     }
@@ -141,7 +141,7 @@ impl From<review::Package> for PkgVersionReviewId {
 impl From<&review::Package> for PkgVersionReviewId {
     fn from(review: &review::Package) -> Self {
         PkgVersionReviewId {
-            from: review.from().id.to_owned(),
+            from: review.from().id.clone(),
             package_version_id: review.package.id.clone(),
         }
     }
@@ -169,7 +169,7 @@ impl From<review::Package> for PkgReviewId {
 impl From<&review::Package> for PkgReviewId {
     fn from(review: &review::Package) -> Self {
         PkgReviewId {
-            from: review.from().id.to_owned(),
+            from: review.from().id.clone(),
             package_id: review.package.id.id.clone(),
         }
     }
@@ -333,6 +333,7 @@ pub struct IssueDetails {
 }
 
 impl ProofDB {
+    #[must_use]
     pub fn new() -> Self {
         default()
     }
@@ -371,14 +372,14 @@ impl ProofDB {
         from: &'a Id,
         pkg_id: &'a proof::PackageId,
     ) -> HashSet<proof::PackageId> {
-        let from = from.to_owned();
+        let from = from.clone();
 
         let alternatives = self.get_derived_alternatives();
         alternatives
             .for_pkg
             .get(pkg_id)
             .into_iter()
-            .flat_map(move |i| i.get(&from))
+            .filter_map(move |i| i.get(&from))
             .flatten()
             .cloned()
             .collect()
@@ -395,9 +396,7 @@ impl ProofDB {
             .get(pkg_id)
             .into_iter()
             .flat_map(move |i| i.iter())
-            .flat_map(move |(id, pkg_ids)| {
-                pkg_ids.iter().map(move |v| (id.to_owned(), v.to_owned()))
-            })
+            .flat_map(move |(id, pkg_ids)| pkg_ids.iter().map(move |v| (id.clone(), v.clone())))
             .collect()
     }
 
@@ -406,7 +405,7 @@ impl ProofDB {
         from: &'a Id,
         pkg_id: &'a proof::PackageId,
     ) -> Option<&'s proof::Flags> {
-        let from = from.to_owned();
+        let from = from.clone();
         self.package_flags
             .get(pkg_id)
             .and_then(move |i| i.get(&from))
@@ -448,7 +447,7 @@ impl ProofDB {
         self.package_reviews
             .get(source)
             .into_iter()
-            .flat_map(move |map| map.get(name))
+            .filter_map(move |map| map.get(name))
             .flat_map(move |map| map.iter())
             .flat_map(|(_, v)| v)
             .map(move |pkg_review_id| {
@@ -466,8 +465,8 @@ impl ProofDB {
         self.package_reviews
             .get(source)
             .into_iter()
-            .flat_map(move |map| map.get(name))
-            .flat_map(move |map| map.get(version))
+            .filter_map(move |map| map.get(name))
+            .filter_map(move |map| map.get(version))
             .flatten()
             .map(move |pkg_review_id| {
                 self.get_pkg_review_by_pkg_review_id(pkg_review_id)
@@ -484,7 +483,7 @@ impl ProofDB {
         self.package_reviews
             .get(source)
             .into_iter()
-            .flat_map(move |map| map.get(name))
+            .filter_map(move |map| map.get(name))
             .flat_map(move |map| map.range(version..))
             .flat_map(move |(_, v)| v)
             .map(move |pkg_review_id| {
@@ -502,7 +501,7 @@ impl ProofDB {
         self.package_reviews
             .get(source)
             .into_iter()
-            .flat_map(move |map| map.get(name))
+            .filter_map(move |map| map.get(name))
             .flat_map(move |map| map.range(..=version))
             .flat_map(|(_, v)| v)
             .map(move |pkg_review_id| {
@@ -607,10 +606,10 @@ impl ProofDB {
         self.package_reviews
             .get(source)
             .into_iter()
-            .flat_map(move |map| map.get(name))
+            .filter_map(move |map| map.get(name))
             .flat_map(move |map| map.iter())
             .flat_map(|(_, v)| v)
-            .flat_map(move |pkg_review_id| {
+            .filter_map(move |pkg_review_id| {
                 let review = &self.package_review_by_signature
                     [&self.package_review_signatures_by_pkg_review_id[pkg_review_id].value];
 
@@ -824,7 +823,7 @@ impl ProofDB {
 
         self.package_review_by_signature
             .entry(signature.to_owned())
-            .or_insert_with(|| review.to_owned());
+            .or_insert_with(|| review.clone());
 
         let pkg_review_id = PkgVersionReviewId::from(review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
@@ -832,7 +831,7 @@ impl ProofDB {
         let timestamp_flags = TimestampedFlags::from((review.date(), review.flags.clone()));
 
         self.package_review_signatures_by_package_digest
-            .entry(review.package.digest.to_owned())
+            .entry(review.package.digest.clone())
             .or_default()
             .entry(pkg_review_id.clone())
             .and_modify(|s| s.update_to_more_recent(&timestamp_signature))
@@ -944,7 +943,7 @@ impl ProofDB {
         let td = TimestampedTrustDetails { value: trust, date };
 
         self.trust_proofs_by_signature
-            .insert(signature.to_owned(), trust_proof.to_owned());
+            .insert(signature.to_owned(), trust_proof.clone());
 
         let signature = TimestampedSignature {
             value: signature.to_owned(),
@@ -952,21 +951,21 @@ impl ProofDB {
         };
 
         self.ids_to_trust_proof_signatures
-            .entry((from.to_owned(), to.to_owned()))
+            .entry((from.clone(), to.clone()))
             .and_modify(|e| e.update_to_more_recent(&signature))
             .or_insert_with(|| signature);
 
         self.trust_id_to_id
-            .entry(from.to_owned())
+            .entry(from.clone())
             .or_insert_with(HashMap::new)
-            .entry(to.to_owned())
+            .entry(to.clone())
             .and_modify(|e| e.update_to_more_recent(&td))
             .or_insert_with(|| td);
 
         self.reverse_trust_id_to_id
-            .entry(to.to_owned())
+            .entry(to.clone())
             .or_insert_with(HashMap::new)
-            .entry(from.to_owned())
+            .entry(from.clone())
             .and_modify(|e| e.update_to_more_recent(&tl))
             .or_insert_with(|| tl);
     }
@@ -1007,7 +1006,7 @@ impl ProofDB {
     pub fn all_author_ids(&self) -> BTreeMap<Id, usize> {
         let mut res = BTreeMap::new();
         for (id, set) in &self.trust_id_to_id {
-            *res.entry(id.to_owned()).or_default() += set.len();
+            *res.entry(id.clone()).or_default() += set.len();
         }
 
         for uniq_rev in self.package_review_signatures_by_pkg_review_id.keys() {
@@ -1040,7 +1039,7 @@ impl ProofDB {
             })
     }
 
-    /// Record an untrusted mapping between a PublicId and a URL it declares
+    /// Record an untrusted mapping between a `PublicId` and a URL it declares
     fn record_url_from_to_field(&mut self, date: &DateTime<Utc>, to: &crev_data::PublicId) {
         if let Some(url) = &to.url {
             self.url_by_id_reported_by_others
@@ -1056,7 +1055,7 @@ impl ProofDB {
         self.record_url_from_from_field(&Utc::now(), own_id, &FetchSource::LocalUser);
     }
 
-    /// Record mapping between a PublicId and a URL it declares, and trust it's correct only if it's been fetched from the same URL
+    /// Record mapping between a `PublicId` and a URL it declares, and trust it's correct only if it's been fetched from the same URL
     fn record_url_from_from_field(
         &mut self,
         date: &DateTime<Utc>,
@@ -1066,7 +1065,7 @@ impl ProofDB {
         if let Some(url) = &from.url {
             let tu = TimestampedUrl {
                 value: url.clone(),
-                date: date.to_owned(),
+                date: *date,
             };
             let fetch_matches = match fetched_from {
                 FetchSource::LocalUser => true,
@@ -1125,7 +1124,7 @@ impl ProofDB {
 
     pub fn get_trust_proof_between(&self, from: &Id, to: &Id) -> Option<&proof::Trust> {
         self.ids_to_trust_proof_signatures
-            .get(&(from.to_owned(), to.to_owned()))
+            .get(&(from.clone(), to.clone()))
             .and_then(|sig| self.trust_proofs_by_signature.get(&sig.value))
     }
 
@@ -1190,6 +1189,7 @@ pub enum UrlOfId<'a> {
 
 impl<'a> UrlOfId<'a> {
     /// Only if this URL has been signed by its Id and verified by fetching
+    #[must_use]
     pub fn verified(self) -> Option<&'a Url> {
         match self {
             Self::FromSelfVerified(url) => Some(url),
@@ -1198,6 +1198,7 @@ impl<'a> UrlOfId<'a> {
     }
 
     /// Only if this URL has been signed by its Id
+    #[must_use]
     pub fn from_self(self) -> Option<&'a Url> {
         match self {
             Self::FromSelfVerified(url) | Self::FromSelf(url) => Some(url),
@@ -1206,6 +1207,7 @@ impl<'a> UrlOfId<'a> {
     }
 
     /// Any URL available, even if reported by someone else
+    #[must_use]
     pub fn any_unverified(self) -> Option<&'a Url> {
         match self {
             Self::FromSelfVerified(url) | Self::FromSelf(url) | Self::FromOthers(url) => Some(url),
@@ -1224,6 +1226,7 @@ pub struct TrustDistanceParams {
 }
 
 impl TrustDistanceParams {
+    #[must_use]
     pub fn new_no_wot() -> Self {
         Self {
             max_distance: 0,
@@ -1273,6 +1276,7 @@ impl OverrideSourcesDetails {
             .or_insert(level);
     }
 
+    #[must_use]
     pub fn max_level(&self) -> Option<TrustLevel> {
         self.0.iter().map(|e| e.1).max().copied()
     }

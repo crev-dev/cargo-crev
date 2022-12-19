@@ -27,6 +27,7 @@ impl Staging {
         Ok(())
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
@@ -98,11 +99,12 @@ impl Staging {
         Ok(())
     }
 
+    #[must_use]
     pub fn to_review_files(&self) -> Vec<proof::review::code::File> {
         self.entries
             .iter()
             .map(|(k, v)| proof::review::code::File {
-                path: k.to_owned(),
+                path: k.clone(),
                 digest: v.blake_hash.to_vec(),
                 digest_type: "blake2b".into(),
             })
@@ -110,7 +112,7 @@ impl Staging {
     }
 
     pub fn enforce_current(&self) -> Result<()> {
-        for (rel_path, info) in self.entries.iter() {
+        for (rel_path, info) in &self.entries {
             let path = self.root_path.join(rel_path);
             if crev_common::blake2b256sum_file(&path)? != info.blake_hash {
                 return Err(Error::FileNotCurrent(rel_path.as_path().into()));

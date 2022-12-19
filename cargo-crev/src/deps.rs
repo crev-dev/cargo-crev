@@ -269,13 +269,13 @@ pub fn latest_trusted_version_string(
                 "="
             },
             if base_version == latest_trusted_version {
-                "".into()
+                String::new()
             } else {
                 latest_trusted_version.to_string()
             },
         )
     } else {
-        "".to_owned()
+        String::new()
     }
 }
 
@@ -298,7 +298,7 @@ pub fn crate_mvps(
 
     for stats in events {
         for reviewer in &stats.details.trusted_reviewers {
-            *mvps.entry(reviewer.to_owned()).or_default() += 1;
+            *mvps.entry(reviewer.clone()).or_default() += 1;
         }
     }
 
@@ -399,12 +399,8 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
                             &dep.info.id.version(),
                             &dep.details
                                 .digest
-                                .clone()
-                                .map(|d| d.to_string())
-                                .unwrap_or_else(|| "-".to_string()),
-                            &Digest::from_bytes(&mismatch.package.digest)
-                                .map(|d| d.to_string())
-                                .unwrap_or_else(|| "-".to_string()),
+                                .clone().map_or_else(|| "-".to_string(), |d| d.to_string()),
+                            &Digest::from_bytes(&mismatch.package.digest).map_or_else(|| "-".to_string(), |d| d.to_string()),
                             &mismatch.common.from.id,
                             &mismatch.common.from.url_display(),
                         ),
@@ -447,8 +443,7 @@ fn write_out_distrusted_ids_details(
         for reported_by in &details.reported_by {
             writeln!(
                 stderr,
-                "Note: {} was ignored as distrusted by {}",
-                distrusted_id, reported_by
+                "Note: {distrusted_id} was ignored as distrusted by {reported_by}"
             )?;
         }
     }

@@ -42,6 +42,7 @@ impl Default for Review {
 }
 
 impl Review {
+    #[must_use]
     pub fn new_positive() -> Self {
         Review {
             thoroughness: Level::Low,
@@ -50,6 +51,7 @@ impl Review {
         }
     }
 
+    #[must_use]
     pub fn new_negative() -> Self {
         Review {
             thoroughness: Level::Low,
@@ -57,6 +59,7 @@ impl Review {
             rating: Rating::Negative,
         }
     }
+    #[must_use]
     pub fn new_none() -> Self {
         Review {
             thoroughness: Level::None,
@@ -65,6 +68,7 @@ impl Review {
         }
     }
 
+    #[must_use]
     pub fn is_none(&self) -> bool {
         *self == Self::new_none()
     }

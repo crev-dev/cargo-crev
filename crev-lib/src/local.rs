@@ -90,6 +90,7 @@ impl UserConfig {
     pub fn get_current_userid(&self) -> Result<&Id> {
         self.get_current_userid_opt().ok_or(Error::CurrentIDNotSet)
     }
+    #[must_use]
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
     }
@@ -144,7 +145,7 @@ impl Local {
     /// Fails if it doesn't exist. See `auto_create_or_open()`
     pub fn auto_open() -> Result<Self> {
         let repo = Self::new()?;
-        fs::create_dir_all(&repo.cache_remotes_path())?;
+        fs::create_dir_all(repo.cache_remotes_path())?;
         if !repo.config_path.exists() || !repo.user_config_path().exists() {
             return Err(Error::UserConfigNotInitialized);
         }
@@ -166,7 +167,7 @@ impl Local {
         let repo = Self::new()?;
         fs::create_dir_all(&repo.config_path)?;
         fs::create_dir_all(&repo.data_path)?;
-        fs::create_dir_all(&repo.cache_remotes_path())?;
+        fs::create_dir_all(repo.cache_remotes_path())?;
 
         let config_path = repo.user_config_path();
         if config_path.exists() {
@@ -191,7 +192,7 @@ impl Local {
 
     /// Load config, and return Id configured as the current one
     pub fn read_current_id(&self) -> Result<crev_data::Id> {
-        Ok(self.load_user_config()?.get_current_userid()?.to_owned())
+        Ok(self.load_user_config()?.get_current_userid()?.clone())
     }
 
     /// Load config, and return Id configured as the current one
@@ -236,7 +237,7 @@ impl Local {
         Ok(())
     }
 
-    /// Same as get_root_path()
+    /// Same as `get_root_path`()
     pub fn user_dir_path(&self) -> PathBuf {
         self.config_path.clone()
     }
@@ -310,7 +311,7 @@ impl Local {
         name: &str,
         version: &crev_data::Version,
     ) -> PathBuf {
-        let dir_name = format!("{}_{}_{}", name, version, source);
+        let dir_name = format!("{name}_{version}_{source}");
         self.cache_path
             .join("src")
             .join(sanitize_name_for_fs(&dir_name))
@@ -680,7 +681,7 @@ impl Local {
 
     /// Creates `user_proofs_path()`
     fn ensure_proofs_root_exists(&self) -> Result<()> {
-        fs::create_dir_all(&self.user_proofs_path())?;
+        fs::create_dir_all(self.user_proofs_path())?;
         Ok(())
     }
 
@@ -766,7 +767,7 @@ impl Local {
                 crev_wot::UrlOfId::None => None,
             };
             if let Some(url) = url {
-                public_ids.push(PublicId::new(id, url.to_owned()));
+                public_ids.push(PublicId::new(id, url.clone()));
             } else {
                 public_ids.push(PublicId::new_id_only(id));
             }
@@ -941,13 +942,13 @@ impl Local {
 
             drop(tx);
 
-            for (url, res) in rx.into_iter() {
+            for (url, res) in rx {
                 let dir = match res {
                     Ok(dir) => dir,
                     Err(e) => {
                         error!("Error: Failed to get dir for repo {}: {}", url, e);
                         continue;
-                    },
+                    }
                 };
                 if let Err(e) = self.import_proof_dir_and_print_counts(&dir, &url, db) {
                     error!("Error: Failed to fetch {}: {} ({})", url, e, dir.display());
@@ -1037,12 +1038,11 @@ impl Local {
         let new_trust_count = db.unique_trust_proof_count() - prev_trust_count;
 
         let msg = match (new_trust_count > 0, new_pkg_review_count > 0) {
-            (true, true) => format!(
-                "new: {} trust, {} package reviews",
-                new_trust_count, new_pkg_review_count
-            ),
-            (true, false) => format!("new: {} trust", new_trust_count,),
-            (false, true) => format!("new: {} package reviews", new_pkg_review_count),
+            (true, true) => {
+                format!("new: {new_trust_count} trust, {new_pkg_review_count} package reviews")
+            }
+            (true, false) => format!("new: {new_trust_count} trust",),
+            (false, true) => format!("new: {new_pkg_review_count} package reviews"),
             (false, false) => "no updates".into(),
         };
 
@@ -1083,7 +1083,7 @@ impl Local {
                         .get_fetch_source_for_url(Url::new_git(url))
                         .map(|fetch_source| {
                             db.import_from_iter(
-                                proofs_iter_for_path(path.to_owned())
+                                proofs_iter_for_path(path.clone())
                                     .map(move |p| (p, fetch_source.clone())),
                             );
                         })
@@ -1156,7 +1156,7 @@ impl Local {
     /// The path must be inside `get_proofs_dir_path()`
     pub fn proof_dir_git_add_path(&self, rel_path: &Path) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
-        let repo = git2::Repository::open(&proof_dir)?;
+        let repo = git2::Repository::open(proof_dir)?;
         let mut index = repo.index()?;
 
         index.add_path(rel_path)?;
@@ -1167,7 +1167,7 @@ impl Local {
     /// Add a commit to user's proof repo
     pub fn proof_dir_commit(&self, commit_msg: &str) -> Result<()> {
         let proof_dir = self.get_proofs_dir_path()?;
-        let repo = git2::Repository::open(&proof_dir)?;
+        let repo = git2::Repository::open(proof_dir)?;
         let mut index = repo.index()?;
         let tree_id = index.write_tree()?;
         let tree = repo.find_tree(tree_id)?;
@@ -1275,7 +1275,7 @@ impl Local {
     #[rustfmt::skip]
     fn delete_remote_cache_directory(&self, path_to_delete: &Path) {
         let cache_dir = self.cache_remotes_path();
-        assert!(path_to_delete.starts_with(&cache_dir));
+        assert!(path_to_delete.starts_with(cache_dir));
 
         // Try to be atomic by renaming the directory first (so that it won't leave half-deleted dir if the command is interrupted)
         let file_name = path_to_delete.file_name().and_then(|f| f.to_str()).unwrap_or_default();
@@ -1328,7 +1328,7 @@ impl ProofStore for Local {
 
 /// Scans cache for checked out repos and their origin urls
 fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf, Url)>> {
-    let dir = std::fs::read_dir(&path)?;
+    let dir = std::fs::read_dir(path)?;
     Ok(dir
         .filter_map(|e| e.ok())
         .filter_map(|e| {
@@ -1365,7 +1365,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         // skip dotfiles, .git dir
         .filter_entry(|e| e.file_name().to_str().map_or(true, |f| !f.starts_with('.')))
         .map_err(move |e| {
-            Error::ErrorIteratingLocalProofStore(Box::new((path.to_owned(), e.to_string())))
+            Error::ErrorIteratingLocalProofStore(Box::new((path.clone(), e.to_string())))
         })
         .filter_map_ok(|entry| {
             let path = entry.path();
@@ -1381,7 +1381,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
         });
 
     fn parse_proofs(path: &Path) -> Result<Vec<proof::Proof>> {
-        let mut file = BufReader::new(std::fs::File::open(&path)?);
+        let mut file = BufReader::new(std::fs::File::open(path)?);
         Ok(proof::Proof::parse_from(&mut file)?)
     }
 

@@ -104,27 +104,27 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
 
     writeln!(&mut text, "# {}", draft.title())?;
     if let Some(extra_comment) = extra_leading_comment {
-        writeln!(&mut text, "# {}", extra_comment)?;
+        writeln!(&mut text, "# {extra_comment}")?;
     }
     if let Some(base_version) = base_version {
-        writeln!(&mut text, "# Diff base version: {}", base_version)?;
+        writeln!(&mut text, "# Diff base version: {base_version}")?;
     }
     text.write_str(draft.body())?;
     (extra_follow_content_fn)(&mut text)?;
     text.write_str("\n\n")?;
     for line in get_documentation_for(content).lines() {
-        writeln!(&mut text, "# {}", line)?;
+        writeln!(&mut text, "# {line}")?;
     }
     loop {
         text = edit_text_iteractively_until_writen_to(&text)?;
         match content.apply_draft(&text) {
             Err(e) => {
-                eprintln!("There was an error parsing content: {}", e);
+                eprintln!("There was an error parsing content: {e}");
                 crev_common::try_again_or_cancel()?;
             }
             Ok(content) => {
                 if let Err(e) = content.ensure_serializes_to_valid_proof() {
-                    eprintln!("There was an error validating serialized proof: {}", e);
+                    eprintln!("There was an error validating serialized proof: {e}");
                     crev_common::try_again_or_cancel()?;
                 } else {
                     return Ok(content);
@@ -142,7 +142,7 @@ pub fn edit_user_config(local: &Local) -> Result<()> {
         text = edit_text_iteractively(&text)?;
         match serde_yaml::from_str(&text) {
             Err(e) => {
-                eprintln!("There was an error parsing content: {}", e);
+                eprintln!("There was an error parsing content: {e}");
                 crev_common::try_again_or_cancel()?;
             }
             Ok(edited_config) => {

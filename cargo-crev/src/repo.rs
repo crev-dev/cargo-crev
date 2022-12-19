@@ -43,7 +43,7 @@ pub struct Graph {
 
 impl Graph {
     pub fn get_all_pkg_ids(&self) -> impl Iterator<Item = PackageId> + '_ {
-        self.nodes.keys().cloned()
+        self.nodes.keys().copied()
     }
 
     pub fn get_dependencies_of(&self, pkg_id: PackageId) -> impl Iterator<Item = PackageId> + '_ {
@@ -77,7 +77,7 @@ impl Graph {
 
         pending.insert(root_pkg_id);
 
-        while let Some(pkg_id) = pending.iter().next().cloned() {
+        while let Some(pkg_id) = pending.iter().next().copied() {
             pending.remove(&pkg_id);
 
             if processed.contains(&pkg_id) {
@@ -94,10 +94,7 @@ impl Graph {
                     pending.insert(self.graph.node_weight(node_idx).unwrap().id);
                 }
             } else {
-                eprintln!(
-                    "No node for {} when checking recdeps for {}",
-                    pkg_id, root_pkg_id
-                );
+                eprintln!("No node for {pkg_id} when checking recdeps for {root_pkg_id}");
             }
         }
 
@@ -244,21 +241,19 @@ fn prune_directory_source_replacements(
             .map(|source_key| (source_key, source_graph.add_node(source_key.clone())))
             .collect::<HashMap<_, _>>();
 
-        source_config
-            .iter()
-            .for_each(|(source_name, source_config_entry)| {
-                if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
-                    if let Some(ConfigValue::String(replacement, _)) =
-                        source_config_entry.get("replace-with")
-                    {
-                        source_graph.add_edge(
-                            *nodes.get(source_name).unwrap(),
-                            *nodes.get(replacement).unwrap(),
-                            (),
-                        );
-                    }
+        for (source_name, source_config_entry) in source_config.iter() {
+            if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
+                if let Some(ConfigValue::String(replacement, _)) =
+                    source_config_entry.get("replace-with")
+                {
+                    source_graph.add_edge(
+                        *nodes.get(source_name).unwrap(),
+                        *nodes.get(replacement).unwrap(),
+                        (),
+                    );
                 }
-            });
+            }
+        }
         source_graph.reverse();
         let source_entries_to_delete: HashSet<&String> = source_graph
             .externals(petgraph::Direction::Incoming)
@@ -299,7 +294,7 @@ impl Repo {
 
     pub fn get_manifest_path(&self) -> Result<PathBuf> {
         Ok(if let Some(ref path) = self.cargo_opts.manifest_path {
-            path.to_owned()
+            path.clone()
         } else {
             let cwd = env::current_dir()?;
             find_root_manifest_for_wd(&cwd)?
@@ -339,8 +334,8 @@ impl Repo {
 
         Ok(Repo {
             config,
-            features_list,
             cargo_opts,
+            features_list,
         })
     }
 
@@ -362,11 +357,7 @@ impl Repo {
 
     fn get_registry_from_workspace_members(&self) -> Result<(Workspace, PackageRegistry<'_>)> {
         let workspace = self.workspace()?;
-        let registry = self.registry(
-            workspace
-                .members()
-                .map(|m| m.summary().source_id().to_owned()),
-        )?;
+        let registry = self.registry(workspace.members().map(|m| m.summary().source_id()))?;
         Ok((workspace, registry))
     }
 
@@ -545,7 +536,7 @@ impl Repo {
             if name == pkg_id.name().as_str()
                 && (version.is_none() || version == Some(pkg_id.version()))
             {
-                ret.push(pkg_id.to_owned());
+                ret.push(*pkg_id);
             }
             Ok(())
         })?;
@@ -567,14 +558,13 @@ impl Repo {
     pub fn get_crate(&self, pkg_id: &PackageId) -> Result<Package> {
         // We need to whitelist the crate, in case it was yanked
         let mut yanked_whitelist = HashSet::default();
-        yanked_whitelist.insert(pkg_id.to_owned());
+        yanked_whitelist.insert(*pkg_id);
         let source = self.load_source_with_whitelist(yanked_whitelist)?;
 
         let mut source_map = SourceMap::new();
         source_map.insert(source);
-        let package_set =
-            cargo::core::PackageSet::new(&[pkg_id.to_owned()], source_map, &self.config)?;
-        Ok(package_set.get_one(pkg_id.to_owned())?.to_owned())
+        let package_set = cargo::core::PackageSet::new(&[*pkg_id], source_map, &self.config)?;
+        Ok(package_set.get_one(*pkg_id)?.clone())
     }
 
     pub fn find_independent_pkg_id_by_selector(

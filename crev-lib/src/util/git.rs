@@ -11,6 +11,7 @@ pub struct GitUrlComponents {
     pub suffix: String,
 }
 
+#[must_use]
 pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     let mut split: Vec<_> = http_url.split('/').collect();
 
@@ -46,6 +47,7 @@ pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     })
 }
 
+#[must_use]
 pub fn is_unrecoverable(err: &git2::Error) -> bool {
     matches!(
         (err.class(), err.code()),
@@ -82,6 +84,7 @@ pub fn clone<P: AsRef<Path>>(
 /// Get the default fetch options to use when fetching or cloneing
 ///
 /// Currently this just ensures that git's automatic proxy settings are used.
+#[must_use]
 pub fn default_fetch_options<'a>() -> git2::FetchOptions<'a> {
     // Use automatic proxy configuration for the fetch
     let mut proxy_options = git2::ProxyOptions::new();
@@ -109,7 +112,7 @@ fn parse_git_url_https_test() {
             domain: "gitlab.com".to_string(),
             username: "hackeraudit".to_string(),
             repo: "web.git".to_string(),
-            suffix: "".to_string()
+            suffix: String::new()
         })
     );
     assert_eq!(
@@ -118,7 +121,7 @@ fn parse_git_url_https_test() {
             domain: "gitlab.com".to_string(),
             username: "hackeraudit".to_string(),
             repo: "web.git".to_string(),
-            suffix: "".to_string()
+            suffix: String::new()
         })
     );
     assert_eq!(
@@ -127,11 +130,12 @@ fn parse_git_url_https_test() {
             domain: "gitlab.com".to_string(),
             username: "hackeraudit".to_string(),
             repo: "web.git".to_string(),
-            suffix: "".to_string()
+            suffix: String::new()
         })
     );
 }
 
+#[must_use]
 pub fn https_to_git_url(http_url: &str) -> Option<String> {
     parse_git_url_https(http_url).map(|components| {
         format!(

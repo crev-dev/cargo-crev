@@ -20,14 +20,17 @@ pub enum ReviewMode {
 }
 
 impl ReviewMode {
+    #[must_use]
     pub fn is_diff(self) -> bool {
         self == ReviewMode::Differential
     }
 
+    #[must_use]
     pub fn is_full(self) -> bool {
         self == ReviewMode::Full
     }
 
+    #[must_use]
     pub fn from_diff_flag(diff: bool) -> Self {
         if diff {
             ReviewMode::Differential
@@ -48,12 +51,14 @@ pub struct ReviewActivity {
 }
 
 impl ReviewActivity {
+    #[must_use]
     pub fn new_full() -> Self {
         Self {
             timestamp: crev_common::now(),
             diff_base: None,
         }
     }
+    #[must_use]
     pub fn new_diff(base: &Version) -> Self {
         Self {
             timestamp: crev_common::now(),
@@ -61,6 +66,7 @@ impl ReviewActivity {
         }
     }
 
+    #[must_use]
     pub fn to_review_mode(&self) -> ReviewMode {
         if self.diff_base.is_some() {
             ReviewMode::Differential

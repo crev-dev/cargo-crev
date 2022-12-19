@@ -204,7 +204,7 @@ impl From<Package> for Draft {
                 // and an empty `name`. If undedited, this entry will be deleted on parsing.
                 vec![proof::PackageId {
                     source: package.package.id.id.source,
-                    name: "".into(),
+                    name: String::new(),
                 }]
                 .into_iter()
                 .collect()
@@ -290,6 +290,7 @@ impl proof::ContentWithDraft for Package {
 impl Package {
     pub const KIND: &'static str = "package review";
 
+    #[must_use]
     pub fn is_advisory_for(&self, version: &Version) -> bool {
         for advisory in &self.advisories {
             if advisory.is_for_version_when_reported_in_version(version, &self.package.id.version) {
@@ -303,6 +304,7 @@ impl Package {
     ///
     /// This forces the user to handle reviews that are
     /// empty (everything is set to None) explicitly.
+    #[must_use]
     pub fn review(&self) -> Option<&super::Review> {
         if self.review.is_none() {
             None
@@ -315,6 +317,7 @@ impl Package {
     ///
     /// The caller is responsible for handling the case where
     /// `review.is_none()`.
+    #[must_use]
     pub fn review_possibly_none(&self) -> &super::Review {
         &self.review
     }
@@ -385,6 +388,7 @@ impl VersionRange {
 /// We don't play with exact ranges.
 #[derive(Clone, TypedBuilder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(Default)]
 pub struct Advisory {
     pub ids: Vec<String>,
     #[builder(default)]
@@ -411,18 +415,8 @@ impl From<VersionRange> for Advisory {
     }
 }
 
-impl Default for Advisory {
-    fn default() -> Self {
-        Self {
-            ids: vec![],
-            range: VersionRange::default(),
-            severity: Default::default(),
-            comment: "".to_string(),
-        }
-    }
-}
-
 impl Advisory {
+    #[must_use]
     pub fn is_for_version_when_reported_in_version(
         &self,
         for_version: &Version,
@@ -477,6 +471,7 @@ pub struct Issue {
 }
 
 impl Issue {
+    #[must_use]
     pub fn new(id: String) -> Self {
         Self {
             id,
@@ -485,6 +480,7 @@ impl Issue {
             comment: Default::default(),
         }
     }
+    #[must_use]
     pub fn new_with_severity(id: String, severity: Level) -> Self {
         Self {
             id,
@@ -493,6 +489,7 @@ impl Issue {
             comment: Default::default(),
         }
     }
+    #[must_use]
     pub fn is_for_version_when_reported_in_version(
         &self,
         for_version: &Version,

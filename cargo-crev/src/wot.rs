@@ -48,7 +48,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                     node.effective_trust,
                     node.total_distance,
                 )?;
-                writeln!(io::stdout(), "\\_ {} {}", status, url)?;
+                writeln!(io::stdout(), "\\_ {status} {url}")?;
             }
             Edge(edge) => {
                 let (status, url) = url_to_status_str(&db.lookup_url(&edge.to));
@@ -63,8 +63,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                     edge.direct_trust,
                     edge.effective_trust,
                     edge.relative_distance
-                        .map(|d| format!("+{}", d))
-                        .unwrap_or_else(|| "inf".into()),
+                        .map_or_else(|| "inf".into(), |d| format!("+{d}")),
                 )?;
                 if edge.no_change {
                     term.print(format_args!("no change"), YELLOW)?;
@@ -91,7 +90,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
 
                 writeln!(io::stdout())?;
 
-                writeln!(io::stdout(), "  \\_ {} {}", status, url)?;
+                writeln!(io::stdout(), "  \\_ {status} {url}")?;
             }
         }
     }

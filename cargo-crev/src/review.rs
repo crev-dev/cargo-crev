@@ -112,7 +112,7 @@ pub fn create_review_proof(
             id: proof::PackageVersionId::new(
                 PROJECT_SOURCE_CRATES_IO.to_owned(),
                 crate_.name().to_string(),
-                diff_base_version.to_owned(),
+                diff_base_version.clone(),
             ),
             digest: digest.into_vec(),
             digest_type: proof::default_digest_type(),
@@ -148,12 +148,12 @@ pub fn create_review_proof(
         (Some(previous_review.common.date), previous_review)
     } else {
         let mut fresh_review = proof::review::PackageBuilder::default()
-            .from(id.id.to_owned())
+            .from(id.id.clone())
             .package(proof::PackageInfo {
                 id: proof::PackageVersionId::new(
                     PROJECT_SOURCE_CRATES_IO.to_owned(),
                     crate_.name().to_string(),
-                    effective_crate_version.to_owned(),
+                    effective_crate_version.clone(),
                 ),
                 digest: digest_clean.into_vec(),
                 digest_type: proof::default_digest_type(),
@@ -172,9 +172,9 @@ pub fn create_review_proof(
                 &diff_base_version,
                 &id.id.id,
             ) {
-                fresh_review.comment = base_review.comment.to_owned();
+                fresh_review.comment = base_review.comment.clone();
                 *fresh_review.review_possibly_none_mut() =
-                    base_review.review_possibly_none().to_owned()
+                    base_review.review_possibly_none().clone()
             }
         }
         (None, fresh_review)
@@ -186,7 +186,7 @@ pub fn create_review_proof(
         review.advisories.push(advisory);
     }
     if let Some(severity) = report_severity {
-        let mut report = proof::review::package::Issue::new_with_severity("".into(), severity);
+        let mut report = proof::review::package::Issue::new_with_severity(String::new(), severity);
         report.severity = severity;
         review.issues.push(report);
         review.review_possibly_none_mut().rating = Rating::Negative;
@@ -223,8 +223,8 @@ pub fn create_review_proof(
                     let id = &review.common.from.id;
                     let (status, url) = url_to_status_str(&db.lookup_url(id));
                     writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
-                    writeln!(text, "#   id: {}", id)?;
-                    writeln!(text, "#   url: {} # {}", url, status)?;
+                    writeln!(text, "#   id: {id}")?;
+                    writeln!(text, "#   url: {url} # {status}")?;
                     writeln!(text, "#   comment: \"\"")?;
                 }
             }
@@ -264,7 +264,7 @@ pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::P
 
 pub fn list_reviews(crate_: &opts::CrateSelector) -> Result<()> {
     for review in find_reviews(crate_)? {
-        println!("---\n{}", review);
+        println!("---\n{review}");
     }
 
     Ok(())

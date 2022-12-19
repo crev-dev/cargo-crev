@@ -20,6 +20,7 @@ impl Url {
         }
     }
 
+    #[must_use]
     pub fn digest(&self) -> crate::Digest {
         let digest = crev_common::blake2b256sum(self.url.to_ascii_lowercase().as_bytes());
         digest.into()

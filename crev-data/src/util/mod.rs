@@ -1,6 +1,7 @@
 use rand::{self, Rng};
 use std::fmt;
 
+#[must_use]
 pub fn random_id_str() -> String {
     let mut out = [0u8; 32];
     rand::thread_rng().fill(&mut out[..]);
@@ -13,7 +14,7 @@ pub fn write_comment_proof(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result
     }
     writeln!(f, "comment: |-")?;
     for line in comment.lines() {
-        writeln!(f, "  {}", line)?;
+        writeln!(f, "  {line}")?;
     }
     Ok(())
 }
@@ -21,7 +22,7 @@ pub fn write_comment_proof(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result
 pub fn write_comment_draft(comment: &str, f: &mut dyn fmt::Write) -> fmt::Result {
     writeln!(f, "comment: |-")?;
     for line in comment.lines() {
-        writeln!(f, "  {}", line)?;
+        writeln!(f, "  {line}")?;
     }
     if comment.is_empty() {
         writeln!(f, "  ")?;
