@@ -2520,9 +2520,13 @@ dependencies = [
 
 [[package]]
 name = "rprompt"
-version = "1.0.5"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b386f4748bdae2aefc96857f5fda07647f851d089420e577831e2a14b45230f8"
+checksum = "42ac661565a32b2874200835012773dd9f97e9113a0ab78b69792480a8d9b28e"
+dependencies = [
+ "rtoolbox",
+ "winapi",
+]
 
 [[package]]
 name = "rtoolbox"
