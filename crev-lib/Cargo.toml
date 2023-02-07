@@ -1,6 +1,6 @@
 [package]
 name = "crev-lib"
-version = "0.23.2"
+version = "0.23.3"
 description = "Library interface for programmatic access to crate reviews of cargo-crev"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 documentation = "https://docs.rs/crev-lib"
@@ -22,7 +22,7 @@ crev-recursive-digest = "0.5"
 default = "0.1.2"
 directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
-git2 = ">=0.13, <0.16"
+git2 = "0.16.1"
 log = "0.4.14"
 num_cpus = "1.14.0"
 resiter = "0.4.0"
