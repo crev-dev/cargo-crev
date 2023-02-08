@@ -1,7 +1,7 @@
 [package]
-edition = '2018'
 name = "crev-data"
-version = "0.23.2"
+version = "0.23.4"
+edition = '2021'
 description = "Scalable, social, Code REView system that we desperately need - data types library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"
