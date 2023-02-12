@@ -115,7 +115,7 @@ fn mark_dangerous_name(
             changes.push("cargo/config can replace linkers, source of dependencies".to_string());
             PathBuf::from("config.CREV")
         }
-        "rust-toolchain" | "rust-toolchain.toml" => {
+        "rust-toolchain" | "rust-toolchain.toml" | ".rust-toolchain.toml" => {
             changes
                 .push("rust-toolchain file could unexpectedly replace your compiler".to_string());
             PathBuf::from(format!("{orig_name}.CREV"))
