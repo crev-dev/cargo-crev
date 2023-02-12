@@ -15,6 +15,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fix crash on systems with libgit2 v1.4
 - Fix the `crate clean` working directory check.
 - Fix the `crate review` working directory check.
+- Added support for the `.rust-toolchain.toml` file.
 
 
 ## [0.23.0](https://github.com/crev-dev/cargo-crev/compare/v0.22.2...v0.23.0) - 2022-01-22
