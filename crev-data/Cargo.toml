@@ -19,7 +19,7 @@ rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
 ed25519-dalek = "1.0.1"
 rand = { version = "0.8.4", package = "rand" }
 semver = { version = "1.0.14", features = [ "serde" ] }
-serde = { version = "1.0.150", features = ["derive"] }
+serde = { version = "1.0.154", features = ["derive"] }
 serde_yaml = "0.9.14"
 typed-builder = "0.13.0"
 thiserror = "1.0.37"
