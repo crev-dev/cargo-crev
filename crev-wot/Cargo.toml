@@ -1,6 +1,6 @@
 [package]
 name = "crev-wot"
-version = "0.23.4"
+version = "0.23.5"
 description = "Scalable, social, Code REView system that we desperately need - Web of Trust library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/cargo-crev"
