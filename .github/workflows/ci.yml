@@ -1,4 +1,8 @@
 name: ci
+
+env:
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: "sparse"
+
 on:
   pull_request:
   push:
