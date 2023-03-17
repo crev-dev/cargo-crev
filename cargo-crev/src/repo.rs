@@ -587,7 +587,11 @@ impl Repo {
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
         if !source
-            .query(&dependency_request, cargo::core::QueryKind::Exact, &mut |summary| summaries.push(summary))
+            .query(
+                &dependency_request,
+                cargo::core::QueryKind::Exact,
+                &mut |summary| summaries.push(summary),
+            )
             .is_ready()
         {
             source.block_until_ready()?;
