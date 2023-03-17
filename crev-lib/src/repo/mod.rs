@@ -114,6 +114,7 @@ impl Repo {
         Ok(Some(serde_yaml::from_str(&config_str)?))
     }
 
+    #[must_use]
     pub fn dot_crev_path(&self) -> PathBuf {
         self.root_dir.join(CREV_DOT_NAME)
     }
@@ -125,6 +126,7 @@ impl Repo {
         Ok(self.staging.as_mut().unwrap())
     }
 
+    #[must_use]
     pub fn get_proof_rel_store_path(&self, _proof: &proof::Proof) -> PathBuf {
         unimplemented!();
     }
@@ -183,7 +185,7 @@ impl Repo {
     /// Uses `log::info` to "print"
     pub fn status(&mut self) -> Result<()> {
         let staging = self.staging()?;
-        for (k, _v) in staging.entries.iter() {
+        for (k, _v) in &staging.entries {
             log::info!("{}", k.display());
         }
 

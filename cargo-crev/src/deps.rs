@@ -269,13 +269,13 @@ pub fn latest_trusted_version_string(
                 "="
             },
             if base_version == latest_trusted_version {
-                "".into()
+                String::new()
             } else {
                 latest_trusted_version.to_string()
             },
         )
     } else {
-        "".to_owned()
+        String::new()
     }
 }
 
@@ -298,7 +298,7 @@ pub fn crate_mvps(
 
     for stats in events {
         for reviewer in &stats.details.trusted_reviewers {
-            *mvps.entry(reviewer.to_owned()).or_default() += 1;
+            *mvps.entry(reviewer.clone()).or_default() += 1;
         }
     }
 
@@ -327,7 +327,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let events = scanner.run(&RequiredDetails {
         geiger: args.columns.show_geiger(),
-        owners: args.columns.show_owners(),
+        owners: args.columns.show_owners() || args.skip_known_owners,
         downloads: args.columns.show_downloads() || args.columns.show_leftpad_index(),
         loc: args.columns.show_loc() || args.columns.show_leftpad_index(),
     });
@@ -340,14 +340,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     let mut crates_with_issues = false;
 
     let deps: Vec<_> = events
-        .filter(|stats| {
-            !args.skip_known_owners
-                || stats
-                    .details
-                    .known_owners
-                    .map(|it| it.count == 0)
-                    .unwrap_or(false)
-        })
+        .filter(|stats| !args.skip_known_owners || !crate_has_known_owner(stats))
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
             print_term::print_dep(
@@ -406,12 +399,8 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
                             &dep.info.id.version(),
                             &dep.details
                                 .digest
-                                .clone()
-                                .map(|d| d.to_string())
-                                .unwrap_or_else(|| "-".to_string()),
-                            &Digest::from_bytes(&mismatch.package.digest)
-                                .map(|d| d.to_string())
-                                .unwrap_or_else(|| "-".to_string()),
+                                .clone().map_or_else(|| "-".to_string(), |d| d.to_string()),
+                            &Digest::from_bytes(&mismatch.package.digest).map_or_else(|| "-".to_string(), |d| d.to_string()),
                             &mismatch.common.from.id,
                             &mismatch.common.from.url_display(),
                         ),
@@ -454,10 +443,16 @@ fn write_out_distrusted_ids_details(
         for reported_by in &details.reported_by {
             writeln!(
                 stderr,
-                "Note: {} was ignored as distrusted by {}",
-                distrusted_id, reported_by
+                "Note: {distrusted_id} was ignored as distrusted by {reported_by}"
             )?;
         }
     }
     Ok(())
+}
+
+fn crate_has_known_owner(stats: &CrateStats) -> bool {
+    match stats.details.known_owners {
+        Some(known_owners) => known_owners.count > 0,
+        None => false,
+    }
 }

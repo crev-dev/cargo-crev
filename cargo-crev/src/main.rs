@@ -41,7 +41,7 @@ mod wot;
 use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
-use crev_wot::{ProofDB, TrustSet, UrlOfId};
+use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
 
 /// Additional functions to extend `Local` by behaviors
 /// that are `cargo-crev` specific, like printing
@@ -113,7 +113,96 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
         }
     }
     for review in iter {
-        println!("---\n{}", review);
+        println!("---\n{review}");
+    }
+
+    Ok(())
+}
+
+pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
+    let local = crev_lib::Local::auto_open()?;
+    let db = local.load_db()?;
+
+    let mut iter = Box::new(db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO))
+        as Box<dyn Iterator<Item = &proof::review::Package>>;
+
+    let author_id = crev_data::id::Id::crevid_from_str(&args.author)?;
+    iter = Box::new(iter.filter(move |r| r.common.from.id == author_id));
+
+    if let Some(crate_) = args.crate_.as_ref() {
+        iter = Box::new(iter.filter(move |r| &r.package.id.id.name == crate_));
+        if let Some(version) = args.version.as_ref() {
+            iter = Box::new(iter.filter(move |r| &r.package.id.version == version));
+        }
+    }
+
+    let sign_id = local.read_current_unlocked_id(&term::read_passphrase)?;
+
+    for orig_review in iter {
+        if !args.skip_reissue_check {
+            // check if already reissued this review previously to prevent bloating the db
+            if db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO).any(
+                |review: &proof::review::Package| {
+                    review.common.from.id == sign_id.id.id && review.package == orig_review.package
+                },
+            ) {
+                println!(
+                    "Review of crate {crate_} v{version} rev {rev} from id {orig_id} is already \
+                     signed by current id. Skipping reissue. Use `--skip-reissue-check` to override.",
+                    crate_ = &orig_review.package.id.id.name,
+                    version = &orig_review.package.id.version,
+                    rev = &orig_review.package.revision,
+                    orig_id =  &orig_review.common.from.id
+                );
+                continue;
+            }
+        }
+
+        let pkg_review_id = PkgVersionReviewId::from(orig_review);
+        let orig_proof_digest = match db.get_proof_digest_by_pkg_review_id(&pkg_review_id) {
+            Some(digest) => digest,
+            None => {
+                println!(
+                    "Missing proof digest on review of {crate_} v{version}. Skipping",
+                    crate_ = &orig_review.package.id.id.name,
+                    version = &orig_review.package.id.version
+                );
+                continue;
+            }
+        };
+
+        println!(
+            "Reissuing review of crate {crate_} v{version} from crev id {id}",
+            crate_ = &orig_review.package.id.id.name,
+            version = &orig_review.package.id.version,
+            id = &orig_review.common.from.id
+        );
+
+        let mut reissue_review = orig_review.clone();
+
+        reissue_review.touch_date();
+        reissue_review.change_from(sign_id.id.clone());
+        reissue_review.ensure_kind_is_backfilled();
+        reissue_review.set_original_reference(proof::content::OriginalReference {
+            proof: orig_proof_digest.0.into(),
+            comment: args.comment.clone(),
+        });
+
+        let proof = reissue_review.sign_by(&sign_id)?;
+
+        let commit_msg = format!(
+            "Signed existing review for {crate} v{version} with different id\n\n\
+             New id: {new_id}\n\
+             Previous id: {orig_id}\n\
+             Previous proof digest: {digest_base64}\n",
+            crate = &reissue_review.package.id.id.name,
+            version = &reissue_review.package.id.version,
+            new_id = &reissue_review.common.from.id,
+            orig_id = &orig_review.common.from.id,
+            digest_base64 = crev_common::base64_encode(&orig_proof_digest.0)
+        );
+
+        maybe_store(&local, &proof, &commit_msg, &args.common_proof_create)?;
     }
 
     Ok(())
@@ -167,6 +256,7 @@ fn crate_review(args: opts::CrateReview) -> Result<()> {
     Ok(())
 }
 
+#[must_use]
 pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> String {
     let s = source_id.as_url().to_string();
     if &s == "registry+https://github.com/rust-lang/crates.io-index" {
@@ -176,13 +266,14 @@ pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> St
     }
 }
 
+#[must_use]
 pub fn cargo_pkg_id_to_crev_pkg_id(id: &cargo::core::PackageId) -> proof::PackageVersionId {
     proof::PackageVersionId {
         id: proof::PackageId {
             source: cargo_registry_to_crev_source_id(&id.source_id()),
             name: id.name().to_string(),
         },
-        version: id.version().to_owned(),
+        version: id.version().clone(),
     }
 }
 
@@ -243,7 +334,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Id::New(args) => {
                 let url = match (args.url, args.github_username) {
                     (None, Some(username)) => {
-                        Some(format!("https://github.com/{}/crev-proofs", username))
+                        Some(format!("https://github.com/{username}/crev-proofs"))
                     }
                     (Some(url), None) => Some(url),
                     (None, None) => None,
@@ -277,9 +368,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             opts::Id::SetUrl(args) => {
                 validate_public_repo_url(&args.url)?;
                 match current_id_set_url(&args.url, args.use_https_push) {
-                    Err(crev_lib::Error::CurrentIDNotSet)
-                    | Err(crev_lib::Error::IDNotSpecifiedAndCurrentIDNotSet)
-                    | Err(crev_lib::Error::UserConfigNotInitialized) => {
+                    Err(
+                        crev_lib::Error::CurrentIDNotSet
+                        | crev_lib::Error::IDNotSpecifiedAndCurrentIDNotSet
+                        | crev_lib::Error::UserConfigNotInitialized,
+                    ) => {
                         eprintln!("set-url requires a CrevID set up, so we'll set up one now.");
                         generate_new_id_interactively(Some(&args.url), args.use_https_push)?
                     }
@@ -439,7 +532,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         ids.push(id);
                     }
                 } else {
-                    eprintln!("warning: Could not find Id for URL {}", url);
+                    eprintln!("warning: Could not find Id for URL {url}");
                 }
             }
             set_trust_level_for_ids(
@@ -638,7 +731,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             maybe_store(&local, &proof, commit_msg, &args.common)?;
                         }
                         Err(e) => {
-                            eprintln!("Ignoried unknwon proof - {}", e);
+                            eprintln!("Ignoried unknwon proof - {e}");
                         }
                     }
                 }
@@ -647,6 +740,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Proof(args) => match args {
             opts::Proof::Find(args) => {
                 proof_find(args)?;
+            }
+            opts::Proof::Reissue(args) => {
+                proof_reissue(args)?;
             }
         },
         opts::Command::Goto(args) => {
@@ -697,7 +793,7 @@ fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::E
     Ok(())
 }
 
-/// Interactive process of setting up a new CrevID
+/// Interactive process of setting up a new `CrevID`
 fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Result<()> {
     // Avoid creating new CrevID if it's not necessary
     if let Ok(local) = Local::auto_open() {
@@ -729,8 +825,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
                 if let Some(mut locked_id) = reusable_id {
                     let id = locked_id.to_public_id().id;
                     eprintln!(
-                        "Instead of setting up a new CrevID we'll reconfigure the existing one {}",
-                        id
+                        "Instead of setting up a new CrevID we'll reconfigure the existing one {id}"
                     );
                     local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
                     let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
@@ -776,7 +871,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
     if !res.has_no_passphrase() {
         println!("Your CrevID was created and will be printed below in an encrypted form.");
         println!("Make sure to back it up on another device, to prevent losing it.");
-        println!("{}", res);
+        println!("{res}");
     } else {
         println!("Your CrevID is not protected with a passphrase. You should fix that with `cargo crev id passwd`");
     }
@@ -829,8 +924,8 @@ fn set_trust_level_for_ids(
                 for (id, trust_level) in ids.iter().flat_map(|id| db.get_reverse_trust_for(id)) {
                     let (status, url) = url_to_status_str(&db.lookup_url(id));
                     writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
-                    writeln!(text, "#   id: {} # level: {}", id, trust_level)?;
-                    writeln!(text, "#   url: {} # {}", url, status)?;
+                    writeln!(text, "#   id: {id} # level: {trust_level}")?;
+                    writeln!(text, "#   url: {url} # {status}")?;
                     writeln!(text, "#   comment: \"\"")?;
                 }
             }
@@ -846,7 +941,7 @@ fn set_trust_level_for_ids(
         print!("{}", proof.body());
     }
     if common_proof_create.print_signed {
-        print!("{}", proof);
+        print!("{proof}");
     }
     if !common_proof_create.no_store {
         crev_lib::proof::store_id_trust_proof(
@@ -868,7 +963,7 @@ fn ensure_crev_id_exists_or_make_one() -> Result<Local> {
             eprintln!(
                 "note: Setting up a default CrevID. Run `cargo crev id new` to customize it."
             );
-            local.generate_id(None, false, &|| Ok(String::new()))?;
+            local.generate_id(None, false, || Ok(String::new()))?;
         } else {
             eprintln!("You need to select current CrevID. Try:");
             for id in existing {
@@ -946,7 +1041,7 @@ fn change_passphrase(
 
     println!("Your CrevID has been updated and will be printed below in the reencrypted form.");
     println!("Make sure to back it up on another device, to prevent losing it.");
-    println!("{}", locked_id);
+    println!("{locked_id}");
 
     Ok(locked_id)
 }
@@ -1024,7 +1119,7 @@ fn handle_command_result_and_panics(
                     return;
                 }
             }
-            eprintln!("{:?}", e);
+            eprintln!("{e:?}");
             std::process::exit(-2)
         }
     }) {
@@ -1033,9 +1128,9 @@ fn handle_command_result_and_panics(
         } else if let Some(io_error) = panic_err.downcast_ref::<String>() {
             io_error.to_string()
         } else if let Some(io_error) = panic_err.downcast_ref::<&'static str>() {
-            io_error.to_string()
+            (*io_error).to_string()
         } else {
-            "".to_string()
+            String::new()
         };
 
         if !is_possibly_broken_pipe_msg(&panic_str) {

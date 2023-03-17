@@ -45,7 +45,7 @@ pub struct VcsInfoJson {
 
 pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
     vcs.and_then(|vcs| vcs.get_git_revision())
-        .unwrap_or_else(|| "".into())
+        .unwrap_or_default()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -183,7 +183,7 @@ pub fn read_known_owners_list() -> Result<HashSet<String>> {
     let local = Local::auto_create_or_open()?;
     let content = if let Some(path) = local.get_proofs_dir_path_opt()? {
         let path = path.join(KNOWN_CARGO_OWNERS_FILE);
-        std::fs::read_to_string(&path)?
+        std::fs::read_to_string(path)?
     } else {
         include_str!("known_cargo_owners_defaults.txt").to_string()
     };
@@ -214,7 +214,7 @@ pub fn clean_all_crates_with_digest_mismatch() -> Result<()> {
         if stats.has_digest_mismatch() {
             clean_crate(&CrateSelector::new(
                 Some(stats.info.id.name().to_string()),
-                Some(stats.info.id.version().to_owned()),
+                Some(stats.info.id.version().clone()),
                 false,
             ))?;
         }
@@ -239,7 +239,7 @@ pub fn clean_crate(selector: &CrateSelector) -> Result<()> {
     );
 
     if crate_root.is_dir() {
-        std::fs::remove_dir_all(&crate_root)?;
+        std::fs::remove_dir_all(crate_root)?;
     }
     let _crate_ = repo.get_crate(&crate_id)?;
     Ok(())
@@ -351,7 +351,7 @@ pub enum ActivityCheckError {
 
 /// Check `diff` command line argument against previous activity
 ///
-/// Return `Option<Version>` indicating final ReviewMode settings to use.
+/// Return `Option<Version>` indicating final `ReviewMode` settings to use.
 pub fn crate_review_activity_check(
     local: &Local,
     name: &str,
@@ -477,7 +477,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
     let name = &args.name;
 
     let dst_version = &args.dst;
-    let dst_crate_id = repo.find_pkgid(name, dst_version.to_owned().as_ref(), args.unrelated)?;
+    let dst_crate_id = repo.find_pkgid(name, dst_version.clone().as_ref(), args.unrelated)?;
     let dst_crate = repo.get_crate(&dst_crate_id)?;
 
     let requirements = crev_lib::VerificationRequirements::from(args.requirements.clone());
@@ -539,9 +539,9 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             let mut command = diff(diff_exe.as_os_str());
             command
                 .status()
-                .or_else(|err| panic!("Failed to execute {:?}\n{:?}", command, err))
+                .or_else(|err| panic!("Failed to execute {command:?}\n{err:?}"))
         }
-        Err(ref err) => panic!("Failed to execute {:?}\n{:?}", command, err),
+        Err(ref err) => panic!("Failed to execute {command:?}\n{err:?}"),
         Ok(status) => Ok(status),
     }
 }
@@ -549,7 +549,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 pub fn show_dir(sel: &opts::CrateSelector) -> Result<()> {
     let repo = Repo::auto_open_cwd_default()?;
 
-    let _ = sel.ensure_name_given()?;
+    sel.ensure_name_given()?;
     let crate_id = repo.find_pkgid_by_crate_selector(sel)?;
     let crate_ = repo.get_crate(&crate_id)?;
     println!("{}", crate_.root().display());
@@ -559,7 +559,7 @@ pub fn show_dir(sel: &opts::CrateSelector) -> Result<()> {
 
 pub fn list_advisories(crate_: &opts::CrateSelector) -> Result<()> {
     for review in find_advisories(crate_)? {
-        println!("---\n{}", review);
+        println!("---\n{review}");
     }
 
     Ok(())
@@ -580,7 +580,7 @@ pub fn list_issues(args: &opts::RepoQueryIssue) -> Result<()> {
         &trust_set,
         args.trust_level.into(),
     ) {
-        println!("---\n{}", review);
+        println!("---\n{review}");
     }
 
     Ok(())
@@ -634,8 +634,7 @@ pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
     entry
         .path()
         .extension()
-        .map(|ext| ext.to_string_lossy().as_ref() == file_ext)
-        .unwrap_or(false)
+        .map_or(false, |ext| ext.to_string_lossy().as_ref() == file_ext)
 }
 
 pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
@@ -704,7 +703,7 @@ pub fn maybe_store(
     }
 
     if proof_create_opt.print_signed {
-        print!("{}", proof);
+        print!("{proof}");
     }
 
     if !proof_create_opt.no_store {

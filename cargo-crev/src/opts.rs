@@ -91,7 +91,7 @@ pub struct CargoOpts {
     pub no_default_features: bool,
 
     #[structopt(long = "dev-dependencies")]
-    /// [cargo] Skip dev dependencies.
+    /// [cargo] Activate dev dependencies.
     dev_dependencies: bool,
 
     #[structopt(long = "no-dev-dependencies")]
@@ -148,6 +148,10 @@ pub struct IdSwitch {
 /// Parameters describing trust graph traversal
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct TrustDistanceParams {
+    /// [trust-graph-traversal] Consider only direct trust relationships
+    #[structopt(long = "direct")]
+    pub direct: bool,
+
     #[structopt(long = "depth", default_value = "20")]
     /// [trust-graph-traversal] Maximum allowed distance from the root identity when traversing trust graph
     pub depth: u64,
@@ -171,13 +175,24 @@ pub struct TrustDistanceParams {
 
 impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
     fn from(params: TrustDistanceParams) -> Self {
-        crev_lib::TrustDistanceParams {
-            max_distance: params.depth,
-            high_trust_distance: params.high_cost,
-            medium_trust_distance: params.medium_cost,
-            low_trust_distance: params.low_cost,
-            none_trust_distance: params.none_cost,
-            distrust_distance: params.distrust_cost,
+        if params.direct {
+            crev_lib::TrustDistanceParams {
+                max_distance: 1,
+                high_trust_distance: 1,
+                medium_trust_distance: 1,
+                low_trust_distance: 1,
+                none_trust_distance: 1000,
+                distrust_distance: 1000,
+            }
+        } else {
+            crev_lib::TrustDistanceParams {
+                max_distance: params.depth,
+                high_trust_distance: params.high_cost,
+                medium_trust_distance: params.medium_cost,
+                low_trust_distance: params.low_cost,
+                none_trust_distance: params.none_cost,
+                distrust_distance: params.distrust_cost,
+            }
         }
     }
 }
@@ -439,7 +454,8 @@ pub struct TrustUrls {
     /// Public IDs or proof repo URLs to create Trust Proof for
     pub public_ids_or_urls: Vec<String>,
 
-    /// Shortcut for setting trust level without editing
+    /// Shortcut for setting trust level without editing.
+    /// Possible values are: "none" or "untrust", "low", "medium", "high" and "distrust".
     #[structopt(long = "level")]
     pub level: Option<crev_data::TrustLevel>,
 
@@ -866,6 +882,30 @@ pub struct ProofFind {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct ProofReissue {
+    #[structopt(name = "crate", long = "crate")]
+    pub crate_: Option<String>,
+
+    #[structopt(name = "vers", long = "vers")]
+    pub version: Option<Version>,
+
+    /// Reissue all proofs by a crev Id. Mandatory.
+    #[structopt(name = "author", long = "author")]
+    pub author: String,
+
+    /// Comment for human readers. Mandatory.
+    #[structopt(name = "comment", long = "comment")]
+    pub comment: String,
+
+    /// Skip check if we already reissued a review using the current id
+    #[structopt(long = "skip-reissue-check")]
+    pub skip_reissue_check: bool,
+
+    #[structopt(flatten)]
+    pub common_proof_create: CommonProofCreate,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Repo {
     /// Publish to remote repository
@@ -914,6 +954,9 @@ pub enum Proof {
     /// Find a proof
     #[structopt(name = "find")]
     Find(ProofFind),
+    /// Reissue proofs with current id
+    #[structopt(name = "reissue")]
+    Reissue(ProofReissue),
 }
 
 #[derive(Debug, StructOpt, Clone)]

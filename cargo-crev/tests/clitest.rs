@@ -6,7 +6,7 @@ use std::{ffi::*, io::Write, path::*, process::*};
 fn creates_new_id_implicitly() {
     let c = Cli::new();
     let empty_id = c.run(&["id", "query", "own"], "");
-    assert!(!empty_id.status.success(), "{:?}", empty_id);
+    assert!(!empty_id.status.success(), "{empty_id:?}");
     let trust = c.run(
         &[
             "id",
@@ -16,7 +16,7 @@ fn creates_new_id_implicitly() {
         ],
         "",
     );
-    assert!(trust.status.success(), "{:?}", trust);
+    assert!(trust.status.success(), "{trust:?}");
     assert!(c.run(&["id", "query", "own"], "").status.success());
 }
 

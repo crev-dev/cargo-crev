@@ -28,11 +28,13 @@ pub enum YAMLIOError {
 }
 
 /// Now with a fixed offset of the current system timezone
+#[must_use]
 pub fn now() -> chrono::DateTime<chrono::offset::FixedOffset> {
     let date = chrono::offset::Local::now();
     date.with_timezone(date.offset())
 }
 
+#[must_use]
 pub fn blake2b256sum(bytes: &[u8]) -> [u8; 32] {
     let mut hasher = Blake2b256::new();
     hasher.update(bytes);
@@ -76,6 +78,7 @@ pub fn base64_encode<T: ?Sized + AsRef<[u8]>>(input: &T) -> String {
 /// assert_eq!(sanitize_name_for_fs(a2048.as_str()).to_str().unwrap(), format!("{}-4iupJgrBwxluPQ8DRmrnXg", a16));
 /// assert_eq!(sanitize_name_for_fs(a2049.as_str()).to_str().unwrap(), format!("{}-VMRqy6kfWHPoPp1iKIGt1A", a16));
 /// ```
+#[must_use]
 pub fn sanitize_name_for_fs(s: &str) -> PathBuf {
     let mut buffer = String::new();
     for ch in s.chars().take(16) {
@@ -113,6 +116,7 @@ pub fn sanitize_name_for_fs(s: &str) -> PathBuf {
 /// assert_eq!(sanitize_url_for_fs(a2048.as_str()).to_str().unwrap(), format!("{}-4iupJgrBwxluPQ8DRmrnXg", a48));
 /// assert_eq!(sanitize_url_for_fs(a2049.as_str()).to_str().unwrap(), format!("{}-VMRqy6kfWHPoPp1iKIGt1A", a48));
 /// ```
+#[must_use]
 pub fn sanitize_url_for_fs(url: &str) -> PathBuf {
     let mut buffer = String::new();
 
@@ -152,6 +156,7 @@ pub fn is_vec_empty<T>(t: &[T]) -> bool {
     t.is_empty()
 }
 
+#[must_use]
 pub fn is_set_empty<T>(t: &HashSet<T>) -> bool {
     t.is_empty()
 }
@@ -200,7 +205,11 @@ pub fn try_again_or_cancel() -> std::result::Result<(), CancelledError> {
 
 pub fn yes_or_no_was_y(msg: &str) -> io::Result<Option<bool>> {
     loop {
-        let reply = rprompt::prompt_reply_stderr(&format!("{} ", msg))?;
+        let reply = rprompt::prompt_reply_from_bufread(
+            &mut std::io::stdin().lock(),
+            &mut std::io::stderr(),
+            format!("{msg} "),
+        )?;
 
         match reply.as_str() {
             "y" | "Y" => return Ok(Some(true)),
@@ -238,11 +247,11 @@ pub fn run_with_shell_cmd_custom(
         let mut proc = process::Command::new("cmd.exe");
         if let Some(arg) = arg {
             proc.arg("/c").arg("%CREV_CMD% %CREV_ARG%");
-            proc.env("CREV_CMD", &cmd);
+            proc.env("CREV_CMD", cmd);
             proc.env("CREV_ARG", arg);
         } else {
             proc.arg("/c").arg("%CREV_CMD%");
-            proc.env("CREV_CMD", &cmd);
+            proc.env("CREV_CMD", cmd);
         }
         proc
     } else if cfg!(unix) {

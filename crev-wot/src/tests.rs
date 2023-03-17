@@ -111,7 +111,7 @@ fn overwritting_reviews() -> Result<()> {
         ),
         digest: digest.to_vec(),
         digest_type: crev_data::proof::default_digest_type(),
-        revision: "".into(),
+        revision: String::new(),
         revision_type: crev_data::proof::default_revision_type(),
     };
 
@@ -250,7 +250,7 @@ fn proofdb_trust_ignore_override() -> Result<()> {
                     c.id.create_trust_proof(vec![d.as_public_id()], TrustLevel::None, vec![])?;
                 c_to_d_unsigned.override_.push(OverrideItem {
                     id: b.as_public_id().clone(),
-                    comment: "".into(),
+                    comment: String::new(),
                 });
                 c_to_d_unsigned.sign_by(&c)?
             },
@@ -286,7 +286,7 @@ fn proofdb_trust_ignore_override() -> Result<()> {
                         c.id.create_trust_proof(vec![d.as_public_id()], TrustLevel::None, vec![])?;
                     c_to_d_unsigned.override_.push(OverrideItem {
                         id: b.as_public_id().clone(),
-                        comment: "".into(),
+                        comment: String::new(),
                     });
                     c_to_d_unsigned.sign_by(&c)?
                 },

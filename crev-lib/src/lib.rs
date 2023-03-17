@@ -169,6 +169,7 @@ impl fmt::Display for TrustProofType {
 }
 
 impl TrustProofType {
+    #[must_use]
     pub fn is_trust(self) -> bool {
         if let TrustProofType::Trust = self {
             return true;
@@ -176,8 +177,9 @@ impl TrustProofType {
         false
     }
 
+    #[must_use]
     pub fn to_review(self) -> crev_data::Review {
-        use TrustProofType::*;
+        use TrustProofType::{Distrust, Trust, Untrust};
         match self {
             Trust => crev_data::Review::new_positive(),
             Distrust => crev_data::Review::new_negative(),
@@ -217,10 +219,12 @@ pub enum VerificationStatus {
 }
 
 impl VerificationStatus {
+    #[must_use]
     pub fn is_verified(self) -> bool {
         self == VerificationStatus::Verified
     }
 
+    #[must_use]
     pub fn min(self, other: Self) -> Self {
         if self < other {
             self

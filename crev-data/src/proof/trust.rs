@@ -46,7 +46,7 @@ impl fmt::Display for TrustLevel {
 }
 
 #[derive(thiserror::Error, Debug)]
-#[error("Can't convert string to TrustLevel")]
+#[error("Can't convert string to TrustLevel. Possible values are: \"none\" or \"untrust\", \"low\", \"medium\", \"high\" and \"distrust\".")]
 pub struct FromStrErr;
 
 impl std::str::FromStr for TrustLevel {
@@ -119,6 +119,7 @@ impl TrustBuilder {
                 version: cur_version(),
                 date: crev_common::now(),
                 from: value.into(),
+                original: None,
             });
         }
         self

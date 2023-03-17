@@ -121,7 +121,7 @@ impl Scanner {
         }
 
         let roots = repo.find_roots_by_crate_selector(&root_crate)?;
-        let roots_set: HashSet<_> = roots.iter().cloned().collect();
+        let roots_set: HashSet<_> = roots.iter().copied().collect();
 
         let (all_pkgs_set, _resolve) = repo.get_package_set()?;
 
@@ -135,7 +135,7 @@ impl Scanner {
             .map(|pkg| (pkg.package_id(), CrateInfo::from_pkg(pkg)))
             .collect();
 
-        let all_crates_ids = crate_info_by_id.keys().cloned().collect();
+        let all_crates_ids = crate_info_by_id.keys().copied().collect();
 
         let selected_crates_ids = crate_info_by_id
             .iter()
@@ -151,7 +151,7 @@ impl Scanner {
                     None
                 }
             })
-            .cloned()
+            .copied()
             .collect();
 
         let has_trusted_ids = trust_set.iter_trusted_ids().next().is_some();
@@ -199,7 +199,7 @@ impl Scanner {
         let (pending_tx, pending_rx) = unbounded();
 
         let total_crates_len = self.selected_crate_count();
-        for id in self.all_crates_ids.clone().into_iter() {
+        for id in self.all_crates_ids.clone() {
             pending_tx.send(id).unwrap();
         }
 
@@ -253,7 +253,7 @@ impl Scanner {
                                 }
                             }
 
-                            let info = self_clone.crate_info_by_id[&pkg_id].to_owned();
+                            let info = self_clone.crate_info_by_id[&pkg_id].clone();
 
                             let details = self_clone
                                 .get_crate_details(&info, &required_details)
@@ -435,11 +435,7 @@ impl Scanner {
         {
             let crate_details_by_id = self.crate_details_by_id.lock().expect("lock works");
 
-            for dep_pkg_id in self
-                .graph
-                .get_recursive_dependencies_of(info.id)
-                .into_iter()
-            {
+            for dep_pkg_id in self.graph.get_recursive_dependencies_of(info.id) {
                 accumulative_recursive = accumulative_recursive
                     + crate_details_by_id
                         .get(&dep_pkg_id)
@@ -453,7 +449,7 @@ impl Scanner {
             digest,
             trusted_reviewers: version_reviews
                 .into_iter()
-                .map(|pkg_review| pkg_review.from().to_owned())
+                .map(|pkg_review| pkg_review.from().clone())
                 .filter(|id| {
                     self.trust_set.get_effective_trust_level(&id.id)
                         >= self.requirements.trust_level.into()

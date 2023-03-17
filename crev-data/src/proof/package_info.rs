@@ -19,6 +19,7 @@ pub struct PackageVersionId {
 }
 
 impl PackageVersionId {
+    #[must_use]
     pub fn new(source: String, name: String, version: Version) -> Self {
         Self {
             id: PackageId { source, name },

@@ -1,4 +1,5 @@
 use crate::{Error, Result};
+use aes_siv::KeyInit;
 use argon2::{self, Config};
 use crev_common::{
     rand::random_vec,
@@ -89,11 +90,11 @@ impl LockedId {
             use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE};
 
             let secret = unlocked_id.keypair.secret.as_bytes();
-            let mut siv = aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&pwhash));
+            let mut siv = aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&pwhash));
             let mut buffer = vec![0; IV_SIZE + secret.len()];
             buffer[IV_SIZE..].copy_from_slice(secret);
             let tag = siv
-                .encrypt_in_place_detached(&[&[] as &[u8], &seal_nonce], &mut buffer[IV_SIZE..])
+                .encrypt_in_place_detached([&[] as &[u8], &seal_nonce], &mut buffer[IV_SIZE..])
                 .expect("aes-encrypt");
             buffer[..IV_SIZE].copy_from_slice(&tag);
             buffer
@@ -117,11 +118,13 @@ impl LockedId {
     }
 
     /// Extract only the public identity part from all data
+    #[must_use]
     pub fn to_public_id(&self) -> PublicId {
-        PublicId::new_from_pubkey(self.public_key.to_owned(), self.url.clone())
+        PublicId::new_from_pubkey(self.public_key.clone(), self.url.clone())
             .expect("Invalid locked id.")
     }
 
+    #[must_use]
     pub fn pub_key_as_base64(&self) -> String {
         crev_common::base64_encode(&self.public_key)
     }
@@ -185,11 +188,11 @@ impl LockedId {
                 use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE, Tag};
 
                 let mut siv =
-                    aes_siv::siv::Aes256Siv::new(GenericArray::clone_from_slice(&passphrase_hash));
+                    aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&passphrase_hash));
                 let mut buffer = sealed_secret_key.clone();
                 let tag = Tag::clone_from_slice(&buffer[..IV_SIZE]);
                 siv.decrypt_in_place_detached(
-                    &[&[] as &[u8], seal_nonce],
+                    [&[] as &[u8], seal_nonce],
                     &mut buffer[IV_SIZE..],
                     &tag,
                 )
@@ -208,6 +211,7 @@ impl LockedId {
         }
     }
 
+    #[must_use]
     pub fn has_no_passphrase(&self) -> bool {
         self.passphrase_config.iterations == 1 && self.to_unlocked("").is_ok()
     }

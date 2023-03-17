@@ -1,6 +1,6 @@
 [package]
 name = "cargo-crev"
-version = "0.23.3"
+version = "0.23.5"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
@@ -12,7 +12,7 @@ license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/crev-dev/cargo-crev"
 edition = "2021"
-rust-version = "1.62" # cost of latest cargo
+rust-version = "1.65" # cost of latest cargo
 
 [[bin]]
 name = "cargo-crev"
@@ -23,43 +23,43 @@ name = "cargo_crev"
 path = "src/lib.rs"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.23.2"}
-crev-data = { path = "../crev-data", version = "^0.23.2"}
-crev-wot = { path = "../crev-wot", version = "^0.23.2"}
-crev-lib = { path = "../crev-lib", version = "^0.23.2"}
-anyhow = "1.0.58"
+crev-common = { path = "../crev-common", version = "^0.23.5"}
+crev-data = { path = "../crev-data", version = "^0.23.5"}
+crev-wot = { path = "../crev-wot", version = "^0.23.5"}
+crev-lib = { path = "../crev-lib", version = "^0.23.5"}
+anyhow = "1.0.69"
 atty = "0.2.14"
-cargo = "0.64.0"
+cargo = "0.69.0"
 cargo-platform = "0.1.2"
-crates_io_api = "0.8.0"
-crossbeam = "0.8.1"
-chrono = { version = "0.4.19", default-features = false }
-env_logger = { version = "0.9.0", default-features = false, features = ["termcolor", "atty", "humantime"] }
+crates_io_api = "0.8.1"
+crossbeam = "0.8.2"
+chrono = { version = "0.4.23", default-features = false }
+env_logger = { version = "0.10.0", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
-geiger = "0.4.9"
-itertools = "0.10.3"
+geiger = "0.4.11"
+itertools = "0.10.5"
 lazy_static = "1.4.0"
-num_cpus = "1.13.0"
-petgraph = "0.6.0"
-rayon = "1.5.1"
+num_cpus = "1.15.0"
+petgraph = "0.6.3"
+rayon = "1.6.1"
 resiter = "0.4.0"
-rpassword = "7.0.0"
-serde = "1.0.130"
-serde_json = "1.0.62"
-serde_yaml = "0.9.4"
-structopt = "0.3.25"
-time = "0.3.6"
+rpassword = "7.2.0"
+serde = "1.0.152"
+serde_json = "1.0.92"
+serde_yaml = "0.9.17"
+structopt = "0.3.26"
+time = "0.3.17"
 tokei = "12.1.2"
 walkdir = "2.3.2"
-openssl-sys = "0.9.65"
-git2 = ">=0.13, <0.16"
+openssl-sys = "0.9.80"
+git2 = "0.16"
 tempfile = "3.3.0"
-rprompt = "1.0.5"
-thiserror = "1.0.31"
+rprompt = "2.0.2"
+thiserror = "1.0.38"
 log = "0.4.17"
 term = "0.7.0"
 syn-inline-mod = "0.5.0"
-quote = "1.0.20"
+quote = "1.0.23"
 
 [features]
 default = ["openssl-sys/vendored"]

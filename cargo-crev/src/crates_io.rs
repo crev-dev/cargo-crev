@@ -26,7 +26,7 @@ trait Cacheable: Sized {
 
 impl Cacheable for crates_io_api::CrateResponse {
     fn get_cache_path(base: &Path, name: &str, _version: &str) -> PathBuf {
-        base.join("crate").join(format!("{}.json", name))
+        base.join("crate").join(format!("{name}.json"))
     }
     fn fetch(client: &crates_io_api::SyncClient, crate_: &str, _version: &str) -> Result<Self> {
         Ok(client.get_crate(crate_)?)
@@ -35,7 +35,7 @@ impl Cacheable for crates_io_api::CrateResponse {
 
 impl Cacheable for crates_io_api::Owners {
     fn get_cache_path(base: &Path, name: &str, _version: &str) -> PathBuf {
-        base.join("owners").join(format!("{}.json", name))
+        base.join("owners").join(format!("{name}.json"))
     }
     fn fetch(client: &crates_io_api::SyncClient, crate_: &str, _version: &str) -> Result<Self> {
         Ok(crates_io_api::Owners {
@@ -50,8 +50,7 @@ fn get_downloads_stats(resp: &crates_io_api::CrateResponse, version: &Version) -
             .versions
             .iter()
             .find(|v| v.num == version.to_string())
-            .map(|v| v.downloads)
-            .unwrap_or(0),
+            .map_or(0, |v| v.downloads),
         total: resp.crate_data.downloads,
         recent: resp.crate_data.recent_downloads.unwrap_or(0),
     }

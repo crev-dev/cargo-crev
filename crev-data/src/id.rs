@@ -33,7 +33,7 @@ pub enum IdError {
 
 impl fmt::Display for IdType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use IdType::*;
+        use IdType::Crev;
         f.write_str(match self {
             Crev => "crev",
         })
@@ -42,7 +42,7 @@ impl fmt::Display for IdType {
 
 /// An Id supported by `crev` system
 ///
-/// Right now it's only native CrevID, but in future at least GPG
+/// Right now it's only native `CrevID`, but in future at least GPG
 /// should be supported.
 #[derive(Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "id-type")]
@@ -103,6 +103,7 @@ impl Id {
         Ok(())
     }
 
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Id::Crev { id } => id.clone(),
@@ -120,10 +121,12 @@ pub struct PublicId {
 }
 
 impl PublicId {
+    #[must_use]
     pub fn new(id: Id, url: Url) -> Self {
         Self { id, url: Some(url) }
     }
 
+    #[must_use]
     pub fn new_id_only(id: Id) -> Self {
         Self { id, url: None }
     }
@@ -176,6 +179,7 @@ impl PublicId {
             .map_err(|e| crate::Error::BuildingProof(e.to_string().into()))
     }
 
+    #[must_use]
     pub fn url_display(&self) -> &str {
         match &self.url {
             Some(url) => &url.url,
@@ -219,22 +223,27 @@ impl UnlockedId {
         })
     }
 
+    #[must_use]
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
         self.keypair.sign(msg).to_bytes().to_vec()
     }
 
+    #[must_use]
     pub fn type_as_string(&self) -> String {
         "crev".into()
     }
 
+    #[must_use]
     pub fn as_public_id(&self) -> &PublicId {
         &self.id
     }
 
+    #[must_use]
     pub fn url(&self) -> Option<&Url> {
         self.id.url.as_ref()
     }
 
+    #[must_use]
     pub fn generate_for_git_url(url: &str) -> Self {
         Self::generate(Some(Url::new_git(url.to_owned())))
     }

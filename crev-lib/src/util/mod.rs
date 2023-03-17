@@ -41,7 +41,7 @@ pub fn get_recursive_digest_for_paths(
         .filter(|entry| {
             let rel_path = entry
                 .path()
-                .strip_prefix(&root_path)
+                .strip_prefix(root_path)
                 .expect("must be prefix");
             paths.contains(rel_path)
         })
@@ -59,7 +59,7 @@ pub fn get_recursive_digest_for_dir(
         .filter(|entry| {
             let rel_path = entry
                 .path()
-                .strip_prefix(&root_path)
+                .strip_prefix(root_path)
                 .expect("must be prefix");
             !rel_path_ignore_list.contains(rel_path)
         })
@@ -118,15 +118,15 @@ fn mark_dangerous_name(
         "rust-toolchain" | "rust-toolchain.toml" => {
             changes
                 .push("rust-toolchain file could unexpectedly replace your compiler".to_string());
-            PathBuf::from(format!("{}.CREV", orig_name))
+            PathBuf::from(format!("{orig_name}.CREV"))
         }
         ".cargo-ok" | ".cargo_vcs_info.json" | ".gitignore" => {
             // they're safe
             PathBuf::from(orig_name)
         }
         n if n.starts_with('.') => {
-            changes.push(format!("Hidden file: '{}'", orig_name));
-            PathBuf::from(format!("CREV{}", orig_name))
+            changes.push(format!("Hidden file: '{orig_name}'"));
+            PathBuf::from(format!("CREV{orig_name}"))
         }
         n if n.len() > 250 => {
             let alt = sanitize_name_for_fs(orig_name).with_extension("CREV");

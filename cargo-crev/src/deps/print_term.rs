@@ -191,7 +191,7 @@ pub fn write_details(
 
     if columns.show_loc() {
         match cdep.accumulative.loc {
-            Some(loc) => write!(io::stdout(), "{:>6} ", loc)?,
+            Some(loc) => write!(io::stdout(), "{loc:>6} ")?,
             None => write!(io::stdout(), "{:>6} ", "err")?,
         }
     }
@@ -240,7 +240,7 @@ pub fn print_dep(
     write_details(details, term, columns, recursive_mode)?;
     if columns.show_geiger() {
         match details.accumulative.geiger_count {
-            Some(geiger_count) => write!(io::stdout(), "{:>6} ", geiger_count)?,
+            Some(geiger_count) => write!(io::stdout(), "{geiger_count:>6} ")?,
             None => write!(io::stdout(), "{:>6} ", "err")?,
         }
     }
@@ -277,8 +277,7 @@ pub fn print_dep(
             details
                 .digest
                 .as_ref()
-                .map(|d| d.to_string())
-                .unwrap_or_else(|| "-".into())
+                .map_or_else(|| "-".into(), |d| d.to_string())
         )?;
     }
 
