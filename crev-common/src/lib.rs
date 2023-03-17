@@ -205,7 +205,11 @@ pub fn try_again_or_cancel() -> std::result::Result<(), CancelledError> {
 
 pub fn yes_or_no_was_y(msg: &str) -> io::Result<Option<bool>> {
     loop {
-        let reply = rprompt::prompt_reply_from_bufread(&mut std::io::stdin().lock(), &mut std::io::stderr(), format!("{msg} "))?;
+        let reply = rprompt::prompt_reply_from_bufread(
+            &mut std::io::stdin().lock(),
+            &mut std::io::stderr(),
+            format!("{msg} "),
+        )?;
 
         match reply.as_str() {
             "y" | "Y" => return Ok(Some(true)),

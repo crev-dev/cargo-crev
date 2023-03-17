@@ -58,7 +58,11 @@ pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
             eprintln!(
                 "File not written to. Make sure to save it at least once to confirm the data."
             );
-            let reply = rprompt::prompt_reply_from_bufread(&mut std::io::stdin().lock(), &mut std::io::stderr(), "Commit anyway? (y/N/q) ")?;
+            let reply = rprompt::prompt_reply_from_bufread(
+                &mut std::io::stdin().lock(),
+                &mut std::io::stderr(),
+                "Commit anyway? (y/N/q) ",
+            )?;
 
             match reply.as_str() {
                 "y" | "Y" => return Ok(text),
