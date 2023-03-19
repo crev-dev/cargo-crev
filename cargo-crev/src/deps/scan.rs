@@ -25,6 +25,8 @@ use std::{
         atomic::{self, AtomicBool, Ordering},
         Arc, Mutex,
     },
+    thread::sleep,
+    time::Duration,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -245,6 +247,7 @@ impl Scanner {
                                 for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
                                     if !crate_details_by_id.contains_key(&dep_pkg_id) {
                                         drop(crate_details_by_id);
+                                        sleep(Duration::from_millis(100));
                                         if let Some(pending_tx) =
                                             pending_tx.lock().unwrap().as_mut()
                                         {
