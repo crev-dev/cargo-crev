@@ -128,7 +128,6 @@ fn our_resolve<'a, 'cfg>(
     features: &[String],
     all_features: bool,
     no_default_features: bool,
-    dev_dependencies: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
     let _lock = workspace.config().acquire_package_cache_lock()?;
     let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
@@ -146,11 +145,7 @@ fn our_resolve<'a, 'cfg>(
         &mut registry,
         workspace,
         &cli_features,
-        if dev_dependencies {
-            HasDevUnits::Yes
-        } else {
-            HasDevUnits::No
-        },
+        HasDevUnits::Yes,
         Some(&resolve),
         None,
         &specs,
@@ -166,6 +161,7 @@ fn build_graph<'a>(
     roots: impl Iterator<Item = PackageId>,
     target: Option<&str>,
     cfgs: &[Cfg],
+    dev_dependencies: bool,
 ) -> CargoResult<Graph> {
     let mut graph = Graph {
         graph: petgraph::Graph::new(),
@@ -192,6 +188,12 @@ fn build_graph<'a>(
                 .dependencies()
                 .iter()
                 .filter(|d| d.matches_ignoring_source(raw_dep_id))
+                .filter(|d| {
+                    let is_local = !d.source_id().is_registry();
+                    // Dev/build dependencies can lead to circular dependencies (in combination with normal deps),
+                    // so ignore dev deps on local crates, as it's not helpful anyway
+                    d.kind() == DepKind::Normal || (dev_dependencies && !is_local)
+                })
                 .filter(|d| {
                     d.platform()
                         .and_then(|p| target.map(|t| p.matches(t, cfgs)))
@@ -370,7 +372,6 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.dev_dependencies()?,
         )?;
 
         let rustc = self.config.load_global_rustc(Some(&workspace))?;
@@ -383,7 +384,14 @@ impl Repo {
             .map(|target| target.as_ref().unwrap_or(&host).as_str());
 
         let cfgs = get_cfgs(&rustc, target)?;
-        let graph = build_graph(&resolve, &packages, roots.into_iter(), target, &cfgs)?;
+        let graph = build_graph(
+            &resolve,
+            &packages,
+            roots.into_iter(),
+            target,
+            &cfgs,
+            self.cargo_opts.dev_dependencies()?,
+        )?;
 
         Ok(graph)
     }
@@ -442,7 +450,6 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.dev_dependencies()?,
         )?;
         let mut source = self.load_source()?;
 
@@ -483,7 +490,6 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.dev_dependencies()?,
         )?;
 
         for pkg_id in package_set.package_ids() {
@@ -521,7 +527,6 @@ impl Repo {
             &self.features_list,
             self.cargo_opts.all_features,
             self.cargo_opts.no_default_features,
-            self.cargo_opts.dev_dependencies()?,
         )
     }
 
