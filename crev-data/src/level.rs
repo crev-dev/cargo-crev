@@ -1,19 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Level {
     None,
     Low,
+    #[default]
     Medium,
     High,
-}
-
-impl Default for Level {
-    fn default() -> Self {
-        Level::Medium
-    }
 }
 
 impl fmt::Display for Level {

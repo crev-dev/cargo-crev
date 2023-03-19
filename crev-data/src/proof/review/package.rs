@@ -334,11 +334,12 @@ impl fmt::Display for Draft {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum VersionRange {
     Minor,
     Major,
+    #[default]
     All,
 }
 
@@ -348,12 +349,6 @@ pub struct VersionRangeParseError(());
 impl fmt::Display for VersionRangeParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Could not parse an incorrect advisory range value")
-    }
-}
-
-impl Default for VersionRange {
-    fn default() -> Self {
-        VersionRange::All
     }
 }
 

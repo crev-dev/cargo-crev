@@ -16,20 +16,15 @@ fn cur_version() -> i64 {
     CURRENT_TRUST_PROOF_SERIALIZATION_VERSION
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum TrustLevel {
     Distrust,
     None,
     Low,
+    #[default]
     Medium,
     High,
-}
-
-impl Default for TrustLevel {
-    fn default() -> Self {
-        TrustLevel::Medium
-    }
 }
 
 impl fmt::Display for TrustLevel {
