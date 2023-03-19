@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use crev_data::{Level, Version};
-use std::{ffi::OsString, io::Write, path::PathBuf};
+use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 use term::color;
 
@@ -117,9 +117,6 @@ impl CargoOpts {
     pub fn dev_dependencies(&self) -> Result<bool> {
         if self.dev_dependencies && self.no_dev_dependencies {
             bail!("`--no-dev-dependencies` and `--dev-dependencies` can't be used together");
-        }
-        if self.no_dev_dependencies {
-            writeln!(std::io::stderr(), "`--no-dev-dependencies` is the default, is now ignored and will be removed in the future")?;
         }
 
         Ok(self.dev_dependencies)
