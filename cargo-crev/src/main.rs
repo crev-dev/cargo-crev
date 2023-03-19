@@ -42,6 +42,7 @@ use crate::{repo::*, review::*, shared::*};
 use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
+use log::debug;
 
 /// Additional functions to extend `Local` by behaviors
 /// that are `cargo-crev` specific, like printing
@@ -1079,6 +1080,7 @@ fn main() {
             }
         })
         .init();
+    debug!("Starting cargo-crev");
     let opts = opts::Opts::from_args();
     let opts::MainCommand::Crev(command) = opts.command;
     handle_command_result_and_panics(|| run_command(command))
