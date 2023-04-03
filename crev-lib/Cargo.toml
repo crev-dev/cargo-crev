@@ -34,7 +34,7 @@ walkdir = "2.3.2"
 thiserror = "1.0.37"
 rayon = "1.6.1"
 aes-siv = "0.7.0"
-bstr = "1.0.1"
+bstr = "1.4.0"
 
 [package.metadata.release]
 shared-version=true
