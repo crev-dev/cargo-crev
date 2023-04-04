@@ -48,13 +48,13 @@ jobs:
           os: ubuntu-18.04
           rust: stable
         - build: beta
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: beta
         - build: nightly
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: nightly
         - build: nightly-musl
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: nightly
           target: x86_64-unknown-linux-musl
         - build: nightly-32
@@ -66,7 +66,7 @@ jobs:
         #   rust: nightly
         #   target: mips64-unknown-linux-gnuabi64
         - build: nightly-arm
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: nightly
           # For stripping release binaries:
           # docker run --rm -v $PWD/target:/target:Z \
