@@ -1,6 +1,6 @@
 [package]
 name = "crev-common"
-version = "0.23.5"
+version = "0.24.0"
 description = "Scalable, social, Code REView system that we desperately need - common code"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"

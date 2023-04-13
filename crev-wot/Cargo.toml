@@ -1,6 +1,6 @@
 [package]
 name = "crev-wot"
-version = "0.23.5"
+version = "0.24.0"
 description = "Scalable, social, Code REView system that we desperately need - Web of Trust library"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/cargo-crev"
@@ -12,8 +12,8 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.23.2"}
-crev-data = { path = "../crev-data", version = "^0.23.4"}
+crev-common = { path = "../crev-common", version = "^0.24.0"}
+crev-data = { path = "../crev-data", version = "^0.24.0"}
 blake2 = "0.10.6"
 chrono = { version = "0.4.23", default-features = false }
 default = "0.1.2"
