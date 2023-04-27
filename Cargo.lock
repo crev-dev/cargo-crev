@@ -3234,12 +3234,12 @@ dependencies = [
 
 [[package]]
 name = "syn-inline-mod"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b670f535364c67358ecffb60b9f2579f9b45d3c71e8cca6d45d22ee0fadaa7eb"
+checksum = "2fa6dca1fdb7b2ed46dd534a326725419d4fb10f23d8c85a8b2860e5eb25d0f9"
 dependencies = [
  "proc-macro2",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]

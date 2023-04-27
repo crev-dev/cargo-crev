@@ -58,7 +58,7 @@ rprompt = "2.0.2"
 thiserror = "1.0.38"
 log = "0.4.17"
 term = "0.7.0"
-syn-inline-mod = "0.5.0"
+syn-inline-mod = "0.6.0"
 quote = "1.0.23"
 
 [features]
