@@ -247,6 +247,13 @@ impl Local {
         self.user_dir_path().join("ids")
     }
 
+    /// Like [`Self::user_ids_path`] but checks if the dir exists
+    pub fn user_ids_path_opt(&self) -> Option<PathBuf> {
+        let path = self.user_dir_path().join("ids");
+
+        path.exists().then_some(path)
+    }
+
     /// Directory where git checkouts for user's own proof repos are stored
     ///
     /// This is separate from cache of other people's proofs
@@ -258,11 +265,7 @@ impl Local {
     pub fn user_proofs_path_opt(&self) -> Option<PathBuf> {
         let path = self.user_proofs_path();
 
-        if path.exists() {
-            Some(path)
-        } else {
-            None
-        }
+        path.exists().then_some(path)
     }
 
     /// Path where this Id is stored as YAML
@@ -276,13 +279,14 @@ impl Local {
 
     /// Returns public Ids which belong to the current user.
     pub fn get_current_user_public_ids(&self) -> Result<Vec<PublicId>> {
-        let ids_path = self.user_ids_path();
         let mut ids = vec![];
-        for dir_entry in std::fs::read_dir(&ids_path)? {
-            let path = dir_entry?.path();
-            if path.extension().map_or(false, |ext| ext == "yaml") {
-                let locked_id = LockedId::read_from_yaml_file(&path)?;
-                ids.push(locked_id.to_public_id())
+        if let Some(ids_path) = self.user_ids_path_opt() {
+            for dir_entry in std::fs::read_dir(&ids_path)? {
+                let path = dir_entry?.path();
+                if path.extension().map_or(false, |ext| ext == "yaml") {
+                    let locked_id = LockedId::read_from_yaml_file(&path)?;
+                    ids.push(locked_id.to_public_id())
+                }
             }
         }
 
