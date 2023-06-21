@@ -2,4 +2,3 @@
 tag-prefix = ""
 tag-name = "v{{version}}"
 consolidate-commits = true
-consolidate-pushes = true
