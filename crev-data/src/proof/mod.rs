@@ -203,17 +203,12 @@ impl Proof {
     pub fn parse_from(reader: impl io::Read) -> Result<Vec<Self>> {
         let reader = std::io::BufReader::new(reader);
 
-        #[derive(PartialEq, Eq)]
+        #[derive(PartialEq, Eq, Default)]
         enum Stage {
+            #[default]
             None,
             Body,
             Signature,
-        }
-
-        impl Default for Stage {
-            fn default() -> Self {
-                Stage::None
-            }
         }
 
         #[derive(Default)]

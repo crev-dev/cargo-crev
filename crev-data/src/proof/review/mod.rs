@@ -8,20 +8,15 @@ use std::default::Default;
 pub mod code;
 pub mod package;
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Rating {
     #[serde(alias = "dangerous")] // for backward compat with some previous versions
     Negative,
+    #[default]
     Neutral,
     Positive,
     Strong,
-}
-
-impl Default for Rating {
-    fn default() -> Self {
-        Rating::Neutral
-    }
 }
 
 /// Information about review result

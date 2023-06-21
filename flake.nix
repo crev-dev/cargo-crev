@@ -2,7 +2,7 @@
   description = "Cryptographically verifiable Code REviews";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
@@ -236,8 +236,11 @@
             RUST_SRC_PATH = "${fenix-channel.rust-src}/lib/rustlib/src/rust/library";
             shellHook = ''
               # auto-install git hooks
-              for hook in misc/git-hooks/* ; do ln -sf "../../$hook" "./.git/hooks/" ; done
+              dot_git="$(git rev-parse --git-common-dir)"
+              if [[ ! -d "$dot_git/hooks" ]]; then mkdir "$dot_git/hooks"; fi
+              for hook in misc/git-hooks/* ; do ln -sf "$(pwd)/$hook" "$dot_git/hooks/" ; done
               ${pkgs.git}/bin/git config commit.template misc/git-hooks/commit-template.txt
+              
 
               # workaround https://github.com/rust-lang/cargo/issues/11020
               cargo_cmd_bins=( $(ls $HOME/.cargo/bin/cargo-{clippy,udeps,llvm-cov} 2>/dev/null) )

@@ -1,7 +1,6 @@
 [package]
-edition = "2018"
 name = "crev-common"
-version = "0.23.2"
+version = "0.24.0"
 description = "Scalable, social, Code REView system that we desperately need - common code"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"
@@ -10,10 +9,11 @@ homepage = "https://github.com/crev-dev/crev"
 keywords = ["code", "review", "trust", "distributed"]
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
+edition = "2021"
 
 [dependencies]
 base64 = "0.13"
-blake2 = "0.9.2"
+blake2 = "0.10.6"
 chrono = { version = "0.4.23", default-features = false, features = ["std", "clock"] }
 hex = "0.4.3"
 rprompt = "2.0.2"

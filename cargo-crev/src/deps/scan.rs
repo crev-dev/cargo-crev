@@ -16,6 +16,7 @@ use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, *};
 use crossbeam::{self, channel::unbounded};
+use log::debug;
 use std::{
     collections::{HashMap, HashSet},
     default::Default,
@@ -24,6 +25,8 @@ use std::{
         atomic::{self, AtomicBool, Ordering},
         Arc, Mutex,
     },
+    thread::sleep,
+    time::Duration,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -243,9 +246,12 @@ impl Scanner {
 
                                 for dep_pkg_id in graph.get_dependencies_of(pkg_id) {
                                     if !crate_details_by_id.contains_key(&dep_pkg_id) {
+                                        drop(crate_details_by_id);
+                                        sleep(Duration::from_millis(100));
                                         if let Some(pending_tx) =
                                             pending_tx.lock().unwrap().as_mut()
                                         {
+                                            debug!("Postponing {pkg_id} as dependency {dep_pkg_id} is not ready");
                                             pending_tx.send(pkg_id).unwrap();
                                         }
                                         return;
@@ -255,18 +261,22 @@ impl Scanner {
 
                             let info = self_clone.crate_info_by_id[&pkg_id].clone();
 
+                            debug!("Get details of {pkg_id}");
                             let details = self_clone
                                 .get_crate_details(&info, &required_details)
                                 .expect("Unable to scan crate");
                             {
+                                debug!("Insert details of {pkg_id}");
                                 let mut crate_details_by_id =
                                     self_clone.crate_details_by_id.lock().unwrap();
                                 crate_details_by_id.insert(info.id, details.clone());
+                                debug!("Inserted details of {pkg_id}");
                             }
 
                             if self_clone.selected_crates_ids.contains(&pkg_id) {
                                 let stats = CrateStats { info, details };
 
+                                debug!("Send details of {pkg_id} as ready");
                                 // ignore any problems if the receiver decided not to listen anymore
                                 let _ = ready_tx.send(stats);
 
