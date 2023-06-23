@@ -37,7 +37,7 @@ chrono = { version = "0.4.23", default-features = false }
 env_logger = { version = "0.10.0", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
 geiger = "0.4.11"
-itertools = "0.10.5"
+itertools = "0.11.0"
 lazy_static = "1.4.0"
 num_cpus = "1.15.0"
 petgraph = "0.6.3"

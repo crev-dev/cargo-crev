@@ -356,7 +356,7 @@ dependencies = [
  "im-rc",
  "indexmap",
  "is-terminal",
- "itertools",
+ "itertools 0.10.5",
  "jobserver",
  "lazy_static",
  "lazycell",
@@ -411,7 +411,7 @@ dependencies = [
  "fnv",
  "geiger",
  "git2",
- "itertools",
+ "itertools 0.11.0",
  "lazy_static",
  "log",
  "num_cpus",
@@ -768,7 +768,7 @@ dependencies = [
  "crev-common",
  "crev-data",
  "default",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "serde",
  "serde_yaml",
@@ -2479,6 +2479,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
