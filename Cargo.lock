@@ -720,7 +720,7 @@ dependencies = [
 name = "crev-common"
 version = "0.24.0"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.2",
  "blake2",
  "chrono",
  "hex",
