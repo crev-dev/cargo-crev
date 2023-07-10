@@ -17,7 +17,7 @@ blake2 = "0.10.6"
 chrono = { version = "0.4.23", default-features = false, features = ["std", "clock"] }
 hex = "0.4.3"
 rprompt = "2.0.2"
-serde = "1.0.150"
+serde = "1.0.171"
 serde_yaml = "0.9.14"
 shell-escape = "0.1.5"
 thiserror = "1.0.37"
