@@ -16,7 +16,7 @@ crev-common = { path = "../crev-common", version = "^0.24"}
 chrono = { version = "0.4.23", default-features = false }
 derive_builder = "0.12.0"
 rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
-ed25519-dalek = "1.0.1"
+ed25519-dalek = "2.0.0"
 rand = { version = "0.8.4", package = "rand" }
 semver = { version = "1.0.14", features = [ "serde" ] }
 serde = { version = "1.0.150", features = ["derive"] }
