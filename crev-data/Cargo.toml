@@ -1,28 +1,29 @@
 [package]
 name = "crev-data"
-version = "0.24.0"
-edition = '2021'
 description = "Scalable, social, Code REView system that we desperately need - data types library"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"
-homepage = "https://github.com/crev-dev/crev"
 keywords = ["code", "peer", "review", "verification", "dependencies"]
-license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/crev-dev/cargo-crev"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.24"}
-chrono = { version = "0.4.23", default-features = false }
+crev-common.workspace = true
+
+chrono.workspace = true
 derive_builder = "0.12.0"
 rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
 ed25519-dalek = "1.0.1"
-rand = { version = "0.8.4", package = "rand" }
-semver = { version = "1.0.14", features = [ "serde" ] }
-serde = { version = "1.0.150", features = ["derive"] }
-serde_yaml = "0.9.14"
 typed-builder = "0.14.0"
-thiserror = "1.0.37"
+rand = "0.8.5"
+semver.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true
 
 [package.metadata.release]
 shared-version=true

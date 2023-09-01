@@ -1,18 +1,18 @@
 [package]
 name = "cargo-crev"
-version = "0.24.3"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
 description = "Distibuted Code REView system for verifying security and quality of Cargo dependencies"
 documentation = "https://docs.rs/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
-keywords = ["code", "review", "tool", "distributed", "security"]
-license = "MPL-2.0 OR MIT OR Apache-2.0"
+keywords = ["code", "review", "supply-chain-security", "distributed", "security"]
 readme = "README.md"
-repository = "https://github.com/crev-dev/cargo-crev"
-edition = "2021"
-rust-version = "1.70" # cost of latest cargo
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [[bin]]
 name = "cargo-crev"
@@ -23,43 +23,43 @@ name = "cargo_crev"
 path = "src/lib.rs"
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.24.0"}
-crev-data = { path = "../crev-data", version = "^0.24.0"}
-crev-wot = { path = "../crev-wot", version = "^0.24.1"}
-crev-lib = { path = "../crev-lib", version = "^0.24.2"}
+crev-common.workspace = true
+crev-data.workspace = true
+crev-wot.workspace = true
+crev-lib.workspace = true
 anyhow = "1.0.69"
 atty = "0.2.14"
-cargo = "0.71.0"
+cargo.workspace = true
 cargo-platform = "0.1.2"
 crates_io_api = "0.8.1"
 crossbeam = "0.8.2"
-chrono = { version = "0.4.23", default-features = false }
+chrono.workspace = true
 env_logger = { version = "0.10.0", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
-geiger = "0.4.11"
-itertools = "0.11.0"
+geiger = "0.4.12"
+itertools.workspace = true
 lazy_static = "1.4.0"
-num_cpus = "1.15.0"
-petgraph = "0.6.3"
-rayon = "1.6.1"
+num_cpus = "1.16.0"
+petgraph = "0.6.4"
+rayon = "1.7.0"
 resiter = "0.5.0"
 rpassword = "7.2.0"
-serde = "1.0.152"
-serde_json = "1.0.92"
-serde_yaml = "0.9.17"
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
 structopt = "0.3.26"
-time = "0.3.17"
+time = "0.3.28"
 tokei = "12.1.2"
-walkdir = "2.3.2"
-openssl-sys = "0.9.90"
-git2 = "0.17"
-tempfile = "3.3.0"
+walkdir = "2.3.3"
+openssl-sys = "0.9.92"
+git2.workspace = true
+tempfile = "3.8.0"
 rprompt = "2.0.2"
-thiserror = "1.0.38"
-log = "0.4.17"
+thiserror.workspace = true
+log.workspace = true
 term = "0.7.0"
 syn-inline-mod = "0.6.0"
-quote = "1.0.23"
+quote = "1.0.33"
 
 [features]
 default = ["openssl-sys/vendored"]

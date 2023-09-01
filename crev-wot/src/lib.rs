@@ -338,7 +338,7 @@ impl ProofDB {
         default()
     }
 
-    fn get_derived_alternatives<'s>(&'s self) -> sync::RwLockReadGuard<'s, AlternativesData> {
+    fn get_derived_alternatives(&self) -> sync::RwLockReadGuard<'_, AlternativesData> {
         {
             let read = self.derived_alternatives.read().expect("lock to work");
 

@@ -1,40 +1,42 @@
 [package]
 name = "crev-lib"
-version = "0.24.2"
 description = "Library interface for programmatic access to crate reviews of cargo-crev"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
 documentation = "https://docs.rs/crev-lib"
-repository = "https://github.com/crev-dev/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "assessment", "dependency", "assurance"]
 categories = ["development-tools", "database"]
-license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
-edition = "2021"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.24.0"}
-crev-data = { path = "../crev-data", version = "^0.24"}
-crev-wot = { path = "../crev-wot", version = "^0.24"}
-blake2 = "0.10.6"
-chrono = { version = "0.4.23", default-features = false }
+crev-common.workspace = true
+crev-data.workspace = true
+crev-wot.workspace = true
+
+blake2.workspace = true
+chrono.workspace = true
 crev-recursive-digest = "0.6"
-default = "0.1.2"
+default.workspace = true
 directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
-git2 = "0.17"
-log = "0.4.14"
-num_cpus = "1.14.0"
-resiter = "0.5.0"
 rust-argon2 = "1.0.0"
-serde = "1.0.150"
+git2.workspace = true
+log = "0.4.20"
+num_cpus = "1.16.0"
+resiter.workspace = true
+serde.workspace = true
 serde_cbor = "0.11.2"
-serde_yaml = "0.9.14"
-walkdir = "2.3.2"
-thiserror = "1.0.37"
-rayon = "1.6.1"
+serde_yaml.workspace = true
+walkdir = "2.3.3"
+thiserror.workspace = true
+rayon.workspace = true
 aes-siv = "0.7.0"
-bstr = "1.0.1"
+bstr = "1.6.2"
 
 [package.metadata.release]
 shared-version=true

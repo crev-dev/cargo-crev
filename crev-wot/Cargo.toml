@@ -1,27 +1,29 @@
 [package]
 name = "crev-wot"
-version = "0.24.1"
 description = "Scalable, social, Code REView system that we desperately need - Web of Trust library"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/cargo-crev"
-repository = "https://github.com/crev-dev/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["web-of-trust", "dependency", "peer", "review", "identity"]
-license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
-edition = "2021"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
-crev-common = { path = "../crev-common", version = "^0.24.0"}
-crev-data = { path = "../crev-data", version = "^0.24.0"}
-blake2 = "0.10.6"
-chrono = { version = "0.4.23", default-features = false }
+crev-common.workspace = true
+crev-data.workspace = true
+
+blake2.workspace = true
+chrono.workspace = true
 default = "0.1.2"
-log = "0.4.14"
-serde = "1.0.150"
-serde_yaml = "0.9.14"
-thiserror = "1.0.37"
-itertools = "0.11.0"
+log.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true
+itertools.workspace = true
 
 [package.metadata.release]
 shared-version=true

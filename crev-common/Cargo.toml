@@ -1,27 +1,27 @@
 [package]
 name = "crev-common"
-version = "0.24.0"
 description = "Scalable, social, Code REView system that we desperately need - common code"
-authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 documentation = "https://docs.rs/crev-lib"
-repository = "https://github.com/crev-dev/cargo-crev"
-homepage = "https://github.com/crev-dev/crev"
 keywords = ["code", "review", "trust", "distributed"]
-license = "MPL-2.0 OR MIT OR Apache-2.0"
 readme = "README.md"
-edition = "2021"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 base64 = "0.13"
-blake2 = "0.10.6"
-chrono = { version = "0.4.23", default-features = false, features = ["std", "clock"] }
+blake2.workspace = true
+chrono.workspace = true
 hex = "0.4.3"
 rprompt = "2.0.2"
-serde = "1.0.150"
-serde_yaml = "0.9.14"
+serde.workspace = true
+serde_yaml.workspace = true
 shell-escape = "0.1.5"
-thiserror = "1.0.37"
+thiserror.workspace = true
 rand = "0.8.5"
 
 [package.metadata.release]
-shared-version=true
+shared-version = true
