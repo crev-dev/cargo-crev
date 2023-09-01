@@ -40,7 +40,11 @@ mod term;
 mod tokei;
 mod wot;
 
-use crate::{repo::Repo, review::{create_review_proof, list_reviews}, shared::*};
+use crate::{
+    repo::Repo,
+    review::{create_review_proof, list_reviews},
+    shared::*,
+};
 use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
@@ -280,11 +284,7 @@ pub fn cargo_pkg_id_to_crev_pkg_id(id: &cargo::core::PackageId) -> proof::Packag
     }
 }
 
-fn print_ids<'a>(
-    ids: impl Iterator<Item = &'a Id>,
-    trust_set: &TrustSet,
-    db: &ProofDB,
-) {
+fn print_ids<'a>(ids: impl Iterator<Item = &'a Id>, trust_set: &TrustSet, db: &ProofDB) {
     for id in ids {
         let (status, url) = match db.lookup_url(id) {
             UrlOfId::None => ("", ""),
@@ -311,11 +311,7 @@ fn url_to_status_str<'a>(id_url: &UrlOfId<'a>) -> (&'static str, &'a str) {
     }
 }
 
-fn print_mvp_ids<'a>(
-    ids: impl Iterator<Item = (&'a Id, u64)>,
-    trust_set: &TrustSet,
-    db: &ProofDB,
-) {
+fn print_mvp_ids<'a>(ids: impl Iterator<Item = (&'a Id, u64)>, trust_set: &TrustSet, db: &ProofDB) {
     for (id, count) in ids {
         let (status, url) = url_to_status_str(&db.lookup_url(id));
         println!(

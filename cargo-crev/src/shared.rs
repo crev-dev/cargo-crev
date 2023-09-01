@@ -44,8 +44,7 @@ pub struct VcsInfoJson {
 }
 
 pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
-    vcs.map(|vcs| vcs.get_git_revision())
-        .unwrap_or_default()
+    vcs.map(|vcs| vcs.get_git_revision()).unwrap_or_default()
 }
 
 #[derive(Debug, Clone, Deserialize)]
