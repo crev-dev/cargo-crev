@@ -1,5 +1,7 @@
 //! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
 //!
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::redundant_closure_for_method_calls)]
 #![type_length_limit = "1932159"]
 #![cfg_attr(
     feature = "documentation",
@@ -38,7 +40,7 @@ mod term;
 mod tokei;
 mod wot;
 
-use crate::{repo::*, review::*, shared::*};
+use crate::{repo::Repo, review::{create_review_proof, list_reviews}, shared::*};
 use crev_data::{proof, Id, TrustLevel};
 use crev_lib::TrustProofType;
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
@@ -209,7 +211,7 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
     Ok(())
 }
 
-fn crate_review(args: opts::CrateReview) -> Result<()> {
+fn crate_review(args: &opts::CrateReview) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
 
     handle_goto_mode_command(&args.common, |sel| {
@@ -282,7 +284,7 @@ fn print_ids<'a>(
     ids: impl Iterator<Item = &'a Id>,
     trust_set: &TrustSet,
     db: &ProofDB,
-) -> Result<()> {
+) {
     for id in ids {
         let (status, url) = match db.lookup_url(id) {
             UrlOfId::None => ("", ""),
@@ -298,7 +300,6 @@ fn print_ids<'a>(
             url,
         );
     }
-    Ok(())
 }
 
 fn url_to_status_str<'a>(id_url: &UrlOfId<'a>) -> (&'static str, &'a str) {
@@ -314,7 +315,7 @@ fn print_mvp_ids<'a>(
     ids: impl Iterator<Item = (&'a Id, u64)>,
     trust_set: &TrustSet,
     db: &ProofDB,
-) -> Result<()> {
+) {
     for (id, count) in ids {
         let (status, url) = url_to_status_str(&db.lookup_url(id));
         println!(
@@ -326,7 +327,6 @@ fn print_mvp_ids<'a>(
             url,
         );
     }
-    Ok(())
 }
 
 fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
@@ -346,7 +346,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Id::Switch(args) => {
                 let local = Local::auto_open()?;
-                local.switch_id(&args.id)?
+                local.switch_id(&args.id)?;
             }
             opts::Id::Passwd => {
                 current_id_change_passphrase()?;
@@ -375,7 +375,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         | crev_lib::Error::UserConfigNotInitialized,
                     ) => {
                         eprintln!("set-url requires a CrevID set up, so we'll set up one now.");
-                        generate_new_id_interactively(Some(&args.url), args.use_https_push)?
+                        generate_new_id_interactively(Some(&args.url), args.use_https_push)?;
                     }
                     res => res?,
                 }
@@ -436,7 +436,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         let db = local.load_db()?;
                         let trust_set = db.calculate_trust_set(&id.id, &trust_params.into());
 
-                        print_ids(Some(id.id).as_ref().into_iter(), &trust_set, &db)?;
+                        print_ids(Some(id.id).as_ref().into_iter(), &trust_set, &db);
                     }
                 }
                 opts::IdQuery::Own { trust_params } => {
@@ -452,7 +452,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                                 .map(|public_id| &public_id.id),
                             &trust_set,
                             &db,
-                        )?;
+                        );
                     }
                 }
                 opts::IdQuery::Trusted {
@@ -472,7 +472,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         }),
                         &trust_set,
                         &db,
-                    )?;
+                    );
                 }
                 // TODO: move to crev-lib
                 opts::IdQuery::All {
@@ -498,7 +498,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                         .collect::<Vec<_>>();
                     tmp.sort();
 
-                    print_ids(tmp.iter().map(|(_, _, id)| id), &trust_set, &db)?;
+                    print_ids(tmp.iter().map(|(_, _, id)| id), &trust_set, &db);
                 }
             },
         },
@@ -580,7 +580,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
 
-            opts::Crate::Review(args) => crate_review(args)?,
+            opts::Crate::Review(args) => crate_review(&args)?,
             opts::Crate::Unreview(args) => {
                 handle_goto_mode_command(&args.common, |sel| {
                     let is_advisory = args.advisory
@@ -755,7 +755,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             })?;
         }
         opts::Command::Publish => repo_publish()?,
-        opts::Command::Review(args) => crate_review(args)?,
+        opts::Command::Review(args) => crate_review(&args)?,
         opts::Command::Update(args) => repo_update(args)?,
 
         opts::Command::Wot(args) => match args {
@@ -990,7 +990,7 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
     let term = term::Term::new();
 
     if term.is_input_interactive() {
-        eprintln!("Paste in the text and press Ctrl+D.")
+        eprintln!("Paste in the text and press Ctrl+D.");
     }
     let mut s = vec![];
 

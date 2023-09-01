@@ -5,7 +5,7 @@ use crate::{
     edit, opts,
     opts::CrateSelector,
     prelude::*,
-    repo::*,
+    repo::Repo,
 };
 use anyhow::{format_err, Context, Result};
 use crev_data::{proof, review::Package};
@@ -44,7 +44,7 @@ pub struct VcsInfoJson {
 }
 
 pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
-    vcs.and_then(|vcs| vcs.get_git_revision())
+    vcs.map(|vcs| vcs.get_git_revision())
         .unwrap_or_default()
 }
 
@@ -66,9 +66,9 @@ impl VcsInfoJson {
             Ok(None)
         }
     }
-    fn get_git_revision(&self) -> Option<String> {
+    fn get_git_revision(&self) -> String {
         let VcsInfoJsonGit::Sha1(ref s) = self.git;
-        Some(s.to_string())
+        s.to_string()
     }
 }
 
@@ -539,7 +539,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
             let mut command = diff(diff_exe.as_os_str());
             command
                 .status()
-                .or_else(|err| panic!("Failed to execute {command:?}\n{err:?}"))
+                .map_err(|err| panic!("Failed to execute {command:?}\n{err:?}"))
         }
         Err(ref err) => panic!("Failed to execute {command:?}\n{err:?}"),
         Ok(status) => Ok(status),
@@ -661,7 +661,7 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
             + counters.exprs.unsafe_
             + counters.item_impls.unsafe_
             + counters.item_traits.unsafe_
-            + counters.methods.unsafe_
+            + counters.methods.unsafe_;
     }
 
     Ok(count)

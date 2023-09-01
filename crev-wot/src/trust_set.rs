@@ -203,8 +203,7 @@ impl TrustSet {
                 let candidate_distance_from_current =
                     params.distance_by_level(effective_trust_level);
 
-                let candidate_total_distance = candidate_distance_from_current
-                    .map(|rel_distance| rel_distance + current.distance);
+                let candidate_total_distance = candidate_distance_from_current + current.distance;
 
                 let distrusted_by = current_trust_set
                     .distrusted
@@ -212,9 +211,8 @@ impl TrustSet {
                     .map(ToOwned::to_owned)
                     .map_or_else(HashSet::new, |details| details.reported_by);
 
-                let too_far = candidate_total_distance.map(|d| params.max_distance < d);
-                let trust_too_low =
-                    too_far.unwrap_or(true) && effective_trust_level == TrustLevel::None;
+                let too_far = params.max_distance < candidate_total_distance;
+                let trust_too_low = too_far && effective_trust_level == TrustLevel::None;
 
                 let overriden_by = if let Some(existing_override) = current_trust_set
                     .trust_ignore_overrides
@@ -236,13 +234,13 @@ impl TrustSet {
                     to: candidate_id.clone(),
                     direct_trust,
                     effective_trust: effective_trust_level,
-                    relative_distance: candidate_distance_from_current,
-                    total_distance: candidate_total_distance,
+                    relative_distance: Some(candidate_distance_from_current),
+                    total_distance: Some(candidate_total_distance),
                     distrusted_by: distrusted_by.clone(),
                     overriden_by: overriden_by.clone(),
 
-                    ignored_distrusted: too_far.unwrap_or(true) && !distrusted_by.is_empty(),
-                    ignored_too_far: too_far.unwrap_or(true),
+                    ignored_distrusted: too_far && !distrusted_by.is_empty(),
+                    ignored_too_far: too_far,
                     ignored_trust_too_low: trust_too_low,
                     ignored_overriden: !overriden_by.is_empty(),
 
@@ -302,21 +300,12 @@ impl TrustSet {
 
                 if trust_too_low {
                     continue;
-                } else if effective_trust_level < TrustLevel::None {
+                }
+                if effective_trust_level < TrustLevel::None {
                     unreachable!(
                         "this should not happen: candidate_effective_trust <= TrustLevel::None"
                     );
                 }
-
-                let candidate_distance_from_current =
-                    if let Some(v) = candidate_distance_from_current {
-                        v
-                    } else {
-                        debug!("Not traversing {}: trust too low", candidate_id);
-                        continue;
-                    };
-                let candidate_total_distance =
-                    candidate_total_distance.expect("should not be empty");
 
                 debug!(
                     "Distance of {} from {}: {}. Total distance from root: {}.",
@@ -326,7 +315,7 @@ impl TrustSet {
                     candidate_total_distance
                 );
 
-                if too_far.expect("should not be empty") {
+                if too_far {
                     debug!(
                         "Total distance of {}: {} higher than max_distance: {}.",
                         candidate_id, candidate_total_distance, params.max_distance

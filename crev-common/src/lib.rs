@@ -1,4 +1,8 @@
 //! Bunch of code that is auxiliary and common for all `crev`
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::redundant_closure_for_method_calls)]
 
 pub mod blake2b256;
 pub mod fs;

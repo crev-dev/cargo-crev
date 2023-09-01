@@ -14,7 +14,7 @@ use crate::{
 use cargo::core::PackageId;
 use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
-use crev_wot::{self, *};
+use crev_wot::{self, ProofDB, TrustSet};
 use crossbeam::{self, channel::unbounded};
 use log::debug;
 use std::{
@@ -228,7 +228,6 @@ impl Scanner {
                 let ready_tx = ready_tx.clone();
                 let ready_tx_count = ready_tx_count.clone();
                 let mut self_clone = self.clone();
-                let ready_tx_count = ready_tx_count;
                 let required_details = *required_details;
                 std::thread::spawn({
                     let canceled_flag = canceled_flag.clone();
@@ -263,7 +262,7 @@ impl Scanner {
 
                             debug!("Get details of {pkg_id}");
                             let details = self_clone
-                                .get_crate_details(&info, &required_details)
+                                .get_crate_details(&info, required_details)
                                 .expect("Unable to scan crate");
                             {
                                 debug!("Insert details of {pkg_id}");
@@ -303,7 +302,7 @@ impl Scanner {
     fn get_crate_details(
         &mut self,
         info: &CrateInfo,
-        required_details: &RequiredDetails,
+        required_details: RequiredDetails,
     ) -> Result<CrateDetails> {
         let pkg_name = info.id.name();
         let proof_pkg_id = proof::PackageId {
@@ -451,7 +450,7 @@ impl Scanner {
                         .get(&dep_pkg_id)
                         .expect("dependency already calculated")
                         .accumulative_own
-                        .clone()
+                        .clone();
             }
         }
 
@@ -488,7 +487,6 @@ impl Scanner {
             rev_dependencies: self
                 .graph
                 .get_reverse_dependencies_of(info.id)
-                .into_iter()
                 .map(|c| crate::cargo_pkg_id_to_crev_pkg_id(&c))
                 .collect(),
         })

@@ -12,7 +12,7 @@ use crev_data::{
 use crev_lib::{self, local::Local, TrustProofType};
 use std::{default::Default, fmt::Write};
 
-use crate::{repo::*, shared::*};
+use crate::{repo::Repo, shared::*};
 
 /// Review a crate
 ///
@@ -174,7 +174,7 @@ pub fn create_review_proof(
             ) {
                 fresh_review.comment = base_review.comment.clone();
                 *fresh_review.review_possibly_none_mut() =
-                    base_review.review_possibly_none().clone()
+                    base_review.review_possibly_none().clone();
             }
         }
         (None, fresh_review)

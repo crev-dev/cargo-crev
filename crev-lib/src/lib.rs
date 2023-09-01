@@ -1,5 +1,10 @@
 #![type_length_limit = "10709970"]
+#![allow(clippy::implicit_hasher)]
+#![allow(clippy::items_after_statements)]
 #![allow(clippy::manual_range_contains)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::redundant_closure_for_method_calls)]
 
 pub mod activity;
 pub mod id;

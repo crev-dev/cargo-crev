@@ -1,10 +1,10 @@
 use ::term::color::YELLOW;
 use crev_data::{proof, review, Digest, PublicId, Version};
-use crev_lib::*;
+use crev_lib::VerificationStatus;
 use crev_wot::TrustSet;
 use std::{io, io::Write as _, path::PathBuf};
 
-use crate::{opts::*, prelude::*, shared::*, term};
+use crate::{opts::*, prelude::*, shared::CommandExitStatus, term};
 use cargo::core::PackageId;
 use std::{
     collections::{HashMap, HashSet},
@@ -211,7 +211,7 @@ impl CrateInfo {
 
 impl PartialOrd for CrateInfo {
     fn partial_cmp(&self, other: &CrateInfo) -> Option<std::cmp::Ordering> {
-        self.id.partial_cmp(&other.id)
+        Some(self.cmp(other))
     }
 }
 
@@ -310,7 +310,7 @@ pub fn crate_mvps(
         mvps.iter().map(|(id, count)| (&id.id, *count)),
         &trust_set,
         &db,
-    )?;
+    );
 
     Ok(())
 }

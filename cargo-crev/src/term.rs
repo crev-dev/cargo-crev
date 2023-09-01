@@ -49,7 +49,7 @@ where
     let use_color = is_tty && term.supports_color();
     if use_color {
         if let Some(color) = color {
-            term.fg(color)?
+            term.fg(color)?;
         }
     }
     term.get_mut().write_fmt(args)?;

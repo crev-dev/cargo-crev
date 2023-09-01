@@ -82,9 +82,9 @@ impl Graph {
 
             if processed.contains(&pkg_id) {
                 continue;
-            } else {
-                processed.insert(pkg_id);
             }
+
+            processed.insert(pkg_id);
 
             if let Some(node_idx) = self.nodes.get(&pkg_id) {
                 for node_idx in self
@@ -122,9 +122,9 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
         .collect::<std::result::Result<Vec<_>, cargo_platform::ParseError>>()?)
 }
 
-fn our_resolve<'a, 'cfg>(
+fn our_resolve<'cfg>(
     mut registry: PackageRegistry<'cfg>,
-    workspace: &'a Workspace<'cfg>,
+    workspace: &Workspace<'cfg>,
     features: &[String],
     all_features: bool,
     no_default_features: bool,
@@ -231,7 +231,7 @@ fn build_graph<'a>(
 fn prune_directory_source_replacements(
     config: &mut HashMap<String, ConfigValue>,
 ) -> CargoResult<()> {
-    if let Some(ConfigValue::Table(ref mut source_config, _)) = config.get_mut("source") {
+    if let Some(ConfigValue::Table(source_config, _)) = config.get_mut("source") {
         // To do the pruning, first, generate a graph of registry sources, where the node are the sources, and there is an edge if a source
         //  defines that it is replaced with another source.
         // Then, find the directory sources, and traverse the graph in reverse to find all the sources that are directory sources, or reference them
@@ -243,7 +243,7 @@ fn prune_directory_source_replacements(
             .map(|source_key| (source_key, source_graph.add_node(source_key.clone())))
             .collect::<HashMap<_, _>>();
 
-        for (source_name, source_config_entry) in source_config.iter() {
+        for (source_name, source_config_entry) in &*source_config {
             if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
                 if let Some(ConfigValue::String(replacement, _)) =
                     source_config_entry.get("replace-with")

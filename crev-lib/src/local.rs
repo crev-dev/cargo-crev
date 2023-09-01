@@ -16,7 +16,7 @@ use crev_data::{
 use default::default;
 use directories::ProjectDirs;
 use log::{debug, error, info, warn};
-use resiter::*;
+use resiter::{FilterMap, Map};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
@@ -285,7 +285,7 @@ impl Local {
                 let path = dir_entry?.path();
                 if path.extension().map_or(false, |ext| ext == "yaml") {
                     let locked_id = LockedId::read_from_yaml_file(&path)?;
-                    ids.push(locked_id.to_public_id())
+                    ids.push(locked_id.to_public_id());
                 }
             }
         }
@@ -1286,7 +1286,7 @@ impl Local {
         let tmp_path = path_to_delete.with_file_name(file_name);
 
         let path_to_delete = match std::fs::rename(path_to_delete, &tmp_path) {
-            Ok(_) => &tmp_path,
+            Ok(()) => &tmp_path,
             Err(_) => path_to_delete,
         };
         let _ = std::fs::remove_dir_all(path_to_delete);
@@ -1404,10 +1404,10 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
                             proof.signature(),
                             path.display(),
                             e
-                        )
+                        );
                     })
                     .ok()
-                    .map(|_| proof)
+                    .map(|()| proof)
             })),
             Err(e) => {
                 error!("Error parsing proofs in {}: {}", path.display(), e);

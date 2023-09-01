@@ -12,6 +12,12 @@
 //!
 //! `crev-wot` is just an initial, reference implementation, and might
 //! evolve, be replaced or become just one of many available implementations.
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::redundant_closure_for_method_calls)]
+
 use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
@@ -367,10 +373,10 @@ impl ProofDB {
         self.derived_alternatives.read().expect("lock to work")
     }
 
-    pub fn get_pkg_alternatives_by_author<'s, 'a>(
-        &'s self,
-        from: &'a Id,
-        pkg_id: &'a proof::PackageId,
+    pub fn get_pkg_alternatives_by_author(
+        &self,
+        from: &Id,
+        pkg_id: &proof::PackageId,
     ) -> HashSet<proof::PackageId> {
         let from = from.clone();
 
@@ -385,9 +391,9 @@ impl ProofDB {
             .collect()
     }
 
-    pub fn get_pkg_alternatives<'s, 'a>(
-        &'s self,
-        pkg_id: &'a proof::PackageId,
+    pub fn get_pkg_alternatives(
+        &self,
+        pkg_id: &proof::PackageId,
     ) -> HashSet<(Id, proof::PackageId)> {
         let alternatives = self.get_derived_alternatives();
 
@@ -400,10 +406,10 @@ impl ProofDB {
             .collect()
     }
 
-    pub fn get_pkg_flags_by_author<'s, 'a>(
+    pub fn get_pkg_flags_by_author<'s>(
         &'s self,
-        from: &'a Id,
-        pkg_id: &'a proof::PackageId,
+        from: &Id,
+        pkg_id: &proof::PackageId,
     ) -> Option<&'s proof::Flags> {
         let from = from.clone();
         self.package_flags
@@ -412,9 +418,9 @@ impl ProofDB {
             .map(move |timestampted| &timestampted.value)
     }
 
-    pub fn get_pkg_flags<'s, 'a>(
+    pub fn get_pkg_flags<'s>(
         &'s self,
-        pkg_id: &'a proof::PackageId,
+        pkg_id: &proof::PackageId,
     ) -> impl Iterator<Item = (&Id, &'s proof::Flags)> {
         self.package_flags
             .get(pkg_id)
@@ -423,9 +429,9 @@ impl ProofDB {
             .map(|(id, flags)| (id, &flags.value))
     }
 
-    pub fn get_pkg_reviews_for_source<'a, 'b>(
+    pub fn get_pkg_reviews_for_source<'a>(
         &'a self,
-        source: &'b str,
+        source: &str,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.package_reviews
             .get(source)
@@ -712,7 +718,7 @@ impl ProofDB {
 
             // Remove the reports that are already fixed
             for id in &advisory.ids {
-                if let Some(mut issue_marker) = issue_reports_by_id.get_mut(id) {
+                if let Some(issue_marker) = issue_reports_by_id.get_mut(id) {
                     let issues = std::mem::take(&mut issue_marker.issues);
                     issue_marker.issues = issues
                         .into_iter()
@@ -801,9 +807,9 @@ impl ProofDB {
             .fold(0, |count, (_id, set)| count + set.len())
     }
 
-    fn add_code_review(&mut self, review: &review::Code, fetched_from: FetchSource) {
+    fn add_code_review(&mut self, review: &review::Code, fetched_from: &FetchSource) {
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), from, &fetched_from);
+        self.record_url_from_from_field(&review.date_utc(), from, fetched_from);
         for _file in &review.files {
             // not implemented right now; just ignore
         }
@@ -813,13 +819,13 @@ impl ProofDB {
         &mut self,
         review: &review::Package,
         signature: &str,
-        fetched_from: FetchSource,
+        fetched_from: &FetchSource,
         proof_digest: proof::Digest,
     ) {
         self.insertion_counter += 1;
 
         let from = &review.from();
-        self.record_url_from_from_field(&review.date_utc(), from, &fetched_from);
+        self.record_url_from_from_field(&review.date_utc(), from, fetched_from);
 
         self.package_review_by_signature
             .entry(signature.to_owned())
@@ -957,22 +963,22 @@ impl ProofDB {
 
         self.trust_id_to_id
             .entry(from.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(to.clone())
             .and_modify(|e| e.update_to_more_recent(&td))
             .or_insert_with(|| td);
 
         self.reverse_trust_id_to_id
             .entry(to.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(from.clone())
             .and_modify(|e| e.update_to_more_recent(&tl))
             .or_insert_with(|| tl);
     }
 
-    fn add_trust(&mut self, trust: &proof::Trust, signature: &str, fetched_from: FetchSource) {
+    fn add_trust(&mut self, trust: &proof::Trust, signature: &str, fetched_from: &FetchSource) {
         let from = &trust.from();
-        self.record_url_from_from_field(&trust.date_utc(), from, &fetched_from);
+        self.record_url_from_from_field(&trust.date_utc(), from, fetched_from);
         for to in &trust.ids {
             self.add_trust_raw(&from.id, &to.id, trust.date_utc(), trust, signature);
         }
@@ -980,7 +986,7 @@ impl ProofDB {
             // Others should not be making verified claims about this URL,
             // regardless of where these proofs were fetched from, because only
             // owner of the Id is authoritative.
-            self.record_url_from_to_field(&trust.date_utc(), to)
+            self.record_url_from_to_field(&trust.date_utc(), to);
         }
     }
 
@@ -1089,15 +1095,15 @@ impl ProofDB {
             .verify()
             .expect("All proofs were supposed to be valid here");
         match proof.kind() {
-            proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?, fetched_from),
+            proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?, &fetched_from),
             proof::PackageReview::KIND => self.add_package_review(
                 &proof.parse_content()?,
                 proof.signature(),
-                fetched_from,
+                &fetched_from,
                 proof::Digest(*proof.digest()),
             ),
             proof::Trust::KIND => {
-                self.add_trust(&proof.parse_content()?, proof.signature(), fetched_from)
+                self.add_trust(&proof.parse_content()?, proof.signature(), &fetched_from);
             }
             other => return Err(Error::UnknownProofType(other.into())),
         }
@@ -1238,15 +1244,15 @@ impl TrustDistanceParams {
         }
     }
 
-    fn distance_by_level(&self, level: TrustLevel) -> Option<u64> {
+    fn distance_by_level(&self, level: TrustLevel) -> u64 {
         use crev_data::proof::trust::TrustLevel::*;
-        Some(match level {
+        match level {
             Distrust => self.distrust_distance,
             None => self.none_trust_distance,
             Low => self.low_trust_distance,
             Medium => self.medium_trust_distance,
             High => self.high_trust_distance,
-        })
+        }
     }
 }
 
