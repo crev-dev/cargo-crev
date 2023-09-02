@@ -28,6 +28,12 @@ pub use crate::{
     url::Url,
 };
 
+/// It's just a string. See [`SOURCE_CRATES_IO`]
+pub type RegistrySource<'a> = &'a str;
+
+/// Constant for `source` arguments, indicating
+pub const SOURCE_CRATES_IO: RegistrySource<'static> = "https://crates.io";
+
 #[cfg(test)]
 mod tests;
 

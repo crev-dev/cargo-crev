@@ -11,7 +11,7 @@ use crev_common::{
 use crev_data::{
     id::UnlockedId,
     proof::{self, trust::TrustLevel, OverrideItem},
-    Id, PublicId, Url,
+    Id, PublicId, RegistrySource, Url,
 };
 use default::default;
 use directories::ProjectDirs;
@@ -312,7 +312,7 @@ impl Local {
     /// Path where to put copies of crates' source code
     fn sanitized_crate_path(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         version: &crev_data::Version,
     ) -> PathBuf {
@@ -325,7 +325,7 @@ impl Local {
     /// Copy crate for review, neutralizing hidden or dangerous files
     pub fn sanitized_crate_copy(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         version: &crev_data::Version,
         src_dir: &Path,
@@ -345,7 +345,7 @@ impl Local {
     /// Yaml file path for in-progress review metadata
     fn cache_review_activity_path(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         version: &crev_data::Version,
     ) -> PathBuf {
@@ -360,7 +360,7 @@ impl Local {
     /// Save activity (in-progress review) to disk
     pub fn record_review_activity(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         version: &crev_data::Version,
         activity: &ReviewActivity,
@@ -376,7 +376,7 @@ impl Local {
     /// Load activity (in-progress review) from disk
     pub fn read_review_activity(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         version: &crev_data::Version,
     ) -> Result<Option<ReviewActivity>> {
@@ -1107,7 +1107,8 @@ impl Local {
 
     fn url_for_repo(repo: &git2::Repository) -> Result<String> {
         let remote = repo.find_remote("origin")?;
-        let url = remote.url()
+        let url = remote
+            .url()
             .ok_or_else(|| Error::OriginHasNoURL(repo.path().into()))?;
         Ok(url.to_string())
     }

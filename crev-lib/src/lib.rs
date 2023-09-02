@@ -23,7 +23,7 @@ use crev_data::{
         trust::TrustLevel,
         CommonOps,
     },
-    Digest, Id, Version,
+    Digest, Id, RegistrySource, Version,
 };
 use crev_wot::PkgVersionReviewId;
 pub use crev_wot::TrustDistanceParams;
@@ -193,7 +193,6 @@ pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
 }
-
 
 /// Your relationship to the person
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -366,8 +365,7 @@ pub fn verify_package_digest(
 /// See also `verify_package_digest`
 pub fn find_latest_trusted_version(
     trust_set: &crev_wot::TrustSet,
-    /// Use "https://crates.io"
-    source: &str,
+    source: RegistrySource<'_>,
     name: &str,
     requirements: &crate::VerificationRequirements,
     db: &crev_wot::ProofDB,

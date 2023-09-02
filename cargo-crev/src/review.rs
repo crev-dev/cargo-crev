@@ -7,7 +7,7 @@ use crate::{
 use anyhow::format_err;
 use crev_data::{
     proof::{self, ContentExt},
-    Rating,
+    Rating, SOURCE_CRATES_IO,
 };
 use crev_lib::{self, local::Local, TrustProofType};
 use std::{default::Default, fmt::Write};
@@ -110,7 +110,7 @@ pub fn create_review_proof(
 
         Some(proof::PackageInfo {
             id: proof::PackageVersionId::new(
-                PROJECT_SOURCE_CRATES_IO.to_owned(),
+                SOURCE_CRATES_IO.to_owned(),
                 crate_.name().to_string(),
                 diff_base_version.clone(),
             ),
@@ -135,7 +135,7 @@ pub fn create_review_proof(
 
     let (previous_date, mut review) = if let Some(mut previous_review) = db
         .get_pkg_review(
-            PROJECT_SOURCE_CRATES_IO,
+            SOURCE_CRATES_IO,
             &crate_.name(),
             effective_crate_version,
             &id.id.id,
@@ -151,7 +151,7 @@ pub fn create_review_proof(
             .from(id.id.clone())
             .package(proof::PackageInfo {
                 id: proof::PackageVersionId::new(
-                    PROJECT_SOURCE_CRATES_IO.to_owned(),
+                    SOURCE_CRATES_IO.to_owned(),
                     crate_.name().to_string(),
                     effective_crate_version.clone(),
                 ),
@@ -167,7 +167,7 @@ pub fn create_review_proof(
 
         if let Some(diff_base_version) = diff_base_version.clone() {
             if let Some(base_review) = db.get_pkg_review(
-                PROJECT_SOURCE_CRATES_IO,
+                SOURCE_CRATES_IO,
                 &crate_.name(),
                 &diff_base_version,
                 &id.id.id,
@@ -216,7 +216,7 @@ pub fn create_review_proof(
 
             if show_override_suggestions {
                 for review in db.get_package_reviews_for_package(
-                    PROJECT_SOURCE_CRATES_IO,
+                    SOURCE_CRATES_IO,
                     Some(&pkg_id.name()),
                     Some(pkg_id.version()),
                 ) {
@@ -254,7 +254,7 @@ pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::P
     let db = local.load_db()?;
     Ok(db
         .get_package_reviews_for_package(
-            PROJECT_SOURCE_CRATES_IO,
+            SOURCE_CRATES_IO,
             crate_.name.as_deref(),
             crate_.version()?,
         )

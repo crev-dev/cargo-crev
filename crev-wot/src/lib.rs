@@ -22,7 +22,7 @@ use chrono::{self, offset::Utc, DateTime};
 use crev_data::{
     self,
     proof::{self, review, trust::TrustLevel, CommonOps, Content},
-    Digest, Id, Level, Url, Version,
+    Digest, Id, Level, RegistrySource, Url, Version,
 };
 use default::default;
 use log::debug;
@@ -181,7 +181,9 @@ impl From<&review::Package> for PkgReviewId {
     }
 }
 
-pub type Source = String;
+/// Just a `String` version of `RegistrySource`, almost always `"https://crates.io"`.
+pub type RegistrySourceOwned = String;
+/// Crate name
 pub type Name = String;
 
 /// Alternatives relationship
@@ -283,7 +285,7 @@ pub struct ProofDB {
 
     // pkg_review_id by package information, nicely grouped
     package_reviews:
-        BTreeMap<Source, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
+        BTreeMap<RegistrySourceOwned, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
 
     package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
 
@@ -432,7 +434,7 @@ impl ProofDB {
     /// Use `"https://crates.io"` to get all crates-io reviews
     pub fn get_pkg_reviews_for_source<'a>(
         &'a self,
-        source: &str,
+        source: RegistrySource<'_>,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.package_reviews
             .get(source)
@@ -448,7 +450,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_for_name<'a, 'b, 'c: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.package_reviews
@@ -465,7 +467,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_for_version<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
@@ -483,7 +485,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_gte_version<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
@@ -501,7 +503,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_lte_version<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
     ) -> impl Iterator<Item = &'a proof::review::Package> {
@@ -537,7 +539,7 @@ impl ProofDB {
 
     pub fn get_pkg_review<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
         id: &Id,
@@ -548,7 +550,7 @@ impl ProofDB {
 
     pub fn get_advisories<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: Option<&'c str>,
         version: Option<&'d Version>,
     ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
@@ -566,7 +568,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_with_issues_for<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: Option<&'c str>,
         version: Option<&'c Version>,
         trust_set: &'d TrustSet,
@@ -597,7 +599,7 @@ impl ProofDB {
 
     pub fn get_advisories_for_version<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
     ) -> impl Iterator<Item = &proof::review::Package> {
@@ -607,7 +609,7 @@ impl ProofDB {
 
     pub fn get_advisories_for_package<'a, 'b, 'c: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.package_reviews
@@ -630,7 +632,7 @@ impl ProofDB {
 
     pub fn get_advisories_for_source(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
     ) -> impl Iterator<Item = &proof::review::Package> {
         self.get_pkg_reviews_for_source(source)
             .filter(|review| !review.advisories.is_empty())
@@ -646,7 +648,7 @@ impl ProofDB {
     /// of at least given `trust_level_required`.
     pub fn get_open_issues_for_version(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: &str,
         queried_version: &Version,
         trust_set: &TrustSet,
@@ -751,7 +753,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_with_issues_for_version<'a, 'b, 'c: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         queried_version: &'c Version,
         trust_set: &'c TrustSet,
@@ -771,7 +773,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_with_issues_for_name<'a, 'b, 'c: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: &'c str,
         trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
@@ -786,7 +788,7 @@ impl ProofDB {
 
     pub fn get_pkg_reviews_with_issues_for_source<'a, 'b, 'c: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
     ) -> impl Iterator<Item = &proof::review::Package> {
@@ -885,7 +887,7 @@ impl ProofDB {
 
     pub fn get_package_review_count(
         &self,
-        source: &str,
+        source: RegistrySource<'_>,
         name: Option<&str>,
         version: Option<&Version>,
     ) -> usize {
@@ -895,7 +897,7 @@ impl ProofDB {
 
     pub fn get_package_reviews_for_package<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: Option<&'c str>,
         version: Option<&'d Version>,
     ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
@@ -912,7 +914,7 @@ impl ProofDB {
 
     pub fn get_package_reviews_for_package_sorted<'a, 'b, 'c: 'a, 'd: 'a>(
         &'a self,
-        source: &'b str,
+        source: RegistrySource<'b>,
         name: Option<&'c str>,
         version: Option<&'d Version>,
     ) -> Vec<proof::review::Package> {

@@ -8,7 +8,7 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 use crate::prelude::*;
-use crev_data::{proof::ContentExt, UnlockedId};
+use crev_data::{proof::ContentExt, UnlockedId, SOURCE_CRATES_IO};
 use crev_lib::id::LockedId;
 
 use crev_lib::{self, local::Local};
@@ -105,7 +105,7 @@ fn repo_update(args: opts::Update) -> Result<()> {
 pub fn proof_find(args: opts::ProofFind) -> Result<()> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
-    let mut iter = Box::new(db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO))
+    let mut iter = Box::new(db.get_pkg_reviews_for_source(SOURCE_CRATES_IO))
         as Box<dyn Iterator<Item = &proof::review::Package>>;
 
     if let Some(author) = args.author.as_ref() {
@@ -130,7 +130,7 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
     let local = crev_lib::Local::auto_open()?;
     let db = local.load_db()?;
 
-    let mut iter = Box::new(db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO))
+    let mut iter = Box::new(db.get_pkg_reviews_for_source(SOURCE_CRATES_IO))
         as Box<dyn Iterator<Item = &proof::review::Package>>;
 
     let author_id = crev_data::id::Id::crevid_from_str(&args.author)?;
@@ -148,7 +148,7 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
     for orig_review in iter {
         if !args.skip_reissue_check {
             // check if already reissued this review previously to prevent bloating the db
-            if db.get_pkg_reviews_for_source(PROJECT_SOURCE_CRATES_IO).any(
+            if db.get_pkg_reviews_for_source(SOURCE_CRATES_IO).any(
                 |review: &proof::review::Package| {
                     review.common.from.id == sign_id.id.id && review.package == orig_review.package
                 },
@@ -267,7 +267,7 @@ fn crate_review(args: &opts::CrateReview) -> Result<()> {
 pub fn cargo_registry_to_crev_source_id(source_id: &cargo::core::SourceId) -> String {
     let s = source_id.as_url().to_string();
     if &s == "registry+https://github.com/rust-lang/crates.io-index" {
-        crate::PROJECT_SOURCE_CRATES_IO.into()
+        SOURCE_CRATES_IO.into()
     } else {
         s
     }

@@ -8,11 +8,12 @@ use crate::{
     repo::Repo,
     shared::{
         cargo_full_ignore_list, cargo_min_ignore_list, get_crate_digest_mismatches,
-        get_geiger_count, read_known_owners_list, PROJECT_SOURCE_CRATES_IO,
+        get_geiger_count, read_known_owners_list,
     },
 };
 use cargo::core::PackageId;
 use crev_data::proof::{self, CommonOps};
+use crev_data::SOURCE_CRATES_IO;
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, ProofDB, TrustSet};
 use crossbeam::{self, channel::unbounded};
@@ -306,7 +307,7 @@ impl Scanner {
     ) -> Result<CrateDetails> {
         let pkg_name = info.id.name();
         let proof_pkg_id = proof::PackageId {
-            source: "https://crates.io".into(),
+            source: SOURCE_CRATES_IO.into(),
             name: pkg_name.to_string(),
         };
 
@@ -344,7 +345,7 @@ impl Scanner {
         let version_reviews: Vec<_> = self
             .db
             .get_package_reviews_for_package(
-                PROJECT_SOURCE_CRATES_IO,
+                SOURCE_CRATES_IO,
                 Some(&pkg_name),
                 Some(info.id.version()),
             )
@@ -353,7 +354,7 @@ impl Scanner {
         let version_reviews_count = version_reviews.len();
         let total_reviews_count =
             self.db
-                .get_package_review_count(PROJECT_SOURCE_CRATES_IO, Some(&pkg_name), None);
+                .get_package_review_count(SOURCE_CRATES_IO, Some(&pkg_name), None);
         let version_review_count = CountWithTotal {
             count: version_reviews_count as u64,
             total: total_reviews_count as u64,
@@ -385,7 +386,7 @@ impl Scanner {
         });
 
         let issues_from_trusted = self.db.get_open_issues_for_version(
-            PROJECT_SOURCE_CRATES_IO,
+            SOURCE_CRATES_IO,
             &pkg_name,
             pkg_version,
             &self.trust_set,
@@ -393,7 +394,7 @@ impl Scanner {
         );
 
         let issues_from_all = self.db.get_open_issues_for_version(
-            PROJECT_SOURCE_CRATES_IO,
+            SOURCE_CRATES_IO,
             &pkg_name,
             pkg_version,
             &self.trust_set,
@@ -413,7 +414,7 @@ impl Scanner {
 
         let latest_trusted_version = crev_lib::find_latest_trusted_version(
             &self.trust_set,
-            PROJECT_SOURCE_CRATES_IO,
+            SOURCE_CRATES_IO,
             &pkg_name,
             &self.requirements,
             &self.db,
