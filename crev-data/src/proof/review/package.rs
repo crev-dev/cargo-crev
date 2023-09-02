@@ -69,30 +69,39 @@ impl From<Flags> for FlagsDraft {
 pub struct Package {
     #[serde(flatten)]
     pub common: proof::Common,
+
     #[serde(rename = "package")]
     pub package: proof::PackageInfo,
+
     #[serde(skip_serializing_if = "Option::is_none", default = "Default::default")]
     #[serde(rename = "package-diff-base")]
     #[builder(default = "Default::default()")]
     pub diff_base: Option<proof::PackageInfo>,
+
     #[builder(default = "Default::default()")]
     #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
     review: super::Review,
+
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
     pub issues: Vec<Issue>,
+
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "is_vec_empty", default = "Default::default")]
     pub advisories: Vec<Advisory>,
+
     #[serde(default = "Default::default", skip_serializing_if = "is_equal_default")]
     #[builder(default = "Default::default()")]
     pub flags: Flags,
+
     #[builder(default = "Default::default()")]
     #[serde(skip_serializing_if = "is_set_empty", default = "Default::default")]
     pub alternatives: HashSet<proof::PackageId>,
+
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     #[builder(default = "Default::default()")]
     pub comment: String,
+
     #[builder(default = "Default::default()")]
     #[serde(
         default = "Default::default",
@@ -168,16 +177,21 @@ impl Package {
 pub struct Draft {
     #[serde(default = "Default::default")]
     review: super::Review,
+
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub advisories: Vec<Advisory>,
+
     #[serde(default = "Default::default", skip_serializing_if = "is_vec_empty")]
     pub issues: Vec<Issue>,
+
     #[serde(default = "Default::default", skip_serializing_if = "String::is_empty")]
     comment: String,
     #[serde(default = "Default::default")]
     pub flags: FlagsDraft,
+
     #[serde(default = "Default::default", skip_serializing_if = "is_set_empty")]
     pub alternatives: HashSet<proof::PackageId>,
+
     #[serde(
         default = "Default::default",
         skip_serializing_if = "Vec::is_empty",
@@ -386,6 +400,7 @@ impl VersionRange {
 #[derive(Default)]
 pub struct Advisory {
     pub ids: Vec<String>,
+
     #[builder(default)]
     pub severity: Level,
 
