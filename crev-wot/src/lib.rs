@@ -429,6 +429,7 @@ impl ProofDB {
             .map(|(id, flags)| (id, &flags.value))
     }
 
+    /// Use `"https://crates.io"` to get all crates-io reviews
     pub fn get_pkg_reviews_for_source<'a>(
         &'a self,
         source: &str,

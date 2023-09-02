@@ -15,6 +15,7 @@ pub trait CommonOps {
     // until we support legacy, we have to stick to `Common` here
     fn common(&self) -> &Common;
 
+    /// Is it crate review or something else?
     fn kind(&self) -> &str {
         self.common()
             .kind
@@ -22,26 +23,32 @@ pub trait CommonOps {
             .expect("Common types are expected to always have the `kind` field backfilled")
     }
 
+    /// Who wrote and signed this review/trust
     fn from(&self) -> &crate::PublicId {
         &self.common().from
     }
 
+    /// When it has been written according to its creator
     fn date(&self) -> &chrono::DateTime<chrono::offset::FixedOffset> {
         &self.common().date
     }
 
+    /// When it has been written according to its creator
     fn date_utc(&self) -> chrono::DateTime<Utc> {
         self.date().with_timezone(&Utc)
     }
 
+    /// ID of the person who signed it
     fn author_id(&self) -> &crate::Id {
         &self.common().from.id
     }
 
+    /// Displayable version of ID of the person who signed it
     fn author_public_id(&self) -> &crate::PublicId {
         &self.common().from
     }
 
+    /// Easy check of `kind()`
     fn ensure_kind_is(&self, kind: &str) -> ValidationResult<()> {
         let expected = self.kind();
         if expected != kind {
@@ -60,6 +67,7 @@ pub struct OriginalReference {
     /// original proof digest (blake2b256)
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     pub proof: Vec<u8>,
+    /// Any text
     #[serde(skip_serializing_if = "String::is_empty", default = "Default::default")]
     pub comment: String,
 }
@@ -67,6 +75,7 @@ pub struct OriginalReference {
 /// A `Common` part of every `Content` format
 #[derive(Clone, Builder, Debug, Serialize, Deserialize)]
 pub struct Common {
+    /// Type of this review/trust/whatever file
     pub kind: Option<String>,
     /// A version, to allow future backward-incompatible extensions
     /// and changes.
@@ -100,14 +109,23 @@ pub enum ValidationError {
     #[error("Invalid kind: {}, expected: {}", _0.0, _0.1)]
     InvalidKind(Box<(String, String)>),
 
+    /// Alternative source can't be empty
     #[error("Alternative source can't be empty")]
     AlternativeSourceCanNotBeEmpty,
+
+    /// Alternative name can't be empty
     #[error("Alternative name can't be empty")]
     AlternativeNameCanNotBeEmpty,
+
+    /// Issues with an empty `id` field are not allowed
     #[error("Issues with an empty `id` field are not allowed")]
     IssuesWithAnEmptyIDFieldAreNotAllowed,
+
+    /// Advisories with no `id`s are not allowed
     #[error("Advisories with no `id`s are not allowed")]
     AdvisoriesWithNoIDSAreNotAllowed,
+
+    /// Advisories with an empty `id` field are not allowed
     #[error("Advisories with an empty `id` field are not allowed")]
     AdvisoriesWithAnEmptyIDFieldAreNotAllowed,
 }

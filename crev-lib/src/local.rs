@@ -90,6 +90,7 @@ impl UserConfig {
     pub fn get_current_userid(&self) -> Result<&Id> {
         self.get_current_userid_opt().ok_or(Error::CurrentIDNotSet)
     }
+
     #[must_use]
     pub fn get_current_userid_opt(&self) -> Option<&Id> {
         self.current_id.as_ref()
@@ -1106,7 +1107,8 @@ impl Local {
 
     fn url_for_repo(repo: &git2::Repository) -> Result<String> {
         let remote = repo.find_remote("origin")?;
-        let url = remote.url().ok_or(Error::OriginHasNoURL)?;
+        let url = remote.url()
+            .ok_or_else(|| Error::OriginHasNoURL(repo.path().into()))?;
         Ok(url.to_string())
     }
 

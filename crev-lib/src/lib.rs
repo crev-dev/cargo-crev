@@ -33,122 +33,160 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Failures that can happen in this library
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// Trying to init a directory that is already there
     #[error("`{}` already exists", _0.display())]
     PathAlreadyExists(Box<Path>),
 
+    /// There are manual modifications in the git repo. Commit or reset them?
     #[error("Git repository is not in a clean state")]
     GitRepositoryIsNotInACleanState,
 
+    /// Found data from the future. Your version of crev is too old.
     #[error("Unsupported version {}", _0)]
     UnsupportedVersion(i64),
 
+    /// Your crev-id changed unexpectedly
     #[error("PubKey mismatch")]
     PubKeyMismatch,
 
+    /// You need to make a crev Id to perform most operations
     #[error("User config not-initialized. Use `crev id new` to generate CrevID.")]
     UserConfigNotInitialized,
 
+    /// Use `auto_create_or_open` or fix potentially messed up config directory
     #[error("User config already exists")]
     UserConfigAlreadyExists,
 
+    /// User config loading error
     #[error("User config loading error '{}': {}", _0.0.display(), _0.1)]
     UserConfigLoadError(Box<(PathBuf, std::io::Error)>),
 
+    /// You've sandboxed too hard? We need to run Cargo
     #[error("No valid home directory path could be retrieved from the operating system")]
     NoHomeDirectory,
 
+    /// This stores your private key
     #[error("Id loading error '{}': {}", _0.0.display(), _0.1)]
     IdLoadError(Box<(PathBuf, std::io::Error)>),
 
+    /// Create a new Id
     #[error("Id file not found.")]
     IDFileNotFound,
 
+    /// Crev repos must be public
     #[error("Couldn't clone {}: {}", _0.0, _0.1)]
     CouldNotCloneGitHttpsURL(Box<(String, String)>),
 
+    /// We don't support anonymous reviews
     #[error("No ids given.")]
     NoIdsGiven,
 
+    /// There's no password reset. If you don't remember it, start over!
     #[error("Incorrect passphrase")]
     IncorrectPassphrase,
 
+    /// crev has a concept of a default/current Id
     #[error("Current Id not set")]
     CurrentIDNotSet,
 
+    /// crev has a concept of a default/current Id
     #[error("Id not specified and current id not set")]
     IDNotSpecifiedAndCurrentIDNotSet,
 
-    #[error("origin has no url")]
-    OriginHasNoURL,
+    /// crev uses git checkouts, and needs to know their URLs. Delete the repo and try again.
+    #[error("origin has no url at {}", _0.display())]
+    OriginHasNoURL(Box<Path>),
 
+    /// crev created a dummy Id for you, but you still need to configure it
     #[error("current Id has been created without a git URL")]
     GitUrlNotConfigured,
 
+    /// Error iterating local db
     #[error("Error iterating local ProofStore at {}: {}", _0.0.display(), _0.1)]
     ErrorIteratingLocalProofStore(Box<(PathBuf, String)>),
 
+    /// blake_hash mismatch
     #[error("File {} not current. Review again use `crev add` to update.", _0.display())]
     FileNotCurrent(Box<Path>),
 
+    /// Needs config.yaml
     #[error("Package config not-initialized. Use `crev package init` to generate it.")]
     PackageConfigNotInitialized,
 
+    /// Wrong path given to git
     #[error("Can't stage path from outside of the staging root")]
     PathNotInStageRootPath,
 
+    /// Git is cursed
     #[error("Git entry without a path")]
     GitEntryWithoutAPath,
 
+    /// Sorry about YAML syntax
     #[error(transparent)]
     YAML(#[from] serde_yaml::Error),
 
+    /// Used for staging temp file
     #[error(transparent)]
     CBOR(#[from] serde_cbor::Error),
 
+    /// See [`repo::PackageDirNotFound`]
     #[error(transparent)]
     PackageDirNotFound(#[from] repo::PackageDirNotFound),
 
+    /// See [`crev_common::CancelledError`]
     #[error(transparent)]
     Cancelled(#[from] crev_common::CancelledError),
 
+    /// See [`crev_data::Error`]
     #[error(transparent)]
     Data(#[from] crev_data::Error),
 
+    /// See [`argon2::Error`]
     #[error("Passphrase: {}", _0)]
     Passphrase(#[from] argon2::Error),
 
+    /// YAML ;(
     #[error("Review activity parse error: {}", _0)]
     ReviewActivity(#[source] Box<crev_common::YAMLIOError>),
 
+    /// YAML ;(
     #[error("Error parsing user config: {}", _0)]
     UserConfigParse(#[source] serde_yaml::Error),
 
+    /// See [`crev_recursive_digest::DigestError`]
     #[error(transparent)]
     Digest(#[from] crev_recursive_digest::DigestError),
 
+    /// Misc problems with git repos
     #[error(transparent)]
     Git(#[from] git2::Error),
 
+    /// Misc problems with file I/O
     #[error("I/O: {}", _0)]
     IO(#[from] std::io::Error),
 
+    /// crev open makes cargo projects that don't run the code
     #[error("Error while copying crate sources: {}", _0)]
     CrateSourceSanitizationError(std::io::Error),
 
+    /// Misc problems with file I/O
     #[error("Error writing to {}: {}", _1.display(), _0)]
     FileWrite(std::io::Error, PathBuf),
 
+    /// See [`IdError`]
     #[error(transparent)]
     Id(#[from] IdError),
 }
 
+/// [`crate::Error`]
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Trait representing a place that can keep proofs (all reviews and trust proofs)
 ///
-/// See `ProofDb`.
+/// See [`::crev_wot::ProofDb`] and [`crate::Local`].
 ///
 /// Typically serialized and persisted.
 pub trait ProofStore {
@@ -156,10 +194,15 @@ pub trait ProofStore {
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
 }
 
+
+/// Your relationship to the person
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum TrustProofType {
+    /// Positive
     Trust,
+    /// Neutral (undo Trust)
     Untrust,
+    /// Very negative. This is an attacker. Block everything by them.
     Distrust,
 }
 
@@ -174,6 +217,7 @@ impl fmt::Display for TrustProofType {
 }
 
 impl TrustProofType {
+    /// Is this person trusted at all? (regardless of level of trust)
     #[must_use]
     pub fn is_trust(self) -> bool {
         if let TrustProofType::Trust = self {
@@ -182,6 +226,7 @@ impl TrustProofType {
         false
     }
 
+    /// Make review template. See [`crev_data::Review`]
     #[must_use]
     pub fn to_review(self) -> crev_data::Review {
         use TrustProofType::{Distrust, Trust, Untrust};
@@ -193,7 +238,7 @@ impl TrustProofType {
     }
 }
 
-/// Verification requirements
+/// Verification requirements for filtering out low quality reviews
 #[derive(Clone, Debug)]
 pub struct VerificationRequirements {
     pub trust_level: crev_data::Level,
@@ -212,23 +257,30 @@ impl Default for VerificationRequirements {
         }
     }
 }
+
 /// Result of verification
 ///
 /// Not named `Result` to avoid confusion with `Result` type.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum VerificationStatus {
+    /// That's bad!
     Negative,
+    /// VerificationRequirements set too high
     Insufficient,
+    /// Okay
     Verified,
+    /// This is your package, trust yourself.
     Local,
 }
 
 impl VerificationStatus {
+    /// Is it VerificationStatus::Verified?
     #[must_use]
     pub fn is_verified(self) -> bool {
         self == VerificationStatus::Verified
     }
 
+    /// Pick worse of both
     #[must_use]
     pub fn min(self, other: Self) -> Self {
         if self < other {
@@ -252,6 +304,8 @@ impl fmt::Display for VerificationStatus {
     }
 }
 
+/// Find reviews matching `Digest` (exact data of the crate)
+/// and see if there are enough positive reviews for it.
 pub fn verify_package_digest(
     digest: &Digest,
     trust_set: &crev_wot::TrustSet,
@@ -306,8 +360,13 @@ pub fn verify_package_digest(
     }
 }
 
+/// Scan through known reviews of the crate (source is "https://crates.io")
+/// and report semver you can safely use according to `requirements`
+///
+/// See also `verify_package_digest`
 pub fn find_latest_trusted_version(
     trust_set: &crev_wot::TrustSet,
+    /// Use "https://crates.io"
     source: &str,
     name: &str,
     requirements: &crate::VerificationRequirements,
@@ -327,7 +386,9 @@ pub fn find_latest_trusted_version(
         .map(|review| review.package.id.version.clone())
 }
 
-/// Check whether code at this path has reviews, and the reviews meet the requirements
+/// Check whether code at this path has reviews, and the reviews meet the requirements.
+///
+/// See also `verify_package_digest`
 pub fn dir_or_git_repo_verify(
     path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
@@ -368,10 +429,12 @@ pub fn dir_verify(
     ))
 }
 
+/// Scan dir and hash everything in it, to get a unique identifier of the package's source code
 pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Result<Digest> {
     Ok(Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap())
 }
 
+/// See get_dir_digest
 pub fn get_recursive_digest_for_git_dir(
     root_path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
@@ -395,6 +458,7 @@ pub fn get_recursive_digest_for_git_dir(
     Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
+/// See get_dir_digest
 pub fn get_recursive_digest_for_paths(
     root_path: &Path,
     paths: fnv::FnvHashSet<PathBuf>,
@@ -402,6 +466,7 @@ pub fn get_recursive_digest_for_paths(
     Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
+/// See get_dir_digest
 pub fn get_recursive_digest_for_dir(
     root_path: &Path,
     rel_path_ignore_list: &fnv::FnvHashSet<PathBuf>,
