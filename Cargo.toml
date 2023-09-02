@@ -6,6 +6,7 @@ members = [
 	"crev-data",
 	"crev-wot",
 	"crev-lib",
+	"crevette",
 ]
 
 [workspace.package]

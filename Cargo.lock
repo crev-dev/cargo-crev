@@ -805,6 +805,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "crevette"
+version = "0.25.0"
+dependencies = [
+ "crev-data",
+ "crev-lib",
+ "crev-wot",
+ "semver",
+ "serde",
+ "toml_edit",
+]
+
+[[package]]
 name = "crossbeam"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
