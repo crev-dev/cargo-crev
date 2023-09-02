@@ -817,21 +817,17 @@ impl ProofDB {
 
     fn add_package_review(
         &mut self,
-        review: &review::Package,
+        review: review::Package,
         signature: &str,
         fetched_from: &FetchSource,
         proof_digest: proof::Digest,
     ) {
         self.insertion_counter += 1;
 
-        let from = &review.from();
+        let from = review.from();
         self.record_url_from_from_field(&review.date_utc(), from, fetched_from);
 
-        self.package_review_by_signature
-            .entry(signature.to_owned())
-            .or_insert_with(|| review.clone());
-
-        let pkg_review_id = PkgVersionReviewId::from(review);
+        let pkg_review_id = PkgVersionReviewId::from(&review);
         let timestamp_signature = TimestampedSignature::from((review.date(), signature.to_owned()));
         let timestamp_proof_digest = TimestampedDigest::from((review.date(), proof_digest));
         let timestamp_flags = TimestampedFlags::from((review.date(), review.flags.clone()));
@@ -880,6 +876,10 @@ impl ProofDB {
             .entry(review.from().id.clone())
             .and_modify(|f| f.update_to_more_recent(&timestamp_flags))
             .or_insert_with(|| timestamp_flags);
+
+        self.package_review_by_signature
+            .entry(signature.to_owned())
+            .or_insert(review);
     }
 
     pub fn get_package_review_count(
@@ -1097,7 +1097,7 @@ impl ProofDB {
         match proof.kind() {
             proof::CodeReview::KIND => self.add_code_review(&proof.parse_content()?, &fetched_from),
             proof::PackageReview::KIND => self.add_package_review(
-                &proof.parse_content()?,
+                proof.parse_content()?,
                 proof.signature(),
                 &fetched_from,
                 proof::Digest(*proof.digest()),
