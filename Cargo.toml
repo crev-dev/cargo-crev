@@ -14,13 +14,13 @@ edition = "2021"
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 repository = "https://github.com/crev-dev/cargo-crev"
 rust-version = "1.70"
-version = "0.24.4"
+version = "0.25.0"
 
 [workspace.dependencies]
-crev-common = { path = "crev-common", version = "0.24"}
-crev-data = { path = "crev-data", version = "0.24"}
-crev-lib = { path = "crev-lib", version = "0.24"}
-crev-wot = { path = "crev-wot", version = "0.24" }
+crev-common = { path = "crev-common", version = "0.25"}
+crev-data = { path = "crev-data", version = "0.25"}
+crev-lib = { path = "crev-lib", version = "0.25"}
+crev-wot = { path = "crev-wot", version = "0.25" }
 chrono = { version = "0.4.28", default-features = false, features = ["std", "clock"] }
 blake2 = "0.10.6"
 default = "0.1.2"
