@@ -31,9 +31,8 @@ use std::{
     sync,
 };
 
-mod trust_set;
-
-pub use trust_set::*;
+pub mod trust_set;
+pub use trust_set::TrustSet;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -238,6 +237,7 @@ impl AlternativesData {
 }
 
 pub type TimestampedTrustDetails = Timestamped<TrustDetails>;
+
 #[derive(Debug, Clone)]
 pub struct TrustDetails {
     level: TrustLevel,
@@ -284,8 +284,10 @@ pub struct ProofDB {
     proof_digest_by_pkg_review_id: HashMap<PkgVersionReviewId, TimestampedDigest>,
 
     // pkg_review_id by package information, nicely grouped
-    package_reviews:
-        BTreeMap<RegistrySourceOwned, BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>>,
+    package_reviews: BTreeMap<
+        RegistrySourceOwned,
+        BTreeMap<Name, BTreeMap<Version, HashSet<PkgVersionReviewId>>>,
+    >,
 
     package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
 
@@ -331,6 +333,7 @@ impl Default for ProofDB {
     }
 }
 
+/// Result of `get_open_issues_for_version`
 #[derive(Default, Debug)]
 pub struct IssueDetails {
     pub severity: Level,
@@ -341,6 +344,7 @@ pub struct IssueDetails {
 }
 
 impl ProofDB {
+    /// Use `Local::load_db()` to populate it
     #[must_use]
     pub fn new() -> Self {
         default()
@@ -1001,6 +1005,7 @@ impl ProofDB {
             .collect()
     }
 
+    /// Only for direct relationship. See `calculate_trust_set`.
     pub fn get_reverse_trust_for<'id, 's: 'id>(
         &'s self,
         id: &'id Id,
@@ -1131,6 +1136,7 @@ impl ProofDB {
             .flatten()
     }
 
+    /// Only for direct relationship. See `calculate_trust_set`.
     pub fn get_trust_proof_between(&self, from: &Id, to: &Id) -> Option<&proof::Trust> {
         self.ids_to_trust_proof_signatures
             .get(&(from.clone(), to.clone()))
@@ -1157,6 +1163,7 @@ impl ProofDB {
             })
     }
 
+    /// How much you trust others
     pub fn calculate_trust_set(&self, for_id: &Id, params: &TrustDistanceParams) -> TrustSet {
         TrustSet::from(self, for_id, params)
     }

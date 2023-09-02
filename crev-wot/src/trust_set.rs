@@ -63,6 +63,7 @@ pub struct TraverseLogNode {
     pub total_distance: u64,
 }
 
+/// How much you (or a specific user) trusts everyone else
 #[derive(Default, Debug, Clone)]
 pub struct TrustSet {
     pub traverse_log: Vec<TraverseLogItem>,

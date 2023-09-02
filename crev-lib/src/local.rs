@@ -109,6 +109,7 @@ pub struct Local {
 }
 
 impl Local {
+    /// Load config from the environment
     #[allow(clippy::new_ret_no_self)]
     fn new() -> Result<Self> {
         let proj_dir = match std::env::var_os("CARGO_CREV_ROOT_DIR_OVERRIDE") {
@@ -126,6 +127,22 @@ impl Local {
             cur_url: Mutex::new(None),
             user_config: Mutex::new(None),
         })
+    }
+
+    /// Load all reviews and trust proofs for the current user
+    pub fn load_db(&self) -> Result<crev_wot::ProofDB> {
+        let mut db = crev_wot::ProofDB::new();
+        for local_id in self.get_current_user_public_ids()? {
+            db.record_trusted_url_from_own_id(&local_id);
+        }
+        db.import_from_iter(
+            self.all_local_proofs()
+                .map(move |p| (p, crev_wot::FetchSource::LocalUser)),
+        );
+        db.import_from_iter(proofs_iter_for_remotes_checkouts(
+            self.cache_remotes_path(),
+        )?);
+        Ok(db)
     }
 
     /// Where the config is stored
@@ -1140,23 +1157,6 @@ impl Local {
         config.open_cmd = Some(cmd);
         self.store_user_config(&config)?;
         Ok(())
-    }
-
-    /// Create a new proofdb, and populate it with local repo
-    /// and cache content.
-    pub fn load_db(&self) -> Result<crev_wot::ProofDB> {
-        let mut db = crev_wot::ProofDB::new();
-        for local_id in self.get_current_user_public_ids()? {
-            db.record_trusted_url_from_own_id(&local_id);
-        }
-        db.import_from_iter(
-            self.all_local_proofs()
-                .map(move |p| (p, crev_wot::FetchSource::LocalUser)),
-        );
-        db.import_from_iter(proofs_iter_for_remotes_checkouts(
-            self.cache_remotes_path(),
-        )?);
-        Ok(db)
     }
 
     /// The path must be inside `get_proofs_dir_path()`

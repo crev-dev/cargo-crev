@@ -29,6 +29,12 @@ pub type DateUtc = chrono::DateTime<Utc>;
 #[derive(Debug, Clone)]
 pub struct Digest(pub [u8; 32]);
 
+impl Digest {
+    pub fn to_base64(&self) -> String {
+        crev_common::base64_encode(&self.0)
+    }
+}
+
 /// Serialized Proof (crate review or trust of someone)
 ///
 /// A signed proof containing some signed `Content`

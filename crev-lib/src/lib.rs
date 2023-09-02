@@ -189,6 +189,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// See [`::crev_wot::ProofDb`] and [`crate::Local`].
 ///
 /// Typically serialized and persisted.
+#[doc(hidden)]
 pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
     fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
@@ -238,11 +239,17 @@ impl TrustProofType {
 }
 
 /// Verification requirements for filtering out low quality reviews
+///
+/// See [`crev_wot::TrustDistanceParams`]
 #[derive(Clone, Debug)]
 pub struct VerificationRequirements {
+    /// How much the reviewer must be trusted
     pub trust_level: crev_data::Level,
+    /// How much code understanding reviewer has reported
     pub understanding: crev_data::Level,
+    /// How much thoroughness reviewer has reported
     pub thoroughness: crev_data::Level,
+    /// How many different reviews are required
     pub redundancy: u64,
 }
 

@@ -1,3 +1,5 @@
+//! `LockedId` is for you, the local crev user. `Id` is for identifying other users.
+
 use crate::{Error, Result};
 use aes_siv::KeyInit;
 use argon2::{self, Config};
@@ -10,8 +12,11 @@ use serde::{Deserialize, Serialize};
 use std::{self, fmt, io::BufReader, path::Path};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
+
+/// Callback to read the password
 pub type PassphraseFn<'a> = &'a dyn Fn() -> std::io::Result<String>;
 
+/// Stored in your config to know how to hash your passphrase
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PassphraseConfig {
     version: u32,
@@ -28,11 +33,17 @@ pub struct PassphraseConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LockedId {
     version: i64,
+
+    /// Where your crev-proofs git repo is
     #[serde(flatten)]
     pub url: Option<crev_data::Url>,
+
+    /// This is used in `PublicId` to identify users
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "public-key")]
     pub public_key: Vec<u8>,
+
+    /// Needs passphrase
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     #[serde(rename = "sealed-secret-key")]
     sealed_secret_key: Vec<u8>,
@@ -46,12 +57,13 @@ pub struct LockedId {
 }
 
 impl fmt::Display for LockedId {
+    /// Somewhat surprisingly, you get full YAML of the file
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // https://github.com/dtolnay/serde-yaml/issues/103
         f.write_str(&serde_yaml::to_string(self).map_err(|_| fmt::Error)?)
     }
 }
 
+/// Parses YAML file
 impl std::str::FromStr for LockedId {
     type Err = serde_yaml::Error;
 
@@ -61,6 +73,7 @@ impl std::str::FromStr for LockedId {
 }
 
 impl LockedId {
+    /// Encrypt and throw away the key
     pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
         let config = if !passphrase.is_empty() {
             Config {
@@ -117,7 +130,7 @@ impl LockedId {
         })
     }
 
-    /// Extract only the public identity part from all data
+    /// Extract only the public identity part from all data. Useful for displaying user's identity.
     #[must_use]
     pub fn to_public_id(&self) -> PublicId {
         PublicId::new_from_pubkey(self.public_key.clone(), self.url.clone())
@@ -144,6 +157,7 @@ impl LockedId {
         Ok(serde_yaml::from_reader(&mut file)?)
     }
 
+    /// Decrypt
     pub fn to_unlocked(&self, passphrase: &str) -> Result<UnlockedId> {
         let LockedId {
             ref version,
@@ -211,6 +225,7 @@ impl LockedId {
         }
     }
 
+    /// Used for temporary/default identity, but obviously not very secure to store
     #[must_use]
     pub fn has_no_passphrase(&self) -> bool {
         self.passphrase_config.iterations == 1 && self.to_unlocked("").is_ok()
