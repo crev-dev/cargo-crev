@@ -3,7 +3,7 @@ use std::{io, io::Write as _};
 use crate::{opts::WotOpts, term, url_to_status_str};
 use ::term::color::{BLUE, GREEN, RED, YELLOW};
 use anyhow::Result;
-use crev_wot::TraverseLogItem::{Edge, Node};
+use crev_wot::trust_set::TraverseLogItem::{Edge, Node};
 use itertools::Itertools;
 
 pub fn print_log(wot_opts: WotOpts) -> Result<()> {
