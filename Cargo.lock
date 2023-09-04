@@ -226,12 +226,6 @@ checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
-
-[[package]]
-name = "base64"
 version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "414dcefbc63d77c526a76b3afcf6fbb9b5e2791c19c3aa2297733208750c6e53"
@@ -358,7 +352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a6fe1f5394d14b81d2f3f605832a3ce35ed0bf120bc7ef437ce27fd4929c6a"
 dependencies = [
  "anyhow",
- "base64 0.21.3",
+ "base64",
  "bytesize",
  "cargo-platform",
  "cargo-util",
@@ -720,7 +714,7 @@ dependencies = [
 name = "crev-common"
 version = "0.25.0"
 dependencies = [
- "base64 0.13.1",
+ "base64",
  "blake2",
  "chrono",
  "hex",
@@ -2129,7 +2123,7 @@ version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64a39ffed9a9078ed700605e064b15d7c6ae50aa65e7faa36ca6919e8081df15"
 dependencies = [
- "base64 0.21.3",
+ "base64",
  "bstr",
  "curl",
  "gix-command",
@@ -3496,7 +3490,7 @@ version = "0.11.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e9ad3fe7488d7e34558a2033d45a0c90b72d97b4f80705666fea71472e2e6a1"
 dependencies = [
- "base64 0.21.3",
+ "base64",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -3580,7 +3574,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5885493fdf0be6cdff808d1533ce878d21cfa49c7086fa00c66355cd9141bfc"
 dependencies = [
- "base64 0.21.3",
+ "base64",
  "blake2b_simd",
  "constant_time_eq 0.3.0",
  "crossbeam-utils",
