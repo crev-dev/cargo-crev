@@ -10,8 +10,8 @@
 use crate::prelude::*;
 use crev_data::{proof::ContentExt, UnlockedId, SOURCE_CRATES_IO};
 use crev_lib::id::LockedId;
-use log::info;
 use crev_lib::{self, local::Local};
+use log::info;
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsString,
@@ -701,7 +701,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     for_id,
                 } => {
                     let local = Local::auto_create_or_open()?;
-                    local.fetch_trusted(distance_params.into(), for_id.as_deref(), &mut Warning::auto_log())?;
+                    local.fetch_trusted(
+                        distance_params.into(),
+                        for_id.as_deref(),
+                        &mut Warning::auto_log(),
+                    )?;
                 }
                 opts::RepoFetch::Url(params) => {
                     let local = Local::auto_create_or_open()?;
@@ -796,9 +800,18 @@ fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::E
     let local = Local::auto_open()?;
     let mut locked_id = local.read_current_locked_id()?;
     let pub_id = locked_id.to_public_id().id;
-    local.change_locked_id_url(&mut locked_id, url, use_https_push, &mut Warning::auto_log())?;
+    local.change_locked_id_url(
+        &mut locked_id,
+        url,
+        use_https_push,
+        &mut Warning::auto_log(),
+    )?;
     local.save_current_id(&pub_id)?;
-    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None, &mut Warning::auto_log())?;
+    local.fetch_trusted(
+        opts::TrustDistanceParams::default().into(),
+        None,
+        &mut Warning::auto_log(),
+    )?;
 
     if locked_id.has_no_passphrase() {
         eprintln!("warning: there is no passphrase set. Use `cargo crev id passwd` to fix.");
@@ -840,7 +853,12 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
                     eprintln!(
                         "Instead of setting up a new CrevID we'll reconfigure the existing one {id}"
                     );
-                    local.change_locked_id_url(&mut locked_id, url, use_https_push, &mut Warning::auto_log())?;
+                    local.change_locked_id_url(
+                        &mut locked_id,
+                        url,
+                        use_https_push,
+                        &mut Warning::auto_log(),
+                    )?;
                     let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
                     change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
                     local.save_current_id(&id)?;
@@ -876,7 +894,12 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
 
     let local = Local::auto_create_or_open()?;
     let res = local
-        .generate_id(url, use_https_push, read_new_passphrase, &mut Warning::auto_log())
+        .generate_id(
+            url,
+            use_https_push,
+            read_new_passphrase,
+            &mut Warning::auto_log(),
+        )
         .map_err(|e| {
             print_crev_proof_repo_fork_help();
             e

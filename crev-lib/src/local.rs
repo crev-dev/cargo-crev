@@ -542,7 +542,10 @@ impl Local {
 
         // commit uncommitted changes, if there are any. Otherwise the next pull may fail
         let _ = self.proof_dir_commit("Setting up new CrevID URL");
-        let _ = self.run_git(vec!["pull".into(), "--rebase".into(), "-Xours".into()], warnings);
+        let _ = self.run_git(
+            vec!["pull".into(), "--rebase".into(), "-Xours".into()],
+            warnings,
+        );
         Ok(())
     }
 
@@ -565,11 +568,14 @@ impl Local {
         }
         if let Err(e) = git2::Repository::init(&proof_dir) {
             warn!("Can't init repo in {}: {}", proof_dir.display(), e);
-            self.run_git(vec![
-                "init".into(),
-                "--initial-branch=master".into(),
-                proof_dir.into(),
-            ], warnings)?;
+            self.run_git(
+                vec![
+                    "init".into(),
+                    "--initial-branch=master".into(),
+                    proof_dir.into(),
+                ],
+                warnings,
+            )?;
         }
         Ok(())
     }
@@ -1086,7 +1092,10 @@ impl Local {
 
         // Temporarily hardcode `dpc`'s proof-repo url
         let dpc_url = "https://github.com/dpc/crev-proofs";
-        if let Ok(dir) = self.fetch_remote_git(dpc_url).map_err(|e| warnings.push(e.into())) {
+        if let Ok(dir) = self
+            .fetch_remote_git(dpc_url)
+            .map_err(|e| warnings.push(e.into()))
+        {
             let _ = self
                 .import_proof_dir_and_print_counts(&dir, dpc_url, &mut db)
                 .map_err(|e| warnings.push(e.into()));
@@ -1132,7 +1141,11 @@ impl Local {
     }
 
     /// Run arbitrary git command in `get_proofs_dir_path()`
-    pub fn run_git(&self, args: Vec<OsString>, warnings: &mut Vec<Warning>) -> Result<std::process::ExitStatus> {
+    pub fn run_git(
+        &self,
+        args: Vec<OsString>,
+        warnings: &mut Vec<Warning>,
+    ) -> Result<std::process::ExitStatus> {
         let proof_dir_path = self.get_proofs_dir_path()?;
         let id = self.read_current_locked_id()?;
         if let Some(u) = id.url {

@@ -14,7 +14,6 @@ pub mod repo;
 pub mod staging;
 pub mod util;
 pub use crate::local::Local;
-use log::warn;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
     self,
@@ -28,12 +27,13 @@ use crev_data::{
 };
 use crev_wot::PkgVersionReviewId;
 pub use crev_wot::TrustDistanceParams;
+use log::warn;
+use std::error::Error as _;
 use std::{
     collections::{HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
-use std::error::Error as _;
 
 /// Failures that can happen in this library
 #[derive(Debug, thiserror::Error)]
@@ -415,10 +415,14 @@ impl Drop for LogOnDrop {
 
 impl std::ops::Deref for LogOnDrop {
     type Target = Vec<Warning>;
-    fn deref(&self) -> &Vec<Warning> { &self.0 }
+    fn deref(&self) -> &Vec<Warning> {
+        &self.0
+    }
 }
 impl std::ops::DerefMut for LogOnDrop {
-    fn deref_mut(&mut self) -> &mut Vec<Warning> { &mut self.0 }
+    fn deref_mut(&mut self) -> &mut Vec<Warning> {
+        &mut self.0
+    }
 }
 
 /// Scan through known reviews of the crate (source is "https://crates.io")
