@@ -14,6 +14,7 @@ pub mod repo;
 pub mod staging;
 pub mod util;
 pub use crate::local::Local;
+use log::warn;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
     self,
@@ -32,6 +33,7 @@ use std::{
     fmt,
     path::{Path, PathBuf},
 };
+use std::error::Error as _;
 
 /// Failures that can happen in this library
 #[derive(Debug, thiserror::Error)]
@@ -364,6 +366,59 @@ pub fn verify_package_digest(
     } else {
         VerificationStatus::Insufficient
     }
+}
+
+/// Warnings gathered during operation, errors downgraded to warnings.
+#[derive(Debug, thiserror::Error)]
+pub enum Warning {
+    #[error(transparent)]
+    Error(#[from] Error),
+
+    #[error("Repo checkout without origin URL at {}", _0.display())]
+    NoRepoUrlAtPath(PathBuf, #[source] Error),
+
+    #[error("URL for {0} is not known yet")]
+    IdUrlNotKnonw(Id),
+
+    #[error("Could not deduce `ssh` push url for {0}. Call:\ncargo crev repo git remote set-url --push origin <url>\nmanually after the id is generated.")]
+    GitPushUrl(String),
+
+    #[error("Failed to fetch {0} into {}", _2.display())]
+    FetchError(String, #[source] Error, PathBuf),
+}
+
+impl Warning {
+    pub fn auto_log() -> LogOnDrop {
+        LogOnDrop(Vec::new())
+    }
+
+    pub fn log_all(warnings: &[Warning]) {
+        warnings.iter().for_each(|w| w.log());
+    }
+
+    pub fn log(&self) {
+        warn!("{}", self);
+        let mut s = self.source();
+        while let Some(w) = s {
+            warn!("  - {}", w);
+            s = w.source();
+        }
+    }
+}
+
+pub struct LogOnDrop(pub Vec<Warning>);
+impl Drop for LogOnDrop {
+    fn drop(&mut self) {
+        Warning::log_all(&self.0);
+    }
+}
+
+impl std::ops::Deref for LogOnDrop {
+    type Target = Vec<Warning>;
+    fn deref(&self) -> &Vec<Warning> { &self.0 }
+}
+impl std::ops::DerefMut for LogOnDrop {
+    fn deref_mut(&mut self) -> &mut Vec<Warning> { &mut self.0 }
 }
 
 /// Scan through known reviews of the crate (source is "https://crates.io")

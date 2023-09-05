@@ -10,7 +10,7 @@
 use crate::prelude::*;
 use crev_data::{proof::ContentExt, UnlockedId, SOURCE_CRATES_IO};
 use crev_lib::id::LockedId;
-
+use log::info;
 use crev_lib::{self, local::Local};
 use std::{
     collections::{HashMap, HashSet},
@@ -46,7 +46,7 @@ use crate::{
     shared::*,
 };
 use crev_data::{proof, Id, TrustLevel};
-use crev_lib::TrustProofType;
+use crev_lib::{TrustProofType, Warning};
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
 use log::debug;
 
@@ -59,7 +59,10 @@ trait LocalExt {
 
 impl LocalExt for Local {
     fn run_git_verbose(&self, args: Vec<OsString>) -> Result<std::process::ExitStatus> {
-        match self.run_git(args) {
+        let mut warnings = Vec::new();
+        let res = self.run_git(args, &mut warnings);
+        Warning::log_all(&warnings);
+        match res {
             Ok(o) => Ok(o),
             Err(crev_lib::Error::GitUrlNotConfigured) => {
                 bail!("Id has no public URL set. Run `cargo crev id set-url <your-public-git-proof-repo>` and try again. See https://github.com/crev-dev/cargo-crev/discussions for help.");
@@ -90,13 +93,13 @@ pub fn repo_publish() -> Result<()> {
     std::process::exit(status.code().unwrap_or(-159));
 }
 
-fn repo_update(args: opts::Update) -> Result<()> {
+fn repo_update(args: opts::Update, warnings: &mut Vec<Warning>) -> Result<()> {
     let local = Local::auto_open()?;
     let status = local.run_git_verbose(vec!["pull".into(), "--rebase".into()])?;
     if !status.success() {
         std::process::exit(status.code().unwrap_or(-159));
     }
-    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None, warnings)?;
     let repo = Repo::auto_open_cwd(args.cargo_opts)?;
     repo.update_counts()?;
     Ok(())
@@ -394,7 +397,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     .expect("A public id must have an associated URL");
                 let proof_dir_path = local.get_proofs_dir_path_for_url(url)?;
                 if !proof_dir_path.exists() {
-                    local.clone_proof_dir_from_git(&url.url, false)?;
+                    let mut warnings = Vec::new();
+                    local.clone_proof_dir_from_git(&url.url, false, &mut warnings)?;
+                    Warning::log_all(&warnings);
                 }
             }
             opts::Id::Trust(args) => {
@@ -539,8 +544,18 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 args.level.is_none(),
                 args.overrides,
             )?;
+            let mut warnings = Vec::new();
             // Make sure we have reviews for the new Ids we're trusting
-            local.fetch_new_trusted(Default::default(), None)?;
+            local.fetch_new_trusted(Default::default(), None, &mut warnings)?;
+
+            // only warn about the new ids, don't scare about old problems.
+            for w in &warnings {
+                if let Warning::IdUrlNotKnonw(id) = w {
+                    if ids.contains(id) {
+                        w.log();
+                    }
+                }
+            }
         }
         opts::Command::Crate(args) => match args {
             opts::Crate::Diff(args) => {
@@ -686,7 +701,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     for_id,
                 } => {
                     let local = Local::auto_create_or_open()?;
-                    local.fetch_trusted(distance_params.into(), for_id.as_deref())?;
+                    local.fetch_trusted(distance_params.into(), for_id.as_deref(), &mut Warning::auto_log())?;
                 }
                 opts::RepoFetch::Url(params) => {
                     let local = Local::auto_create_or_open()?;
@@ -694,10 +709,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
                 opts::RepoFetch::All => {
                     let local = Local::auto_create_or_open()?;
-                    local.fetch_all()?;
+                    info!("Fetching...");
+                    local.fetch_all(&mut Warning::auto_log())?;
                 }
             },
-            opts::Repo::Update(args) => repo_update(args)?,
+            opts::Repo::Update(args) => repo_update(args, &mut Warning::auto_log())?,
             opts::Repo::Edit(cmd) => match cmd {
                 opts::RepoEdit::Readme => {
                     let local = crev_lib::Local::auto_open()?;
@@ -752,7 +768,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
         opts::Command::Publish => repo_publish()?,
         opts::Command::Review(args) => crate_review(&args)?,
-        opts::Command::Update(args) => repo_update(args)?,
+        opts::Command::Update(args) => repo_update(args, &mut Warning::auto_log())?,
 
         opts::Command::Wot(args) => match args {
             opts::Wot::Log { wot } => {
@@ -780,9 +796,9 @@ fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::E
     let local = Local::auto_open()?;
     let mut locked_id = local.read_current_locked_id()?;
     let pub_id = locked_id.to_public_id().id;
-    local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
+    local.change_locked_id_url(&mut locked_id, url, use_https_push, &mut Warning::auto_log())?;
     local.save_current_id(&pub_id)?;
-    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None)?;
+    local.fetch_trusted(opts::TrustDistanceParams::default().into(), None, &mut Warning::auto_log())?;
 
     if locked_id.has_no_passphrase() {
         eprintln!("warning: there is no passphrase set. Use `cargo crev id passwd` to fix.");
@@ -824,7 +840,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
                     eprintln!(
                         "Instead of setting up a new CrevID we'll reconfigure the existing one {id}"
                     );
-                    local.change_locked_id_url(&mut locked_id, url, use_https_push)?;
+                    local.change_locked_id_url(&mut locked_id, url, use_https_push, &mut Warning::auto_log())?;
                     let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
                     change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
                     local.save_current_id(&id)?;
@@ -860,7 +876,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
 
     let local = Local::auto_create_or_open()?;
     let res = local
-        .generate_id(url, use_https_push, read_new_passphrase)
+        .generate_id(url, use_https_push, read_new_passphrase, &mut Warning::auto_log())
         .map_err(|e| {
             print_crev_proof_repo_fork_help();
             e
@@ -960,7 +976,7 @@ fn ensure_crev_id_exists_or_make_one() -> Result<Local> {
             eprintln!(
                 "note: Setting up a default CrevID. Run `cargo crev id new` to customize it."
             );
-            local.generate_id(None, false, || Ok(String::new()))?;
+            local.generate_id(None, false, || Ok(String::new()), &mut Warning::auto_log())?;
         } else {
             eprintln!("You need to select current CrevID. Try:");
             for id in existing {
