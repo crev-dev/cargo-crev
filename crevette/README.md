@@ -1,6 +1,6 @@
 # `cargo-crev` to `cargo-vet` converter
 
-[Crev](https://lib.rs/cargo-crev and [Vet](https://lib.rs/cargo-vet) are supply-chain security tools for auditing Rust/Cargo dependencies.
+[Crev](https://lib.rs/cargo-crev) and [Vet](https://lib.rs/cargo-vet) are supply-chain security tools for auditing Rust/Cargo dependencies.
 
 This tool ([`crevette`](https://lib.rs/crevette)) is a helper for `cargo-crev` users that exports Crev reviews as an `audits.toml` file for use with `cargo-vet`.
 

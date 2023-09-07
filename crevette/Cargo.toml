@@ -1,7 +1,7 @@
 [package]
 name = "crevette"
 description = "Converter for using cargo-crev reviews with cargo-vet"
-keywords = ["cargo-vet", "crev2vet", "cargo-crev", "exporter", "supply-chain-security"]
+keywords = ["cargo-vet", "crev2vet", "cargo-crev", "supply-chain", "security"]
 categories = ["development-tools"]
 authors.workspace = true
 edition.workspace = true
