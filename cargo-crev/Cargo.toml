@@ -7,6 +7,7 @@ documentation = "https://docs.rs/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "supply-chain-security", "distributed", "security"]
 readme = "README.md"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE-MIT"]
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

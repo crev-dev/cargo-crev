@@ -8,9 +8,9 @@
 - `crev-data` contains core data types, crypto, and serialization code.
 - `crev-lib` implements basic concepts (think `libgit2`)
 - binary crates - the actual utilities that users will call
-  - `crev-bin` - generic tool, currently not meant to be used
   - `cargo-crev` - frontend integrated with Cargo for Rust
 - auxiliary tools:
+  - `crevette` - Crev to cargo-vet interoperability
   - `recursive-digest` - library implementing a recursive digest over a
     directory content
   - `rblake2sum` - a binary on top of `recursive-digest`

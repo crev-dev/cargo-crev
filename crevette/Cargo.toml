@@ -9,6 +9,8 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
+readme = "README.md"
+include = ["src/*.rs", "Cargo.toml", "README.md", "LICENSE-MIT"]
 
 [dependencies]
 crev-lib.workspace = true

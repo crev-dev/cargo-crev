@@ -4,6 +4,7 @@ description = "Scalable, social, Code REView system that we desperately need - c
 documentation = "https://docs.rs/crev-lib"
 keywords = ["code", "review", "trust", "distributed"]
 readme = "README.md"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE-MIT"]
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
