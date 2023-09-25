@@ -84,8 +84,7 @@ impl LockedId {
                 mem_cost: 4096,
                 time_cost: 192,
 
-                lanes: num_cpus::get() as u32,
-                thread_mode: argon2::ThreadMode::Parallel,
+                lanes: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1) as u32,
 
                 ad: &[],
                 secret: &[],
@@ -179,8 +178,7 @@ impl LockedId {
                 mem_cost: passphrase_config.memory_size,
                 time_cost: passphrase_config.iterations,
 
-                lanes: num_cpus::get() as u32,
-                thread_mode: argon2::ThreadMode::Parallel,
+                lanes: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1) as u32,
 
                 ad: &[],
                 secret: &[],
@@ -242,7 +240,6 @@ impl LockedId {
             time_cost: 1,
 
             lanes: 1,
-            thread_mode: argon2::ThreadMode::Parallel,
 
             ad: &[],
             secret: &[],

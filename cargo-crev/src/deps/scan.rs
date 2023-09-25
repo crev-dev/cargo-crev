@@ -222,7 +222,7 @@ impl Scanner {
         }
 
         let ready_tx_count = Arc::new(atomic::AtomicUsize::new(0));
-        let threads: Vec<_> = (0..num_cpus::get())
+        let threads: Vec<_> = (0..std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1))
             .map(|_| {
                 let pending_rx = pending_rx.clone();
                 let pending_tx = pending_tx.clone();
