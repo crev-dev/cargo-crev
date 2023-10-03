@@ -265,11 +265,19 @@ pub fn get_open_cmd(local: &Local) -> Result<String> {
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool) -> Result<()> {
+pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool, diff: Option<Version>) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
     let crate_id = repo.find_pkgid_by_crate_selector(crate_sel)?;
     let cargo_crate = repo.get_crate(&crate_id)?;
+
+    if let Some(diff) = diff {
+        println!("View the diff online:\nhttps://sourcegraph.com/crates/{}/-/compare/v{}...v{}?visible=1000000\n",
+            cargo_crate.name(),
+            diff,
+            cargo_crate.version(),
+        );
+    }
 
     if cmd_save {
         if let Some(cmd) = &cmd {

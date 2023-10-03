@@ -603,6 +603,11 @@ pub struct CrateOpen {
     #[structopt(long = "cmd")]
     pub cmd: Option<String>,
 
+    /// Review the delta since the given version
+    #[structopt(long = "diff", name = "base-version")]
+    #[allow(clippy::option_option)]
+    pub diff: Option<Option<Version>>,
+
     /// Save the `--cmd` argument to be used a default in the future
     #[structopt(long = "cmd-save")]
     pub cmd_save: bool,

@@ -579,7 +579,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Open(args) => {
                 handle_goto_mode_command(&args.common.clone(), |crate_| {
-                    crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save)
+                    crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save, args.diff.flatten())
                 })?;
             }
             opts::Crate::Clean(args) => {
@@ -767,7 +767,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         }
         opts::Command::Open(args) => {
             handle_goto_mode_command(&args.common.clone(), |crate_| {
-                crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save)
+                crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save, args.diff.flatten())
             })?;
         }
         opts::Command::Publish => repo_publish()?,
