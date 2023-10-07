@@ -619,11 +619,11 @@ impl Repo {
         if unrelated {
             Ok(
                 self.find_independent_pkg_id_by_selector(name, version)?
-                    .ok_or_else(|| format_err!("Could not find requested crate. Try updating cargo's registry index cache?"))?
+                    .ok_or_else(|| format_err!("Could not find requested crate '{name}'. Try updating cargo's registry index cache?"))?
                 )
         } else {
             Ok(self.find_dependency_pkg_id_by_selector(name, version)?
-                    .ok_or_else(|| format_err!("Could not find requested crate. Try `-u` if the crate is not a dependency."))?
+                    .ok_or_else(|| format_err!("Could not find requested crate '{name}'. Try `-u` if the crate is not a dependency."))?
                     )
         }
     }

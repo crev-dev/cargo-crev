@@ -1,5 +1,5 @@
 use crate::{
-    activity::ReviewActivity,
+    activity::{ReviewActivity, LatestReviewActivity},
     id::{self, LockedId, PassphraseFn},
     util::{self, git::is_unrecoverable},
     Error, ProofStore, Result, Warning,
@@ -374,6 +374,17 @@ impl Local {
             .with_extension("yaml")
     }
 
+    fn cache_latest_review_activity_path(&self) -> PathBuf {
+        self.cache_activity_path()
+            .join("latest_review.yaml")
+    }
+
+    /// Most recent in-progress review
+    pub fn latest_review_activity(&self) -> Option<LatestReviewActivity> {
+        let latest_path = self.cache_latest_review_activity_path();
+        crev_common::read_from_yaml_file(&latest_path).ok()?
+    }
+
     /// Save activity (in-progress review) to disk
     pub fn record_review_activity(
         &self,
@@ -386,6 +397,14 @@ impl Local {
 
         crev_common::save_to_yaml_file(&path, activity)
             .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
+
+        let latest_path = self.cache_latest_review_activity_path();
+        crev_common::save_to_yaml_file(&latest_path, &LatestReviewActivity {
+            source: source.to_string(),
+            name: name.to_string(),
+            version: version.clone(),
+            diff_base: activity.diff_base.clone(),
+        }).map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         Ok(())
     }

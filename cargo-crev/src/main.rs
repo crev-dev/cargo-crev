@@ -12,6 +12,7 @@ use crev_data::{proof::ContentExt, UnlockedId, SOURCE_CRATES_IO};
 use crev_lib::id::LockedId;
 use crev_lib::{self, local::Local};
 use log::info;
+use opts::ReviewCrateSelector;
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsString,
@@ -247,7 +248,6 @@ fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) ->
                 default_trust_type
             },
             &args.common_proof_create,
-            &args.diff,
             args.skip_activity_check || is_advisory || args.issue,
             args.overrides,
             args.cargo_opts.clone(),
@@ -572,21 +572,21 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 info::print_crate_info(crate_.auto_unrelated()?, opts, wot)?;
             }
             opts::Crate::Goto(args) => {
-                goto_crate_src(&args.crate_.auto_unrelated()?)?;
+                goto_crate_src(&args.auto_unrelated()?)?;
             }
             opts::Crate::Expand(args) => {
                 expand_crate_src(&args.crate_.auto_unrelated()?)?;
             }
             opts::Crate::Open(args) => {
-                handle_goto_mode_command(&args.common.clone(), |crate_| {
-                    crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save, args.diff.flatten())
+                handle_goto_mode_command(&args.common.clone(), None, |sel| {
+                    crate_open(&sel.clone().auto_unrelated()?, args.cmd, args.cmd_save)
                 })?;
             }
             opts::Crate::Clean(args) => {
-                if args.crate_.is_empty() && are_we_called_from_goto_shell().is_none() {
+                if args.is_empty() && are_we_called_from_goto_shell().is_none() {
                     clean_all_crates_with_digest_mismatch()?;
                 } else {
-                    handle_goto_mode_command(&args, clean_crate)?;
+                    handle_goto_mode_command(&ReviewCrateSelector { crate_: args.clone(), diff: None }, None, |sel| clean_crate(&sel.crate_))?;
                 }
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
@@ -729,11 +729,11 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
         },
         opts::Command::Goto(args) => {
-            goto_crate_src(&args.crate_.auto_unrelated()?)?;
+            goto_crate_src(&args.auto_unrelated()?)?;
         }
         opts::Command::Open(args) => {
-            handle_goto_mode_command(&args.common.clone(), |crate_| {
-                crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save, args.diff.flatten())
+            handle_goto_mode_command(&args.common.clone(), None, |crate_| {
+                crate_open(&crate_.clone().auto_unrelated()?, args.cmd, args.cmd_save)
             })?;
         }
         opts::Command::Publish => repo_publish()?,

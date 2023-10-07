@@ -1,6 +1,6 @@
 use crate::{
-    edit, opts,
-    opts::{CargoOpts, CrateSelector},
+    edit, opts::{self, ReviewCrateSelector},
+    opts::CargoOpts,
     prelude::*,
     term, url_to_status_str,
 };
@@ -19,16 +19,18 @@ use crate::{repo::Repo, shared::*};
 /// * `unrelated` - the crate might not actually be a dependency
 #[allow(clippy::option_option)]
 pub fn create_review_proof(
-    crate_sel: &CrateSelector,
+    crate_sel: &ReviewCrateSelector,
     report_severity: Option<crev_data::Level>,
     advise_common: Option<opts::AdviseCommon>,
     trust: TrustProofType,
     proof_create_opt: &opts::CommonProofCreate,
-    diff_version: &Option<Option<Version>>,
     skip_activity_check: bool,
     show_override_suggestions: bool,
     cargo_opts: CargoOpts,
 ) -> Result<()> {
+    let diff_version = &crate_sel.diff;
+    let crate_sel = &crate_sel.crate_;
+
     let repo = Repo::auto_open_cwd(cargo_opts)?;
 
     let pkg_id = repo.find_pkgid_by_crate_selector(crate_sel)?;

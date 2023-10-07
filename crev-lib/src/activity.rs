@@ -40,6 +40,16 @@ impl ReviewMode {
     }
 }
 
+/// Which review is the most recent
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LatestReviewActivity {
+    pub source: String,
+    pub name: String,
+    pub version: Version,
+    pub diff_base: Option<Version>,
+}
+
+/// Record of an in-progress review
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReviewActivity {
     #[serde(

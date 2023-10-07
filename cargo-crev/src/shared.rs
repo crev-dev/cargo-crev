@@ -3,7 +3,7 @@
 use crate::{
     deps::scan::{self, RequiredDetails},
     edit, opts,
-    opts::CrateSelector,
+    opts::{CrateSelector, ReviewCrateSelector},
     prelude::*,
     repo::Repo,
 };
@@ -265,13 +265,13 @@ pub fn get_open_cmd(local: &Local) -> Result<String> {
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-pub fn crate_open(crate_sel: &CrateSelector, cmd: Option<String>, cmd_save: bool, diff: Option<Version>) -> Result<()> {
+pub fn crate_open(crate_sel: &ReviewCrateSelector, cmd: Option<String>, cmd_save: bool) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
-    let crate_id = repo.find_pkgid_by_crate_selector(crate_sel)?;
+    let crate_id = repo.find_pkgid_by_crate_selector(&crate_sel.crate_)?;
     let cargo_crate = repo.get_crate(&crate_id)?;
 
-    if let Some(diff) = diff {
+    if let Some(Some(diff)) = &crate_sel.diff {
         println!("View the diff online:\nhttps://sourcegraph.com/crates/{}/-/compare/v{}...v{}?visible=1000000\n",
             cargo_crate.name(),
             diff,
@@ -599,30 +599,43 @@ pub fn are_we_called_from_goto_shell() -> Option<OsString> {
 /// After jumping to a crate with `goto`, the crate is selected
 /// already, and commands like `review` must not be given any arguments
 /// like that.
-pub fn handle_goto_mode_command<F>(args: &opts::ReviewOrGotoCommon, f: F) -> Result<()>
+pub fn handle_goto_mode_command<F>(args: &opts::ReviewCrateSelector, local_for_review: Option<&Local>, f: F) -> Result<()>
 where
-    F: FnOnce(&CrateSelector) -> Result<()>,
+    F: FnOnce(&ReviewCrateSelector) -> Result<()>,
 {
     if let Some(org_dir) = are_we_called_from_goto_shell() {
         if args.crate_.name.is_some() {
             bail!("In `crev goto` mode no arguments can be given");
-        } else {
-            let name = env::var(GOTO_CRATE_NAME_ENV)
-                .map_err(|_| format_err!("crate name env var not found"))?;
-            let version = env::var(GOTO_CRATE_VERSION_ENV)
-                .map_err(|_| format_err!("crate version env var not found"))?;
-
-            env::set_current_dir(org_dir)?;
-            f(&CrateSelector::new(
-                Some(name),
-                Some(Version::parse(&version)?),
-                true,
-            ))?;
         }
-    } else {
-        args.crate_.ensure_name_given()?;
+        if args.diff.is_some() {
+            bail!("In `crev goto` mode diff can't be set");
+        }
+        let name = env::var(GOTO_CRATE_NAME_ENV)
+            .map_err(|_| format_err!("crate name env var not found"))?;
+        let version = env::var(GOTO_CRATE_VERSION_ENV)
+            .map_err(|_| format_err!("crate version env var not found"))?;
 
-        f(&args.crate_)?;
+        env::set_current_dir(org_dir)?;
+        f(&ReviewCrateSelector {
+            crate_: CrateSelector::new(
+            Some(name),
+            Some(Version::parse(&version)?),
+            true),
+            diff: None,
+        })?;
+    } else {
+        let mut sel = None;
+        if args.crate_.name.is_none() {
+            if let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity()) {
+                sel = Some(ReviewCrateSelector {
+                    diff: latest.diff_base.is_some().then_some(latest.diff_base),
+                    crate_: CrateSelector::new(Some(latest.name), Some(latest.version), args.crate_.unrelated).auto_unrelated()?
+                });
+            }
+        };
+        let sel = sel.as_ref().unwrap_or(&args);
+        sel.crate_.ensure_name_given()?;
+        f(sel)?;
     }
     Ok(())
 }
