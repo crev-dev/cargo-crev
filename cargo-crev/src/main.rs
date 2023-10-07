@@ -218,10 +218,10 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
     Ok(())
 }
 
-fn crate_review(args: &opts::CrateReview) -> Result<()> {
+fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
 
-    handle_goto_mode_command(&args.common, |sel| {
+    handle_goto_mode_command(&args.common, Some(&local), |sel| {
         let is_advisory =
             args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
         create_review_proof(
@@ -244,7 +244,7 @@ fn crate_review(args: &opts::CrateReview) -> Result<()> {
             if is_advisory || args.issue {
                 TrustProofType::Distrust
             } else {
-                TrustProofType::Trust
+                default_trust_type
             },
             &args.common_proof_create,
             &args.diff,
@@ -591,42 +591,8 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
 
-            opts::Crate::Review(args) => crate_review(&args)?,
-            opts::Crate::Unreview(args) => {
-                handle_goto_mode_command(&args.common, |sel| {
-                    let is_advisory = args.advisory
-                        || args.affected.is_some()
-                        || (!args.issue && args.severity.is_some());
-                    create_review_proof(
-                        sel,
-                        if args.issue {
-                            Some(crev_data::Level::Medium)
-                        } else {
-                            None
-                        },
-                        if is_advisory {
-                            Some(opts::AdviseCommon {
-                                severity: args.severity.unwrap_or(crev_data::Level::Medium),
-                                affected: args.affected.unwrap_or(
-                                    crev_data::proof::review::package::VersionRange::Major,
-                                ),
-                            })
-                        } else {
-                            None
-                        },
-                        if is_advisory || args.issue {
-                            TrustProofType::Distrust
-                        } else {
-                            TrustProofType::Untrust
-                        },
-                        &args.common_proof_create,
-                        &args.diff,
-                        args.skip_activity_check || is_advisory || args.issue,
-                        args.overrides,
-                        args.cargo_opts.clone(),
-                    )
-                })?;
-            }
+            opts::Crate::Review(args) => crate_review(&args, TrustProofType::Trust)?,
+            opts::Crate::Unreview(args) => crate_review(&args, TrustProofType::Untrust)?,
             opts::Crate::Search(args) => {
                 lookup_crates(&args.query, args.count)?;
             }
@@ -771,7 +737,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             })?;
         }
         opts::Command::Publish => repo_publish()?,
-        opts::Command::Review(args) => crate_review(&args)?,
+        opts::Command::Review(args) => crate_review(&args, TrustProofType::Trust)?,
         opts::Command::Update(args) => repo_update(args, &mut Warning::auto_log())?,
 
         opts::Command::Wot(args) => match args {
