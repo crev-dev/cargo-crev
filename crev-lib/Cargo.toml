@@ -35,7 +35,7 @@ walkdir = "2.3.3"
 thiserror.workspace = true
 rayon.workspace = true
 aes-siv = "0.7.0"
-bstr = "1.6.2"
+bstr = "1.7.0"
 
 [package.metadata.release]
 shared-version=true
