@@ -120,31 +120,31 @@ impl Crevette {
         let mut all = HashMap::new();
 
         for r in self.db.get_pkg_reviews_for_source(SOURCE_CRATES_IO) {
-            all.entry(&r.package.id.id).or_insert_with(Vec::new).push(r);
+            let Some(review) = r.review() else { continue };
+
+            let trust = self.trusts.get_effective_trust_level(&r.common.from.id);
+            if trust < self.min_trust_level {
+                continue;
+            }
+
+            let review_quality_score = level_as_score(review.thoroughness) + level_as_score(review.understanding);
+            all.entry(&r.package.id.id).or_insert_with(Vec::new).push((trust, review_quality_score, r));
         }
 
         let mut audits = BTreeMap::default();
         for reviews_for_crate in all.values_mut() {
-            reviews_for_crate.sort_by(|a, b| {
-                b.package
-                    .id
-                    .version
-                    .cmp(&a.package.id.version)
+            reviews_for_crate.sort_by(|(a_trust, q_a, a), (b_trust, q_b, b)| {
+                b.package.id.version.cmp(&a.package.id.version)
+                    .then(b_trust.cmp(&a_trust))
+                    .then(q_b.cmp(&q_a))
                     .then(b.common.date.cmp(&a.common.date))
             });
 
             let mut last_review = None;
-            for &r in &*reviews_for_crate {
+            for &(trust, review_quality_score, r) in &*reviews_for_crate {
                 let Some(review) = r.review() else { continue };
 
                 let pub_id = &r.common.from;
-                let trust = self.trusts.get_effective_trust_level(&pub_id.id);
-                if trust < self.min_trust_level {
-                    continue;
-                }
-
-                let review_quality_score =
-                    level_as_score(review.thoroughness) + level_as_score(review.understanding);
 
                 let violation = review.rating == Rating::Negative;
                 let criteria = if violation {
