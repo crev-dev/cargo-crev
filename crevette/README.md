@@ -6,7 +6,7 @@ This tool ([`crevette`](https://lib.rs/crevette)) is a helper for `cargo-crev` u
 
 ## Installation
 
-You must have [`cargo-crev` alredy set up](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md), some [repos added as trusted](https://github.com/crev-dev/cargo-crev/wiki/List-of-Proof-Repositories) and reviews fetched (try `cargo crev repo fetch all`).
+You must have [`cargo-crev` alredy set up](https://github.com/crev-dev/cargo-crev/blob/main/cargo-crev/src/doc/getting_started.md), some [repos added as trusted](https://github.com/crev-dev/cargo-crev/wiki/List-of-Proof-Repositories) and reviews fetched (try `cargo crev repo fetch all`).
 
 It requires the latest stable version of Rust. If your package manager has an outdated version of Rust, switch to [rustup](https://rustup.rs).
 

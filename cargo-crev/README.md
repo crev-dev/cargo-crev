@@ -54,7 +54,7 @@ Static binaries are available from the [releases
 page](https://github.com/crev-dev/cargo-crev/releases).
 
 Follow the [`cargo-crev` - Getting Started
-Guide](https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/getting_started.md)
+Guide](https://github.com/crev-dev/cargo-crev/blob/main/cargo-crev/src/doc/getting_started.md)
 (more documentation available on [docs.rs](https://docs.rs/cargo-crev)).
 
 `cargo-crev` is a work in progress, but it should be usable at all times.
@@ -76,4 +76,4 @@ Thank you\!
 ## Changelog
 
 Changelog can be found here:
-<https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/CHANGELOG.md>
+<https://github.com/crev-dev/cargo-crev/blob/main/cargo-crev/CHANGELOG.md>
