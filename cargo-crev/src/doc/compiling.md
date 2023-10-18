@@ -69,7 +69,7 @@ To compile and install latest `cargo-crev` release use `cargo`:
 cargo install cargo-crev
 ```
 
-In case you'd like to try latest features from the master branch, try:
+In case you'd like to try latest features from the main branch, try:
 
 ``` bash
 cargo install --git https://github.com/crev-dev/cargo-crev/ cargo-crev
