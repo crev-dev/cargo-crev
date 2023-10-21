@@ -209,8 +209,8 @@ impl AsRef<PublicId> for UnlockedId {
 
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(url: Option<Url>, sec_key: Vec<u8>) -> Result<Self, IdError> {
-        let sec_key = SecretKey::from_bytes(&sec_key)
+    pub fn new(url: Option<Url>, sec_key: &[u8]) -> Result<Self, IdError> {
+        let sec_key = SecretKey::from_bytes(sec_key)
             .map_err(|e| IdError::InvalidSecretKey(e.to_string().into()))?;
         let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
 

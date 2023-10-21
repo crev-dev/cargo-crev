@@ -299,7 +299,7 @@ impl Local {
     pub fn get_current_user_public_ids(&self) -> Result<Vec<PublicId>> {
         let mut ids = vec![];
         if let Some(ids_path) = self.user_ids_path_opt() {
-            for dir_entry in std::fs::read_dir(&ids_path)? {
+            for dir_entry in std::fs::read_dir(ids_path)? {
                 let path = dir_entry?.path();
                 if path.extension().map_or(false, |ext| ext == "yaml") {
                     let locked_id = LockedId::read_from_yaml_file(&path)?;

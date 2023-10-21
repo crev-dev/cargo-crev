@@ -17,16 +17,6 @@ impl Digest {
     }
 
     #[must_use]
-    pub fn from_vec(vec: Vec<u8>) -> Option<Self> {
-        if vec.len() == 32 {
-            let mut out = [0; 32];
-            out.copy_from_slice(&vec);
-            Some(Self(out))
-        } else {
-            None
-        }
-    }
-    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() == 32 {
             let mut out = [0; 32];

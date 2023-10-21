@@ -48,7 +48,7 @@ pub fn get_recursive_digest_for_paths(
         .build();
 
     let digest_vec = h.get_digest_of(root_path)?;
-    Ok(crev_data::Digest::from_vec(digest_vec).unwrap())
+    Ok(crev_data::Digest::from_bytes(&digest_vec).unwrap())
 }
 
 pub fn get_recursive_digest_for_dir(

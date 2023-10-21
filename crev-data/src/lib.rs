@@ -1,6 +1,8 @@
 //! This crate contains only code handling data types
 //! used by `crev`, without getting into details
 //! how actually `crev` works (where and how it manages data).
+#![allow(clippy::default_trait_access)]
+#![allow(clippy::items_after_statements)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::module_name_repetitions)]

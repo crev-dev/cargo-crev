@@ -215,7 +215,7 @@ impl LockedId {
 
             assert!(!secret_key.is_empty());
 
-            let result = UnlockedId::new(url.clone(), secret_key)?;
+            let result = UnlockedId::new(url.clone(), &secret_key)?;
             if public_key != &result.keypair.public.to_bytes() {
                 return Err(Error::PubKeyMismatch);
             }

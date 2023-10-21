@@ -39,7 +39,7 @@ impl Crevette {
     }
 
     /// Export reviews from the given db, if they meet minimum trust level,
-    /// based on the trust_params, from perspective of the given Id.
+    /// based on the `trust_params`, from perspective of the given Id.
     pub fn new_with_options(
         db: ProofDB,
         id: &Id,
@@ -86,14 +86,10 @@ impl Crevette {
                         format!("https://raw.githubusercontent.com/{rest}/HEAD/audits.toml"),
                         rest.split('/').next().unwrap_or_default().into(),
                     ))
-                } else if let Some(rest) = u.strip_prefix("https://gitlab.com/") {
-                    Some((
+                } else { u.strip_prefix("https://gitlab.com/").map(|rest| (
                         format!("https://gitlab.com/{rest}/-/raw/HEAD/audits.toml"),
                         rest.split('/').next().unwrap_or_default().into(),
-                    ))
-                } else {
-                    None
-                }
+                    )) }
             })
             .unzip();
 
@@ -135,8 +131,8 @@ impl Crevette {
         for reviews_for_crate in all.values_mut() {
             reviews_for_crate.sort_by(|(a_trust, q_a, a), (b_trust, q_b, b)| {
                 b.package.id.version.cmp(&a.package.id.version)
-                    .then(b_trust.cmp(&a_trust))
-                    .then(q_b.cmp(&q_a))
+                    .then(b_trust.cmp(a_trust))
+                    .then(q_b.cmp(q_a))
                     .then(b.common.date.cmp(&a.common.date))
             });
 
@@ -201,7 +197,7 @@ impl Crevette {
                         None,
                         Some(format!(
                             "{} -> {}",
-                            self.vet_version(&base),
+                            self.vet_version(base),
                             self.vet_version(&r.package)
                         )),
                     )
@@ -356,7 +352,7 @@ fn criteria_for_non_negative_review(trust: TrustLevel, r: &Package, review: &Rev
     criteria
 }
 
-/// Result of convert_to_repo
+/// Result of `convert_to_repo`
 pub struct RepoInfo {
     pub local_path: PathBuf,
     pub repo_git_url: Option<String>,

@@ -12,6 +12,7 @@
 //!
 //! `crev-wot` is just an initial, reference implementation, and might
 //! evolve, be replaced or become just one of many available implementations.
+#![allow(clippy::default_trait_access)]
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::if_not_else)]
 #![allow(clippy::missing_panics_doc)]
@@ -424,10 +425,10 @@ impl ProofDB {
             .map(move |timestampted| &timestampted.value)
     }
 
-    pub fn get_pkg_flags<'s>(
-        &'s self,
+    pub fn get_pkg_flags(
+        &self,
         pkg_id: &proof::PackageId,
-    ) -> impl Iterator<Item = (&Id, &'s proof::Flags)> {
+    ) -> impl Iterator<Item = (&Id, &proof::Flags)> {
         self.package_flags
             .get(pkg_id)
             .into_iter()
@@ -1084,7 +1085,7 @@ impl ProofDB {
             let fetch_matches = match fetched_from {
                 FetchSource::LocalUser => true,
                 FetchSource::Url(fetched_url) if **fetched_url == *url => true,
-                _ => false,
+                FetchSource::Url(_other) => false,
             };
             self.url_by_id_self_reported
                 .entry(from.id.clone())
@@ -1227,7 +1228,7 @@ impl<'a> UrlOfId<'a> {
     pub fn any_unverified(self) -> Option<&'a Url> {
         match self {
             Self::FromSelfVerified(url) | Self::FromSelf(url) | Self::FromOthers(url) => Some(url),
-            _ => None,
+            Self::None => None,
         }
     }
 }

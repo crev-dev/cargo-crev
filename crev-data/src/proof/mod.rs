@@ -30,6 +30,7 @@ pub type DateUtc = chrono::DateTime<Utc>;
 pub struct Digest(pub [u8; 32]);
 
 impl Digest {
+    #[must_use]
     pub fn to_base64(&self) -> String {
         crev_common::base64_encode(&self.0)
     }

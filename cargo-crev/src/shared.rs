@@ -633,7 +633,7 @@ where
                 });
             }
         };
-        let sel = sel.as_ref().unwrap_or(&args);
+        let sel = sel.as_ref().unwrap_or(args);
         sel.crate_.ensure_name_given()?;
         f(sel)?;
     }

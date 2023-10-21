@@ -2,7 +2,7 @@
 // terminal (not in the context of a real terminal application)
 
 use super::*;
-use crate::term::{self, *};
+use crate::term::{self, Term};
 use std::{io, io::Write, write, writeln};
 
 const CRATE_VERIFY_CRATE_COLUMN_TITLE: &str = "crate";

@@ -282,7 +282,7 @@ pub enum VerificationStatus {
 }
 
 impl VerificationStatus {
-    /// Is it VerificationStatus::Verified?
+    /// Is it `VerificationStatus::Verified`?
     #[must_use]
     pub fn is_verified(self) -> bool {
         self == VerificationStatus::Verified
@@ -388,6 +388,7 @@ pub enum Warning {
 }
 
 impl Warning {
+    #[must_use]
     pub fn auto_log() -> LogOnDrop {
         LogOnDrop(Vec::new())
     }
@@ -425,7 +426,7 @@ impl std::ops::DerefMut for LogOnDrop {
     }
 }
 
-/// Scan through known reviews of the crate (source is "https://crates.io")
+/// Scan through known reviews of the crate (source is `"https://crates.io"`)
 /// and report semver you can safely use according to `requirements`
 ///
 /// See also `verify_package_digest`
@@ -439,7 +440,7 @@ pub fn find_latest_trusted_version(
     db.get_pkg_reviews_for_name(source, name)
         .filter(|review| {
             verify_package_digest(
-                &Digest::from_vec(review.package.digest.clone()).unwrap(),
+                &Digest::from_bytes(&review.package.digest).unwrap(),
                 trust_set,
                 requirements,
                 db,
@@ -463,7 +464,7 @@ pub fn dir_or_git_repo_verify(
     let digest = if path.join(".git").exists() {
         get_recursive_digest_for_git_dir(path, ignore_list)?
     } else {
-        Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap()
+        Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap()
     };
 
     Ok(verify_package_digest(
@@ -484,7 +485,7 @@ pub fn dir_verify(
     trusted_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus> {
-    let digest = Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap();
+    let digest = Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap();
     Ok(verify_package_digest(
         &digest,
         trusted_set,
@@ -495,10 +496,10 @@ pub fn dir_verify(
 
 /// Scan dir and hash everything in it, to get a unique identifier of the package's source code
 pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Result<Digest> {
-    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap())
+    Ok(Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap())
 }
 
-/// See get_dir_digest
+/// See `get_dir_digest`
 pub fn get_recursive_digest_for_git_dir(
     root_path: &Path,
     ignore_list: &fnv::FnvHashSet<PathBuf>,
@@ -522,7 +523,7 @@ pub fn get_recursive_digest_for_git_dir(
     Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
-/// See get_dir_digest
+/// See `get_dir_digest`
 pub fn get_recursive_digest_for_paths(
     root_path: &Path,
     paths: fnv::FnvHashSet<PathBuf>,
@@ -530,12 +531,12 @@ pub fn get_recursive_digest_for_paths(
     Ok(util::get_recursive_digest_for_paths(root_path, paths)?)
 }
 
-/// See get_dir_digest
+/// See `get_dir_digest`
 pub fn get_recursive_digest_for_dir(
     root_path: &Path,
     rel_path_ignore_list: &fnv::FnvHashSet<PathBuf>,
 ) -> Result<Digest> {
-    Ok(Digest::from_vec(util::get_recursive_digest_for_dir(
+    Ok(Digest::from_bytes(&util::get_recursive_digest_for_dir(
         root_path,
         rel_path_ignore_list,
     )?)
