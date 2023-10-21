@@ -586,7 +586,14 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 if args.is_empty() && are_we_called_from_goto_shell().is_none() {
                     clean_all_crates_with_digest_mismatch()?;
                 } else {
-                    handle_goto_mode_command(&ReviewCrateSelector { crate_: args.clone(), diff: None }, None, |sel| clean_crate(&sel.crate_))?;
+                    handle_goto_mode_command(
+                        &ReviewCrateSelector {
+                            crate_: args.clone(),
+                            diff: None,
+                        },
+                        None,
+                        |sel| clean_crate(&sel.crate_),
+                    )?;
                 }
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,

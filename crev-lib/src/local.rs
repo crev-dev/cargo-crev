@@ -1,5 +1,5 @@
 use crate::{
-    activity::{ReviewActivity, LatestReviewActivity},
+    activity::{LatestReviewActivity, ReviewActivity},
     id::{self, LockedId, PassphraseFn},
     util::{self, git::is_unrecoverable},
     Error, ProofStore, Result, Warning,
@@ -375,8 +375,7 @@ impl Local {
     }
 
     fn cache_latest_review_activity_path(&self) -> PathBuf {
-        self.cache_activity_path()
-            .join("latest_review.yaml")
+        self.cache_activity_path().join("latest_review.yaml")
     }
 
     /// Most recent in-progress review

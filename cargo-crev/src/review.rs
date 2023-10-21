@@ -1,6 +1,7 @@
 use crate::{
-    edit, opts::{self, ReviewCrateSelector},
+    edit,
     opts::CargoOpts,
+    opts::{self, ReviewCrateSelector},
     prelude::*,
     term, url_to_status_str,
 };

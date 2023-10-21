@@ -86,10 +86,12 @@ impl Crevette {
                         format!("https://raw.githubusercontent.com/{rest}/HEAD/audits.toml"),
                         rest.split('/').next().unwrap_or_default().into(),
                     ))
-                } else { u.strip_prefix("https://gitlab.com/").map(|rest| (
+                } else {
+                    u.strip_prefix("https://gitlab.com/").map(|rest| (
                         format!("https://gitlab.com/{rest}/-/raw/HEAD/audits.toml"),
                         rest.split('/').next().unwrap_or_default().into(),
-                    )) }
+                    ))
+                }
             })
             .unzip();
 
@@ -302,12 +304,10 @@ fn criteria_for_non_negative_review(trust: TrustLevel, r: &Package, review: &Rev
                     >= level_as_score(Level::Medium) + level_as_score(Level::Medium)
             }
             Rating::Positive => {
-                review_quality_score
-                    >= level_as_score(Level::Medium) + level_as_score(Level::Low)
+                review_quality_score >= level_as_score(Level::Medium) + level_as_score(Level::Low)
             }
             Rating::Strong => {
-                review_quality_score
-                    >= level_as_score(Level::Low) + level_as_score(Level::Low)
+                review_quality_score >= level_as_score(Level::Low) + level_as_score(Level::Low)
             }
         };
     let safe_to_deploy = safe_to_run

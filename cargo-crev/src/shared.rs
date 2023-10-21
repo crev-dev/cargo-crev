@@ -599,7 +599,11 @@ pub fn are_we_called_from_goto_shell() -> Option<OsString> {
 /// After jumping to a crate with `goto`, the crate is selected
 /// already, and commands like `review` must not be given any arguments
 /// like that.
-pub fn handle_goto_mode_command<F>(args: &opts::ReviewCrateSelector, local_for_review: Option<&Local>, f: F) -> Result<()>
+pub fn handle_goto_mode_command<F>(
+    args: &opts::ReviewCrateSelector,
+    local_for_review: Option<&Local>,
+    f: F,
+) -> Result<()>
 where
     F: FnOnce(&ReviewCrateSelector) -> Result<()>,
 {
