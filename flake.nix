@@ -32,7 +32,6 @@
           "clippy"
           "rust-analysis"
           "rust-src"
-          "rustfmt"
           "llvm-tools-preview"
         ]);
 
@@ -255,7 +254,6 @@
           # of stuff to avoid building and caching things we don't need
           lint = pkgs.mkShell {
             nativeBuildInputs = [
-              pkgs.rustfmt
               pkgs.nixpkgs-fmt
               pkgs.shellcheck
               pkgs.git
