@@ -15,24 +15,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: "Lint"
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v23
-        with:
-          nix_path: nixpkgs=channel:nixos-23.05
-      - uses: cachix/cachix-action@v12
-        with:
-          name: cargo-crev
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      # run the same check that git `pre-commit` hook would, just in case
-      - name: Commit check
-        run: nix develop --ignore-environment --extra-experimental-features nix-command --extra-experimental-features flakes .#lint --command ./misc/git-hooks/pre-commit
-
   build:
     name: "Build"
     runs-on: ubuntu-latest
