@@ -18,4 +18,4 @@ crev-data.workspace = true
 crev-wot.workspace = true
 semver.workspace = true
 serde.workspace = true
-toml_edit = { version = "0.20.0", features = ["serde"] }
+toml_edit = { version = "0.21.0", features = ["serde"] }
