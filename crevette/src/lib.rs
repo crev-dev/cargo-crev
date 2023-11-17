@@ -6,8 +6,7 @@ use crev_lib::Local;
 use crev_wot::ProofDB;
 use crev_wot::TrustSet;
 use crev_wot::{PkgVersionReviewId, TrustDistanceParams};
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::path::Path;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 
 pub mod vet;
@@ -114,13 +113,14 @@ impl Crevette {
         Ok(toml)
     }
 
-    pub fn from_debcargo_repo(temp_dir_path: &Path) -> Result<String, Error> {
+    #[cfg(feature = "debcargo")]
+    pub fn from_debcargo_repo(temp_dir_path: &std::path::Path) -> Result<String, Error> {
         let debs = index_debcargo::Index::new(temp_dir_path).and_then(|d| d.list_all()).map_err(|e| {
             Error::ErrorIteratingLocalProofStore(Box::new((temp_dir_path.into(), e.to_string())))
         })?;
 
         let mut audits = BTreeMap::new();
-        let mut seen = HashSet::new();
+        let mut seen = std::collections::HashSet::new();
         for d in debs {
             let mut who = vec![];
             seen.clear();

@@ -27,11 +27,18 @@ Run with --debcargo to make a vet file from Debian package list.", env!("CARGO_P
             return Ok(())
         },
         Some("--debcargo") => {
-            let dirs = directories_next::BaseDirs::new().unwrap();
-            let cache_dir = dirs.cache_dir().join("crevette");
-            let _ = std::fs::create_dir_all(&cache_dir);
-            println!("{}", Crevette::from_debcargo_repo(&cache_dir)?);
-            return Ok(())
+            if !cfg!(feature = "debcargo") {
+                eprintln!("Reinstall with debcargo enabled:\ncargo install crevette --features=debcargo");
+                return Err(Error::UnsupportedVersion(0));
+            }
+            #[cfg(feature = "debcargo")]
+            {
+                let dirs = directories_next::BaseDirs::new().unwrap();
+                let cache_dir = dirs.cache_dir().join("crevette");
+                let _ = std::fs::create_dir_all(&cache_dir);
+                println!("{}", Crevette::from_debcargo_repo(&cache_dir)?);
+                return Ok(())
+            }
         },
         Some(other) => {
             eprintln!("unknown argument: {other}");
