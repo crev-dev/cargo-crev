@@ -484,7 +484,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-crev"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "anyhow",
  "atty",
@@ -792,7 +792,7 @@ dependencies = [
 
 [[package]]
 name = "crev-common"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "base64 0.13.1",
  "blake2",
@@ -808,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "crev-data"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "chrono",
  "crev-common",
@@ -825,7 +825,7 @@ dependencies = [
 
 [[package]]
 name = "crev-lib"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "aes-siv",
  "blake2",
@@ -863,7 +863,7 @@ dependencies = [
 
 [[package]]
 name = "crev-wot"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "blake2",
  "chrono",
@@ -879,14 +879,16 @@ dependencies = [
 
 [[package]]
 name = "crevette"
-version = "0.25.4"
+version = "0.25.5"
 dependencies = [
  "cargo_author",
  "crev-data",
  "crev-lib",
  "crev-wot",
  "directories-next",
+ "flate2",
  "index-debcargo",
+ "reqwest",
  "semver",
  "serde",
  "toml_edit 0.21.0",
@@ -3350,9 +3352,7 @@ dependencies = [
 
 [[package]]
 name = "index-debcargo"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "463f05798b7363706b24698e56de33667d5acc5dc9794dddca1c9cee3fdc615b"
+version = "1.1.0"
 dependencies = [
  "cargo_author",
  "debian-changelog",

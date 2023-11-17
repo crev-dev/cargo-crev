@@ -8,6 +8,7 @@ use crev_wot::TrustSet;
 use crev_wot::{PkgVersionReviewId, TrustDistanceParams};
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
+use std::io;
 
 pub mod vet;
 
@@ -115,9 +116,30 @@ impl Crevette {
 
     #[cfg(feature = "debcargo")]
     pub fn from_debcargo_repo(temp_dir_path: &std::path::Path) -> Result<String, Error> {
-        let debs = index_debcargo::Index::new(temp_dir_path).and_then(|d| d.list_all()).map_err(|e| {
-            Error::ErrorIteratingLocalProofStore(Box::new((temp_dir_path.into(), e.to_string())))
-        })?;
+        let _ = std::fs::create_dir_all(&temp_dir_path);
+
+        let deb_err = |e: index_debcargo::Error| Error::ErrorIteratingLocalProofStore(Box::new((temp_dir_path.into(), e.to_string())));
+        let mut d = index_debcargo::Index::new(temp_dir_path).map_err(deb_err)?;
+
+        let sources_file = temp_dir_path.join("Sources.gz");
+        if !sources_file.exists() {
+            let sources_file_tmp = temp_dir_path.join("Sources.gz.tmp");
+            let sources_url = "https://deb.debian.org/debian/dists/stable/main/source/Sources.gz";
+            let mut out = std::fs::File::create(&sources_file_tmp)?;
+            let dl_err = |e| Error::IO(io::Error::new(io::ErrorKind::Other, format!("Can't download {sources_url}: {e}")));
+            let mut response = match reqwest::blocking::get(sources_url) {
+                Ok(r) => r,
+                Err(e) => return Err(dl_err(e)),
+            };
+            response.copy_to(&mut out).map_err(dl_err)?;
+            std::fs::rename(&sources_file_tmp, &sources_file)?;
+        }
+        let sources_gzipped = std::fs::File::open(&sources_file)?;
+        let sources = flate2::read::GzDecoder::new(sources_gzipped);
+
+        d.add_distro_source("stable", io::BufReader::new(sources)).map_err(deb_err)?;
+
+        let debs = d.list_all().map_err(deb_err)?;
 
         let mut audits = BTreeMap::new();
         let mut seen = std::collections::HashSet::new();
@@ -143,10 +165,13 @@ impl Crevette {
                 }
             }
 
+            let distros = d.distros.join(", ");
+            let distros = if distros.is_empty() { "unreleased" } else { &distros };
+
             audits.entry(d.name).or_insert_with(Vec::new).push(vet::AuditEntry {
                 criteria: vec!["safe-to-run", "safe-to-deploy"],
                 aggregated_from: vec![index_debcargo::DEBCARGO_CONF_REPO_URL.to_string()],
-                notes: Some(format!("Packaged for Debian. Changelog:\n{}", d.changelog)),
+                notes: Some(format!("Packaged for Debian ({distros}). Changelog:\n{}", d.changelog)),
                 delta: None,
                 version: Some(d.version),
                 violation: None,
