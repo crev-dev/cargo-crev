@@ -1,6 +1,6 @@
 use crevette::Crevette;
-use std::error::Error as _;
 use crevette::Error;
+use std::error::Error as _;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -18,7 +18,6 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), Error> {
-
     match std::env::args().nth(1).as_deref() {
         Some("--help") => {
             eprintln!("https://lib.rs/crevette {}

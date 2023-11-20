@@ -7,8 +7,8 @@ use crev_wot::ProofDB;
 use crev_wot::TrustSet;
 use crev_wot::{PkgVersionReviewId, TrustDistanceParams};
 use std::collections::{BTreeMap, HashMap};
-use std::path::PathBuf;
 use std::io;
+use std::path::PathBuf;
 
 pub mod vet;
 

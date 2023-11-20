@@ -1,5 +1,6 @@
 use crate::{opts, opts::CrateSelector};
 use anyhow::format_err;
+use cargo::sources::source::{QueryKind, Source, SourceMap};
 use cargo::{
     core::{
         dependency::{DepKind, Dependency},
@@ -7,7 +8,6 @@ use cargo::{
         package::PackageSet,
         registry::PackageRegistry,
         resolver::{CliFeatures, HasDevUnits},
-        source::SourceMap,
         Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
     },
     ops,
@@ -150,6 +150,7 @@ fn our_resolve<'cfg>(
         None,
         &specs,
         true,
+        None,
     )?;
 
     Ok((packages, resolve))
@@ -408,7 +409,7 @@ impl Repo {
         Ok(())
     }
 
-    pub fn load_source<'a>(&'a self) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
+    pub fn load_source<'a>(&'a self) -> Result<Box<dyn Source + 'a>> {
         let source_id = SourceId::crates_io(&self.config)?;
         let map = cargo::sources::SourceConfigMap::new(&self.config)?;
         let yanked_whitelist = HashSet::new();
@@ -419,7 +420,7 @@ impl Repo {
     pub fn load_source_with_whitelist<'a>(
         &'a self,
         yanked_whitelist: HashSet<PackageId>,
-    ) -> Result<Box<dyn cargo::core::source::Source + 'a>> {
+    ) -> Result<Box<dyn Source + 'a>> {
         let source_id = SourceId::crates_io(&self.config)?;
         let map = cargo::sources::SourceConfigMap::new(&self.config)?;
         let source = map.load(source_id, &yanked_whitelist)?;
@@ -592,11 +593,9 @@ impl Repo {
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self.config.acquire_package_cache_lock()?;
         if !source
-            .query(
-                &dependency_request,
-                cargo::core::QueryKind::Exact,
-                &mut |summary| summaries.push(summary),
-            )
+            .query(&dependency_request, QueryKind::Exact, &mut |summary| {
+                summaries.push(summary)
+            })
             .is_ready()
         {
             source.block_until_ready()?;
