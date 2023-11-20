@@ -910,6 +910,7 @@ dependencies = [
  "directories-next",
  "flate2",
  "index-debcargo",
+ "index-guix",
  "reqwest",
  "semver",
  "serde",
@@ -3335,6 +3336,14 @@ dependencies = [
  "serde",
  "thiserror",
  "toml 0.8.8",
+]
+
+[[package]]
+name = "index-guix"
+version = "1.0.0"
+dependencies = [
+ "gix 0.55.2",
+ "nom",
 ]
 
 [[package]]

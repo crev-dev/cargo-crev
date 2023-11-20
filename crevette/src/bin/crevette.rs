@@ -38,6 +38,19 @@ Run with --debcargo to make a vet file from Debian package list.", env!("CARGO_P
                 return Ok(())
             }
         },
+        Some("--guix") => {
+            if !cfg!(feature = "guix") {
+                eprintln!("Reinstall with guix enabled:\ncargo install crevette --features=guix");
+                return Err(Error::UnsupportedVersion(0));
+            }
+            #[cfg(feature = "guix")]
+            {
+                let dirs = directories_next::BaseDirs::new().unwrap();
+                let cache_dir = dirs.cache_dir().join("crevette");
+                println!("{}", Crevette::from_guix_repo(&cache_dir)?);
+                return Ok(())
+            }
+        },
         Some(other) => {
             eprintln!("unknown argument: {other}");
         },
