@@ -3344,6 +3344,8 @@ dependencies = [
 [[package]]
 name = "index-guix"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd5527d0b9a90f16299c4db9a1c93c74089abe2e38dbd640b69e4afc378038e3"
 dependencies = [
  "gix 0.55.2",
  "nom",
