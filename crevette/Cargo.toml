@@ -31,3 +31,8 @@ reqwest = { version = "0.11.22", features = ["blocking"], optional = true }
 debcargo = ["dep:index-debcargo", "dep:cargo_author", "dep:reqwest", "dep:flate2"]
 # Ability to export list of crates included in Guix
 guix = ["dep:index-guix"]
+
+[profile.dev.package]
+sha1_smol.opt-level = 3
+adler.opt-level = 3
+miniz_oxide.opt-level = 3
