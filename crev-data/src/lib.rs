@@ -10,7 +10,6 @@
 pub mod digest;
 pub mod id;
 pub mod level;
-mod prelude;
 pub mod proof;
 pub mod url;
 #[macro_use]

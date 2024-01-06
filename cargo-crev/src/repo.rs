@@ -12,6 +12,7 @@ use cargo::{
     },
     ops,
     util::{
+        cache_lock::CacheLockMode,
         config::{Config, ConfigValue},
         important_paths::find_root_manifest_for_wd,
         CargoResult, Rustc,
@@ -129,7 +130,7 @@ fn our_resolve<'cfg>(
     all_features: bool,
     no_default_features: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
-    let _lock = workspace.config().acquire_package_cache_lock()?;
+    let _lock = workspace.config().acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
     let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
 
     let cli_features =
@@ -352,7 +353,7 @@ impl Repo {
         &self,
         source_ids: impl Iterator<Item = SourceId>,
     ) -> CargoResult<PackageRegistry<'_>> {
-        let _lock = self.config.acquire_package_cache_lock()?;
+        let _lock = self.config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
         let mut registry = PackageRegistry::new(&self.config)?;
         registry.add_sources(source_ids)?;
         Ok(registry)
@@ -582,7 +583,7 @@ impl Repo {
             // special case - we need to whitelist the crate, in case it was yanked
             let mut yanked_whitelist = HashSet::default();
             let source_id = SourceId::crates_io(&self.config)?;
-            yanked_whitelist.insert(PackageId::new(name, version, source_id)?);
+            yanked_whitelist.insert(PackageId::new(name, &version.to_string(), source_id)?);
             self.load_source_with_whitelist(yanked_whitelist)?
         } else {
             self.load_source()?
@@ -591,7 +592,7 @@ impl Repo {
         let version_str = version.map(ToString::to_string);
         let dependency_request =
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
-        let _lock = self.config.acquire_package_cache_lock()?;
+        let _lock = self.config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
         if !source
             .query(&dependency_request, QueryKind::Exact, &mut |summary| {
                 summaries.push(summary)

@@ -13,7 +13,7 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekh
 edition = "2021"
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 repository = "https://github.com/crev-dev/cargo-crev"
-rust-version = "1.70"
+rust-version = "1.73"
 version = "0.25.6"
 
 [workspace.dependencies]
@@ -24,7 +24,7 @@ crev-wot = { path = "crev-wot", version = "0.25" }
 chrono = { version = "0.4.28", default-features = false, features = ["std", "clock"] }
 blake2 = "0.10.6"
 default = "0.1.2"
-cargo = "0.75"
+cargo = "0.76"
 git2 = ">=0.17,<0.19"
 itertools = "0.12"
 log = "0.4.20"
