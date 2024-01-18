@@ -28,7 +28,7 @@ cargo = "0.76"
 git2 = ">=0.17,<0.19"
 itertools = "0.12"
 log = "0.4.20"
-rayon = "1.7.0"
+rayon = "1.8.1"
 resiter = "0.5"
 semver = { version = "1.0.18", features = [ "serde" ] }
 serde = { version = "1.0.188", features = ["derive"] }
