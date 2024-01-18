@@ -36,7 +36,7 @@ cargo-platform = "0.1.3"
 crates_io_api = "0.9.0"
 crossbeam = "0.8.2"
 chrono.workspace = true
-env_logger = { version = "0.10.0", default-features = false, features = ["auto-color", "humantime"] }
+env_logger = { version = "0.10.2", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
 geiger = "0.4.12"
 itertools.workspace = true
