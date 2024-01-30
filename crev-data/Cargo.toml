@@ -16,7 +16,7 @@ version.workspace = true
 crev-common.workspace = true
 
 chrono.workspace = true
-derive_builder = "0.12.0"
+derive_builder = "0.13.0"
 rand_v07 = { version = "0.7.3", package = "rand" } # for dalek
 ed25519-dalek = "1.0.1"
 typed-builder = "0.18.0"

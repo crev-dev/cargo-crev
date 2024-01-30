@@ -7,6 +7,7 @@ members = [
 	"crev-wot",
 	"crev-lib",
 ]
+exclude = ["crevette"]
 
 [workspace.package]
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekhood.net>"]
