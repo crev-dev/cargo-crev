@@ -8,7 +8,7 @@ use cargo::{
         package::PackageSet,
         registry::PackageRegistry,
         resolver::{CliFeatures, HasDevUnits},
-        Package, PackageId, PackageIdSpec, Resolve, SourceId, Workspace,
+        Package, PackageId, Resolve, SourceId, Workspace,
     },
     ops,
     util::{
@@ -138,8 +138,7 @@ fn our_resolve<'cfg>(
 
     let specs: Vec<_> = workspace
         .members()
-        .map(|m| m.summary().package_id())
-        .map(PackageIdSpec::from_package_id)
+        .map(|m| m.summary().package_id().to_spec())
         .collect();
 
     let resolve = ops::resolve_with_previous(
@@ -583,7 +582,7 @@ impl Repo {
             // special case - we need to whitelist the crate, in case it was yanked
             let mut yanked_whitelist = HashSet::default();
             let source_id = SourceId::crates_io(&self.config)?;
-            yanked_whitelist.insert(PackageId::new(name, &version.to_string(), source_id)?);
+            yanked_whitelist.insert(PackageId::new(name.into(), version.clone(), source_id));
             self.load_source_with_whitelist(yanked_whitelist)?
         } else {
             self.load_source()?
@@ -602,9 +601,9 @@ impl Repo {
             source.block_until_ready()?;
         }
         let summary = if let Some(version) = version {
-            summaries.iter().find(|s| s.version() == version)
+            summaries.iter().find(|&s| s.as_summary().version() == version)
         } else {
-            summaries.iter().max_by_key(|s| s.version())
+            summaries.iter().max_by_key(|&s| (!s.is_yanked(), s.as_summary().version()))
         };
 
         Ok(summary.map(|s| s.package_id()))
