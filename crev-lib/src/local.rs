@@ -398,12 +398,16 @@ impl Local {
             .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         let latest_path = self.cache_latest_review_activity_path();
-        crev_common::save_to_yaml_file(&latest_path, &LatestReviewActivity {
-            source: source.to_string(),
-            name: name.to_string(),
-            version: version.clone(),
-            diff_base: activity.diff_base.clone(),
-        }).map_err(|e| Error::ReviewActivity(Box::new(e)))?;
+        crev_common::save_to_yaml_file(
+            &latest_path,
+            &LatestReviewActivity {
+                source: source.to_string(),
+                name: name.to_string(),
+                version: version.clone(),
+                diff_base: activity.diff_base.clone(),
+            },
+        )
+        .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         Ok(())
     }
