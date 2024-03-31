@@ -398,7 +398,10 @@ pub fn crate_review_activity_check(
             }
         }
 
-        if activity.timestamp + chrono::Duration::days(2) < crev_common::now() {
+        if activity.timestamp
+            + chrono::Duration::try_days(2).expect("2 days doesn't overflow TimeDelta")
+            < crev_common::now()
+        {
             return Err(ActivityCheckError::Expired);
         }
     } else {
