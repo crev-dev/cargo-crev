@@ -130,7 +130,9 @@ fn our_resolve<'cfg>(
     all_features: bool,
     no_default_features: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
-    let _lock = workspace.config().acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
+    let _lock = workspace
+        .config()
+        .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
     let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
 
     let cli_features =
@@ -352,7 +354,9 @@ impl Repo {
         &self,
         source_ids: impl Iterator<Item = SourceId>,
     ) -> CargoResult<PackageRegistry<'_>> {
-        let _lock = self.config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
+        let _lock = self
+            .config
+            .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
         let mut registry = PackageRegistry::new(&self.config)?;
         registry.add_sources(source_ids)?;
         Ok(registry)
@@ -591,7 +595,9 @@ impl Repo {
         let version_str = version.map(ToString::to_string);
         let dependency_request =
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
-        let _lock = self.config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
+        let _lock = self
+            .config
+            .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
         if !source
             .query(&dependency_request, QueryKind::Exact, &mut |summary| {
                 summaries.push(summary)
@@ -601,9 +607,13 @@ impl Repo {
             source.block_until_ready()?;
         }
         let summary = if let Some(version) = version {
-            summaries.iter().find(|&s| s.as_summary().version() == version)
+            summaries
+                .iter()
+                .find(|&s| s.as_summary().version() == version)
         } else {
-            summaries.iter().max_by_key(|&s| (!s.is_yanked(), s.as_summary().version()))
+            summaries
+                .iter()
+                .max_by_key(|&s| (!s.is_yanked(), s.as_summary().version()))
         };
 
         Ok(summary.map(|s| s.package_id()))

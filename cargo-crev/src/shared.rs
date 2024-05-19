@@ -265,7 +265,11 @@ pub fn get_open_cmd(local: &Local) -> Result<String> {
 /// Open a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-pub fn crate_open(crate_sel: &ReviewCrateSelector, cmd: Option<String>, cmd_save: bool) -> Result<()> {
+pub fn crate_open(
+    crate_sel: &ReviewCrateSelector,
+    cmd: Option<String>,
+    cmd_save: bool,
+) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
     let crate_id = repo.find_pkgid_by_crate_selector(&crate_sel.crate_)?;
@@ -621,10 +625,7 @@ where
 
         env::set_current_dir(org_dir)?;
         f(&ReviewCrateSelector {
-            crate_: CrateSelector::new(
-            Some(name),
-            Some(Version::parse(&version)?),
-            true),
+            crate_: CrateSelector::new(Some(name), Some(Version::parse(&version)?), true),
             diff: None,
         })?;
     } else {
@@ -633,7 +634,12 @@ where
             if let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity()) {
                 sel = Some(ReviewCrateSelector {
                     diff: latest.diff_base.is_some().then_some(latest.diff_base),
-                    crate_: CrateSelector::new(Some(latest.name), Some(latest.version), args.crate_.unrelated).auto_unrelated()?
+                    crate_: CrateSelector::new(
+                        Some(latest.name),
+                        Some(latest.version),
+                        args.crate_.unrelated,
+                    )
+                    .auto_unrelated()?,
                 });
             }
         };
