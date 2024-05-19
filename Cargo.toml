@@ -14,8 +14,8 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Kornel Lesiński <kornel@geekh
 edition = "2021"
 license = "MPL-2.0 OR MIT OR Apache-2.0"
 repository = "https://github.com/crev-dev/cargo-crev"
-rust-version = "1.73"
-version = "0.25.8"
+rust-version = "1.77"
+version = "0.25.9"
 
 [workspace.dependencies]
 crev-common = { path = "crev-common", version = "0.25"}
@@ -27,7 +27,7 @@ blake2 = "0.10.6"
 default = "0.1.2"
 cargo = "0.77"
 git2 = ">=0.17,<0.19"
-itertools = "0.12"
+itertools = "0.13"
 log = "0.4.20"
 rayon = "1.7.0"
 resiter = "0.5"
