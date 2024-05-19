@@ -7,7 +7,13 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-url -->
-## [0.23.0](https://github.com/crev-dev/cargo-crev/compare/v0.23.0...v0.24.3)
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.24.0...HEAD) - ReleaseDate
+
+- `crevette` tool for `cargo-crev` to `cargo-vet` export
+- `cargo crev review --diff` suggests a URL for viewing a diff
+- `cargo crev review` remembers the last `cargo crev open` crate.
+
+## [0.24.0](https://github.com/crev-dev/cargo-crev/compare/v0.23.0...v0.24.3)
 
 - Added `--direct` flag to trust paramaters to use only directly trusted Ids
 - Added command "proof reissue" to reissue reviews under a different id.
