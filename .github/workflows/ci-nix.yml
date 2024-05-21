@@ -24,7 +24,7 @@ jobs:
       - uses: cachix/install-nix-action@v26
         with:
           nix_path: nixpkgs=channel:nixos-23.05
-      - uses: cachix/cachix-action@v14
+      - uses: cachix/cachix-action@v15
         with:
           name: cargo-crev
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
@@ -50,7 +50,7 @@ jobs:
       - uses: cachix/install-nix-action@v26
         with:
           nix_path: nixpkgs=channel:nixos-23.05
-      - uses: cachix/cachix-action@v14
+      - uses: cachix/cachix-action@v15
         with:
           name: cargo-crev
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
