@@ -40,7 +40,7 @@ env_logger = { version = "0.11.3", default-features = false, features = ["auto-c
 fnv = "1.0.7"
 geiger = "0.4.12"
 itertools.workspace = true
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 petgraph = "0.6.4"
 rayon = "1.7.0"
 resiter = "0.5.0"
