@@ -74,7 +74,6 @@ pub struct Scanner {
     cargo_opts: CargoOpts,
     graph: Arc<crate::repo::Graph>,
     crate_details_by_id: Arc<Mutex<HashMap<PackageId, CrateDetails>>>,
-    pub roots: Vec<cargo::core::PackageId>,
 }
 
 // Something in (presumably) in the C bindings we're using is unsound and will SIGSEGV
@@ -176,7 +175,6 @@ impl Scanner {
             cargo_opts: args.common.cargo_opts.clone(),
             graph: Arc::new(graph),
             crate_details_by_id: Default::default(),
-            roots,
         })
     }
 

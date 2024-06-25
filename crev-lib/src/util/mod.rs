@@ -1,14 +1,10 @@
-use bstr::ByteSlice;
-use crev_common::sanitize_name_for_fs;
 pub use crev_common::{run_with_shell_cmd, store_str_to_file, store_to_file_with};
+use crev_common::sanitize_name_for_fs;
 use crev_data::proof;
-use std::{
-    self,
-    borrow::Cow,
-    ffi::OsStr,
-    io,
-    path::{Path, PathBuf},
-};
+use std::borrow::Cow;
+use std::ffi::OsStr;
+use std::io;
+use std::path::{Path, PathBuf};
 
 pub mod git;
 
