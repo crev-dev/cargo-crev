@@ -26,7 +26,7 @@ directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
 rust-argon2 = "2.0.0"
 git2.workspace = true
-log = "0.4.20"
+log = "0.4.22"
 resiter.workspace = true
 serde.workspace = true
 serde_cbor = "0.11.2"
