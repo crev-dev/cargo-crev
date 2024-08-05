@@ -16,14 +16,14 @@ Each issue is marked with an ID. It can be any string. Identifiers like
 URL can be used instead.
 
 Issues associated with a crate version, are only stating that this particular
-release is affected. The do not imply that this is neccesarily the first or only
+release is affected. The do not imply that this is necessarily the first or only
 version being affected.
 
 Also, issues are treated as an open from the first version reported. `crev` will
 consider all the later versions to be affected as well, until a corresponding
 *advisory* is found with a matching `id`.
 
-**It is generaly better to report *advisories* instead of issues**. Issues are
+**It is generally better to report *advisories* instead of issues**. Issues are
 most useful when the fixed release is not yet available, so it's impossible to
 create an advisory associated with a version that does not yet exist.
 
@@ -43,7 +43,7 @@ released in the version 1.4.5, a `range: minor` since the whole minor release
 was affected (all versions matching 1.4.x, before release containing the
 advisory).
 
-This simplifies specifing the range, but is not always precise. Had the issue
+This simplifies specifying the range, but is not always precise. Had the issue
 been first introduced in version 1.4.1, the version 1.4.0 would be incorrectly
 affected as well. This is however rare and overshooting is not a problem.
 

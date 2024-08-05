@@ -357,7 +357,7 @@ Example. VSCode users can run:
 $ cargo crev open <crate> --cmd "code --wait -n" --cmd-save
 ```
 
-`--cmd-save` will make `crev` remember the `--cmd` paramter in the future, so it
+`--cmd-save` will make `crev` remember the `--cmd` parameter in the future, so it
 does not have to be repeated every time. The exact `--cmd` to use for each IDE
 can vary, and you can ask for help in figuring it out on the `crev`'s gitter
 channel. You can change the command later with `cargo crev config edit`.
@@ -396,7 +396,7 @@ comment: ""
 # and trustworthiness.
 #
 # Your Proofs are cryptographically signed and will circulate in the ecosystem.
-# While there is no explicit or implicity legal responsibiltity attached to
+# While there is no explicit or implicitly legal responsibiltity attached to
 # using `crev` system, other people will most probably use it to judge you,
 # your other work, etc.
 #

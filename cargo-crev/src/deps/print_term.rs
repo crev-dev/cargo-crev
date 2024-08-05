@@ -1,4 +1,4 @@
-// Functions related to writeing dependencies in the standard
+// Functions related to writing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
 use super::*;
