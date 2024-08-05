@@ -118,7 +118,7 @@ Check the `cargo crev crate verify --help` output for more helpful flags.
        0 unicode-segmentation
 ```
 
-`cargo crev crate search <query>` will query crates.io for crate maching a given
+`cargo crev crate search <query>` will query crates.io for crate matching a given
 query, and then sort them from the most trustworthy.
 
 This features is still new and is planed to be expanded and improved.

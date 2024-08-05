@@ -662,7 +662,7 @@ impl ProofDB {
         // This is one of the most complicated calculations in whole crev. I hate this code
         // already, and I have barely put it together.
 
-        // Here we track all the reported isue by issue id
+        // Here we track all the reported issue by issue id
         let mut issue_reports_by_id: HashMap<String, IssueDetails> = HashMap::new();
 
         // First we go through all the reports in previous versions with `issues` fields and collect these.

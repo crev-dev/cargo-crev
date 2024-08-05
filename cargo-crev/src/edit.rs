@@ -25,7 +25,7 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
     })
 }
 
-/// Retruns the edited string, and bool indicating if the file was ever written to/ (saved).
+/// Returns the edited string, and bool indicating if the file was ever written to/ (saved).
 fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
     let dir = tempfile::tempdir()?;
     let file_path = dir.path().join("crev.review.yaml");
@@ -51,7 +51,7 @@ pub fn edit_text_iteractively(text: &str) -> Result<String> {
     Ok(edit_text_iteractively_raw(text)?.0)
 }
 
-pub fn edit_text_iteractively_until_writen_to(text: &str) -> Result<String> {
+pub fn edit_text_iteractively_until_written_to(text: &str) -> Result<String> {
     loop {
         let (text, modified) = edit_text_iteractively_raw(text)?;
         if !modified {
@@ -120,7 +120,7 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
         writeln!(&mut text, "# {line}")?;
     }
     loop {
-        text = edit_text_iteractively_until_writen_to(&text)?;
+        text = edit_text_iteractively_until_written_to(&text)?;
         match content.apply_draft(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {e}");

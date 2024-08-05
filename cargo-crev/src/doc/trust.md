@@ -64,7 +64,7 @@ Or in other words: for R to have a given *effective trust* for Y, there has to
 exist at least on path from R and Y, where every previous node directly trusts
 the next one at the level at least as high.
 
-That's because any *effective trust level* can only be as high as the higest
+That's because any *effective trust level* can only be as high as the highest
 *effective trust level*
 
 ### Depth of the WoT

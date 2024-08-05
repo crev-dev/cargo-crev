@@ -41,7 +41,7 @@ fn generete_salt() -> Vec<u8> {
 /// `host_salt` was not a thing - generate some
 /// form of stable id
 ///
-/// TODO: at some point this should no longer be neccessary
+/// TODO: at some point this should no longer be necessary
 fn backfill_salt() -> Vec<u8> {
     crev_common::blake2b256sum(b"BACKFILLED_SUM").to_vec()
 }
@@ -820,13 +820,13 @@ impl Local {
         Ok(from_id.create_trust_proof(&public_ids, trust_level, override_)?)
     }
 
-    /// Fetch other people's proof repostiory from a git URL, into the current database on disk
+    /// Fetch other people's proof repository from a git URL, into the current database on disk
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
         self.fetch_url_into(url, &mut db)
     }
 
-    /// Fetch other people's proof repostiory from a git URL, directly into the given db (and disk too)
+    /// Fetch other people's proof repository from a git URL, directly into the given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, db: &mut crev_wot::ProofDB) -> Result<()> {
         info!("Fetching {}... ", url);
         let dir = self.fetch_remote_git(url)?;

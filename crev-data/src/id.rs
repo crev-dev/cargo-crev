@@ -111,7 +111,7 @@ impl Id {
     }
 }
 
-/// A unique ID accompanied by publically identifying data.
+/// A unique ID accompanied by publicly identifying data.
 #[derive(Clone, Debug, Builder, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PublicId {
     #[serde(flatten)]

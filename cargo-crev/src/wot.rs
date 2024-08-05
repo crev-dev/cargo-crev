@@ -74,10 +74,10 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
                     write!(io::stdout(), "; ")?;
                     term.print(format_args!("distrusted"), RED)?;
                 }
-                if edge.ignored_overriden {
+                if edge.ignored_overridden {
                     write!(io::stdout(), "; ")?;
-                    term.print(format_args!("overriden"), YELLOW)?;
-                    write!(io::stdout(), " by {}", edge.overriden_by.iter().join(", "))?;
+                    term.print(format_args!("overridden"), YELLOW)?;
+                    write!(io::stdout(), " by {}", edge.overridden_by.iter().join(", "))?;
                 }
                 if edge.ignored_too_far {
                     write!(io::stdout(), "; ")?;
