@@ -459,7 +459,7 @@ impl Advisory {
 /// a problem with package in a given version. It leaves the
 /// question open if any previous and following versions might
 /// also be affected, but will be considered open and affecting
-/// all following versions withing the `range` until an advisory
+/// all following versions within the `range` until an advisory
 /// is found for it, matching the id.
 #[derive(Clone, TypedBuilder, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

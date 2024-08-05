@@ -47,7 +47,7 @@ pub struct Proof {
     /// Signature over the body
     signature: String,
 
-    /// Common informations that should be in any  proof
+    /// Common information that should be in any  proof
     common_content: Common,
 
     /// Digest (blake2b256)

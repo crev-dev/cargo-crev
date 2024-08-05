@@ -7,7 +7,7 @@ The following is glossary of terms commonly used in `crev` and `cargo-crev`
 An optional part of a *Review*, announcing a significant problem fixed in that
 package version, advising other users to upgrade.
 
-Notably *Advisories* implicitly denote existance of such issue in all previous
+Notably *Advisories* implicitly denote existence of such issue in all previous
 versions in a certain *VersionRange*.
 
 ### *CrevId*
@@ -23,7 +23,7 @@ the secret key stored locally and encrypted with a passphrase.
 An optional part of a *Review*, announcing a significant problem present in a
 given package version.
 
-Very similiar to *Advisory*. It's generally better to prefer *Advisories*,
+Very similar to *Advisory*. It's generally better to prefer *Advisories*,
 except for cases in which the problem does not have a solution available yet.
 
 ### *Level*

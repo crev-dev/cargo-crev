@@ -99,7 +99,7 @@ fn proofdb_distance() -> Result<()> {
 // should be visible in all the user-facing stats, listings
 // and counts.
 #[test]
-fn overwritting_reviews() -> Result<()> {
+fn overwriting_reviews() -> Result<()> {
     let url = FetchSource::Url(Arc::new(Url::new_git("https://a")));
     let a = UnlockedId::generate_for_git_url("https://a");
     let digest = [0; 32];
