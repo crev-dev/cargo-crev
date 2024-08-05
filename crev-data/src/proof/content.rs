@@ -174,7 +174,7 @@ where
 ///
 /// A simplified version of content, used
 /// for user interaction - editing the parts
-/// that are not neccessary for the user to see.
+/// that are not necessary for the user to see.
 pub struct Draft {
     pub(crate) title: String,
     pub(crate) body: String,

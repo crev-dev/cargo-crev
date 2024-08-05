@@ -19,7 +19,7 @@
 
 ## [0.24.0](https://github.com/crev-dev/cargo-crev/compare/v0.23.0...v0.24.3)
 
-- Added `--direct` flag to trust paramaters to use only directly trusted Ids
+- Added `--direct` flag to trust parameters to use only directly trusted Ids
 - Added command "proof reissue" to reissue reviews under a different id.
   The original proof will be referenced in the new proof under the "original:" field
 - Fix crash on systems with libgit2 v1.4
@@ -183,7 +183,7 @@ improvements
 - **BREAKING**: `cargo crev <verb> <noun>` was change to `cargo crev <noun>
   <verb>`
 - Introduces one letter aliases for most (all?) commands
-- Commands quering proofs will now print them as a multi-object yaml document
+- Commands querying proofs will now print them as a multi-object yaml document
   for easier parsing
 - Shortened `=1.2.3` in `latest_t` to just `=`
 
@@ -194,7 +194,7 @@ improvements
 - `crate mvp` to discovering best reviewers
 - `crate search` for looking up best reviewed dependency candidates
 - `crate verify --recursive`
-- `CREV_PASSPHRASE_CMD` for users of `pass` and similiar
+- `CREV_PASSPHRASE_CMD` for users of `pass` and similar
 - Multiple flags and arguments to narrow down `crate verify` scope
 - Handling of `--level <level>` in many commands
 - "Tips and tricks" in user
@@ -228,7 +228,7 @@ documentation
 - User Documentation, including Getting Started Guide
 - `query dir` command
 - Differential reviews with `diff` and `review --diff` commands
-- New options, particularily for
+- New options, particularly for
 `verify`
 
 ## [0.7.0](https://github.com/dpc/crev/compare/cargo-crev-v0.6.0...cargo-crev-v0.7.0) - 2019-04-27
