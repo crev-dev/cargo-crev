@@ -32,7 +32,7 @@ log = "0.4.20"
 rayon = "1.7.0"
 resiter = "0.5"
 semver = { version = "1.0.18", features = [ "serde" ] }
-serde = { version = "1.0.188", features = ["derive"] }
+serde = { version = "1.0.205", features = ["derive"] }
 serde_json = "1.0.105"
 serde_yaml = "0.9.25"
 thiserror = "1.0.47"
