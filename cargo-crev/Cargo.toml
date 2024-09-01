@@ -53,12 +53,12 @@ time = "0.3.28"
 tokei = "12.1.2"
 walkdir = "2.3.3"
 openssl-sys = "0.9.92"
-git2 = "0.18" # must match cargo
+git2.workspace = true
 tempfile = "3.8.0"
 rprompt = "2.0.2"
 thiserror.workspace = true
 log.workspace = true
-term = "0.7.0"
+term = "1.0"
 syn-inline-mod = "0.6.0"
 quote = "1.0.33"
 

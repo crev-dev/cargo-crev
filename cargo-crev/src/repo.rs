@@ -1,6 +1,7 @@
 use crate::{opts, opts::CrateSelector};
 use anyhow::format_err;
 use cargo::sources::source::{QueryKind, Source, SourceMap};
+use cargo::GlobalContext;
 use cargo::{
     core::{
         dependency::{DepKind, Dependency},
@@ -13,7 +14,7 @@ use cargo::{
     ops,
     util::{
         cache_lock::CacheLockMode,
-        config::{Config, ConfigValue},
+        context::ConfigValue,
         important_paths::find_root_manifest_for_wd,
         CargoResult, Rustc,
     },
@@ -130,8 +131,7 @@ fn our_resolve<'cfg>(
     all_features: bool,
     no_default_features: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
-    let _lock = workspace
-        .config()
+    let _lock = workspace.gctx()
         .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
     let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
 
@@ -152,7 +152,6 @@ fn our_resolve<'cfg>(
         None,
         &specs,
         true,
-        None,
     )?;
 
     Ok((packages, resolve))
@@ -287,7 +286,7 @@ fn prune_directory_source_replacements(
 
 /// A handle to the current Rust project
 pub struct Repo {
-    config: Config,
+    config: GlobalContext,
     cargo_opts: opts::CargoOpts,
     features_list: Vec<String>,
 }
@@ -307,7 +306,7 @@ impl Repo {
     }
 
     pub fn auto_open_cwd(cargo_opts: opts::CargoOpts) -> Result<Self> {
-        let mut config = Config::default()?;
+        let mut config = GlobalContext::default()?;
 
         config.configure(
             0,
@@ -661,7 +660,7 @@ impl Repo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cargo::util::config::Definition;
+    use cargo::util::context::Definition;
 
     #[test]
     fn test_prune_directory_source_replacement() {
