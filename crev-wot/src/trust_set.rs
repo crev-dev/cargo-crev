@@ -47,12 +47,12 @@ pub struct TraverseLogEdge {
     pub relative_distance: Option<u64>,
     pub total_distance: Option<u64>,
     pub distrusted_by: HashSet<Id>,
-    pub overriden_by: HashSet<Id>,
+    pub overridden_by: HashSet<Id>,
 
     pub no_change: bool,
     pub ignored_distrusted: bool,
     pub ignored_trust_too_low: bool,
-    pub ignored_overriden: bool,
+    pub ignored_overridden: bool,
     pub ignored_too_far: bool,
 }
 
@@ -71,10 +71,10 @@ pub struct TrustSet {
     pub trusted: HashMap<Id, TrustedIdDetails>,
     pub distrusted: HashMap<Id, DistrustedIdDetails>,
 
-    // "ignore trust from `Id` to `Id`, as overriden by some other Ids with an effective `TrustLevel`s
+    // "ignore trust from `Id` to `Id`, as overridden by some other Ids with an effective `TrustLevel`s
     pub trust_ignore_overrides: HashMap<(Id, Id), OverrideSourcesDetails>,
 
-    // "ignore specific package review by `Id`, as overriden by some other Ids with an effective `TrustLevel`s
+    // "ignore specific package review by `Id`, as overridden by some other Ids with an effective `TrustLevel`s
     pub package_review_ignore_override: HashMap<PkgVersionReviewId, OverrideSourcesDetails>,
 }
 
@@ -215,7 +215,7 @@ impl TrustSet {
                 let too_far = params.max_distance < candidate_total_distance;
                 let trust_too_low = too_far && effective_trust_level == TrustLevel::None;
 
-                let overriden_by = if let Some(existing_override) = current_trust_set
+                let overridden_by = if let Some(existing_override) = current_trust_set
                     .trust_ignore_overrides
                     .get(&(current.id.clone(), candidate_id.clone()))
                 {
@@ -238,12 +238,12 @@ impl TrustSet {
                     relative_distance: Some(candidate_distance_from_current),
                     total_distance: Some(candidate_total_distance),
                     distrusted_by: distrusted_by.clone(),
-                    overriden_by: overriden_by.clone(),
+                    overridden_by: overridden_by.clone(),
 
                     ignored_distrusted: too_far && !distrusted_by.is_empty(),
                     ignored_too_far: too_far,
                     ignored_trust_too_low: trust_too_low,
-                    ignored_overriden: !overriden_by.is_empty(),
+                    ignored_overridden: !overridden_by.is_empty(),
 
                     // to be changed if there was actually a change
                     no_change: true,
@@ -264,9 +264,9 @@ impl TrustSet {
                     continue;
                 }
 
-                if !overriden_by.is_empty() {
+                if !overridden_by.is_empty() {
                     debug!(
-                        "{} trust for {} was ignored (overriden)",
+                        "{} trust for {} was ignored (overridden)",
                         current.id, candidate_id
                     );
                     continue;
@@ -283,7 +283,7 @@ impl TrustSet {
                     // We discard the result, because we actually want to make as much
                     // progress as possible before restaring building the WoT, and
                     // we will not visit any node that was marked as distrusted,
-                    // becuse we check it for every node to be visited
+                    // because we check it for every node to be visited
                     let _ = current_trust_set
                         .record_distrusted_id(candidate_id.clone(), current.id.clone());
 

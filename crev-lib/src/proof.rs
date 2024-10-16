@@ -26,7 +26,7 @@ pub(crate) fn rel_store_path(proof: &proof::Proof, host_salt: &[u8]) -> PathBuf 
             date,
             type_subname,
             // this used to be `[..4]`, but temporarily change it
-            // to accomodate a new proof format. old clients will
+            // to accommodate a new proof format. old clients will
             // fail to parse a whole file if it contains a new proof
             // format, so this makes sure new proofs are only
             // in separate files; this can be reverted back after

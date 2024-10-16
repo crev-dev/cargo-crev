@@ -721,7 +721,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                             maybe_store(&local, &proof, commit_msg, &args.common)?;
                         }
                         Err(e) => {
-                            eprintln!("Ignoried unknwon proof - {e}");
+                            eprintln!("Ignoried unknown proof - {e}");
                         }
                     }
                 }

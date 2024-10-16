@@ -7,7 +7,7 @@ use crev_wot::{FetchSource, ProofDB};
 use default::default;
 use std::{str::FromStr, sync::Arc};
 
-// Basic liftime of an `LockedId`:
+// Basic lifetime of an `LockedId`:
 //
 // * generate
 // * lock with a passphrase

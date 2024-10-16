@@ -64,7 +64,7 @@ reviews.
 
 Depending on the code review policy, proofs created by individual contributors
 can be internal, or publicly available. Sharing code reviews with wider
-community can be a proof of a concious approach to security, and a form of
+community can be a proof of a conscious approach to security, and a form of
 giving back to the community.
 
 ## Enforcing code review policy

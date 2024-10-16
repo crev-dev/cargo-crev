@@ -34,7 +34,7 @@ Example reasons *NOT* to use distrust level:
   self-reported `thoroughness` and `understanding` levels are truthful,
   such reviews are still beneficial to the community and it's up to other
   users to filter them out with `--thoroughness X` and `--understanding X`
-  flags if they don't want ot use them.
+  flags if they don't want to use them.
 * Users review criteria don't match my higher quality standards. Again,
   within reason that does not endanger the community, it is a
   reasponsibility of other users to assign lower trust levels to parties

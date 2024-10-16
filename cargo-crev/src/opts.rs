@@ -8,7 +8,7 @@ use crate::term::Term;
 
 #[derive(Debug, StructOpt, Clone, Default)]
 pub struct CrateSelector {
-    /// This crate is not neccesarily a dependency of the current cargo project
+    /// This crate is not necessarily a dependency of the current cargo project
     #[structopt(long = "unrelated", short = "u")]
     pub unrelated: bool,
 
@@ -213,7 +213,7 @@ pub struct Diff {
     #[structopt(long = "dst")]
     pub dst: Option<Version>,
 
-    /// This crate is not neccesarily a dependency of the current cargo project
+    /// This crate is not necessarily a dependency of the current cargo project
     #[structopt(long = "unrelated", short = "u")]
     pub unrelated: bool,
 

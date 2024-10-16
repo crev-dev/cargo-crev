@@ -4,7 +4,7 @@
 /// and [Glossary](`self::user::glossary`) modules.
 ///
 /// Please be aware that all user documentation is
-/// a continous work in progress, and can be incorrect
+/// a continuous work in progress, and can be incorrect
 /// or stale.
 ///
 /// Writing high quality documentation is
