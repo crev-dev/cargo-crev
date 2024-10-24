@@ -56,7 +56,7 @@ impl Graph {
                 self.graph
                     .neighbors_directed(*node_idx, petgraph::Direction::Outgoing)
             })
-            .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
+            .filter_map(move |node_idx| Some(self.graph.node_weight(node_idx)?.id))
     }
 
     pub fn get_reverse_dependencies_of(
@@ -70,7 +70,7 @@ impl Graph {
                 self.graph
                     .neighbors_directed(*node_idx, petgraph::Direction::Incoming)
             })
-            .map(move |node_idx| self.graph.node_weight(node_idx).unwrap().id)
+            .filter_map(move |node_idx| Some(self.graph.node_weight(node_idx)?.id))
     }
 
     pub fn get_recursive_dependencies_of(&self, root_pkg_id: PackageId) -> HashSet<PackageId> {
@@ -89,11 +89,12 @@ impl Graph {
             processed.insert(pkg_id);
 
             if let Some(node_idx) = self.nodes.get(&pkg_id) {
-                for node_idx in self
+                for node in self
                     .graph
                     .neighbors_directed(*node_idx, petgraph::Direction::Outgoing)
+                    .filter_map(|node_idx| self.graph.node_weight(node_idx))
                 {
-                    pending.insert(self.graph.node_weight(node_idx).unwrap().id);
+                    pending.insert(node.id);
                 }
             } else {
                 eprintln!("No node for {pkg_id} when checking recdeps for {root_pkg_id}");
@@ -117,7 +118,7 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
         Ok(output) => output,
         Err(e) => return Err(e),
     };
-    let output = str::from_utf8(&output.stdout).unwrap();
+    let output = str::from_utf8(&output.stdout)?;
     let lines = output.lines();
     Ok(lines
         .map(Cfg::from_str)
@@ -247,14 +248,16 @@ fn prune_directory_source_replacements(
 
         for (source_name, source_config_entry) in &*source_config {
             if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
-                if let Some(ConfigValue::String(replacement, _)) =
+                if let Some(ConfigValue::String(replacement_name, _)) =
                     source_config_entry.get("replace-with")
                 {
-                    source_graph.add_edge(
-                        *nodes.get(source_name).unwrap(),
-                        *nodes.get(replacement).unwrap(),
-                        (),
-                    );
+                    let source = nodes.get(source_name);
+                    let replacement = nodes.get(replacement_name);
+                    if let Some((source, replacement)) = source.zip(replacement) {
+                        source_graph.add_edge(*source, *replacement, ());
+                    } else {
+                        log::warn!("Incomplete replace-with source replacement config: {source_name} -> {replacement_name}");
+                    }
                 }
             }
         }
@@ -638,10 +641,11 @@ impl Repo {
 
     pub fn find_pkgid_by_crate_selector(&self, sel: &CrateSelector) -> Result<PackageId> {
         sel.ensure_name_given()?;
+        let name = sel.name.as_ref().unwrap();
 
         let version = sel.version()?.cloned().map(Version::from);
 
-        self.find_pkgid(sel.name.as_ref().unwrap(), version.as_ref(), sel.unrelated)
+        self.find_pkgid(name, version.as_ref(), sel.unrelated)
     }
 
     pub fn find_roots_by_crate_selector(&self, sel: &CrateSelector) -> Result<Vec<PackageId>> {
