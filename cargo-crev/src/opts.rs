@@ -415,6 +415,7 @@ pub struct CrateVerify {
     pub columns: CrateVerifyColumns,
 
     #[structopt(long = "interactive", short = "i")]
+    #[allow(unused)]
     /// No-op
     pub interactive: bool,
 

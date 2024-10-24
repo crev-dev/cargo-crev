@@ -1,6 +1,7 @@
 use crate::{opts, opts::CrateSelector};
 use anyhow::format_err;
 use cargo::sources::source::{QueryKind, Source, SourceMap};
+use cargo::sources::SourceConfigMap;
 use cargo::GlobalContext;
 use cargo::{
     core::{
@@ -134,7 +135,7 @@ fn our_resolve<'cfg>(
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
     let _lock = workspace.gctx()
         .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
-    let (packages, resolve) = cargo::ops::resolve_ws(workspace)?;
+    let (packages, resolve) = cargo::ops::resolve_ws(workspace, false)?;
 
     let cli_features =
         CliFeatures::from_command_line(features, all_features, !no_default_features)?;
@@ -359,7 +360,7 @@ impl Repo {
         let _lock = self
             .config
             .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
-        let mut registry = PackageRegistry::new(&self.config)?;
+        let mut registry = PackageRegistry::new_with_source_config(&self.config, SourceConfigMap::new(&self.config)?)?;
         registry.add_sources(source_ids)?;
         Ok(registry)
     }
