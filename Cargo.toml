@@ -18,15 +18,15 @@ rust-version = "1.77"
 version = "0.25.11"
 
 [workspace.dependencies]
-crev-common = { path = "crev-common", version = "0.25"}
-crev-data = { path = "crev-data", version = "0.25.3"}
-crev-lib = { path = "crev-lib", version = "0.25.3"}
-crev-wot = { path = "crev-wot", version = "0.25" }
+crev-common = { path = "crev-common", version = "0.25.4"}
+crev-data = { path = "crev-data", version = "0.25.11"}
+crev-lib = { path = "crev-lib", version = "0.25.11"}
+crev-wot = { path = "crev-wot", version = "0.25.9" }
 chrono = { version = "0.4.28", default-features = false, features = ["std", "clock"] }
 blake2 = "0.10.6"
 default = "0.1.2"
 cargo = "0.82"
-git2 = ">=0.18,<0.20"
+git2 = "0.19"
 itertools = "0.13"
 log = "0.4.20"
 rayon = "1.7.0"
