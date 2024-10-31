@@ -424,7 +424,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
         if !has_trusted_ids {
             term.eprint(format_args!("NOTE: "), YELLOW)?;
-            write!(io::stderr(), "No trusted Ids available. Nothing to verify against. Use `cargo crev trust` to add trusted reviewers or visit https://github.com/crev-dev/cargo-crev/discussions/ for help.")?;
+            writeln!(io::stderr(), "No trusted Ids available. Nothing to verify against. Use `cargo crev trust` to add trusted reviewers or visit https://github.com/crev-dev/cargo-crev/discussions/ for help.")?;
         }
     }
 
