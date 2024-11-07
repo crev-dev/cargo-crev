@@ -275,11 +275,10 @@ pub fn crate_open(
     let crate_id = repo.find_pkgid_by_crate_selector(&crate_sel.crate_)?;
     let cargo_crate = repo.get_crate(&crate_id)?;
 
-    if let Some(Some(diff)) = &crate_sel.diff {
-        println!("View the diff online:\nhttps://sourcegraph.com/crates/{}/-/compare/v{}...v{}?visible=1000000\n",
-            cargo_crate.name(),
-            diff,
-            cargo_crate.version(),
+    if let Some(Some(base_ver)) = &crate_sel.diff {
+        println!("View the diff online:\nhttps://diff.rs/{name}/{base_ver}/{name}/{new_ver}/Cargo.toml\n",
+            name = cargo_crate.name(),
+            new_ver = cargo_crate.version(),
         );
     }
 
