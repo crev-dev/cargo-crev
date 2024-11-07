@@ -1056,20 +1056,28 @@ fn change_passphrase(
 }
 
 fn main() {
-    env_logger::builder()
-        .filter_level(log::LevelFilter::Off)
-        .filter_module("crev_wot", log::LevelFilter::Info)
-        .filter_module("crev_lib", log::LevelFilter::Info)
-        .filter_module("crev_data", log::LevelFilter::Info)
-        .filter_module("crev_common", log::LevelFilter::Info)
-        .filter_module("cargo_crev", log::LevelFilter::Info)
-        .parse_default_env()
-        .filter_module("cargo", log::LevelFilter::Off)
-        .filter_module("tokei", log::LevelFilter::Off)
-        .filter_module("ignore", log::LevelFilter::Off)
-        .filter_module("globset", log::LevelFilter::Off)
-        .filter_module("reqwest", log::LevelFilter::Off)
-        .format(|buf, record| {
+    let mut builder = env_logger::builder();
+    let default_log_settings = std::env::var_os("RUST_LOG").is_none();
+    if default_log_settings {
+        builder
+            .filter_level(log::LevelFilter::Off)
+            .filter_module("crev_wot", log::LevelFilter::Info)
+            .filter_module("crev_lib", log::LevelFilter::Info)
+            .filter_module("crev_data", log::LevelFilter::Info)
+            .filter_module("crev_common", log::LevelFilter::Info)
+            .filter_module("cargo_crev", log::LevelFilter::Info);
+    }
+    builder.parse_default_env();
+    if default_log_settings {
+        builder
+            .filter_module("cargo", log::LevelFilter::Off)
+            .filter_module("tokei", log::LevelFilter::Off)
+            .filter_module("ignore", log::LevelFilter::Off)
+            .filter_module("globset", log::LevelFilter::Off)
+            .filter_module("reqwest", log::LevelFilter::Off);
+    }
+
+    builder.format(|buf, record| {
             if record.level() == log::Level::Info {
                 writeln!(buf, "{}", record.args())
             } else if record.level() > log::Level::Info {
