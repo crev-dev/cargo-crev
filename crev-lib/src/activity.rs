@@ -62,17 +62,10 @@ pub struct ReviewActivity {
 
 impl ReviewActivity {
     #[must_use]
-    pub fn new_full() -> Self {
+    pub fn new(diff_base: Option<Version>) -> Self {
         Self {
             timestamp: crev_common::now(),
-            diff_base: None,
-        }
-    }
-    #[must_use]
-    pub fn new_diff(base: &Version) -> Self {
-        Self {
-            timestamp: crev_common::now(),
-            diff_base: Some(base.clone()),
+            diff_base,
         }
     }
 

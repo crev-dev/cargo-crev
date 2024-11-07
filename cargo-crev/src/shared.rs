@@ -126,7 +126,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
         SOURCE_CRATES_IO,
         &crate_.name(),
         crate_version,
-        &crev_lib::ReviewActivity::new_full(),
+        &crev_lib::ReviewActivity::new(None),
     )?;
 
     let shell = env::var_os("SHELL").ok_or_else(|| format_err!("$SHELL not set"))?;
@@ -306,7 +306,7 @@ pub fn crate_open(
         SOURCE_CRATES_IO,
         &name,
         version,
-        &crev_lib::ReviewActivity::new_full(),
+        &crev_lib::ReviewActivity::new(crate_sel.diff.as_ref().and_then(|diff| diff.clone())),
     )?;
     let status = crev_lib::util::run_with_shell_cmd(open_cmd.as_ref(), Some(&dest_dir))?;
 
@@ -513,7 +513,7 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
         SOURCE_CRATES_IO,
         name,
         dst_crate.version(),
-        &crev_lib::ReviewActivity::new_diff(&src_version),
+        &crev_lib::ReviewActivity::new(Some(src_version)),
     )?;
 
     use std::process::Command;
@@ -634,15 +634,17 @@ where
         let mut sel = None;
         if args.crate_.name.is_none() {
             if let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity()) {
-                sel = Some(ReviewCrateSelector {
-                    diff: latest.diff_base.is_some().then_some(latest.diff_base),
-                    crate_: CrateSelector::new(
-                        Some(latest.name),
-                        Some(latest.version),
-                        args.crate_.unrelated,
-                    )
-                    .auto_unrelated()?,
-                });
+                if args.diff.as_ref().is_none_or(|new_base| new_base == &latest.diff_base) {
+                    sel = Some(ReviewCrateSelector {
+                        diff: latest.diff_base.is_some().then_some(latest.diff_base),
+                        crate_: CrateSelector::new(
+                            Some(latest.name),
+                            Some(latest.version),
+                            args.crate_.unrelated,
+                        )
+                        .auto_unrelated()?,
+                    });
+                }
             }
         };
         let sel = sel.as_ref().unwrap_or(args);
