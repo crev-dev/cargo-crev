@@ -383,7 +383,7 @@ pub enum Warning {
     #[error("Could not deduce `ssh` push url for {0}. Call:\ncargo crev repo git remote set-url --push origin <url>\nmanually after the id is generated.")]
     GitPushUrl(String),
 
-    #[error("Failed to fetch {0} into {}", _2.display())]
+    #[error("Failed to fetch {0} into {path}", path = _2.display())]
     FetchError(String, #[source] Error, PathBuf),
 }
 
