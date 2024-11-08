@@ -2,7 +2,7 @@
   description = "Cryptographically verifiable Code REviews";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
@@ -24,18 +24,17 @@
         };
         lib = pkgs.lib;
 
-        fenix-channel = fenix.packages.${system}.stable;
+        fenix-channel = fenix.packages.${system}.latest;
 
         fenix-toolchain = (fenix-channel.withComponents [
           "rustc"
           "cargo"
           "clippy"
-          "rust-analysis"
           "rust-src"
           "llvm-tools-preview"
         ]);
 
-        craneLib = crane.lib.${system}.overrideToolchain fenix-toolchain;
+        craneLib = (crane.mkLib pkgs).overrideToolchain fenix-toolchain;
 
         # filter source code at path `src` to include only the list of `modules`
         filterModules = modules: src:
