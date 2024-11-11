@@ -4707,9 +4707,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokei"
-version = "13.0.0-alpha.6"
+version = "13.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b51f4843805fc809922452da6b256f56cae7ab87dbe49ce9915d362acc2b7eb"
+checksum = "b2554a141ca759db0d475e90d24da8a4665ff7b60e5eecc495a6207c6a065220"
 dependencies = [
  "aho-corasick",
  "arbitrary",
