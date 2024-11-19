@@ -7,7 +7,8 @@ use crev_common::{
     serde::{as_base64, from_base64},
 };
 use derive_builder::Builder;
-use ed25519_dalek::{self, PublicKey, SecretKey, Signer, Verifier};
+use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
 
@@ -87,7 +88,7 @@ impl Id {
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<(), IdError> {
         match self {
             Id::Crev { id } => {
-                let pubkey = ed25519_dalek::PublicKey::from_bytes(id)
+                let pubkey = VerifyingKey::from_bytes(id.as_slice().try_into().map_err(|_| IdError::WrongIdLength(id.len()))?)
                     .map_err(|e| IdError::InvalidPublicKey(e.to_string().into()))?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)
@@ -192,7 +193,13 @@ impl PublicId {
 #[derive(Debug)]
 pub struct UnlockedId {
     pub id: PublicId,
-    pub keypair: ed25519_dalek::Keypair,
+    pub keypair: Keypair,
+}
+
+#[derive(Debug)]
+pub struct Keypair {
+    pub secret: SigningKey,
+    pub public: VerifyingKey,
 }
 
 impl AsRef<Id> for UnlockedId {
@@ -210,13 +217,12 @@ impl AsRef<PublicId> for UnlockedId {
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Option<Url>, sec_key: &[u8]) -> Result<Self, IdError> {
-        let sec_key = SecretKey::from_bytes(sec_key)
-            .map_err(|e| IdError::InvalidSecretKey(e.to_string().into()))?;
-        let calculated_pub_key: PublicKey = PublicKey::from(&sec_key);
+        let sec_key = SigningKey::from_bytes(sec_key.try_into().map_err(|_| IdError::WrongIdLength(sec_key.len()))?);
+        let calculated_pub_key = sec_key.verifying_key();
 
         Ok(Self {
             id: crate::PublicId::new_from_pubkey(calculated_pub_key.as_bytes().to_vec(), url)?,
-            keypair: ed25519_dalek::Keypair {
+            keypair: Keypair {
                 secret: sec_key,
                 public: calculated_pub_key,
             },
@@ -225,7 +231,7 @@ impl UnlockedId {
 
     #[must_use]
     pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
-        self.keypair.sign(msg).to_bytes().to_vec()
+        self.keypair.secret.sign(msg).to_bytes().to_vec()
     }
 
     #[must_use]
@@ -249,11 +255,12 @@ impl UnlockedId {
     }
 
     pub fn generate(url: Option<Url>) -> Self {
-        let keypair = ed25519_dalek::Keypair::generate(&mut rand_v07::rngs::OsRng);
+        let secret = ed25519_dalek::SigningKey::generate(&mut OsRng);
+        let public = secret.verifying_key();
         Self {
-            id: PublicId::new_from_pubkey(keypair.public.as_bytes().to_vec(), url)
+            id: PublicId::new_from_pubkey(public.as_bytes().to_vec(), url)
                 .expect("should be valid keypair"),
-            keypair,
+            keypair: Keypair { secret, public },
         }
     }
 
