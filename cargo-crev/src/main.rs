@@ -119,10 +119,22 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
 
     if let Some(crate_) = args.crate_.as_ref() {
         iter = Box::new(iter.filter(move |r| &r.package.id.id.name == crate_));
-        if let Some(version) = args.version.as_ref() {
-            iter = Box::new(iter.filter(move |r| &r.package.id.version == version));
-        }
     }
+
+    if let Some(version) = args.version.as_ref() {
+        iter = Box::new(iter.filter(move |r| &r.package.id.version == version));
+    }
+
+    if let Some(git_revision) = args.git_revision.as_ref() {
+        iter = Box::new(iter.filter(move |r|
+            r.package.revision_type == proof::default_revision_type()
+            && (
+                git_revision.is_empty() && &r.package.revision == git_revision
+                || !git_revision.is_empty() && r.package.revision.starts_with(git_revision)
+            )
+        ));
+    }
+
     for review in iter {
         println!("---\n{review}");
     }
