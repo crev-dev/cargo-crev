@@ -884,6 +884,9 @@ pub struct ProofFind {
     #[structopt(name = "vers", long = "vers")]
     pub version: Option<Version>,
 
+    #[structopt(name = "git-rev", long = "git-rev")]
+    pub git_revision: Option<String>,
+
     /// Find a proof by a crev Id
     #[structopt(name = "author", long = "author")]
     pub author: Option<String>,
