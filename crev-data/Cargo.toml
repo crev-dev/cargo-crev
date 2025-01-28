@@ -19,7 +19,7 @@ chrono.workspace = true
 derive_builder = "0.20.0"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 typed-builder = "0.20"
-rand = "0.8.5"
+rand = "0.9.0"
 semver.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
