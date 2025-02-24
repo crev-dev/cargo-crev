@@ -28,7 +28,7 @@ default = "0.1.2"
 cargo = "0.85"
 git2 = ">= 0.19, < 0.21"
 itertools = "0.14"
-log = "0.4.20"
+log = "0.4.26"
 rayon = "1.7.0"
 resiter = "0.5"
 semver = { version = "1.0.18", features = [ "serde" ] }
