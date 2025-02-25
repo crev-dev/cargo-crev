@@ -3,6 +3,8 @@
 <!-- next-url -->
 ## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.26.0...HEAD) - ReleaseDate
 
+- Updated dependencies to allow use of the 2024 edition.
+
 ## [0.26.0](https://github.com/crev-dev/cargo-crev/compare/v0.25.11...v0.26.0) - 2024-11-07
 
 - Fixed handling of the `--diff` flag.
