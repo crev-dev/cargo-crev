@@ -10,7 +10,6 @@ use crate::{
 use anyhow::{format_err, Context, Result};
 use crev_data::{proof, review::Package, SOURCE_CRATES_IO};
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
-use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
     collections::HashSet,
@@ -684,27 +683,26 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
 }
 
 // Note: this function is very slow
+#[cfg(feature = "geiger")]
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
-    #[cfg(feature = "geiger")]
+    let mut count = 0;
+    for metrics in iter_rs_files_in_dir(path)
+        .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
     {
-        let mut count = 0;
-        for metrics in iter_rs_files_in_dir(path)
-            .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
-        {
-            let counters = metrics?.counters;
-            count += counters.functions.unsafe_
-                + counters.exprs.unsafe_
-                + counters.item_impls.unsafe_
-                + counters.item_traits.unsafe_
-                + counters.methods.unsafe_;
-        }
+        let counters = metrics?.counters;
+        count += counters.functions.unsafe_
+            + counters.exprs.unsafe_
+            + counters.item_impls.unsafe_
+            + counters.item_traits.unsafe_
+            + counters.methods.unsafe_;
+    }
 
-        Ok(count)
-    }
-    #[cfg(not(feature = "geiger"))]
-    {
-        Err(anyhow::Error::msg("geiger feature is not enabled"))
-    }
+    Ok(count)
+}
+
+#[cfg(not(feature = "geiger"))]
+pub fn get_geiger_count(_: &Path) -> Result<u64> {
+    Err(anyhow::Error::msg("geiger feature is not enabled"))
 }
 
 /// Result of `run_command`
