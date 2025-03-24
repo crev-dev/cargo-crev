@@ -509,6 +509,7 @@ dependencies = [
  "resiter",
  "rpassword",
  "rprompt",
+ "security-framework 3.2.0",
  "serde",
  "serde_json",
  "serde_yaml",

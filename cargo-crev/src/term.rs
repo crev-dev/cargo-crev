@@ -127,33 +127,48 @@ impl Term {
 }
 
 pub fn read_passphrase() -> io::Result<String> {
-    if let Ok(pass) = env::var("CREV_PASSPHRASE") {
+    #[cfg(target_os = "macos")]
+    let by_keychain = crate::creds::retrieve_existing_passphrase("").ok();
+    #[cfg(not(target_os = "macos"))]
+    let by_keychain = None;
+
+    if let Some(pass) = by_keychain {
+        eprintln!("Using passphrase retrieved from KeyChain");
+        Ok(pass)
+    } else if let Ok(pass) = env::var("CREV_PASSPHRASE") {
         eprintln!("Using passphrase set in CREV_PASSPHRASE");
-        return Ok(pass);
+        Ok(pass)
     } else if let Some(cmd) = env::var_os("CREV_PASSPHRASE_CMD") {
-        return Ok(
+        Ok(
             String::from_utf8_lossy(&crev_common::run_with_shell_cmd_capture_stdout(&cmd, None)?)
                 .trim()
                 .to_owned(),
-        );
+        )
+    } else {
+        eprint!("Enter passphrase to unlock: ");
+        rpassword::read_password()
     }
-    eprint!("Enter passphrase to unlock: ");
-    rpassword::read_password()
 }
 
 pub fn read_new_passphrase() -> io::Result<String> {
-    if let Ok(pass) = env::var("CREV_PASSPHRASE") {
+    let password = if let Ok(pass) = env::var("CREV_PASSPHRASE") {
         eprintln!("Using passphrase set in CREV_PASSPHRASE");
-        return Ok(pass);
-    }
-    loop {
-        eprint!("Enter new passphrase: ");
-        let p1 = rpassword::read_password()?;
-        eprint!("Enter new passphrase again: ");
-        let p2 = rpassword::read_password()?;
-        if p1 == p2 {
-            return Ok(p1);
+        pass
+    } else {
+        'term: loop {
+            eprint!("Enter new passphrase: ");
+            let p1 = rpassword::read_password()?;
+            eprint!("Enter new passphrase again: ");
+            let p2 = rpassword::read_password()?;
+            if p1 == p2 {
+                break 'term p1;
+            }
+            eprintln!("\nPassphrases don't match, try again.");
         }
-        eprintln!("\nPassphrases don't match, try again.");
-    }
+    };
+
+    #[cfg(target_os = "macos")]
+    crate::creds::save_new_passphrase("", &password).ok();
+
+    Ok(password)
 }

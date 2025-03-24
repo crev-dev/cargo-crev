@@ -41,6 +41,9 @@ mod term;
 mod tokei;
 mod wot;
 
+#[cfg(target_os = "macos")]
+mod creds;
+
 use crate::{
     repo::Repo,
     review::{create_review_proof, list_reviews},
