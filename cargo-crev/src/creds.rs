@@ -4,6 +4,8 @@ use security_framework::os::macos::keychain::SecKeychain;
 
 const NOT_FOUND: i32 = -25300; // errSecItemNotFound
 const SERVICE: &str = "cargo-crev:id";
+/// Used to save or retrieve passphrase from KeyChain as "for any id" if we have only one id.
+pub const NO_ID: &str = "";
 
 pub fn retrieve_existing_passphrase(id: &str) -> Result<String, anyhow::Error> {
     let keychain = SecKeychain::default()?;

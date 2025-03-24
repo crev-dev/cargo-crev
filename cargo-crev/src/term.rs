@@ -10,6 +10,8 @@ use term::{
     StderrTerminal, StdoutTerminal,
 };
 
+use crate::creds;
+
 pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> {
     use VerificationStatus::*;
     match s {
@@ -128,7 +130,7 @@ impl Term {
 
 pub fn read_passphrase() -> io::Result<String> {
     #[cfg(target_os = "macos")]
-    let by_keychain = crate::creds::retrieve_existing_passphrase("").ok();
+    let by_keychain = creds::retrieve_existing_passphrase(creds::NO_ID).ok();
     #[cfg(not(target_os = "macos"))]
     let by_keychain = None;
 
@@ -168,7 +170,7 @@ pub fn read_new_passphrase() -> io::Result<String> {
     };
 
     #[cfg(target_os = "macos")]
-    crate::creds::save_new_passphrase("", &password).ok();
+    creds::save_new_passphrase(creds::NO_ID, &password).ok();
 
     Ok(password)
 }
