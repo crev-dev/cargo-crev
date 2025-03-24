@@ -685,6 +685,8 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
 // Note: this function is very slow
 #[cfg(feature = "geiger")]
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
+    use resiter::flat_map::FlatMap;
+
     let mut count = 0;
     for metrics in iter_rs_files_in_dir(path)
         .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
