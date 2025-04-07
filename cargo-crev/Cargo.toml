@@ -38,7 +38,7 @@ crossbeam = "0.8.2"
 chrono.workspace = true
 env_logger = { version = "0.11.3", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
-geiger = "0.4.12"
+geiger = { version = "0.4.12", optional = true }
 itertools.workspace = true
 lazy_static = "1.4.0"
 petgraph = "0.7"
@@ -67,6 +67,7 @@ security-framework = "3.2.0"
 
 [features]
 default = ["openssl-sys/vendored"]
+geiger = ["dep:geiger"]
 
 documentation = []
 

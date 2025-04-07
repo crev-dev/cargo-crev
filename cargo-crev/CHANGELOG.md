@@ -4,6 +4,7 @@
 ## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.26.0...HEAD) - ReleaseDate
 
 - Added mac keychain support to safely store and retrieve passphrases
+- `geiger` dependency is optional (build with `--features=geiger` to enable)
 
 ## [0.26.0](https://github.com/crev-dev/cargo-crev/compare/v0.25.11...v0.26.0) - 2024-11-07
 
