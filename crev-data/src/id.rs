@@ -88,8 +88,12 @@ impl Id {
     pub fn verify_signature(&self, content: &[u8], sig_str: &str) -> Result<(), IdError> {
         match self {
             Id::Crev { id } => {
-                let pubkey = VerifyingKey::from_bytes(id.as_slice().try_into().map_err(|_| IdError::WrongIdLength(id.len()))?)
-                    .map_err(|e| IdError::InvalidPublicKey(e.to_string().into()))?;
+                let pubkey = VerifyingKey::from_bytes(
+                    id.as_slice()
+                        .try_into()
+                        .map_err(|_| IdError::WrongIdLength(id.len()))?,
+                )
+                .map_err(|e| IdError::InvalidPublicKey(e.to_string().into()))?;
 
                 let sig_bytes = crev_common::base64_decode(sig_str)
                     .map_err(|e| IdError::InvalidSignature(e.to_string().into()))?;
@@ -217,7 +221,11 @@ impl AsRef<PublicId> for UnlockedId {
 impl UnlockedId {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(url: Option<Url>, sec_key: &[u8]) -> Result<Self, IdError> {
-        let sec_key = SigningKey::from_bytes(sec_key.try_into().map_err(|_| IdError::WrongIdLength(sec_key.len()))?);
+        let sec_key = SigningKey::from_bytes(
+            sec_key
+                .try_into()
+                .map_err(|_| IdError::WrongIdLength(sec_key.len()))?,
+        );
         let calculated_pub_key = sec_key.verifying_key();
 
         Ok(Self {
