@@ -485,7 +485,8 @@ pub fn dir_verify(
     trusted_set: &crev_wot::TrustSet,
     requirements: &VerificationRequirements,
 ) -> Result<crate::VerificationStatus> {
-    let digest = Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap();
+    let digest =
+        Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap();
     Ok(verify_package_digest(
         &digest,
         trusted_set,
