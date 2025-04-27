@@ -10,6 +10,7 @@ use term::{
     StderrTerminal, StdoutTerminal,
 };
 
+#[cfg(target_os = "macos")]
 use crate::creds;
 
 pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> {
