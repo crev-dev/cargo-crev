@@ -27,4 +27,4 @@ thiserror.workspace = true
 itertools.workspace = true
 
 [package.metadata.release]
-shared-version=true
+shared-version = true

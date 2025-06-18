@@ -26,4 +26,4 @@ serde_yaml.workspace = true
 thiserror.workspace = true
 
 [package.metadata.release]
-shared-version=true
+shared-version = true
