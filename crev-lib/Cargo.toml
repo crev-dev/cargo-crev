@@ -38,4 +38,4 @@ aes-siv = "0.7.0"
 bstr = "1.6.2"
 
 [package.metadata.release]
-shared-version=true
+shared-version = true

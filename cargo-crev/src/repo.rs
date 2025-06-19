@@ -14,10 +14,8 @@ use cargo::{
     },
     ops,
     util::{
-        cache_lock::CacheLockMode,
-        context::ConfigValue,
-        important_paths::find_root_manifest_for_wd,
-        CargoResult, Rustc,
+        cache_lock::CacheLockMode, context::ConfigValue,
+        important_paths::find_root_manifest_for_wd, CargoResult, Rustc,
     },
 };
 use cargo_platform::Cfg;
@@ -133,7 +131,8 @@ fn our_resolve<'cfg>(
     all_features: bool,
     no_default_features: bool,
 ) -> CargoResult<(PackageSet<'cfg>, Resolve)> {
-    let _lock = workspace.gctx()
+    let _lock = workspace
+        .gctx()
         .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
     let (packages, resolve) = cargo::ops::resolve_ws(workspace, false)?;
 
@@ -360,7 +359,10 @@ impl Repo {
         let _lock = self
             .config
             .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
-        let mut registry = PackageRegistry::new_with_source_config(&self.config, SourceConfigMap::new(&self.config)?)?;
+        let mut registry = PackageRegistry::new_with_source_config(
+            &self.config,
+            SourceConfigMap::new(&self.config)?,
+        )?;
         registry.add_sources(source_ids)?;
         Ok(registry)
     }

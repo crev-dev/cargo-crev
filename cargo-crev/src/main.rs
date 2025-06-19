@@ -1080,7 +1080,8 @@ fn main() {
             .filter_module("reqwest", log::LevelFilter::Off);
     }
 
-    builder.format(|buf, record| {
+    builder
+        .format(|buf, record| {
             if record.level() == log::Level::Info {
                 writeln!(buf, "{}", record.args())
             } else if record.level() > log::Level::Info {

@@ -36,7 +36,10 @@ cargo-platform = "0.2.0"
 crates_io_api = "0.11.0"
 crossbeam = "0.8.2"
 chrono.workspace = true
-env_logger = { version = "0.11.3", default-features = false, features = ["auto-color", "humantime"] }
+env_logger = { version = "0.11.3", default-features = false, features = [
+  "auto-color",
+  "humantime",
+] }
 fnv = "1.0.7"
 geiger = { version = "0.5.0", optional = true }
 itertools.workspace = true
@@ -77,9 +80,9 @@ all-features = true
 
 [package.metadata.release]
 pre-release-replacements = [
-  {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=1},
-  {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
-  {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
-  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/{{tag_name}}...HEAD) - ReleaseDate\n\n", exactly=1},
+  { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}}", min = 1 },
+  { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
+  { file = "CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}", min = 1 },
+  { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/{{tag_name}}...HEAD) - ReleaseDate\n\n", exactly = 1 },
 ]
-shared-version=true
+shared-version = true
