@@ -136,7 +136,7 @@
         # file change
         pkg = { name ? null, dir, port ? 8000, extraDirs ? [ ] }: rec {
           package = craneLib.buildPackage (commonArgs // {
-            cargoArtifacts = workspaceDeps;
+            cargoArtifacts = workspaceDeps.cargoArtifacts;
 
             src = filterModules ([ dir ] ++ extraDirs) ./.;
 
@@ -163,13 +163,13 @@
 
         workspaceBuild = craneLib.cargoBuild (commonArgs // {
           pname = "workspace-build";
-          cargoArtifacts = workspaceDeps;
+          cargoArtifacts = workspaceDeps.cargoArtifacts;
           doCheck = false;
         });
 
         workspaceTest = craneLib.cargoBuild (commonArgs // {
           pname = "workspace-test";
-          cargoArtifacts = workspaceBuild;
+          cargoArtifacts = workspaceBuild.cargoArtifacts;
           doCheck = true;
         });
 
@@ -178,7 +178,7 @@
         # See: https://github.com/ipetkov/crane/issues/64
         workspaceClippy = craneLib.cargoBuild (commonArgs // {
           pname = "workspace-clippy";
-          cargoArtifacts = workspaceBuild;
+          cargoArtifacts = workspaceBuild.cargoArtifacts;
 
           cargoBuildCommand = "cargo clippy --profile release --no-deps --lib --bins --tests --examples --workspace -- --deny warnings";
           doInstallCargoArtifacts = false;
@@ -187,7 +187,7 @@
 
         workspaceDoc = craneLib.cargoBuild (commonArgs // {
           pname = "workspace-doc";
-          cargoArtifacts = workspaceBuild;
+          cargoArtifacts = workspaceBuild.cargoArtifacts;
           cargoBuildCommand = "env RUSTDOCFLAGS='-D rustdoc::broken_intra_doc_links' cargo doc --no-deps --document-private-items && cp -a target/doc $out";
           doCheck = false;
         });
