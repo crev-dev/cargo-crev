@@ -365,7 +365,7 @@ impl Repo {
         Ok(registry)
     }
 
-    fn get_registry_from_workspace_members(&self) -> Result<(Workspace, PackageRegistry<'_>)> {
+    fn get_registry_from_workspace_members(&self) -> Result<(Workspace<'_>, PackageRegistry<'_>)> {
         let workspace = self.workspace()?;
         let registry = self.registry(workspace.members().map(|m| m.summary().source_id()))?;
         Ok((workspace, registry))

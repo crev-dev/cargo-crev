@@ -32,7 +32,7 @@ anyhow = "1.0.93"
 atty = "0.2.14"
 curl-sys = { version = "0.4", features = ["force-system-lib-on-osx"] }
 cargo.workspace = true
-cargo-platform = "0.2.0"
+cargo-platform = "0.3.0"
 crates_io_api = "0.11.0"
 crossbeam = "0.8.2"
 chrono.workspace = true
@@ -41,7 +41,7 @@ fnv = "1.0.7"
 geiger = { version = "0.5.0", optional = true }
 itertools.workspace = true
 lazy_static = "1.4.0"
-petgraph = "0.7"
+petgraph = "0.8"
 rayon = "1.7.0"
 resiter = "0.5.0"
 rpassword = "7.2.0"

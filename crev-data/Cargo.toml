@@ -18,7 +18,7 @@ crev-common.workspace = true
 chrono.workspace = true
 derive_builder = "0.20.0"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
-typed-builder = "0.20"
+typed-builder = "0.21"
 rand = "0.8.5"
 semver.workspace = true
 serde.workspace = true
