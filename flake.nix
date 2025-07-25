@@ -2,7 +2,7 @@
   description = "Cryptographically verifiable Code REviews";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
@@ -24,7 +24,7 @@
         };
         lib = pkgs.lib;
 
-        fenix-channel = fenix.packages.${system}.latest;
+        fenix-channel = fenix.packages.${system}.stable;
 
         fenix-toolchain = (fenix-channel.withComponents [
           "rustc"
@@ -228,7 +228,7 @@
 
                 pkgs.nixpkgs-fmt
                 pkgs.shellcheck
-                pkgs.rnix-lsp
+                pkgs.nil
                 pkgs.nodePackages.bash-language-server
               ]);
             RUST_SRC_PATH = "${fenix-channel.rust-src}/lib/rustlib/src/rust/library";
