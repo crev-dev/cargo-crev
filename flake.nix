@@ -35,7 +35,7 @@
         ]);
 
         craneLib = (crane.mkLib pkgs).overrideToolchain (p:
-          fenix.packages.${system}.fromManifestFile ./rust-toolchain.toml
+          fenix.packages.${system}.stable
         );
 
         # filter source code at path `src` to include only the list of `modules`
