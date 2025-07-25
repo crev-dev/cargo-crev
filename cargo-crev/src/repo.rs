@@ -115,10 +115,7 @@ fn get_cfgs(rustc: &Rustc, target: Option<&str>) -> Result<Vec<Cfg>> {
         process.arg("--target").arg(s);
     }
 
-    let output = match process.exec_with_output() {
-        Ok(output) => output,
-        Err(e) => return Err(e),
-    };
+    let output = process.exec_with_output()?;
     let output = str::from_utf8(&output.stdout)?;
     let lines = output.lines();
     Ok(lines
@@ -642,7 +639,7 @@ impl Repo {
         sel.ensure_name_given()?;
         let name = sel.name.as_ref().unwrap();
 
-        let version = sel.version()?.cloned().map(Version::from);
+        let version = sel.version()?.cloned();
 
         self.find_pkgid(name, version.as_ref(), sel.unrelated)
     }

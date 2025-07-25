@@ -199,7 +199,7 @@ pub fn copy_dir_sanitized(
 fn is_binary_file_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
-        .map_or(false, |e| {
+        .is_some_and(|e| {
             matches!(
                 e.to_lowercase().as_str(),
                 "bin"

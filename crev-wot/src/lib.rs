@@ -111,7 +111,7 @@ impl From<proof::Trust> for TimestampedTrustLevel {
     }
 }
 
-impl<'a, T: proof::WithReview + Content + CommonOps> From<&'a T> for TimestampedReview {
+impl<T: proof::WithReview + Content + CommonOps> From<&T> for TimestampedReview {
     fn from(review: &T) -> Self {
         TimestampedReview {
             value: review.review().clone(),
@@ -1046,9 +1046,7 @@ impl ProofDB {
             .get(digest.as_slice())
             .into_iter()
             .flat_map(move |unique_reviews| {
-                unique_reviews
-                    .iter()
-                    .map(move |(_unique_review, signature)| {
+                unique_reviews.values().map(|signature| {
                         self.package_review_by_signature[&signature.value].clone()
                     })
             })
@@ -1124,7 +1122,7 @@ impl ProofDB {
         for (proof, fetch_source) in i {
             // ignore errors
             if let Err(e) = self.add_proof(&proof, fetch_source) {
-                debug!("Ignoring proof: {}", e);
+                debug!("Ignoring proof: {e}");
             }
         }
     }

@@ -185,7 +185,7 @@ impl Repo {
     /// Uses `log::info` to "print"
     pub fn status(&mut self) -> Result<()> {
         let staging = self.staging()?;
-        for (k, _v) in &staging.entries {
+        for k in staging.entries.keys() {
             log::info!("{}", k.display());
         }
 

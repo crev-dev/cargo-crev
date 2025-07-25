@@ -398,10 +398,10 @@ impl Warning {
     }
 
     pub fn log(&self) {
-        warn!("{}", self);
+        warn!("{self}");
         let mut s = self.source();
         while let Some(w) = s {
-            warn!("  - {}", w);
+            warn!("  - {w}");
             s = w.source();
         }
     }

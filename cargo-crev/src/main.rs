@@ -270,7 +270,7 @@ fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) ->
         let has_public_url = local
             .read_current_locked_id()
             .ok()
-            .map_or(false, |l| l.to_public_id().url.is_some());
+            .is_some_and(|l| l.to_public_id().url.is_some());
         if !has_public_url {
             eprintln!("Your review is not shared yet. You need to set up a proof repository.");
             eprintln!("Run `cargo crev publish` for more information.");
@@ -371,7 +371,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     .read_current_locked_id_opt()?
                     .map(|id| id.to_public_id());
                 for id in local.get_current_user_public_ids()? {
-                    let is_current = current.as_ref().map_or(false, |c| c.id == id.id);
+                    let is_current = current.as_ref().is_some_and(|c| c.id == id.id);
                     println!(
                         "{} {}{}",
                         id.id,
@@ -855,11 +855,11 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             }
 
             // if an old one couldn't be reconfigured automatically, help how to do it manually
-            if let Some(example) = existing_usable.get(0) {
+            if let Some(example) = existing_usable.first() {
                 if local
                     .get_current_userid()
                     .ok()
-                    .map_or(false, |cur| cur == example.id)
+                    .is_some_and(|cur| cur == example.id)
                 {
                     eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n");
                 } else {
@@ -888,9 +888,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             read_new_passphrase,
             &mut Warning::auto_log(),
         )
-        .map_err(|e| {
+        .inspect_err(|e| {
             print_crev_proof_repo_fork_help();
-            e
         })?;
     if !res.has_no_passphrase() {
         println!("Your CrevID was created and will be printed below in an encrypted form.");

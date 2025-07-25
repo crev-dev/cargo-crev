@@ -151,7 +151,7 @@ impl TrustSet {
         current_trust_set.record_trusted_id(for_id.clone(), for_id.clone(), 0, TrustLevel::High);
 
         while let Some(current) = pending.iter().next().cloned() {
-            debug!("Traversing id: {:?}", current);
+            debug!("Traversing id: {current:?}");
             pending.remove(&current);
             current_trust_set.log_traverse(TraverseLogNode {
                 id: current.id.clone(),
@@ -164,8 +164,7 @@ impl TrustSet {
             // of the WoT
             if current.effective_trust_level != previous_iter_trust_level {
                 debug!(
-                    "No more nodes with effective_trust_level of {}",
-                    previous_iter_trust_level
+                    "No more nodes with effective_trust_level of {previous_iter_trust_level}"
                 );
                 assert!(current.effective_trust_level < previous_iter_trust_level);
                 if initial_distrusted_len != current_trust_set.distrusted.len() {
@@ -197,8 +196,7 @@ impl TrustSet {
                 let effective_trust_level =
                     std::cmp::min(direct_trust, current.effective_trust_level);
                 debug!(
-                    "Effective trust for {} {}",
-                    candidate_id, effective_trust_level
+                    "Effective trust for {candidate_id} {effective_trust_level}"
                 );
 
                 let candidate_distance_from_current =

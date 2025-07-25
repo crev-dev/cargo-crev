@@ -140,7 +140,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
         .env("PWD", crate_dir)
         .env(GOTO_ORIGINAL_DIR_ENV, cwd)
         .env(GOTO_CRATE_NAME_ENV, crate_name)
-        .env(GOTO_CRATE_VERSION_ENV, &crate_version.to_string());
+        .env(GOTO_CRATE_VERSION_ENV, crate_version.to_string());
 
     exec_into(command)
 }

@@ -301,7 +301,7 @@ impl Local {
         if let Some(ids_path) = self.user_ids_path_opt() {
             for dir_entry in std::fs::read_dir(ids_path)? {
                 let path = dir_entry?.path();
-                if path.extension().map_or(false, |ext| ext == "yaml") {
+                if path.extension().is_some_and(|ext| ext == "yaml") {
                     let locked_id = LockedId::read_from_yaml_file(&path)?;
                     ids.push(locked_id.to_public_id());
                 }
@@ -517,7 +517,7 @@ impl Local {
             match locked.to_unlocked(&passphrase) {
                 Ok(o) => return Ok(o),
                 Err(e) => {
-                    error!("Error: {}", e);
+                    error!("Error: {e}");
                     if i == 5 {
                         return Err(e);
                     }
@@ -828,7 +828,7 @@ impl Local {
 
     /// Fetch other people's proof repository from a git URL, directly into the given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, db: &mut crev_wot::ProofDB) -> Result<()> {
-        info!("Fetching {}... ", url);
+        info!("Fetching {url}... ");
         let dir = self.fetch_remote_git(url)?;
         self.import_proof_dir_and_print_counts(&dir, url, db)?;
 
@@ -847,7 +847,7 @@ impl Local {
                 }
                 None => "copy from another repo",
             };
-            info!("{:>8} {} ({})", count, id, verified_state);
+            info!("{count:>8} {id} ({verified_state})");
         }
         Ok(())
     }
@@ -998,7 +998,7 @@ impl Local {
                 let dir = match res {
                     Ok(dir) => dir,
                     Err(e) => {
-                        error!("Error: Failed to get dir for repo {}: {}", url, e);
+                        error!("Error: Failed to get dir for repo {url}: {e}");
                         continue;
                     }
                 };
@@ -1098,7 +1098,7 @@ impl Local {
             (false, false) => "no updates".into(),
         };
 
-        info!("{:<60} {}", url, msg);
+        info!("{url:<60} {msg}");
         Ok(())
     }
 
@@ -1347,7 +1347,7 @@ impl ProofStore for Local {
         let mut file = fs::OpenOptions::new()
             .append(true)
             .create(true)
-            .write(true)
+            
             .open(path)?;
 
         file.write_all(proof.to_string().as_bytes())?;
@@ -1427,7 +1427,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     file_iter
         .filter_map(|maybe_path| {
             maybe_path
-                .map_err(|e| error!("Failed scanning for proofs: {}", e))
+                .map_err(|e| error!("Failed scanning for proofs: {e}"))
                 .ok()
         })
         .filter_map(|path| match parse_proofs(&path) {
