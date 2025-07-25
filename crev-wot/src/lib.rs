@@ -548,7 +548,7 @@ impl ProofDB {
         name: &'c str,
         version: &'d Version,
         id: &Id,
-    ) -> Option<&proof::review::Package> {
+    ) -> Option<&'a proof::review::Package> {
         self.get_pkg_reviews_for_version(source, name, version)
             .find(|pkg_review| pkg_review.from().id == *id)
     }
@@ -578,7 +578,7 @@ impl ProofDB {
         version: Option<&'c Version>,
         trust_set: &'d TrustSet,
         trust_level_required: TrustLevel,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         match (name, version) {
             (Some(name), Some(version)) => Box::new(self.get_pkg_reviews_with_issues_for_version(
                 source,
@@ -607,7 +607,7 @@ impl ProofDB {
         source: RegistrySource<'b>,
         name: &'c str,
         version: &'d Version,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.get_pkg_reviews_gte_version(source, name, version)
             .filter(move |review| review.is_advisory_for(version))
     }
@@ -616,7 +616,7 @@ impl ProofDB {
         &'a self,
         source: RegistrySource<'b>,
         name: &'c str,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.package_reviews
             .get(source)
             .into_iter()
@@ -763,7 +763,7 @@ impl ProofDB {
         queried_version: &'c Version,
         trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.get_pkg_reviews_with_issues_for_name(source, name, trust_set, trust_level_required)
             .filter(move |review| {
                 !review.issues.is_empty()
@@ -782,7 +782,7 @@ impl ProofDB {
         name: &'c str,
         trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.get_pkg_reviews_for_name(source, name)
             .filter(move |review| {
                 let effective = trust_set.get_effective_trust_level(&review.from().id);
@@ -796,7 +796,7 @@ impl ProofDB {
         source: RegistrySource<'b>,
         trust_set: &'c TrustSet,
         trust_level_required: TrustLevel,
-    ) -> impl Iterator<Item = &proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> {
         self.get_pkg_reviews_for_source(source)
             .filter(move |review| {
                 let effective = trust_set.get_effective_trust_level(&review.from().id);

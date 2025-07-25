@@ -217,7 +217,7 @@ fn is_binary_file_extension(path: &Path) -> bool {
         })
 }
 
-fn escape_tricky_unicode(input: &[u8]) -> Cow<[u8]> {
+fn escape_tricky_unicode(input: &[u8]) -> Cow<'_, [u8]> {
     if input.is_ascii() {
         return input.into();
     }
@@ -230,7 +230,7 @@ fn escape_tricky_unicode(input: &[u8]) -> Cow<[u8]> {
     output.into()
 }
 
-fn escape_tricky_unicode_str(input: &str) -> Cow<str> {
+fn escape_tricky_unicode_str(input: &str) -> Cow<'_, str> {
     if input.is_ascii() {
         return input.into();
     }

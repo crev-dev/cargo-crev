@@ -5,11 +5,11 @@ use serde;
 use self::serde::Deserialize;
 use chrono::{self, offset::FixedOffset, prelude::*};
 use hex::{self, FromHex, FromHexError};
-use std::{fmt, io};
+use std::{fmt, io, error};
 
 // {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {
-    type Err: 'static + Sized + ::std::error::Error;
+    type Err: 'static + Sized + error::Error;
     fn try_from(_: &[u8]) -> Result<Self, Self::Err>;
 }
 
@@ -25,7 +25,7 @@ where
         })
         .and_then(|ref bytes| {
             <T as MyTryFromBytes>::try_from(bytes)
-                .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
+                .map_err(|err| Error::custom(format!("{}", &err as &dyn error::Error)))
         })
 }
 
@@ -50,7 +50,7 @@ where
         })
         .and_then(|bytes: Vec<u8>| {
             <T as MyTryFromBytes>::try_from(&bytes)
-                .map_err(|err| Error::custom(format!("{}", &err as &dyn (::std::error::Error))))
+                .map_err(|err| Error::custom(format!("{}", &err as &dyn error::Error)))
         })
 }
 

@@ -1,7 +1,14 @@
 # Changelog
 
 <!-- next-url -->
-## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.26.0...HEAD) - ReleaseDate
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.26.4...HEAD) - ReleaseDate
+
+- Added mac keychain support to safely store and retrieve passphrases
+
+## [0.26.4](https://github.com/crev-dev/cargo-crev/compare/v0.26.0...v0.26.4) - 2025-04-12
+
+- Updated dependencies to allow use of the 2024 edition.
+- `geiger` dependency is optional (build with `--features=geiger` to enable)
 
 - Implement `crev proof find --git-rev 0f0f0f`.
 - Make filer for `crev proof find --version 1.1.1` indepent of name filter.

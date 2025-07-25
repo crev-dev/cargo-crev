@@ -98,7 +98,7 @@ impl Graph {
                     pending.insert(node.id);
                 }
             } else {
-                eprintln!("No node for {pkg_id} when checking recdeps for {root_pkg_id}");
+                log::error!("No node for {pkg_id} when checking recdeps for {root_pkg_id}");
             }
         }
 
@@ -365,7 +365,7 @@ impl Repo {
         Ok(registry)
     }
 
-    fn get_registry_from_workspace_members(&self) -> Result<(Workspace, PackageRegistry<'_>)> {
+    fn get_registry_from_workspace_members(&self) -> Result<(Workspace<'_>, PackageRegistry<'_>)> {
         let workspace = self.workspace()?;
         let registry = self.registry(workspace.members().map(|m| m.summary().source_id()))?;
         Ok((workspace, registry))
@@ -594,21 +594,19 @@ impl Repo {
         } else {
             self.load_source()?
         };
-        let mut summaries = vec![];
         let version_str = version.map(ToString::to_string);
         let dependency_request =
             Dependency::parse(name, version_str.as_deref(), source.source_id())?;
         let _lock = self
             .config
             .acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
-        if !source
-            .query(&dependency_request, QueryKind::Exact, &mut |summary| {
-                summaries.push(summary)
-            })
-            .is_ready()
-        {
-            source.block_until_ready()?;
-        }
+        let summaries = loop {
+            // Exact to avoid returning all for path/git
+            match source.query_vec(&dependency_request, QueryKind::Exact) {
+                std::task::Poll::Ready(res) => break res?,
+                std::task::Poll::Pending => source.block_until_ready()?,
+            }
+        };
         let summary = if let Some(version) = version {
             summaries
                 .iter()

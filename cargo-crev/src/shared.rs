@@ -10,7 +10,6 @@ use crate::{
 use anyhow::{format_err, Context, Result};
 use crev_data::{proof, review::Package, SOURCE_CRATES_IO};
 use crev_lib::{self, local::Local, ProofStore, ReviewMode};
-use resiter::FlatMap;
 use serde::Deserialize;
 use std::{
     collections::HashSet,
@@ -634,7 +633,11 @@ where
         let mut sel = None;
         if args.crate_.name.is_none() {
             if let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity()) {
-                if args.diff.as_ref().is_none_or(|new_base| new_base == &latest.diff_base) {
+                if args
+                    .diff
+                    .as_ref()
+                    .is_none_or(|new_base| new_base == &latest.diff_base)
+                {
                     sel = Some(ReviewCrateSelector {
                         diff: latest.diff_base.is_some().then_some(latest.diff_base),
                         crate_: CrateSelector::new(
@@ -654,6 +657,7 @@ where
     Ok(())
 }
 
+#[cfg(feature = "geiger")]
 pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
     if !entry.file_type().is_file() {
         return false;
@@ -664,6 +668,7 @@ pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
         .map_or(false, |ext| ext.to_string_lossy().as_ref() == file_ext)
 }
 
+#[cfg(feature = "geiger")]
 pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
     let walker = walkdir::WalkDir::new(dir).into_iter();
     walker
@@ -678,7 +683,10 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
 }
 
 // Note: this function is very slow
+#[cfg(feature = "geiger")]
 pub fn get_geiger_count(path: &Path) -> Result<u64> {
+    use resiter::flat_map::FlatMap;
+
     let mut count = 0;
     for metrics in iter_rs_files_in_dir(path)
         .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
@@ -692,6 +700,11 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
     }
 
     Ok(count)
+}
+
+#[cfg(not(feature = "geiger"))]
+pub fn get_geiger_count(_: &Path) -> Result<u64> {
+    Err(anyhow::Error::msg("geiger feature is not enabled"))
 }
 
 /// Result of `run_command`
