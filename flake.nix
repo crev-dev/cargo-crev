@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    crane.url = "github:ipetkov/crane";
+    crane.url = "github:ipetkov/crane/v0.18.1";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     fenix = {
@@ -34,7 +34,9 @@
           "llvm-tools-preview"
         ]);
 
-        craneLib = (crane.mkLib pkgs).overrideToolchain fenix-toolchain;
+        craneLib = (crane.mkLib pkgs).overrideToolchain (p:
+          fenix.packages.${system}.stable
+        );
 
         # filter source code at path `src` to include only the list of `modules`
         filterModules = modules: src:
