@@ -2,7 +2,7 @@
 name = "cargo-crev"
 categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
-description = "Distibuted Code REView system for verifying security and quality of Cargo dependencies"
+description = "Distributed Code REView system for verifying security and quality of Cargo dependencies"
 documentation = "https://docs.rs/cargo-crev"
 homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "supply-chain", "security", "distributed"]
