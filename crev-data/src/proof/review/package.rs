@@ -109,6 +109,11 @@ pub struct Package {
         rename = "override"
     )]
     pub override_: Vec<OverrideItem>,
+
+    /// If present, indicates this review was performed by an LLM agent.
+    #[serde(skip_serializing_if = "Option::is_none", default, rename = "llm-agent")]
+    #[builder(default)]
+    pub llm_agent: Option<super::LlmAgentInfo>,
 }
 
 impl PackageBuilder {
