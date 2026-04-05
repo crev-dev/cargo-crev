@@ -570,6 +570,12 @@ pub struct CrateDir {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub struct CrateDigest {
+    #[structopt(flatten)]
+    pub common: ReviewCrateSelector,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub enum RepoQuery {
     /// Query reviews
     #[structopt(name = "review")]
@@ -806,6 +812,13 @@ pub enum Crate {
     /// Display the path of the source code directory of a crate
     #[structopt(name = "dir")]
     Dir(CrateDir),
+
+    /// Print the recursive digest (blake2b, base64url) of a crate's source
+    ///
+    /// Useful for filling in the `digest:` field of an unsigned review
+    /// prepared outside of `cargo crev review` (e.g. by an agent).
+    #[structopt(name = "digest")]
+    Digest(CrateDigest),
 
     /// Verify dependencies
     #[structopt(name = "verify")]
