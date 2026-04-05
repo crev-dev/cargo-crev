@@ -214,8 +214,6 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
             comment: args.comment.clone(),
         });
 
-        let proof = reissue_review.sign_by(&sign_id)?;
-
         let commit_msg = format!(
             "Signed existing review for {crate} v{version} with different id\n\n\
              New id: {new_id}\n\
@@ -228,7 +226,14 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
             digest_base64 = crev_common::base64_encode(&orig_proof_digest.0)
         );
 
-        maybe_store(&local, &proof, &commit_msg, &args.common_proof_create)?;
+        // `sign_id` is already unlocked above; the closure just signs.
+        maybe_store(
+            &local,
+            &reissue_review,
+            || Ok(reissue_review.sign_by(&sign_id)?),
+            &commit_msg,
+            &args.common_proof_create,
+        )?;
     }
 
     Ok(())
@@ -745,8 +750,13 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                                 content.set_date(&now);
                             }
                             content.set_author(id.as_public_id());
-                            let proof = content.sign_by(&id)?;
-                            maybe_store(&local, &proof, commit_msg, &args.common)?;
+                            maybe_store(
+                                &local,
+                                &*content,
+                                || content.sign_by(&id),
+                                commit_msg,
+                                &args.common,
+                            )?;
                         }
                         Err(e) => {
                             eprintln!("Ignoried unknown proof - {e}");

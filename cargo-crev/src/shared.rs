@@ -745,21 +745,46 @@ pub fn get_crate_digest_mismatches(
         .collect()
 }
 
-pub fn maybe_store(
+/// Optionally print and/or store a proof.
+///
+/// The signed proof is produced lazily by the `sign` closure on first use: if
+/// neither `--print-signed` nor storing is requested the closure is never
+/// invoked. This lets callers that may unlock the crev id on demand (e.g.
+/// importing a draft for round-trip validation) avoid prompting for a
+/// passphrase when no signature is going to be consumed.
+///
+/// `unsigned` is the unsigned content. It is used to satisfy `--print-unsigned`
+/// without signing, and to validate (via
+/// [`ContentExt::ensure_serializes_to_valid_proof`]) that the content would
+/// round-trip cleanly when no signing happens — without this, an invalid
+/// body could be silently emitted on the print-unsigned path.
+pub fn maybe_store<C>(
     local: &Local,
-    proof: &crev_data::proof::Proof,
+    unsigned: &C,
+    sign: impl FnOnce() -> Result<crev_data::proof::Proof>,
     commit_msg: &str,
     proof_create_opt: &opts::CommonProofCreate,
-) -> Result<()> {
+) -> Result<()>
+where
+    C: crev_data::proof::Content + std::fmt::Display + ?Sized,
+{
+    use crev_data::proof::ContentExt as _;
+    use once_cell::unsync::OnceCell;
+
     if proof_create_opt.print_unsigned {
-        print!("{}", proof.body());
+        print!("{unsigned}");
     }
 
+    let signed: OnceCell<crev_data::proof::Proof> = OnceCell::new();
+    let mut sign = Some(sign);
+
     if proof_create_opt.print_signed {
+        let proof = signed.get_or_try_init(|| sign.take().unwrap()())?;
         print!("{proof}");
     }
 
     if !proof_create_opt.no_store {
+        let proof = signed.get_or_try_init(|| sign.take().unwrap()())?;
         local.insert(proof)?;
 
         if !proof_create_opt.no_commit {
@@ -767,6 +792,13 @@ pub fn maybe_store(
                 .proof_dir_commit(commit_msg)
                 .with_context(|| "Could not not automatically commit")?;
         }
+    }
+
+    if signed.get().is_none() {
+        // We never signed, so signing's implicit serialize/parse round-trip
+        // never happened. Validate the unsigned body explicitly so a
+        // malformed one can't escape via `--print-unsigned`.
+        unsigned.ensure_serializes_to_valid_proof()?;
     }
 
     Ok(())
