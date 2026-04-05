@@ -688,6 +688,17 @@ pub struct CrateReview {
     /// Enable overrides suggestions
     pub overrides: bool,
 
+    /// Import an unsigned package review body from a file (e.g. one saved with
+    /// `cargo crev review --no-store --print-unsigned > file`), instead of
+    /// building one from the local crate state. Useful for signing reviews
+    /// prepared externally.
+    #[structopt(long = "import-unsigned-from", parse(from_os_str))]
+    pub import_unsigned_from: Option<PathBuf>,
+
+    /// Skip the interactive editor when creating the review.
+    #[structopt(long = "no-edit")]
+    pub no_edit: bool,
+
     #[structopt(flatten)]
     pub cargo_opts: CargoOpts,
 }

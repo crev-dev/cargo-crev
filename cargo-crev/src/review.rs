@@ -18,7 +18,7 @@ use crate::{repo::Repo, shared::*};
 /// Review a crate
 ///
 /// * `unrelated` - the crate might not actually be a dependency
-#[allow(clippy::option_option)]
+#[allow(clippy::option_option, clippy::too_many_arguments)]
 pub fn create_review_proof(
     crate_sel: &ReviewCrateSelector,
     report_severity: Option<crev_data::Level>,
@@ -27,6 +27,7 @@ pub fn create_review_proof(
     proof_create_opt: &opts::CommonProofCreate,
     skip_activity_check: bool,
     show_override_suggestions: bool,
+    no_edit: bool,
     cargo_opts: CargoOpts,
 ) -> Result<()> {
     let diff_version = &crate_sel.diff;
@@ -207,34 +208,38 @@ pub fn create_review_proof(
         review.common.original = None;
     }
 
-    let mut review = edit::edit_proof_content_iteractively(
-        &review,
-        previous_date.as_ref(),
-        diff_base_version.as_ref(),
-        None,
-        |text| {
-            if show_override_suggestions && review.override_.is_empty() {
-                writeln!(text, "# override:")?;
-            }
-
-            if show_override_suggestions {
-                for review in db.get_package_reviews_for_package(
-                    SOURCE_CRATES_IO,
-                    Some(&pkg_id.name()),
-                    Some(pkg_id.version()),
-                ) {
-                    let id = &review.common.from.id;
-                    let (status, url) = url_to_status_str(&db.lookup_url(id));
-                    writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
-                    writeln!(text, "#   id: {id}")?;
-                    writeln!(text, "#   url: {url} # {status}")?;
-                    writeln!(text, "#   comment: \"\"")?;
+    let mut review = if no_edit {
+        review
+    } else {
+        edit::edit_proof_content_iteractively(
+            &review,
+            previous_date.as_ref(),
+            diff_base_version.as_ref(),
+            None,
+            |text| {
+                if show_override_suggestions && review.override_.is_empty() {
+                    writeln!(text, "# override:")?;
                 }
-            }
 
-            Ok(())
-        },
-    )?;
+                if show_override_suggestions {
+                    for review in db.get_package_reviews_for_package(
+                        SOURCE_CRATES_IO,
+                        Some(&pkg_id.name()),
+                        Some(pkg_id.version()),
+                    ) {
+                        let id = &review.common.from.id;
+                        let (status, url) = url_to_status_str(&db.lookup_url(id));
+                        writeln!(text, "# - id-type: crev")?; // TODO: support other ids?
+                        writeln!(text, "#   id: {id}")?;
+                        writeln!(text, "#   url: {url} # {status}")?;
+                        writeln!(text, "#   comment: \"\"")?;
+                    }
+                }
+
+                Ok(())
+            },
+        )?
+    };
 
     review.touch_date();
     let proof = review.sign_by(&id)?;
@@ -250,6 +255,44 @@ pub fn create_review_proof(
         },
     );
     maybe_store(&local, &proof, &commit_msg, proof_create_opt)
+}
+
+/// Load an unsigned package-review proof body from a file, sign it with the
+/// current id, and (optionally) store it. Bypasses the normal crate inspection
+/// flow, so it can be used to sign reviews prepared externally.
+pub fn import_unsigned_and_sign(
+    local: &Local,
+    path: &std::path::Path,
+    proof_create_opt: &opts::CommonProofCreate,
+    no_edit: bool,
+) -> Result<()> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format_err!("Failed to read {}: {}", path.display(), e))?;
+    let mut review: proof::review::Package = serde_yaml::from_str(&content).map_err(|e| {
+        format_err!(
+            "Failed to parse package review from {}: {}",
+            path.display(),
+            e
+        )
+    })?;
+
+    let id = local.read_current_unlocked_id(&term::read_passphrase)?;
+    review.change_from(id.id.clone());
+    review.ensure_kind_is_backfilled();
+
+    let review = if no_edit {
+        review
+    } else {
+        edit::edit_proof_content_iteractively(&review, None, None, None, |_| Ok(()))?
+    };
+
+    let commit_msg = format!(
+        "Add review for {crate_} v{version} (imported)",
+        crate_ = &review.package.id.id.name,
+        version = &review.package.id.version,
+    );
+    let proof = review.sign_by(&id)?;
+    maybe_store(local, &proof, &commit_msg, proof_create_opt)
 }
 
 pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
