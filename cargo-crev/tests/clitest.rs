@@ -62,12 +62,15 @@ fn import_unsigned_review_from_file() {
         stdout.contains("test comment for import fixture"),
         "stdout: {stdout}"
     );
-    // The `from` should have been replaced with the auto-created id, so the
-    // original id must not appear in the output.
+    // The tool substitutes `from` with the local user's id (read from the
+    // *locked* id, no passphrase prompt) so the printed unsigned body
+    // matches what would actually be signed. The fixture's original id
+    // must therefore be gone from the output.
     assert!(
         !stdout.contains("FYlr8YoYGVvDwHQxqEIs89reKKDy-oWisoO0qXXEfHE"),
-        "the `from` id should have been replaced; stdout: {stdout}"
+        "the fixture `from` id should be replaced with the user's id; stdout: {stdout}"
     );
+    assert!(stdout.contains("from:"), "stdout: {stdout}");
     // The `kind` must be backfilled and present so the proof would be valid.
     assert!(stdout.contains("kind: package review"), "stdout: {stdout}");
 }

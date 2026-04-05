@@ -242,4 +242,4 @@ pub trait ContentExt: Content {
     }
 }
 
-impl<T> ContentExt for T where T: Content {}
+impl<T: ?Sized> ContentExt for T where T: Content {}

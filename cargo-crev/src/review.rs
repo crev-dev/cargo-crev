@@ -242,7 +242,6 @@ pub fn create_review_proof(
     };
 
     review.touch_date();
-    let proof = review.sign_by(&id)?;
 
     let commit_msg = format!(
         "{add_or_overwrite} review for {crate} v{version}",
@@ -254,7 +253,16 @@ pub fn create_review_proof(
             "Add"
         },
     );
-    maybe_store(&local, &proof, &commit_msg, proof_create_opt)
+    // The id is already unlocked above (we unlock eagerly so a bad passphrase
+    // is caught before the user spends time editing). The closure here just
+    // signs with that already-unlocked id.
+    maybe_store(
+        &local,
+        &review,
+        || Ok(review.sign_by(&id)?),
+        &commit_msg,
+        proof_create_opt,
+    )
 }
 
 /// Load an unsigned package-review proof body from a file, sign it with the
@@ -275,10 +283,15 @@ pub fn import_unsigned_and_sign(
             e
         )
     })?;
-
-    let id = local.read_current_unlocked_id(&term::read_passphrase)?;
-    review.change_from(id.id.clone());
     review.ensure_kind_is_backfilled();
+
+    // Substitute the user's id into `from` using the *locked* id (no
+    // passphrase prompt). This way the unsigned body printed downstream
+    // matches what would be signed, and dry-validate still works without
+    // unlocking — `maybe_store` will only invoke the sign closure if a
+    // signed proof is actually needed.
+    let locked_id = local.read_current_locked_id()?;
+    review.change_from(locked_id.to_public_id());
 
     let review = if no_edit {
         review
@@ -291,8 +304,16 @@ pub fn import_unsigned_and_sign(
         crate_ = &review.package.id.id.name,
         version = &review.package.id.version,
     );
-    let proof = review.sign_by(&id)?;
-    maybe_store(local, &proof, &commit_msg, proof_create_opt)
+    maybe_store(
+        local,
+        &review,
+        || {
+            let id = local.read_current_unlocked_id(&term::read_passphrase)?;
+            Ok(review.sign_by(&id)?)
+        },
+        &commit_msg,
+        proof_create_opt,
+    )
 }
 
 pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
