@@ -237,6 +237,15 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
 fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
 
+    if let Some(path) = &args.import_unsigned_from {
+        return review::import_unsigned_and_sign(
+            &local,
+            path,
+            &args.common_proof_create,
+            args.no_edit,
+        );
+    }
+
     handle_goto_mode_command(&args.common, Some(&local), |sel| {
         let is_advisory =
             args.advisory || args.affected.is_some() || (!args.issue && args.severity.is_some());
@@ -265,6 +274,7 @@ fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) ->
             &args.common_proof_create,
             args.skip_activity_check || is_advisory || args.issue,
             args.overrides,
+            args.no_edit,
             args.cargo_opts.clone(),
         )?;
         let has_public_url = local
