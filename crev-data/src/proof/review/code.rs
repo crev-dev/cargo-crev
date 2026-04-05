@@ -51,6 +51,14 @@ pub struct Code {
     )]
     #[builder(default = "Default::default()")]
     pub files: Vec<File>,
+    /// If present, indicates this review was performed by an LLM agent.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        rename = "llm-agent"
+    )]
+    #[builder(default)]
+    pub llm_agent: Option<super::LlmAgentInfo>,
 }
 
 impl Code {

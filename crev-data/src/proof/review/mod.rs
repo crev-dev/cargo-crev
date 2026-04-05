@@ -37,6 +37,28 @@ impl Default for Review {
     }
 }
 
+/// Information about an LLM agent that performed the review.
+///
+/// Presence of this field in a review proof (code or package)
+/// indicates that the review was conducted by (or with assistance of)
+/// an LLM agent.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LlmAgentInfo {
+    /// Model identifier (e.g. "claude-opus-4-6", "gpt-4o")
+    pub model: String,
+    /// Model version string, if available (e.g. "2026-04-01")
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        rename = "model-version"
+    )]
+    pub model_version: Option<String>,
+    /// Whether a human guided the agent during the review (interactive
+    /// session), as opposed to a fully autonomous review.
+    #[serde(rename = "human-guided", default)]
+    pub human_guided: bool,
+}
+
 impl Review {
     #[must_use]
     pub fn new_positive() -> Self {
