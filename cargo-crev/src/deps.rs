@@ -333,7 +333,7 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
     });
 
     // print header, only after `scanner` had a chance to download everything
-    if term.is_interactive() {
+    if term.is_interactive() || args.force_print_header {
         print_term::print_header(&mut term, &args.columns, column_widths)?;
     }
 

@@ -434,6 +434,11 @@ pub struct CrateVerify {
     #[structopt(long = "recursive")]
     /// Calculate recursive metrics for your packages
     pub recursive: bool,
+
+    #[structopt(long = "force-print-header")]
+    /// Always print the column header, even when stdout is not a TTY (useful
+    /// for capturing the output into a file for later processing).
+    pub force_print_header: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
