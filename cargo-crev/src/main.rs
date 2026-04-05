@@ -612,6 +612,9 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 }
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
+            opts::Crate::Digest(args) => {
+                shared::show_crate_digest(&args.common.crate_.auto_unrelated()?)?
+            }
 
             opts::Crate::Review(args) => crate_review(&args, TrustProofType::Trust)?,
             opts::Crate::Unreview(args) => crate_review(&args, TrustProofType::Untrust)?,
