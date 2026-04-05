@@ -891,7 +891,7 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             read_new_passphrase,
             &mut Warning::auto_log(),
         )
-        .inspect_err(|e| {
+        .inspect_err(|_e| {
             print_crev_proof_repo_fork_help();
         })?;
     if !res.has_no_passphrase() {
