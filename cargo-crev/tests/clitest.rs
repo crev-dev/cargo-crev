@@ -110,7 +110,23 @@ impl Cli {
 
     #[track_caller]
     pub fn run(&self, args: &[impl AsRef<OsStr>], stdin_data: impl Into<String>) -> Output {
-        let mut child = Command::new(&self.exe)
+        // Under `cross` (qemu-user), the test binary itself is launched via a
+        // wrapper such as `/qemu-runner arm <bin>` because `binfmt_misc` is not
+        // registered inside cross's Docker container. A plain
+        // `Command::new(target_arch_bin)` from inside the test would `execve`
+        // into the ARM ELF, get `ENOEXEC`, fall back to `/bin/sh <bin>`, and
+        // sh would choke on the ELF header. cargo exposes the wrapper via
+        // `CARGO_TARGET_<TRIPLE>_RUNNER` and forwards it into the test
+        // process, so we honor it here to spawn cargo-crev the same way.
+        let mut command = if let Some((runner, runner_args)) = cross_runner() {
+            let mut c = Command::new(runner);
+            c.args(runner_args);
+            c.arg(&self.exe);
+            c
+        } else {
+            Command::new(&self.exe)
+        };
+        let mut child = command
             .env("CARGO_CREV_ROOT_DIR_OVERRIDE", self.home.path())
             .env("EDITOR", "cat")
             .env("VISUAL", "cat")
@@ -129,4 +145,20 @@ impl Cli {
         });
         child.wait_with_output().expect("child process lost")
     }
+}
+
+/// Detects the `CARGO_TARGET_<TRIPLE>_RUNNER` cargo set when launching this
+/// test binary, so that child processes spawned at the same target arch can
+/// be wrapped the same way (e.g. through qemu-user under `cross`).
+fn cross_runner() -> Option<(String, Vec<String>)> {
+    for (k, v) in std::env::vars() {
+        if let Some(rest) = k.strip_prefix("CARGO_TARGET_") {
+            if rest.ends_with("_RUNNER") && !v.is_empty() {
+                let mut parts = v.split_whitespace().map(String::from);
+                let prog = parts.next()?;
+                return Some((prog, parts.collect()));
+            }
+        }
+    }
+    None
 }
