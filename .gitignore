@@ -1,5 +1,6 @@
 /target
 /.direnv
+/result
 target
 **/*.rs.bk
 

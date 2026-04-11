@@ -46,3 +46,9 @@ sha2 = { opt-level = 2 }
 rust-argon2 = { opt-level = 2 }
 blake2b_simd = { opt-level = 2 }
 constant_time_eq = { opt-level = 2 }
+
+[profile.ci]
+debug = "line-tables-only"
+incremental = false
+inherits = "dev"
+lto = "off"
