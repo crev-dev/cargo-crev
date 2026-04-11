@@ -398,12 +398,16 @@ impl Local {
             .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         let latest_path = self.cache_latest_review_activity_path();
-        crev_common::save_to_yaml_file(&latest_path, &LatestReviewActivity {
-            source: source.to_string(),
-            name: name.to_string(),
-            version: version.clone(),
-            diff_base: activity.diff_base.clone(),
-        }).map_err(|e| Error::ReviewActivity(Box::new(e)))?;
+        crev_common::save_to_yaml_file(
+            &latest_path,
+            &LatestReviewActivity {
+                source: source.to_string(),
+                name: name.to_string(),
+                version: version.clone(),
+                diff_base: activity.diff_base.clone(),
+            },
+        )
+        .map_err(|e| Error::ReviewActivity(Box::new(e)))?;
 
         Ok(())
     }
@@ -1347,7 +1351,6 @@ impl ProofStore for Local {
         let mut file = fs::OpenOptions::new()
             .append(true)
             .create(true)
-            
             .open(path)?;
 
         file.write_all(proof.to_string().as_bytes())?;
@@ -1402,7 +1405,7 @@ fn proofs_iter_for_path(path: PathBuf) -> impl Iterator<Item = proof::Proof> {
     let file_iter = walkdir::WalkDir::new(&path)
         .into_iter()
         // skip dotfiles, .git dir
-        .filter_entry(|e| e.file_name().to_str().map_or(true, |f| !f.starts_with('.')))
+        .filter_entry(|e| e.file_name().to_str().is_none_or(|f| !f.starts_with('.')))
         .map_err(move |e| {
             Error::ErrorIteratingLocalProofStore(Box::new((path.clone(), e.to_string())))
         })

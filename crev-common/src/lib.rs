@@ -234,9 +234,7 @@ pub fn run_with_shell_cmd(cmd: &OsStr, arg: Option<&Path>) -> io::Result<std::pr
 pub fn run_with_shell_cmd_capture_stdout(cmd: &OsStr, arg: Option<&Path>) -> io::Result<Vec<u8>> {
     let output = run_with_shell_cmd_custom(cmd, arg, true)?;
     if !output.status.success() {
-        return Err(std::io::Error::other(
-            "command failed with non-zero status",
-        ));
+        return Err(std::io::Error::other("command failed with non-zero status"));
     }
     Ok(output.stdout)
 }

@@ -1,7 +1,8 @@
 use std::cmp;
 
-use super::*;
 use itertools::Itertools;
+
+use super::*;
 
 /// Details of a one Id that is trusted
 #[derive(Debug, Clone)]
@@ -71,10 +72,12 @@ pub struct TrustSet {
     pub trusted: HashMap<Id, TrustedIdDetails>,
     pub distrusted: HashMap<Id, DistrustedIdDetails>,
 
-    // "ignore trust from `Id` to `Id`, as overridden by some other Ids with an effective `TrustLevel`s
+    // "ignore trust from `Id` to `Id`, as overridden by some other Ids with an effective
+    // `TrustLevel`s
     pub trust_ignore_overrides: HashMap<(Id, Id), OverrideSourcesDetails>,
 
-    // "ignore specific package review by `Id`, as overridden by some other Ids with an effective `TrustLevel`s
+    // "ignore specific package review by `Id`, as overridden by some other Ids with an effective
+    // `TrustLevel`s
     pub package_review_ignore_override: HashMap<PkgVersionReviewId, OverrideSourcesDetails>,
 }
 
@@ -159,13 +162,11 @@ impl TrustSet {
                 total_distance: current.distance,
             });
 
-            // did we just move from processing higher effective trust level id to a lower ones?
-            // if so, now would be a good time to check if anyone got banned, and then restart processing
-            // of the WoT
+            // did we just move from processing higher effective trust level id to a lower
+            // ones? if so, now would be a good time to check if anyone got
+            // banned, and then restart processing of the WoT
             if current.effective_trust_level != previous_iter_trust_level {
-                debug!(
-                    "No more nodes with effective_trust_level of {previous_iter_trust_level}"
-                );
+                debug!("No more nodes with effective_trust_level of {previous_iter_trust_level}");
                 assert!(current.effective_trust_level < previous_iter_trust_level);
                 if initial_distrusted_len != current_trust_set.distrusted.len() {
                     debug!("Some people got banned at the current trust level - restarting the WoT calculation");
@@ -191,13 +192,11 @@ impl TrustSet {
                 let direct_trust = trust_details.level;
                 let current_overrides = &trust_details.override_;
 
-                // Note: we keep visiting nodes, even banned ones, just like they were originally
-                // reported
+                // Note: we keep visiting nodes, even banned ones, just like they were
+                // originally reported
                 let effective_trust_level =
                     std::cmp::min(direct_trust, current.effective_trust_level);
-                debug!(
-                    "Effective trust for {candidate_id} {effective_trust_level}"
-                );
+                debug!("Effective trust for {candidate_id} {effective_trust_level}");
 
                 let candidate_distance_from_current =
                     params.distance_by_level(effective_trust_level);
@@ -404,7 +403,8 @@ impl TrustSet {
     /// Record that an Id is reported as trusted
     ///
     /// Returns `true` if this this ID details changed in a way,
-    /// which requires revising it's own downstream trusted Id details in the graph algorithm for it.
+    /// which requires revising it's own downstream trusted Id details in the
+    /// graph algorithm for it.
     fn record_trusted_id(
         &mut self,
         subject: Id,

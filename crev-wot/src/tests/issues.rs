@@ -1,10 +1,7 @@
-use super::*;
+use crev_data::review::{Advisory, Issue, VersionRange};
+use crev_data::{proof, TrustLevel, UnlockedId, Version};
 
-use crev_data::{
-    proof,
-    review::{Advisory, Issue, VersionRange},
-    TrustLevel, UnlockedId, Version,
-};
+use super::*;
 
 const SOURCE: &str = "SOURCE_ID";
 const NAME: &str = "name";

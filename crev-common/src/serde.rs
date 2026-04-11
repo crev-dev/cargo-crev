@@ -5,7 +5,7 @@ use serde;
 use self::serde::Deserialize;
 use chrono::{self, offset::FixedOffset, prelude::*};
 use hex::{self, FromHex, FromHexError};
-use std::{fmt, io, error};
+use std::{error, fmt, io};
 
 // {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {

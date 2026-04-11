@@ -129,13 +129,11 @@ pub fn proof_find(args: opts::ProofFind) -> Result<()> {
     }
 
     if let Some(git_revision) = args.git_revision.as_ref() {
-        iter = Box::new(iter.filter(move |r|
+        iter = Box::new(iter.filter(move |r| {
             r.package.revision_type == proof::default_revision_type()
-            && (
-                git_revision.is_empty() && &r.package.revision == git_revision
-                || !git_revision.is_empty() && r.package.revision.starts_with(git_revision)
-            )
-        ));
+                && (git_revision.is_empty() && &r.package.revision == git_revision
+                    || !git_revision.is_empty() && r.package.revision.starts_with(git_revision))
+        }));
     }
 
     for review in iter {
@@ -1114,7 +1112,8 @@ fn main() {
             .filter_module("reqwest", log::LevelFilter::Off);
     }
 
-    builder.format(|buf, record| {
+    builder
+        .format(|buf, record| {
             if record.level() == log::Level::Info {
                 writeln!(buf, "{}", record.args())
             } else if record.level() > log::Level::Info {
