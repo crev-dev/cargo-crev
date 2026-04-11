@@ -35,7 +35,7 @@
         ]);
 
         craneLib = (crane.mkLib pkgs).overrideToolchain (p:
-          fenix.packages.${system}.stable
+          fenix-toolchain
         );
 
         # filter source code at path `src` to include only the list of `modules`
