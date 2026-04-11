@@ -1,10 +1,11 @@
-use super::*;
-use crev_data::{
-    proof::{self, trust::TrustLevel, ContentExt, OverrideItem},
-    Digest, UnlockedId, Url, Version,
-};
-use default::default;
 use std::sync::Arc;
+
+use crev_data::proof::trust::TrustLevel;
+use crev_data::proof::{self, ContentExt, OverrideItem};
+use crev_data::{Digest, UnlockedId, Url, Version};
+use default::default;
+
+use super::*;
 
 mod issues;
 
@@ -270,8 +271,8 @@ fn proofdb_trust_ignore_override() -> Result<()> {
         collection![a.as_ref(), b.as_ref(), c.as_ref()]
     );
 
-    // had the `a` trusted `b` at the same level as `c`, the override to ignore `b`'s trust in `d`
-    // would not have effect from PoV of `a`
+    // had the `a` trusted `b` at the same level as `c`, the override to ignore
+    // `b`'s trust in `d` would not have effect from PoV of `a`
     {
         let mut trustdb = ProofDB::new();
 

@@ -19,18 +19,16 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 
-use chrono::{self, offset::Utc, DateTime};
-use crev_data::{
-    self,
-    proof::{self, review, trust::TrustLevel, CommonOps, Content},
-    Digest, Id, Level, RegistrySource, Url, Version,
-};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::sync;
+
+use chrono::offset::Utc;
+use chrono::{self, DateTime};
+use crev_data::proof::trust::TrustLevel;
+use crev_data::proof::{self, review, CommonOps, Content};
+use crev_data::{self, Digest, Id, Level, RegistrySource, Url, Version};
 use default::default;
 use log::debug;
-use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    sync,
-};
 
 pub mod trust_set;
 pub use trust_set::TrustSet;
@@ -51,7 +49,8 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum FetchSource {
     /// Remote repository (other people's proof repos)
     Url(sync::Arc<Url>),
-    /// One of user's own proof repos, which are assumed to contain only verified information
+    /// One of user's own proof repos, which are assumed to contain only
+    /// verified information
     LocalUser,
 }
 
@@ -263,8 +262,8 @@ pub struct ProofDB {
     ids_to_trust_proof_signatures: HashMap<(Id, Id), TimestampedSignature>,
 
     /// Id->URL mapping verified by Id's signature
-    /// boolean is whether it's been fetched from the same URL, or local trusted repo,
-    /// so that URL->Id is also true.
+    /// boolean is whether it's been fetched from the same URL, or local trusted
+    /// repo, so that URL->Id is also true.
     url_by_id_self_reported: HashMap<Id, (TimestampedUrl, bool)>,
 
     /// Id->URL relationship reported by someone else that this Id
@@ -659,14 +658,14 @@ impl ProofDB {
         trust_set: &TrustSet,
         trust_level_required: TrustLevel,
     ) -> HashMap<String, IssueDetails> {
-        // This is one of the most complicated calculations in whole crev. I hate this code
-        // already, and I have barely put it together.
+        // This is one of the most complicated calculations in whole crev. I hate this
+        // code already, and I have barely put it together.
 
         // Here we track all the reported issue by issue id
         let mut issue_reports_by_id: HashMap<String, IssueDetails> = HashMap::new();
 
-        // First we go through all the reports in previous versions with `issues` fields and collect these.
-        // Easy.
+        // First we go through all the reports in previous versions with `issues` fields
+        // and collect these. Easy.
         for (review, issue) in self
             .get_pkg_reviews_lte_version(source, name, queried_version)
             .filter(|review| {
@@ -688,8 +687,8 @@ impl ProofDB {
                 .insert(PkgVersionReviewId::from(review));
         }
 
-        // Now the complicated part. We go through all the advisories for all the versions
-        // of given package.
+        // Now the complicated part. We go through all the advisories for all the
+        // versions of given package.
         //
         // Advisories itself have two functions: first, they might have report an issue
         // by advertising that a given version should be upgraded to a newer version.
@@ -1046,9 +1045,9 @@ impl ProofDB {
             .get(digest.as_slice())
             .into_iter()
             .flat_map(move |unique_reviews| {
-                unique_reviews.values().map(|signature| {
-                        self.package_review_by_signature[&signature.value].clone()
-                    })
+                unique_reviews
+                    .values()
+                    .map(|signature| self.package_review_by_signature[&signature.value].clone())
             })
     }
 
@@ -1068,7 +1067,8 @@ impl ProofDB {
         self.record_url_from_from_field(&Utc::now(), own_id, &FetchSource::LocalUser);
     }
 
-    /// Record mapping between a `PublicId` and a URL it declares, and trust it's correct only if it's been fetched from the same URL
+    /// Record mapping between a `PublicId` and a URL it declares, and trust
+    /// it's correct only if it's been fetched from the same URL
     fn record_url_from_from_field(
         &mut self,
         date: &DateTime<Utc>,
@@ -1278,8 +1278,8 @@ impl Default for TrustDistanceParams {
     }
 }
 
-/// List of authors recommending override (ignore) trust / package review with their effective
-/// trust level.
+/// List of authors recommending override (ignore) trust / package review with
+/// their effective trust level.
 #[derive(Debug, Clone, Default)]
 pub struct OverrideSourcesDetails(HashMap<Id, TrustLevel>);
 

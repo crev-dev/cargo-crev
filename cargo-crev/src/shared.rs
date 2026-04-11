@@ -568,8 +568,7 @@ pub fn show_crate_digest(sel: &opts::CrateSelector) -> Result<()> {
     sel.ensure_name_given()?;
     let crate_id = repo.find_pkgid_by_crate_selector(sel)?;
     let crate_ = repo.get_crate(&crate_id)?;
-    let digest =
-        crev_lib::get_recursive_digest_for_dir(crate_.root(), &cargo_min_ignore_list())?;
+    let digest = crev_lib::get_recursive_digest_for_dir(crate_.root(), &cargo_min_ignore_list())?;
     println!("{digest}");
 
     Ok(())
