@@ -3,5 +3,5 @@ job:
   command: ./.config/selfci/ci.sh
 
 mq:
-  base-branch: master
+  base-branch: main
   merge-style: rebase
