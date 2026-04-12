@@ -1079,6 +1079,45 @@ pub enum Ai {
     /// AI skill management
     #[structopt(name = "skill")]
     Skill(AiSkill),
+
+    /// Run an AI agent in a loop to review dependencies
+    #[structopt(name = "review-loop")]
+    ReviewLoop(AiReviewLoop),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct AiReviewLoop {
+    /// Number of review iterations to run
+    #[structopt(long, default_value = "1")]
+    pub iterations: u32,
+
+    /// AI agent to use
+    #[structopt(long, default_value = "claude")]
+    pub agent: AiAgent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AiAgent {
+    Claude,
+}
+
+impl std::str::FromStr for AiAgent {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "claude" => Ok(Self::Claude),
+            other => Err(format!("unsupported agent: '{other}'. Supported: claude")),
+        }
+    }
+}
+
+impl std::fmt::Display for AiAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Claude => write!(f, "claude"),
+        }
+    }
 }
 
 #[derive(Debug, StructOpt, Clone)]
