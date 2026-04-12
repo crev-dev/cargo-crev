@@ -1,7 +1,11 @@
 # Changelog
 
 <!-- next-url -->
-## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.27.0...HEAD) - ReleaseDate
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.27.1...HEAD) - ReleaseDate
+
+## [0.27.1](https://github.com/crev-dev/cargo-crev/compare/v0.27.0...v0.27.1) - 2026-04-12
+
+- Fixed packaging of embedded AI skill file for crates.io publishing.
 
 ## [0.27.0](https://github.com/crev-dev/cargo-crev/compare/v0.26.4...v0.27.0) - 2026-04-12
 
