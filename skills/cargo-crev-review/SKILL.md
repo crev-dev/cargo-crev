@@ -1009,19 +1009,30 @@ review multiple crates) and append to it as each review completes.
 The script should:
 
 1. Have a `#!/usr/bin/env bash` shebang and `set -euo pipefail`.
-2. Contain one `cargo crev review --import-unsigned-from <proof>`
-   line per completed review (use `cargo run -- crev review ...` if
-   the session is using the local build of cargo-crev).
-3. **Comment out lines the user has already signed.** When the user
-   tells you they've signed some, or you can verify via
-   `cargo crev repo query review <crate> <version>`, prefix those
-   lines with `# Already signed:`.
+2. Contain a **single** `cargo crev review` invocation with multiple
+   `--import-unsigned-from` arguments — one per completed review.
+   The command accepts multiple files and unlocks the user's identity
+   only once for the whole batch:
+
+   ```sh
+   cargo crev review \
+     --import-unsigned-from target/crev/reviews/foo-1.2.3.proof.yaml \
+     --import-unsigned-from target/crev/reviews/bar-0.4.1.proof.yaml \
+     --import-unsigned-from target/crev/reviews/baz-2.0.0.proof.yaml
+   ```
+
+   Use `cargo run -- crev review ...` if the session is using the
+   local build of cargo-crev.
+3. **Remove lines for crates the user has already signed.** When the
+   user tells you they've signed some, or you can verify via
+   `cargo crev repo query review <crate> <version>`, remove the
+   corresponding `--import-unsigned-from` argument from the command.
 4. Be executable (`chmod +x`).
 
-This way the user can run the whole script in one go, signing each
-review interactively as the editor opens, or they can run individual
-lines at their own pace. Tell the user the script path after each
-batch of reviews completes.
+This way the user can run the script once, signing each review
+interactively as the editor opens in sequence, with the passphrase
+prompted only once. Tell the user the script path after each batch
+of reviews completes.
 
 After the user has signed the proofs, if they want to publish to their
 public proof repo, that's a separate explicit step on their side:
