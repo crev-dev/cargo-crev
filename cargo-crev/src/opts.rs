@@ -1068,6 +1068,24 @@ pub enum Command {
     /// Shortcut for `crate verify`
     #[structopt(name = "verify")]
     Verify(CrateVerifyFull),
+
+    /// AI-related commands
+    #[structopt(name = "ai")]
+    Ai(Ai),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum Ai {
+    /// AI skill management
+    #[structopt(name = "skill")]
+    Skill(AiSkill),
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub enum AiSkill {
+    /// Print the AI review skill content
+    #[structopt(name = "review")]
+    Review,
 }
 
 /// Cargo will pass the name of the `cargo-<tool>`

@@ -791,6 +791,16 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
         opts::Command::Verify(opts) => {
             return deps::verify_deps(opts.crate_, opts.opts);
         }
+        opts::Command::Ai(args) => match args {
+            opts::Ai::Skill(skill) => match skill {
+                opts::AiSkill::Review => {
+                    print!(
+                        "{}",
+                        include_str!("../../skills/cargo-crev-review/SKILL.md")
+                    );
+                }
+            },
+        },
     }
 
     Ok(CommandExitStatus::Success)
