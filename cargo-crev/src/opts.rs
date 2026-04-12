@@ -1094,6 +1094,10 @@ pub struct AiReviewLoop {
     /// AI agent to use
     #[structopt(long, default_value = "claude")]
     pub agent: AiAgent,
+
+    /// Additional arguments to pass to the AI agent
+    #[structopt(last = true)]
+    pub agent_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
