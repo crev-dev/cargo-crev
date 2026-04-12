@@ -253,6 +253,9 @@ pub struct VerificationRequirements {
     /// Required thoroughness
     #[structopt(long = "thoroughness", default_value = "none")]
     pub thoroughness_level: Level,
+    /// Ignore reviews performed by LLM agents
+    #[structopt(long = "ignore-llm-agent-reviews")]
+    pub ignore_llm_agent_reviews: bool,
 }
 
 impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
@@ -262,6 +265,7 @@ impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
             redundancy: req.redundancy,
             understanding: req.understanding_level,
             thoroughness: req.thoroughness_level,
+            ignore_llm_agent_reviews: req.ignore_llm_agent_reviews,
         }
     }
 }
