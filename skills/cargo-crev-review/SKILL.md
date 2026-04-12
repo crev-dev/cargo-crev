@@ -505,14 +505,16 @@ at least 10 `.rs` files and review those thoroughly. Use a command like:
 find <src> -name '*.rs' | shuf | head -n 10
 ```
 
-Review each sampled file with the same care you would apply at `medium`
-thoroughness — read it in full, trace data flow, check for red flags.
-This ensures that even very large crates get meaningful coverage with a
-real chance of discovering issues, rather than a superficial scan of
-everything. Record which files were randomly selected and note in the
-report that the selection was randomised. The non-negotiable checks
-(build.rs, unsafe blocks, proc-macro, deps, FFI) still apply to the
-entire crate regardless of sampling.
+Every sampled file MUST be reviewed thoroughly in full — read the entire
+file, trace data flow, check for red flags, and record findings. Sampled
+files MUST NOT be skipped, read partially, or given a superficial scan.
+The whole point of sampling is to give a smaller set of files the deep
+attention that the full crate cannot receive; a partial review of a
+sampled file defeats the purpose entirely. Record which files were
+randomly selected and note in the report that the selection was
+randomised. The non-negotiable checks (build.rs, unsafe blocks,
+proc-macro, deps, FFI) still apply to the entire crate regardless of
+sampling.
 
 **Non-negotiable, regardless of level.** The following items get
 examined in every review, even at `low` or `none`:
