@@ -1,12 +1,12 @@
 use crate::{
+    Repo,
     deps::{
-        scan::{self, RequiredDetails},
         AccumulativeCrateDetails,
+        scan::{self, RequiredDetails},
     },
     opts::{CrateSelector, CrateVerify, CrateVerifyCommon, WotOpts},
-    Repo,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io};

@@ -7,9 +7,9 @@ use crate::{
     prelude::*,
     repo::Repo,
 };
-use anyhow::{format_err, Context, Result};
-use crev_data::{proof, review::Package, SOURCE_CRATES_IO};
-use crev_lib::{self, local::Local, ProofStore, ReviewMode};
+use anyhow::{Context, Result, format_err};
+use crev_data::{SOURCE_CRATES_IO, proof, review::Package};
+use crev_lib::{self, ProofStore, ReviewMode, local::Local};
 use serde::Deserialize;
 use std::{
     collections::HashSet,
@@ -275,7 +275,8 @@ pub fn crate_open(
     let cargo_crate = repo.get_crate(&crate_id)?;
 
     if let Some(Some(base_ver)) = &crate_sel.diff {
-        println!("View the diff online:\nhttps://diff.rs/{name}/{base_ver}/{name}/{new_ver}/Cargo.toml\n",
+        println!(
+            "View the diff online:\nhttps://diff.rs/{name}/{base_ver}/{name}/{new_ver}/Cargo.toml\n",
             name = cargo_crate.name(),
             new_ver = cargo_crate.version(),
         );

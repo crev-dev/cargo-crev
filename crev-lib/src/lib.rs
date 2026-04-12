@@ -16,14 +16,13 @@ pub mod util;
 pub use crate::local::Local;
 pub use activity::{ReviewActivity, ReviewMode};
 use crev_data::{
-    self,
+    self, Digest, Id, RegistrySource, Version,
     id::IdError,
     proof::{
+        CommonOps,
         review::{self, Rating},
         trust::TrustLevel,
-        CommonOps,
     },
-    Digest, Id, RegistrySource, Version,
 };
 use crev_wot::PkgVersionReviewId;
 pub use crev_wot::TrustDistanceParams;
@@ -387,7 +386,9 @@ pub enum Warning {
     #[error("URL for {0} is not known yet")]
     IdUrlNotKnonw(Id),
 
-    #[error("Could not deduce `ssh` push url for {0}. Call:\ncargo crev repo git remote set-url --push origin <url>\nmanually after the id is generated.")]
+    #[error(
+        "Could not deduce `ssh` push url for {0}. Call:\ncargo crev repo git remote set-url --push origin <url>\nmanually after the id is generated."
+    )]
     GitPushUrl(String),
 
     #[error("Failed to fetch {0} into {path}", path = _2.display())]

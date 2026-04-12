@@ -8,7 +8,7 @@
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
 use crate::prelude::*;
-use crev_data::{proof::ContentExt, UnlockedId, SOURCE_CRATES_IO};
+use crev_data::{SOURCE_CRATES_IO, UnlockedId, proof::ContentExt};
 use crev_lib::id::LockedId;
 use crev_lib::{self, local::Local};
 use log::info;
@@ -49,7 +49,7 @@ use crate::{
     review::{create_review_proof, list_reviews},
     shared::*,
 };
-use crev_data::{proof, Id, TrustLevel};
+use crev_data::{Id, TrustLevel, proof};
 use crev_lib::{TrustProofType, Warning};
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
 use log::debug;
@@ -69,7 +69,9 @@ impl LocalExt for Local {
         match res {
             Ok(o) => Ok(o),
             Err(crev_lib::Error::GitUrlNotConfigured) => {
-                bail!("Id has no public URL set. Run `cargo crev id set-url <your-public-git-proof-repo>` and try again. See https://github.com/crev-dev/cargo-crev/discussions for help.");
+                bail!(
+                    "Id has no public URL set. Run `cargo crev id set-url <your-public-git-proof-repo>` and try again. See https://github.com/crev-dev/cargo-crev/discussions for help."
+                );
             }
             Err(e) => Err(e.into()),
         }
@@ -176,7 +178,7 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
                     crate_ = &orig_review.package.id.id.name,
                     version = &orig_review.package.id.version,
                     rev = &orig_review.package.revision,
-                    orig_id =  &orig_review.common.from.id
+                    orig_id = &orig_review.common.from.id
                 );
                 continue;
             }
@@ -957,7 +959,9 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
                     .ok()
                     .is_some_and(|cur| cur == example.id)
                 {
-                    eprintln!("You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n");
+                    eprintln!(
+                        "You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n"
+                    );
                 } else {
                     eprintln!(
                         "You can use existing CrevID with `cargo crev id switch {}`",
@@ -973,7 +977,9 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
 
     if url.is_none() {
         print_crev_proof_repo_fork_help();
-        bail!("Then again with `cargo crev id new --url <new repo URL>`\nor `cargo crev id new --github-username <you>`");
+        bail!(
+            "Then again with `cargo crev id new --url <new repo URL>`\nor `cargo crev id new --github-username <you>`"
+        );
     }
 
     let local = Local::auto_create_or_open()?;
@@ -992,7 +998,9 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
         println!("Make sure to back it up on another device, to prevent losing it.");
         println!("{res}");
     } else {
-        println!("Your CrevID is not protected with a passphrase. You should fix that with `cargo crev id passwd`");
+        println!(
+            "Your CrevID is not protected with a passphrase. You should fix that with `cargo crev id passwd`"
+        );
     }
 
     let local = crev_lib::Local::auto_open()?;
@@ -1117,7 +1125,9 @@ fn load_stdin_with_prompt() -> Result<Vec<u8>> {
 }
 
 fn print_crev_proof_repo_fork_help() {
-    eprintln!("Each CrevID is associated with a public git repository which stores reviews and trust proofs.");
+    eprintln!(
+        "Each CrevID is associated with a public git repository which stores reviews and trust proofs."
+    );
     eprintln!(
         "To create your proof repository, fork the template:\n\
     https://github.com/crev-dev/crev-proofs/fork\n\n\

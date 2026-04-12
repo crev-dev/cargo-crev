@@ -1,10 +1,10 @@
 use crate::{
+    Error, Level, ParseError,
     proof::{
-        self,
+        self, OverrideItem, OverrideItemDraft,
         content::{OriginalReference, ValidationError, ValidationResult},
-        OverrideItem, OverrideItemDraft,
     },
-    serde_content_serialize, serde_draft_serialize, Error, Level, ParseError,
+    serde_content_serialize, serde_draft_serialize,
 };
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;

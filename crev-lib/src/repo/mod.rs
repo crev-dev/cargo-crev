@@ -1,5 +1,5 @@
-use crate::{local::Local, util, verify_package_digest, Error, Result};
-use crev_data::{proof, Digest};
+use crate::{Error, Result, local::Local, util, verify_package_digest};
+use crev_data::{Digest, proof};
 use serde::{Deserialize, Serialize};
 
 use std::{

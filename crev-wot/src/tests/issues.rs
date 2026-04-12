@@ -1,5 +1,5 @@
 use crev_data::review::{Advisory, Issue, VersionRange};
-use crev_data::{proof, TrustLevel, UnlockedId, Version};
+use crev_data::{TrustLevel, UnlockedId, Version, proof};
 
 use super::*;
 

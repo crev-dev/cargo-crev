@@ -1,7 +1,7 @@
 use crate::{
+    Error, Result, Url,
     id::UnlockedId,
     proof::{self, Content, ContentExt, ContentWithDraft, Proof},
-    Error, Result, Url,
 };
 use semver::Version;
 use std::{default::Default, path::PathBuf};
@@ -277,9 +277,11 @@ override:
 
     assert_eq!(proof.override_.len(), 1);
     assert!(draft.body.contains("override:"));
-    assert!(draft
-        .body
-        .contains("-sApEowWcAS9J0R7aO18cghvhLBpuMhyeUuWQq_fits"));
+    assert!(
+        draft
+            .body
+            .contains("-sApEowWcAS9J0R7aO18cghvhLBpuMhyeUuWQq_fits")
+    );
 
     let new_proof = proof.apply_draft(&draft.body)?;
 

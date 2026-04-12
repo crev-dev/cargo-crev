@@ -1,5 +1,5 @@
-use anyhow::{bail, Result};
-use crev_common::{run_with_shell_cmd, CancelledError};
+use anyhow::{Result, bail};
+use crev_common::{CancelledError, run_with_shell_cmd};
 use crev_data::{proof, proof::content::ContentExt};
 use crev_lib::{local::Local, util::get_documentation_for};
 use std::{

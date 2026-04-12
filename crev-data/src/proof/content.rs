@@ -1,4 +1,4 @@
-use crate::{proof, proof::Proof, Error, ParseError, Result};
+use crate::{Error, ParseError, Result, proof, proof::Proof};
 use chrono::{self, prelude::*};
 use crev_common::{
     self,

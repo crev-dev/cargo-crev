@@ -1,27 +1,27 @@
 use crate::{opts, opts::CrateSelector};
 use anyhow::format_err;
-use cargo::sources::source::{QueryKind, Source, SourceMap};
-use cargo::sources::SourceConfigMap;
 use cargo::GlobalContext;
+use cargo::sources::SourceConfigMap;
+use cargo::sources::source::{QueryKind, Source, SourceMap};
 use cargo::{
     core::{
+        Package, PackageId, Resolve, SourceId, Workspace,
         dependency::{DepKind, Dependency},
         manifest::ManifestMetadata,
         package::PackageSet,
         registry::PackageRegistry,
         resolver::{CliFeatures, HasDevUnits},
-        Package, PackageId, Resolve, SourceId, Workspace,
     },
     ops,
     util::{
-        cache_lock::CacheLockMode, context::ConfigValue,
-        important_paths::find_root_manifest_for_wd, CargoResult, Rustc,
+        CargoResult, Rustc, cache_lock::CacheLockMode, context::ConfigValue,
+        important_paths::find_root_manifest_for_wd,
     },
 };
 use cargo_platform::Cfg;
 use petgraph::graph::NodeIndex;
 use std::{
-    collections::{hash_map::Entry, BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet, hash_map::Entry},
     env,
     path::PathBuf,
     str::{self, FromStr},
@@ -253,7 +253,9 @@ fn prune_directory_source_replacements(
                     if let Some((source, replacement)) = source.zip(replacement) {
                         source_graph.add_edge(*source, *replacement, ());
                     } else {
-                        log::warn!("Incomplete replace-with source replacement config: {source_name} -> {replacement_name}");
+                        log::warn!(
+                            "Incomplete replace-with source replacement config: {source_name} -> {replacement_name}"
+                        );
                     }
                 }
             }

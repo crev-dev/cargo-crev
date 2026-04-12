@@ -1,6 +1,6 @@
 use crate::{
-    proof::{self, ContentExt, OverrideItem},
     Url,
+    proof::{self, ContentExt, OverrideItem},
 };
 use crev_common::{
     self,

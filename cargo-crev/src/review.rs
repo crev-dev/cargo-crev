@@ -7,10 +7,10 @@ use crate::{
 };
 use anyhow::format_err;
 use crev_data::{
-    proof::{self, ContentExt},
     Rating, SOURCE_CRATES_IO,
+    proof::{self, ContentExt},
 };
-use crev_lib::{self, local::Local, TrustProofType};
+use crev_lib::{self, TrustProofType, local::Local};
 use std::{default::Default, fmt::Write};
 
 use crate::{repo::Repo, shared::*};
@@ -72,7 +72,9 @@ pub fn create_review_proof(
         skip_activity_check,
     ) {
         Ok(res) => res,
-        Err(ActivityCheckError::NoPreviousReview) => bail!("No previous review activity to determine base version"),
+        Err(ActivityCheckError::NoPreviousReview) => {
+            bail!("No previous review activity to determine base version")
+        }
         Err(ActivityCheckError::UnexpectedFullReview) => bail!(
             "Last review activity record for {}:{} indicates full review. \
              Use `--diff` flag? Use `--skip-activity-check` to override.",
@@ -85,7 +87,7 @@ pub fn create_review_proof(
             pkg_id.name(),
             effective_crate_version
         ),
-        Err(ActivityCheckError::Expired) =>  bail!(
+        Err(ActivityCheckError::Expired) => bail!(
             "Last review activity record for {}:{} is too old. \
              Re-review or use `--skip-activity-check` to override.",
             pkg_id.name(),

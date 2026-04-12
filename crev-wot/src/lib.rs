@@ -25,7 +25,7 @@ use std::sync;
 use chrono::offset::Utc;
 use chrono::{self, DateTime};
 use crev_data::proof::trust::TrustLevel;
-use crev_data::proof::{self, review, CommonOps, Content};
+use crev_data::proof::{self, CommonOps, Content, review};
 use crev_data::{self, Digest, Id, Level, RegistrySource, Url, Version};
 use default::default;
 use log::debug;

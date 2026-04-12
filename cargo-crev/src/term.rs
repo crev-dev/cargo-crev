@@ -5,9 +5,8 @@ use std::{
     io::{self, Write},
 };
 use term::{
-    self,
+    self, StderrTerminal, StdoutTerminal,
     color::{self, Color},
-    StderrTerminal, StdoutTerminal,
 };
 
 #[cfg(target_os = "macos")]
@@ -23,11 +22,7 @@ pub fn verification_status_color(s: VerificationStatus) -> Option<color::Color> 
 }
 
 pub fn known_owners_count_color(count: u64) -> Option<color::Color> {
-    if count > 0 {
-        Some(color::GREEN)
-    } else {
-        None
-    }
+    if count > 0 { Some(color::GREEN) } else { None }
 }
 
 /// Helper to control (possibly) colored output
