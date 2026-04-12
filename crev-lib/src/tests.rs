@@ -129,6 +129,7 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
         understanding: Level::None,
         trust_level: Level::None,
         redundancy: 1,
+        ignore_llm_agent_reviews: false,
     };
     assert!(!verify_package_digest(
         &Digest::from(digest),

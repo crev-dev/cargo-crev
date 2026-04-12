@@ -253,6 +253,8 @@ pub struct VerificationRequirements {
     pub thoroughness: crev_data::Level,
     /// How many different reviews are required
     pub redundancy: u64,
+    /// Whether to ignore reviews performed by LLM agents
+    pub ignore_llm_agent_reviews: bool,
 }
 
 impl Default for VerificationRequirements {
@@ -262,6 +264,7 @@ impl Default for VerificationRequirements {
             understanding: Default::default(),
             thoroughness: Default::default(),
             redundancy: 1,
+            ignore_llm_agent_reviews: false,
         }
     }
 }
@@ -343,7 +346,11 @@ pub fn verify_package_digest(
     let mut trust_count = 0;
     let mut negative_count = 0;
     for matching_reviewer in matching_reviewers {
-        let review = &reviews[matching_reviewer].review_possibly_none();
+        let pkg_review = &reviews[matching_reviewer];
+        if requirements.ignore_llm_agent_reviews && pkg_review.llm_agent.is_some() {
+            continue;
+        }
+        let review = &pkg_review.review_possibly_none();
         if !review.is_none()
             && Rating::Neutral <= review.rating
             && requirements.thoroughness <= review.thoroughness
