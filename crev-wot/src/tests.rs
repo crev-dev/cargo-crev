@@ -262,9 +262,11 @@ fn proofdb_trust_ignore_override() -> Result<()> {
 
     let trust_set: TrustSet = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-    assert!(trust_set
-        .trust_ignore_overrides
-        .contains_key(&(b.id.id.clone(), d.id.id.clone())));
+    assert!(
+        trust_set
+            .trust_ignore_overrides
+            .contains_key(&(b.id.id.clone(), d.id.id.clone()))
+    );
 
     assert_eq!(
         trust_set.get_trusted_ids_refs(),
@@ -298,9 +300,11 @@ fn proofdb_trust_ignore_override() -> Result<()> {
 
         let trust_set: TrustSet = trustdb.calculate_trust_set(a.as_ref(), &distance_params);
 
-        assert!(trust_set
-            .trust_ignore_overrides
-            .contains_key(&(b.id.id.clone(), d.id.id.clone())));
+        assert!(
+            trust_set
+                .trust_ignore_overrides
+                .contains_key(&(b.id.id.clone(), d.id.id.clone()))
+        );
         assert_eq!(
             trust_set.get_trusted_ids_refs(),
             collection![a.as_ref(), b.as_ref(), c.as_ref(), d.as_ref()]

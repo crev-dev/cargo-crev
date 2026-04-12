@@ -1,9 +1,9 @@
 use std::fmt;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use crev_data::{
-    proof::{self, CommonOps, ContentExt},
     PublicId, UnlockedId,
+    proof::{self, CommonOps, ContentExt},
 };
 
 pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {

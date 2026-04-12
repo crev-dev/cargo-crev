@@ -11,8 +11,16 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, flakebox, flake-compat }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      flakebox,
+      flake-compat,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
@@ -56,15 +64,18 @@
                 pkg-config
                 perl
               ];
-              buildInputs = with pkgs; [
-                openssl
-              ] ++ lib.optionals stdenv.isDarwin [
-                libiconv
-                curl
-                libgit2
-                darwin.apple_sdk.frameworks.Security
-                darwin.apple_sdk.frameworks.CoreFoundation
-              ];
+              buildInputs =
+                with pkgs;
+                [
+                  openssl
+                ]
+                ++ lib.optionals stdenv.isDarwin [
+                  libiconv
+                  curl
+                  libgit2
+                  darwin.apple_sdk.frameworks.Security
+                  darwin.apple_sdk.frameworks.CoreFoundation
+                ];
               LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
             };
           in
@@ -128,5 +139,6 @@
             ${pkgs.git}/bin/git config commit.template misc/git-hooks/commit-template.txt
           '';
         };
-      });
+      }
+    );
 }

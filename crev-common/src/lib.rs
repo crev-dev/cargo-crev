@@ -11,9 +11,9 @@ pub mod serde;
 
 pub use crate::blake2b256::Blake2b256;
 
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
-use blake2::{digest::FixedOutput, Digest};
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use blake2::{Digest, digest::FixedOutput};
 use std::{
     collections::HashSet,
     ffi::OsStr,

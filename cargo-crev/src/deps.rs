@@ -1,5 +1,5 @@
 use ::term::color::YELLOW;
-use crev_data::{proof, review, Digest, PublicId, Version};
+use crev_data::{Digest, PublicId, Version, proof, review};
 use crev_lib::VerificationStatus;
 use crev_wot::TrustSet;
 use std::{io, io::Write as _, path::PathBuf};
@@ -374,7 +374,11 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         eprintln!(
             "{} local crate{} with digest mismatch detected. Use `cargo crev crate clean [<name>]` to clean any potential unclean local copies. If problem persists, contact the reporter.",
             num_crates_with_digest_mismatch,
-            if num_crates_with_digest_mismatch > 1 { "s" } else { "" },
+            if num_crates_with_digest_mismatch > 1 {
+                "s"
+            } else {
+                ""
+            },
         );
         let name_column_width = deps
             .iter()
@@ -413,18 +417,25 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     if term.is_interactive() {
         if !args.columns.any_selected() {
-            eprintln!("Some columns were hidden. Use one or more `--show-<column>` to print more details. Use `--help` for list of available columns and other options and help. Use `--show-all` to just display everything.");
+            eprintln!(
+                "Some columns were hidden. Use one or more `--show-<column>` to print more details. Use `--help` for list of available columns and other options and help. Use `--show-all` to just display everything."
+            );
         }
 
         if crates_with_issues {
-            eprintln!("Crates with issues found. Use `cargo crev repo query issue <crate> [<version>]` for details.");
+            eprintln!(
+                "Crates with issues found. Use `cargo crev repo query issue <crate> [<version>]` for details."
+            );
         }
 
         write_out_distrusted_ids_details(&mut std::io::stderr(), &trust_set)?;
 
         if !has_trusted_ids {
             term.eprint(format_args!("NOTE: "), YELLOW)?;
-            writeln!(io::stderr(), "No trusted Ids available. Nothing to verify against. Use `cargo crev trust` to add trusted reviewers or visit https://github.com/crev-dev/cargo-crev/discussions/ for help.")?;
+            writeln!(
+                io::stderr(),
+                "No trusted Ids available. Nothing to verify against. Use `cargo crev trust` to add trusted reviewers or visit https://github.com/crev-dev/cargo-crev/discussions/ for help."
+            )?;
         }
     }
 

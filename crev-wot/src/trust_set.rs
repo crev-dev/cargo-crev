@@ -169,7 +169,9 @@ impl TrustSet {
                 debug!("No more nodes with effective_trust_level of {previous_iter_trust_level}");
                 assert!(current.effective_trust_level < previous_iter_trust_level);
                 if initial_distrusted_len != current_trust_set.distrusted.len() {
-                    debug!("Some people got banned at the current trust level - restarting the WoT calculation");
+                    debug!(
+                        "Some people got banned at the current trust level - restarting the WoT calculation"
+                    );
                     break;
                 }
             }

@@ -1,17 +1,17 @@
 use crate::{
+    Error, ProofStore, Result, Warning,
     activity::{LatestReviewActivity, ReviewActivity},
     id::{self, LockedId, PassphraseFn},
     util::{self, git::is_unrecoverable},
-    Error, ProofStore, Result, Warning,
 };
 use crev_common::{
     self, sanitize_name_for_fs, sanitize_url_for_fs,
     serde::{as_base64, from_base64},
 };
 use crev_data::{
-    id::UnlockedId,
-    proof::{self, trust::TrustLevel, OverrideItem},
     Id, PublicId, RegistrySource, Url,
+    id::UnlockedId,
+    proof::{self, OverrideItem, trust::TrustLevel},
 };
 use default::default;
 use directories::ProjectDirs;
@@ -47,11 +47,7 @@ fn backfill_salt() -> Vec<u8> {
 }
 
 fn is_none_or_empty(s: &Option<String>) -> bool {
-    if let Some(s) = s {
-        s.is_empty()
-    } else {
-        true
-    }
+    if let Some(s) = s { s.is_empty() } else { true }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -353,7 +349,10 @@ impl Local {
         util::copy_dir_sanitized(src_dir, &dest_dir, &mut changes)
             .map_err(Error::CrateSourceSanitizationError)?;
         if !changes.is_empty() {
-            let msg = format!("Some files were renamed by cargo-crev to prevent accidental code execution or hiding of code:\n\n{}", changes.join("\n"));
+            let msg = format!(
+                "Some files were renamed by cargo-crev to prevent accidental code execution or hiding of code:\n\n{}",
+                changes.join("\n")
+            );
             std::fs::write(dest_dir.join("README-CREV.txt"), msg)?;
         }
         Ok(dest_dir)
@@ -1375,11 +1374,7 @@ fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf
         .filter_map(|e| e.ok())
         .filter_map(|e| {
             let ty = e.file_type().ok()?;
-            if ty.is_dir() {
-                Some(e.path())
-            } else {
-                None
-            }
+            if ty.is_dir() { Some(e.path()) } else { None }
         })
         .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;

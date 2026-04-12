@@ -1,7 +1,7 @@
 use super::*;
 use crev_data::{
-    proof::{ContentExt, PackageVersionId},
     Level, UnlockedId, Url,
+    proof::{ContentExt, PackageVersionId},
 };
 use crev_wot::{FetchSource, ProofDB};
 use default::default;
@@ -20,9 +20,11 @@ fn lock_and_unlock() -> Result<()> {
     let id_relocked = id::LockedId::from_unlocked_id(&id, "password")?.to_unlocked("password")?;
     assert_eq!(id.id.id, id_relocked.id.id);
 
-    assert!(id::LockedId::from_unlocked_id(&id, "password")?
-        .to_unlocked("wrongpassword")
-        .is_err());
+    assert!(
+        id::LockedId::from_unlocked_id(&id, "password")?
+            .to_unlocked("wrongpassword")
+            .is_err()
+    );
 
     let id_stored = serde_yaml::to_string(&id::LockedId::from_unlocked_id(&id, "pass")?)?;
     let id_restored: UnlockedId =
@@ -131,13 +133,15 @@ fn dont_consider_an_empty_review_as_valid() -> Result<()> {
         redundancy: 1,
         ignore_llm_agent_reviews: false,
     };
-    assert!(!verify_package_digest(
-        &Digest::from(digest),
-        &trust_set,
-        &verification_reqs,
-        &trustdb
-    )
-    .is_verified());
+    assert!(
+        !verify_package_digest(
+            &Digest::from(digest),
+            &trust_set,
+            &verification_reqs,
+            &trustdb
+        )
+        .is_verified()
+    );
 
     Ok(())
 }

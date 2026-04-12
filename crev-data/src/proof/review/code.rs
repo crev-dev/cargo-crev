@@ -1,6 +1,6 @@
 use crate::{
-    proof, proof::content::ValidationResult, serde_content_serialize, serde_draft_serialize,
-    ParseError, Result,
+    ParseError, Result, proof, proof::content::ValidationResult, serde_content_serialize,
+    serde_draft_serialize,
 };
 use crev_common::{
     self,

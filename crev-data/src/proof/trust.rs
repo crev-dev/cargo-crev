@@ -1,6 +1,7 @@
 use crate::{
-    proof::{self, content::ValidationResult, CommonOps, Content},
-    serde_content_serialize, serde_draft_serialize, Error, Level, ParseError, Result,
+    Error, Level, ParseError, Result,
+    proof::{self, CommonOps, Content, content::ValidationResult},
+    serde_content_serialize, serde_draft_serialize,
 };
 
 use derive_builder::Builder;
@@ -41,7 +42,9 @@ impl fmt::Display for TrustLevel {
 }
 
 #[derive(thiserror::Error, Debug)]
-#[error("Can't convert string to TrustLevel. Possible values are: \"none\" or \"untrust\", \"low\", \"medium\", \"high\" and \"distrust\".")]
+#[error(
+    "Can't convert string to TrustLevel. Possible values are: \"none\" or \"untrust\", \"low\", \"medium\", \"high\" and \"distrust\"."
+)]
 pub struct FromStrErr;
 
 impl std::str::FromStr for TrustLevel {

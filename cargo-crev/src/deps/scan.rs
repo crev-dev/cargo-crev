@@ -12,8 +12,8 @@ use crate::{
     },
 };
 use cargo::core::PackageId;
-use crev_data::proof::{self, CommonOps};
 use crev_data::SOURCE_CRATES_IO;
+use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, ProofDB, TrustSet};
 use crossbeam::{self, channel::unbounded};
@@ -23,8 +23,8 @@ use std::{
     default::Default,
     path::PathBuf,
     sync::{
-        atomic::{self, AtomicBool, Ordering},
         Arc, Mutex,
+        atomic::{self, AtomicBool, Ordering},
     },
     thread::sleep,
     time::Duration,
@@ -189,7 +189,9 @@ impl Scanner {
     /// start computations on a new thread
     pub fn run(self, required_details: &RequiredDetails) -> ScannerHandle {
         if !self.has_trusted_ids {
-            eprintln!("There are no trusted Ids. There is nothing to verify against.\nUse `cargo crev trust` to add trusted reviewers");
+            eprintln!(
+                "There are no trusted Ids. There is nothing to verify against.\nUse `cargo crev trust` to add trusted reviewers"
+            );
         }
 
         // TODO: instead of properly traversing the graph

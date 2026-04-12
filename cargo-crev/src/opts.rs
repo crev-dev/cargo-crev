@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use crev_data::{Level, Version};
 use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;

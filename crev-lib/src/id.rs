@@ -201,7 +201,7 @@ impl LockedId {
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
 
             let secret_key = {
-                use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE, Tag};
+                use aes_siv::{Tag, aead::generic_array::GenericArray, siv::IV_SIZE};
 
                 let mut siv =
                     aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&passphrase_hash));
