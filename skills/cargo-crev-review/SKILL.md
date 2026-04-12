@@ -497,6 +497,23 @@ thoroughness level, **their instruction overrides these defaults**.
 | 1 500 – 10 000  | `low`                | Full read is impractical; focus on red flags and critical paths. |
 | > 10 000        | `low` or `none`      | Only sample; say so explicitly.        |
 
+**Random file sampling for large crates.** When a crate is too large to
+read every file (roughly > 1 500 Rust LoC), select a random sample of
+at least 10 `.rs` files and review those thoroughly. Use a command like:
+
+```sh
+find <src> -name '*.rs' | shuf | head -n 10
+```
+
+Review each sampled file with the same care you would apply at `medium`
+thoroughness — read it in full, trace data flow, check for red flags.
+This ensures that even very large crates get meaningful coverage with a
+real chance of discovering issues, rather than a superficial scan of
+everything. Record which files were randomly selected and note in the
+report that the selection was randomised. The non-negotiable checks
+(build.rs, unsafe blocks, proc-macro, deps, FFI) still apply to the
+entire crate regardless of sampling.
+
 **Non-negotiable, regardless of level.** The following items get
 examined in every review, even at `low` or `none`:
 
