@@ -242,10 +242,10 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
 fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) -> Result<()> {
     let local = ensure_crev_id_exists_or_make_one()?;
 
-    if let Some(path) = &args.import_unsigned_from {
+    if !args.import_unsigned_from.is_empty() {
         return review::import_unsigned_and_sign(
             &local,
-            path,
+            &args.import_unsigned_from,
             &args.common_proof_create,
             args.no_edit,
         );
@@ -580,10 +580,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
 
             // only warn about the new ids, don't scare about old problems.
             for w in &warnings {
-                if let Warning::IdUrlNotKnonw(id) = w {
-                    if ids.contains(id) {
-                        w.log();
-                    }
+                if let Warning::IdUrlNotKnonw(id) = w
+                    && ids.contains(id)
+                {
+                    w.log();
                 }
             }
         }
@@ -908,69 +908,67 @@ fn current_id_set_url(url: &str, use_https_push: bool) -> Result<(), crev_lib::E
 /// Interactive process of setting up a new `CrevID`
 fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Result<()> {
     // Avoid creating new CrevID if it's not necessary
-    if let Ok(local) = Local::auto_open() {
-        if let Ok(existing) = local.get_current_user_public_ids() {
-            let existing_usable = existing
+    if let Ok(local) = Local::auto_open()
+        && let Ok(existing) = local.get_current_user_public_ids()
+    {
+        let existing_usable = existing
+            .iter()
+            .filter(|id| id.url.is_some())
+            .collect::<Vec<_>>();
+        if !existing_usable.is_empty() {
+            for id in &existing_usable {
+                eprintln!(
+                    "warning: you already have a CrevID {} {}",
+                    id.id,
+                    id.url_display()
+                );
+            }
+        }
+
+        // only try configuring existing Id if there is a URL to set,
+        // otherwise it'd remain in the unconfigured limbo
+        if let Some(url) = url {
+            validate_public_repo_url(url)?;
+
+            let reusable_id = existing
                 .iter()
-                .filter(|id| id.url.is_some())
-                .collect::<Vec<_>>();
-            if !existing_usable.is_empty() {
-                for id in &existing_usable {
-                    eprintln!(
-                        "warning: you already have a CrevID {} {}",
-                        id.id,
-                        id.url_display()
-                    );
-                }
+                .filter(|id| id.url.is_none())
+                .filter_map(|id| local.read_locked_id(&id.id).ok())
+                .find(|id| id.has_no_passphrase());
+            if let Some(mut locked_id) = reusable_id {
+                let id = locked_id.to_public_id().id;
+                eprintln!(
+                    "Instead of setting up a new CrevID we'll reconfigure the existing one {id}"
+                );
+                local.change_locked_id_url(
+                    &mut locked_id,
+                    url,
+                    use_https_push,
+                    &mut Warning::auto_log(),
+                )?;
+                let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
+                change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
+                local.save_current_id(&id)?;
+                return Ok(());
             }
+        }
 
-            // only try configuring existing Id if there is a URL to set,
-            // otherwise it'd remain in the unconfigured limbo
-            if let Some(url) = url {
-                validate_public_repo_url(url)?;
-
-                let reusable_id = existing
-                    .iter()
-                    .filter(|id| id.url.is_none())
-                    .filter_map(|id| local.read_locked_id(&id.id).ok())
-                    .find(|id| id.has_no_passphrase());
-                if let Some(mut locked_id) = reusable_id {
-                    let id = locked_id.to_public_id().id;
-                    eprintln!(
-                        "Instead of setting up a new CrevID we'll reconfigure the existing one {id}"
-                    );
-                    local.change_locked_id_url(
-                        &mut locked_id,
-                        url,
-                        use_https_push,
-                        &mut Warning::auto_log(),
-                    )?;
-                    let unlocked_id = local.read_unlocked_id(&id, &|| Ok(String::new()))?;
-                    change_passphrase(&local, &unlocked_id, &read_new_passphrase()?)?;
-                    local.save_current_id(&id)?;
-                    return Ok(());
-                }
-            }
-
-            // if an old one couldn't be reconfigured automatically, help how to do it manually
-            if let Some(example) = existing_usable.first() {
-                if local
-                    .get_current_userid()
-                    .ok()
-                    .is_some_and(|cur| cur == example.id)
-                {
-                    eprintln!(
-                        "You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n"
-                    );
-                } else {
-                    eprintln!(
-                        "You can use existing CrevID with `cargo crev id switch {}`",
-                        example.id
-                    );
-                    eprintln!(
-                        "and set it up with `cargo crev set-url` and `cargo crev id passwd`\n"
-                    );
-                }
+        // if an old one couldn't be reconfigured automatically, help how to do it manually
+        if let Some(example) = existing_usable.first() {
+            if local
+                .get_current_userid()
+                .ok()
+                .is_some_and(|cur| cur == example.id)
+            {
+                eprintln!(
+                    "You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n"
+                );
+            } else {
+                eprintln!(
+                    "You can use existing CrevID with `cargo crev id switch {}`",
+                    example.id
+                );
+                eprintln!("and set it up with `cargo crev set-url` and `cargo crev id passwd`\n");
             }
         }
     }
@@ -1253,10 +1251,10 @@ fn handle_command_result_and_panics(
         Ok(CommandExitStatus::VerificationFailed) => std::process::exit(-1),
         Ok(CommandExitStatus::CommandExitCode(code)) => std::process::exit(code),
         Err(e) => {
-            if let Some(io_error) = e.root_cause().downcast_ref::<std::io::Error>() {
-                if io_error.kind() == std::io::ErrorKind::BrokenPipe {
-                    return;
-                }
+            if let Some(io_error) = e.root_cause().downcast_ref::<std::io::Error>()
+                && io_error.kind() == std::io::ErrorKind::BrokenPipe
+            {
+                return;
             }
             eprintln!("{e:?}");
             std::process::exit(-2)

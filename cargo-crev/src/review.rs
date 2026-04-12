@@ -171,17 +171,16 @@ pub fn create_review_proof(
             .build()
             .map_err(|e| format_err!("{}", e))?;
 
-        if let Some(diff_base_version) = diff_base_version.clone() {
-            if let Some(base_review) = db.get_pkg_review(
+        if let Some(diff_base_version) = diff_base_version.clone()
+            && let Some(base_review) = db.get_pkg_review(
                 SOURCE_CRATES_IO,
                 &crate_.name(),
                 &diff_base_version,
                 &id.id.id,
-            ) {
-                fresh_review.comment = base_review.comment.clone();
-                *fresh_review.review_possibly_none_mut() =
-                    base_review.review_possibly_none().clone();
-            }
+            )
+        {
+            fresh_review.comment = base_review.comment.clone();
+            *fresh_review.review_possibly_none_mut() = base_review.review_possibly_none().clone();
         }
         (None, fresh_review)
     };
@@ -272,50 +271,58 @@ pub fn create_review_proof(
 /// flow, so it can be used to sign reviews prepared externally.
 pub fn import_unsigned_and_sign(
     local: &Local,
-    path: &std::path::Path,
+    paths: &[std::path::PathBuf],
     proof_create_opt: &opts::CommonProofCreate,
     no_edit: bool,
 ) -> Result<()> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| format_err!("Failed to read {}: {}", path.display(), e))?;
-    let mut review: proof::review::Package = serde_yaml::from_str(&content).map_err(|e| {
-        format_err!(
-            "Failed to parse package review from {}: {}",
-            path.display(),
-            e
-        )
-    })?;
-    review.ensure_kind_is_backfilled();
-
-    // Substitute the user's id into `from` using the *locked* id (no
-    // passphrase prompt). This way the unsigned body printed downstream
-    // matches what would be signed, and dry-validate still works without
-    // unlocking — `maybe_store` will only invoke the sign closure if a
-    // signed proof is actually needed.
     let locked_id = local.read_current_locked_id()?;
-    review.change_from(locked_id.to_public_id());
+    let mut unlocked_id: Option<crev_data::UnlockedId> = None;
 
-    let review = if no_edit {
-        review
-    } else {
-        edit::edit_proof_content_iteractively(&review, None, None, None, |_| Ok(()))?
-    };
+    for path in paths {
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| format_err!("Failed to read {}: {}", path.display(), e))?;
+        let mut review: proof::review::Package = serde_yaml::from_str(&content).map_err(|e| {
+            format_err!(
+                "Failed to parse package review from {}: {}",
+                path.display(),
+                e
+            )
+        })?;
+        review.ensure_kind_is_backfilled();
 
-    let commit_msg = format!(
-        "Add review for {crate_} v{version} (imported)",
-        crate_ = &review.package.id.id.name,
-        version = &review.package.id.version,
-    );
-    maybe_store(
-        local,
-        &review,
-        || {
-            let id = local.read_current_unlocked_id(&term::read_passphrase)?;
-            Ok(review.sign_by(&id)?)
-        },
-        &commit_msg,
-        proof_create_opt,
-    )
+        // Substitute the user's id into `from` using the *locked* id (no
+        // passphrase prompt). This way the unsigned body printed downstream
+        // matches what would be signed, and dry-validate still works without
+        // unlocking — `maybe_store` will only invoke the sign closure if a
+        // signed proof is actually needed.
+        review.change_from(locked_id.to_public_id());
+
+        let review = if no_edit {
+            review
+        } else {
+            edit::edit_proof_content_iteractively(&review, None, None, None, |_| Ok(()))?
+        };
+
+        let commit_msg = format!(
+            "Add review for {crate_} v{version} (imported)",
+            crate_ = &review.package.id.id.name,
+            version = &review.package.id.version,
+        );
+        maybe_store(
+            local,
+            &review,
+            || {
+                if unlocked_id.is_none() {
+                    unlocked_id = Some(local.read_current_unlocked_id(&term::read_passphrase)?);
+                }
+                Ok(review.sign_by(unlocked_id.as_ref().unwrap())?)
+            },
+            &commit_msg,
+            proof_create_opt,
+        )?;
+    }
+
+    Ok(())
 }
 
 pub fn find_reviews(crate_: &opts::CrateSelector) -> Result<Vec<proof::review::Package>> {
