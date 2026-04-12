@@ -193,7 +193,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[doc(hidden)]
 pub trait ProofStore {
     fn insert(&self, proof: &crev_data::proof::Proof) -> Result<()>;
-    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof>>>;
+    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = crev_data::proof::Proof> + '_>>;
 }
 
 /// Your relationship to the person
