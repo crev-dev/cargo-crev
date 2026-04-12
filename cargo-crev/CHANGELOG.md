@@ -1,9 +1,18 @@
 # Changelog
 
 <!-- next-url -->
-## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.26.4...HEAD) - ReleaseDate
+## [Unreleased](https://github.com/crev-dev/cargo-crev/compare/v0.27.0...HEAD) - ReleaseDate
 
-- Added mac keychain support to safely store and retrieve passphrases
+## [0.27.0](https://github.com/crev-dev/cargo-crev/compare/v0.26.4...v0.27.0) - 2026-04-12
+
+- Added `cargo crev ai skill review` command to print the embedded AI review skill.
+- Added `cargo crev ai review-loop` command to run an AI agent in a loop reviewing dependencies.
+- Added `--ignore-llm-agent-reviews` flag to `cargo crev verify` to filter out LLM-generated reviews.
+- `cargo crev review --import-unsigned-from` now accepts multiple files, unlocking the identity once for the batch.
+- Added passthrough agent arguments to `review-loop` via `-- <args>`.
+- Added `ANTHROPIC_API_KEY` safety guard for `review-loop` (requires `CARGO_CREV_ANTHROPIC_API_KEY_ENABLE=true`).
+- Switched to Rust 2024 edition.
+- Added mac keychain support to safely store and retrieve passphrases.
 
 ## [0.26.4](https://github.com/crev-dev/cargo-crev/compare/v0.26.0...v0.26.4) - 2025-04-12
 
