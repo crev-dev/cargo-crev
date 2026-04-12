@@ -35,6 +35,7 @@
           "crev-data"
           "crev-lib"
           "crev-wot"
+          "skills"
         ];
 
         buildSrc = flakeboxLib.filterSubPaths {
