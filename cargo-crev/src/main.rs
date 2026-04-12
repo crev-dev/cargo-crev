@@ -798,7 +798,10 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 opts::AiSkill::Review => {
                     print!(
                         "{}",
-                        include_str!("../../skills/cargo-crev-review/SKILL.md")
+                        include_str!(concat!(
+                            env!("CARGO_MANIFEST_DIR"),
+                            "/skills/cargo-crev-review/SKILL.md"
+                        ))
                     );
                 }
             },

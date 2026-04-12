@@ -14,7 +14,10 @@ function job_cargo() {
     selfci step fail
   fi
 
-  selfci step start "build"
+  selfci step start "build cargo-crev"
+  nix build -L .#ci.cargo-crev
+
+  selfci step start "build workspace"
   nix build -L .#ci.workspace
 
   selfci step start "clippy"
