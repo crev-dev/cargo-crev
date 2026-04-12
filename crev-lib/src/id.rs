@@ -161,12 +161,12 @@ impl LockedId {
     /// Decrypt
     pub fn to_unlocked(&self, passphrase: &str) -> Result<UnlockedId> {
         let LockedId {
-            ref version,
-            ref url,
-            ref public_key,
-            ref sealed_secret_key,
-            ref seal_nonce,
-            ref passphrase_config,
+            version,
+            url,
+            public_key,
+            sealed_secret_key,
+            seal_nonce,
+            passphrase_config,
         } = self;
         {
             if *version > CURRENT_LOCKED_ID_SERIALIZATION_VERSION {

@@ -552,7 +552,7 @@ impl ProofDB {
             .find(|pkg_review| pkg_review.from().id == *id)
     }
 
-    pub fn get_advisories<'a, 'b, 'c: 'a, 'd: 'a>(
+    pub fn get_advisories<'a, 'b: 'a, 'c: 'a, 'd: 'a>(
         &'a self,
         source: RegistrySource<'b>,
         name: Option<&'c str>,
@@ -570,14 +570,14 @@ impl ProofDB {
         }
     }
 
-    pub fn get_pkg_reviews_with_issues_for<'a, 'b, 'c: 'a, 'd: 'a>(
+    pub fn get_pkg_reviews_with_issues_for<'a, 'b: 'a, 'c: 'a, 'd: 'a>(
         &'a self,
         source: RegistrySource<'b>,
         name: Option<&'c str>,
         version: Option<&'c Version>,
         trust_set: &'d TrustSet,
         trust_level_required: TrustLevel,
-    ) -> impl Iterator<Item = &'a proof::review::Package> {
+    ) -> impl Iterator<Item = &'a proof::review::Package> + 'a {
         match (name, version) {
             (Some(name), Some(version)) => Box::new(self.get_pkg_reviews_with_issues_for_version(
                 source,
@@ -899,7 +899,7 @@ impl ProofDB {
             .count()
     }
 
-    pub fn get_package_reviews_for_package<'a, 'b, 'c: 'a, 'd: 'a>(
+    pub fn get_package_reviews_for_package<'a, 'b: 'a, 'c: 'a, 'd: 'a>(
         &'a self,
         source: RegistrySource<'b>,
         name: Option<&'c str>,
@@ -916,7 +916,7 @@ impl ProofDB {
         }
     }
 
-    pub fn get_package_reviews_for_package_sorted<'a, 'b, 'c: 'a, 'd: 'a>(
+    pub fn get_package_reviews_for_package_sorted<'a, 'b: 'a, 'c: 'a, 'd: 'a>(
         &'a self,
         source: RegistrySource<'b>,
         name: Option<&'c str>,

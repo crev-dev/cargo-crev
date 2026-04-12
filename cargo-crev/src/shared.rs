@@ -644,24 +644,22 @@ where
         })?;
     } else {
         let mut sel = None;
-        if args.crate_.name.is_none() {
-            if let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity()) {
-                if args
-                    .diff
-                    .as_ref()
-                    .is_none_or(|new_base| new_base == &latest.diff_base)
-                {
-                    sel = Some(ReviewCrateSelector {
-                        diff: latest.diff_base.is_some().then_some(latest.diff_base),
-                        crate_: CrateSelector::new(
-                            Some(latest.name),
-                            Some(latest.version),
-                            args.crate_.unrelated,
-                        )
-                        .auto_unrelated()?,
-                    });
-                }
-            }
+        if args.crate_.name.is_none()
+            && let Some(latest) = local_for_review.and_then(|l| l.latest_review_activity())
+            && args
+                .diff
+                .as_ref()
+                .is_none_or(|new_base| new_base == &latest.diff_base)
+        {
+            sel = Some(ReviewCrateSelector {
+                diff: latest.diff_base.is_some().then_some(latest.diff_base),
+                crate_: CrateSelector::new(
+                    Some(latest.name),
+                    Some(latest.version),
+                    args.crate_.unrelated,
+                )
+                .auto_unrelated()?,
+            });
         };
         let sel = sel.as_ref().unwrap_or(args);
         sel.crate_.ensure_name_given()?;

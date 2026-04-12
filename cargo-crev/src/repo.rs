@@ -244,19 +244,18 @@ fn prune_directory_source_replacements(
             .collect::<HashMap<_, _>>();
 
         for (source_name, source_config_entry) in &*source_config {
-            if let ConfigValue::Table(source_config_entry, _) = source_config_entry {
-                if let Some(ConfigValue::String(replacement_name, _)) =
+            if let ConfigValue::Table(source_config_entry, _) = source_config_entry
+                && let Some(ConfigValue::String(replacement_name, _)) =
                     source_config_entry.get("replace-with")
-                {
-                    let source = nodes.get(source_name);
-                    let replacement = nodes.get(replacement_name);
-                    if let Some((source, replacement)) = source.zip(replacement) {
-                        source_graph.add_edge(*source, *replacement, ());
-                    } else {
-                        log::warn!(
-                            "Incomplete replace-with source replacement config: {source_name} -> {replacement_name}"
-                        );
-                    }
+            {
+                let source = nodes.get(source_name);
+                let replacement = nodes.get(replacement_name);
+                if let Some((source, replacement)) = source.zip(replacement) {
+                    source_graph.add_edge(*source, *replacement, ());
+                } else {
+                    log::warn!(
+                        "Incomplete replace-with source replacement config: {source_name} -> {replacement_name}"
+                    );
                 }
             }
         }
@@ -265,10 +264,10 @@ fn prune_directory_source_replacements(
             .externals(petgraph::Direction::Incoming)
             .filter(|leaf_node| {
                 let leaf_source = &source_graph[*leaf_node];
-                if let ConfigValue::Table(ref source_config_entry, _) = source_config[leaf_source] {
-                    if let Some(ConfigValue::String(_, _)) = source_config_entry.get("directory") {
-                        return true;
-                    }
+                if let ConfigValue::Table(ref source_config_entry, _) = source_config[leaf_source]
+                    && let Some(ConfigValue::String(_, _)) = source_config_entry.get("directory")
+                {
+                    return true;
                 }
                 false
             })

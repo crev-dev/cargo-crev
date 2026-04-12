@@ -683,21 +683,19 @@ impl Local {
 
         let proof_dir = self.get_proofs_dir_path()?;
         let path = proof_dir.join("README.md");
-        if path.exists() {
-            if let Some(line) = std::io::BufReader::new(std::fs::File::open(&path)?)
+        if path.exists()
+            && let Some(line) = std::io::BufReader::new(std::fs::File::open(&path)?)
                 .lines()
                 .find(|line| {
-                    if let Ok(ref line) = line {
+                    if let Ok(line) = line {
                         line.trim() != ""
                     } else {
                         true
                     }
                 })
-            {
-                if line?.contains(README_MARKER_V0) {
-                    return Ok(());
-                }
-            }
+            && line?.contains(README_MARKER_V0)
+        {
+            return Ok(());
         }
 
         std::fs::write(
@@ -1034,10 +1032,10 @@ impl Local {
 
     /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for the URL.
     fn get_fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
-        if let Ok(own_url) = self.get_cur_url() {
-            if own_url == url {
-                return Ok(crev_wot::FetchSource::LocalUser);
-            }
+        if let Ok(own_url) = self.get_cur_url()
+            && own_url == url
+        {
+            return Ok(crev_wot::FetchSource::LocalUser);
         }
         Ok(crev_wot::FetchSource::Url(Arc::new(url)))
     }
@@ -1362,7 +1360,7 @@ impl ProofStore for Local {
         Ok(())
     }
 
-    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof>>> {
+    fn proofs_iter(&self) -> Result<Box<dyn Iterator<Item = proof::Proof> + '_>> {
         Ok(Box::new(self.all_local_proofs()))
     }
 }
