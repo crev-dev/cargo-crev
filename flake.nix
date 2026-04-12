@@ -54,28 +54,31 @@
           paths = buildPaths;
         };
 
+        nativeBuildInputs = with pkgs; [
+          pkg-config
+          perl
+        ];
+
+        buildInputs =
+          with pkgs;
+          [
+            openssl
+          ]
+          ++ lib.optionals stdenv.isDarwin [
+            libiconv
+            curl
+            libgit2
+            darwin.apple_sdk.frameworks.Security
+            darwin.apple_sdk.frameworks.CoreFoundation
+          ];
+
         multiBuild = (flakeboxLib.craneMultiBuild { }) (
           craneLib':
           let
             craneLib = craneLib'.overrideArgs {
               pname = projectName;
               src = buildSrc;
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-                perl
-              ];
-              buildInputs =
-                with pkgs;
-                [
-                  openssl
-                ]
-                ++ lib.optionals stdenv.isDarwin [
-                  libiconv
-                  curl
-                  libgit2
-                  darwin.apple_sdk.frameworks.Security
-                  darwin.apple_sdk.frameworks.CoreFoundation
-                ];
+              inherit nativeBuildInputs buildInputs;
               LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
             };
           in
@@ -130,7 +133,7 @@
         legacyPackages = multiBuild;
 
         devShells = flakeboxLib.mkShells {
-          packages = [ ];
+          packages = nativeBuildInputs ++ buildInputs;
           shellHook = ''
             # auto-install git hooks
             dot_git="$(git rev-parse --git-common-dir)"
