@@ -854,13 +854,11 @@ Important:
   No other output.
 "#;
 
-        let status = std::process::Command::new("claude")
-            .arg("-p")
-            .arg(prompt)
-            .status()
-            .map_err(|e| {
-                format_err!("Failed to launch 'claude' CLI. Is Claude Code installed? {e}")
-            })?;
+        let mut cmd = std::process::Command::new("claude");
+        cmd.arg("-p").arg(prompt).args(&args.agent_args);
+        let status = cmd.status().map_err(|e| {
+            format_err!("Failed to launch 'claude' CLI. Is Claude Code installed? {e}")
+        })?;
 
         if !status.success() {
             eprintln!(
