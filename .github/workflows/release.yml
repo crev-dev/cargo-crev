@@ -70,11 +70,11 @@ jobs:
         build: [linux, linux-arm, macos]
         include:
         - build: linux
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: nightly
           target: x86_64-unknown-linux-musl
         - build: linux-arm
-          os: ubuntu-18.04
+          os: ubuntu-latest
           rust: nightly
           target: arm-unknown-linux-gnueabihf
         - build: macos
@@ -102,7 +102,7 @@ jobs:
         fetch-depth: 1
 
     - name: Install packages (Ubuntu)
-      if: matrix.os == 'ubuntu-18.04'
+      if: startsWith(matrix.os, 'ubuntu-')
       run: |
         ci/ubuntu-install-packages
 
