@@ -830,23 +830,10 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
     // Preparation iteration: update WoT, capture verify output, clean up sign-all.sh
     eprintln!("=== Preparation ===");
     {
-        let prep_prompt = r#"You are preparing for a batch of cargo-crev dependency reviews.
-
-Do the following steps in order:
-
-1. Run `cargo crev update` to refresh the web of trust. Report but ignore any failures.
-2. Run `cargo crev verify` and save its full output to `target/crev/cargo-crev-verify.txt`
-   (create the `target/crev/` directory if needed).
-3. If `target/crev/sign-all.sh` exists, check each `--import-unsigned-from` entry in it.
-   For each proof file referenced, read the `package` field to get the crate name and version,
-   then run `cargo crev repo query review <name> <version>`. If the user has already signed
-   a review for that crate+version, remove the corresponding `--import-unsigned-from` line
-   from `sign-all.sh`. If after cleanup the file has no `--import-unsigned-from` lines left,
-   delete the script.
-
-Your entire output must be a single short paragraph summarizing what you did.
-No other output.
-"#;
+        let prep_prompt = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../skills/ai-review-loop-prep.md"
+        ));
 
         let mut cmd = std::process::Command::new("claude");
         cmd.arg("-p").arg(prep_prompt).args(&args.agent_args);
@@ -866,38 +853,10 @@ No other output.
     for i in 1..=args.iterations {
         eprintln!("=== Review iteration {i}/{} ===", args.iterations);
 
-        let prompt = r#"You are tasked with reviewing a single Rust dependency using the cargo-crev review skill.
-
-If you don't already have access to the `cargo-crev-review` skill, obtain it by running:
-
-```sh
-cargo crev ai skill review
-```
-
-Save the output as a local skill and use it.
-
-An up-to-date `cargo crev verify` output is already available at `target/crev/cargo-crev-verify.txt`.
-Use it instead of running `cargo crev verify` yourself. Do NOT run `cargo crev update` either —
-it was already run during preparation.
-
-Then, follow the skill instructions to:
-
-1. Review a single unreviewed dependency (pick one that hasn't been reviewed yet,
-   checking `target/crev/reviews/` for already-reviewed crates to avoid duplicates).
-2. Write the review report and unsigned proof as described in the skill.
-3. Append the signing command to `target/crev/sign-all.sh` (create it if it doesn't exist,
-   with `#!/usr/bin/env bash` and `set -euo pipefail` header).
-
-Important:
-- Review exactly ONE crate per invocation.
-- Before picking a crate, check `target/crev/sign-all.sh` and `target/crev/reviews/` for
-  crates that were already reviewed in previous iterations. Do NOT review them again.
-- Do NOT sign the proof — only prepare the unsigned proof and append the signing command.
-- Do NOT run `cargo crev publish`.
-- Your entire output must be a single paragraph containing: the crate name and version,
-  the review parameters (rating, thoroughness, understanding), and a brief result summary.
-  No other output.
-"#;
+        let prompt = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../skills/ai-review-loop-iteration.md"
+        ));
 
         let mut cmd = std::process::Command::new("claude");
         cmd.arg("-p").arg(prompt).args(&args.agent_args);
