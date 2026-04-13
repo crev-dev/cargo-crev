@@ -827,37 +827,36 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
 
     eprintln!("Signing script: target/crev/sign-all.sh");
 
+    // Preparation iteration: update WoT, capture verify output, clean up sign-all.sh
+    eprintln!("=== Preparation ===");
+    {
+        let prep_prompt = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../skills/ai-review-loop-prep.md"
+        ));
+
+        let mut cmd = std::process::Command::new("claude");
+        cmd.arg("-p").arg(prep_prompt).args(&args.agent_args);
+        let status = cmd.status().map_err(|e| {
+            format_err!("Failed to launch 'claude' CLI. Is Claude Code installed? {e}")
+        })?;
+
+        if !status.success() {
+            eprintln!(
+                "Warning: claude exited with status {} during preparation",
+                status.code().unwrap_or(-1)
+            );
+        }
+    }
+
+    // Review iterations
     for i in 1..=args.iterations {
         eprintln!("=== Review iteration {i}/{} ===", args.iterations);
 
-        let prompt = r#"You are tasked with reviewing a single Rust dependency using the cargo-crev review skill.
-
-If you don't already have access to the `cargo-crev-review` skill, obtain it by running:
-
-```sh
-cargo crev ai skill review
-```
-
-Save the output as a local skill and use it.
-
-Then, follow the skill instructions to:
-
-1. Review a single unreviewed dependency (pick one that hasn't been reviewed yet,
-   checking `target/crev/reviews/` for already-reviewed crates to avoid duplicates).
-2. Write the review report and unsigned proof as described in the skill.
-3. Append the signing command to `target/crev/sign-all.sh` (create it if it doesn't exist,
-   with `#!/usr/bin/env bash` and `set -euo pipefail` header).
-
-Important:
-- Review exactly ONE crate per invocation.
-- Before picking a crate, check `target/crev/sign-all.sh` and `target/crev/reviews/` for
-  crates that were already reviewed in previous iterations. Do NOT review them again.
-- Do NOT sign the proof — only prepare the unsigned proof and append the signing command.
-- Do NOT run `cargo crev publish`.
-- Your entire output must be a single paragraph containing: the crate name and version,
-  the review parameters (rating, thoroughness, understanding), and a brief result summary.
-  No other output.
-"#;
+        let prompt = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../skills/ai-review-loop-iteration.md"
+        ));
 
         let mut cmd = std::process::Command::new("claude");
         cmd.arg("-p").arg(prompt).args(&args.agent_args);
