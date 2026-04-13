@@ -827,6 +827,42 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
 
     eprintln!("Signing script: target/crev/sign-all.sh");
 
+    // Preparation iteration: update WoT, capture verify output, clean up sign-all.sh
+    eprintln!("=== Preparation ===");
+    {
+        let prep_prompt = r#"You are preparing for a batch of cargo-crev dependency reviews.
+
+Do the following steps in order:
+
+1. Run `cargo crev update` to refresh the web of trust. Report but ignore any failures.
+2. Run `cargo crev verify` and save its full output to `target/crev/cargo-crev-verify.txt`
+   (create the `target/crev/` directory if needed).
+3. If `target/crev/sign-all.sh` exists, check each `--import-unsigned-from` entry in it.
+   For each proof file referenced, read the `package` field to get the crate name and version,
+   then run `cargo crev repo query review <name> <version>`. If the user has already signed
+   a review for that crate+version, remove the corresponding `--import-unsigned-from` line
+   from `sign-all.sh`. If after cleanup the file has no `--import-unsigned-from` lines left,
+   delete the script.
+
+Your entire output must be a single short paragraph summarizing what you did.
+No other output.
+"#;
+
+        let mut cmd = std::process::Command::new("claude");
+        cmd.arg("-p").arg(prep_prompt).args(&args.agent_args);
+        let status = cmd.status().map_err(|e| {
+            format_err!("Failed to launch 'claude' CLI. Is Claude Code installed? {e}")
+        })?;
+
+        if !status.success() {
+            eprintln!(
+                "Warning: claude exited with status {} during preparation",
+                status.code().unwrap_or(-1)
+            );
+        }
+    }
+
+    // Review iterations
     for i in 1..=args.iterations {
         eprintln!("=== Review iteration {i}/{} ===", args.iterations);
 
@@ -839,6 +875,10 @@ cargo crev ai skill review
 ```
 
 Save the output as a local skill and use it.
+
+An up-to-date `cargo crev verify` output is already available at `target/crev/cargo-crev-verify.txt`.
+Use it instead of running `cargo crev verify` yourself. Do NOT run `cargo crev update` either —
+it was already run during preparation.
 
 Then, follow the skill instructions to:
 
