@@ -832,7 +832,7 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
     {
         let prep_prompt = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../skills/ai-review-loop-prep.md"
+            "/src/ai-review-loop-prep.md"
         ));
 
         let mut cmd = std::process::Command::new("claude");
@@ -855,7 +855,7 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
 
         let prompt = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../skills/ai-review-loop-iteration.md"
+            "/src/ai-review-loop-iteration.md"
         ));
 
         let mut cmd = std::process::Command::new("claude");
