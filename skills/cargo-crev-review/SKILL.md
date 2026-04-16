@@ -72,7 +72,11 @@ trust proofs for other crev ids — those are separate workflows.
    advisories, `llm-agent`). The `comment` is **the full text of the
    report file** by default — see "Assembling the unsigned proof"
    below.
-9. **Hand off to the user.** The agent does **not** sign or publish.
+9. **Validate the proof file.** Round-trip the unsigned proof through
+   `cargo crev review --import-unsigned-from ... --no-store --no-edit
+   --print-unsigned`. This step is **mandatory** — fix and re-validate
+   until it passes. See "Round-trip validating the draft" below.
+10. **Hand off to the user.** The agent does **not** sign or publish.
    Give the user two files — the report and the unsigned proof —
    along with the exact command they should run to interactively
    review, edit and sign it. See "Handing off to the user" below.
@@ -940,11 +944,13 @@ without padding — which you paste straight into your YAML.
 Do not hand-compute the digest: the recursive-digest algorithm and
 its encoding are cargo-crev-specific and easy to get wrong.
 
-### Round-trip validating the draft
+### Round-trip validating the draft (mandatory)
 
-Before handing the unsigned proof to the user, round-trip it through
-`cargo crev review` in dry-validate mode to confirm the file parses
-and re-serialises cleanly:
+**Every proof file must pass round-trip validation before handoff.**
+This is not optional — never hand the user a proof that hasn't been
+validated, and never skip this step even if the YAML "looks correct".
+
+Run the proof through `cargo crev review` in dry-validate mode:
 
 ```sh
 cargo crev review \
@@ -957,8 +963,9 @@ unsigned only), the command does not unlock the user's crev id and
 does not produce any side effects — it just parses, normalises, and
 re-prints the proof body. If the command succeeds and the output
 looks structurally sane (all fields preserved, `comment` intact),
-the file is ready for handoff. If it fails, fix the YAML before
-handing off — never hand the user a draft that doesn't round-trip.
+the file is ready for handoff. If it fails, fix the YAML and
+re-validate — repeat until it passes. Never hand the user a draft
+that doesn't round-trip.
 
 ## Handing off to the user
 
@@ -1070,6 +1077,10 @@ The agent never runs `publish`.
 - Never omit the `llm-agent:` field from a review you produce, and
   never set `human-guided: true` yourself. Flipping that flag is the
   user's decision after they personally verify the review.
+- Never hand off a proof file that hasn't passed round-trip validation
+  (`cargo crev review --import-unsigned-from ... --no-store --no-edit
+  --print-unsigned`). Always validate, fix, and re-validate until it
+  passes.
 
 ## Delegation policy (sub-agents)
 

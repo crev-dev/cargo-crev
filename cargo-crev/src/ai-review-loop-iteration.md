@@ -17,7 +17,15 @@ Then, follow the skill instructions to:
 1. Review a single unreviewed dependency (pick one that hasn't been reviewed yet,
    checking `target/crev/reviews/` for already-reviewed crates to avoid duplicates).
 2. Write the review report and unsigned proof as described in the skill.
-3. Add the proof file to the signing command in `target/crev/sign-all.sh`.
+3. Validate the proof by running:
+   ```sh
+   cargo crev review \
+     --import-unsigned-from target/crev/reviews/<crate>-<version>.proof.yaml \
+     --no-store --no-edit --print-unsigned
+   ```
+   If validation fails, fix the YAML and re-validate until it passes.
+   **Do not proceed to step 4 until validation succeeds.**
+4. Add the proof file to the signing command in `target/crev/sign-all.sh`.
    The script must contain a single `cargo crev review` invocation with multiple
    `--import-unsigned-from` arguments — one per reviewed crate. If the file doesn't
    exist yet, create it with a `#!/usr/bin/env bash` shebang and `set -euo pipefail`,
