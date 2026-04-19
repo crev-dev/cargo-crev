@@ -7,15 +7,22 @@ use std::{io, io::Write, write, writeln};
 
 const CRATE_VERIFY_CRATE_COLUMN_TITLE: &str = "crate";
 const CRATE_VERIFY_VERSION_COLUMN_TITLE: &str = "version";
+const TRUNCATED_VERSION_WIDTH: usize = 10;
+const TRUNCATED_LATEST_T_WIDTH: usize = 10;
 
 #[derive(Copy, Clone, Debug)]
 pub struct VerifyOutputColumnWidths {
     pub name: usize,
     pub version: usize,
+    pub latest_trusted: usize,
+    pub human: bool,
 }
 
 impl VerifyOutputColumnWidths {
-    pub fn from_pkgsids<'a>(pkgs_ids: impl Iterator<Item = &'a cargo::core::PackageId>) -> Self {
+    pub fn from_pkgsids<'a>(
+        pkgs_ids: impl Iterator<Item = &'a cargo::core::PackageId>,
+        human: bool,
+    ) -> Self {
         let (name, version) = pkgs_ids.fold(
             (
                 CRATE_VERIFY_CRATE_COLUMN_TITLE.len(),
@@ -29,7 +36,42 @@ impl VerifyOutputColumnWidths {
             },
         );
 
-        Self { name, version }
+        let version = if human {
+            version.min(TRUNCATED_VERSION_WIDTH)
+        } else {
+            version
+        };
+        let latest_trusted = if human {
+            TRUNCATED_LATEST_T_WIDTH
+        } else {
+            12
+        };
+
+        Self {
+            name,
+            version,
+            latest_trusted,
+            human,
+        }
+    }
+}
+
+fn truncate_str(s: &str, max_width: usize) -> String {
+    if s.chars().count() <= max_width {
+        s.to_string()
+    } else {
+        let truncated: String = s.chars().take(max_width - 1).collect();
+        format!("{truncated}…")
+    }
+}
+
+fn format_downloads(count: u64, human: bool) -> String {
+    if !human {
+        format!("{count:>9}")
+    } else if count >= 1_000_000 {
+        format!("{:>6}M", (count + 500_000) / 1_000_000)
+    } else {
+        format!("{:>6}K", count / 1000)
     }
 }
 
@@ -53,7 +95,8 @@ pub fn print_header(
     }
 
     if columns.show_downloads() {
-        write!(io::stdout(), "{:>14} ", "downloads")?;
+        let w = if column_widths.human { 15 } else { 19 };
+        write!(io::stdout(), "{:>w$} ", "downloads")?;
     }
 
     if columns.show_loc() {
@@ -82,7 +125,8 @@ pub fn print_header(
     )?;
 
     if columns.show_latest_trusted() {
-        write!(io::stdout(), "{:<12}", "latest_t")?;
+        let w = column_widths.latest_trusted;
+        write!(io::stdout(), "{:<w$}", "latest_t")?;
     }
 
     if columns.show_digest() {
@@ -99,6 +143,7 @@ pub fn write_details(
     term: &mut Term,
     columns: &CrateVerifyColumns,
     recursive_mode: bool,
+    human: bool,
 ) -> Result<()> {
     if cdep.accumulative.is_local_source_code {
         term.print(format_args!("{:6} ", "local"), None)?;
@@ -169,7 +214,7 @@ pub fn write_details(
     if columns.show_downloads() {
         if let Some(downloads) = &cdep.downloads {
             term.print(
-                format_args!("{:>5}K ", downloads.version / 1000),
+                format_args!("{} ", format_downloads(downloads.version, human)),
                 if downloads.version < 2000 {
                     Some(::term::color::YELLOW)
                 } else {
@@ -177,7 +222,7 @@ pub fn write_details(
                 },
             )?;
             term.print(
-                format_args!("{:>6}K ", downloads.total / 1000),
+                format_args!("{} ", format_downloads(downloads.total, human)),
                 if downloads.total < 20000 {
                     Some(::term::color::YELLOW)
                 } else {
@@ -185,7 +230,11 @@ pub fn write_details(
                 },
             )?;
         } else {
-            term.print(format_args!("{:>8} {:>9} ", "?", "?"), None)?;
+            if human {
+                term.print(format_args!("{:>8} {:>6} ", "?", "?"), None)?;
+            } else {
+                term.print(format_args!("{:>10} {:>8} ", "?", "?"), None)?;
+            }
         }
     }
 
@@ -214,16 +263,22 @@ fn write_stats_crate_id(
 ) -> Result<()> {
     let name_column_width = column_widths.name;
     let version_column_width = column_widths.version;
+    let version_str = stats.info.id.version().to_string()
+        + if stats.info.id.source_id().is_registry() {
+            ""
+        } else {
+            "*"
+        };
+    let version_str = if column_widths.human {
+        truncate_str(&version_str, version_column_width)
+    } else {
+        version_str
+    };
     write!(
         io::stdout(),
         "{:name_column_width$} {:<version_column_width$} ",
         stats.info.id.name(),
-        stats.info.id.version().to_string()
-            + if stats.info.id.source_id().is_registry() {
-                ""
-            } else {
-                "*"
-            }
+        version_str
     )?;
     Ok(())
 }
@@ -237,11 +292,12 @@ pub fn print_dep(
 ) -> Result<()> {
     let details = stats.details();
 
-    write_details(details, term, columns, recursive_mode)?;
+    write_details(details, term, columns, recursive_mode, column_widths.human)?;
     if columns.show_geiger() {
         match details.accumulative.geiger_count {
             Some(geiger_count) => write!(io::stdout(), "{geiger_count:>6} ")?,
-            None => write!(io::stdout(), "{:>6} ", "err")?,
+            None if cfg!(feature = "geiger") => write!(io::stdout(), "{:>6} ", "err")?,
+            None => write!(io::stdout(), "{:>6} ", "dis")?,
         }
     }
 
@@ -263,11 +319,15 @@ pub fn print_dep(
     write_stats_crate_id(stats, term, column_widths)?;
 
     if columns.show_latest_trusted() {
-        write!(
-            io::stdout(),
-            "{:<12}",
-            latest_trusted_version_string(stats.info.id.version(), &details.latest_trusted_version)
-        )?;
+        let w = column_widths.latest_trusted;
+        let s =
+            latest_trusted_version_string(stats.info.id.version(), &details.latest_trusted_version);
+        let s = if column_widths.human {
+            truncate_str(&s, w)
+        } else {
+            s
+        };
+        write!(io::stdout(), "{:<w$}", s)?;
     }
 
     if columns.show_digest() {
