@@ -1,10 +1,8 @@
 use std::fmt;
 
 use anyhow::{Result, bail};
-use crev_data::{
-    PublicId, UnlockedId,
-    proof::{self, CommonOps, ContentExt},
-};
+use crev_data::proof::{self, CommonOps, ContentExt};
+use crev_data::{PublicId, UnlockedId};
 
 pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {
     Ok(match proof.kind() {

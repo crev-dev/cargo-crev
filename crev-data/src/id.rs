@@ -1,16 +1,15 @@
-use crate::{
-    Url,
-    proof::{self, ContentExt, OverrideItem},
-};
-use crev_common::{
-    self,
-    serde::{as_base64, from_base64},
-};
+use std::convert::TryFrom;
+use std::fmt;
+
+use crev_common::serde::{as_base64, from_base64};
+use crev_common::{self};
 use derive_builder::Builder;
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, fmt};
+
+use crate::Url;
+use crate::proof::{self, ContentExt, OverrideItem};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IdType {

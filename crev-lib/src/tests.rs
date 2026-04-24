@@ -1,11 +1,12 @@
-use super::*;
-use crev_data::{
-    Level, UnlockedId, Url,
-    proof::{ContentExt, PackageVersionId},
-};
+use std::str::FromStr;
+use std::sync::Arc;
+
+use crev_data::proof::{ContentExt, PackageVersionId};
+use crev_data::{Level, UnlockedId, Url};
 use crev_wot::{FetchSource, ProofDB};
 use default::default;
-use std::{str::FromStr, sync::Arc};
+
+use super::*;
 
 // Basic lifetime of an `LockedId`:
 //

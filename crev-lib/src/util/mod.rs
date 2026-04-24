@@ -1,10 +1,11 @@
-use crev_common::sanitize_name_for_fs;
-pub use crev_common::{run_with_shell_cmd, store_str_to_file, store_to_file_with};
-use crev_data::proof;
 use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io;
 use std::path::{Path, PathBuf};
+
+use crev_common::sanitize_name_for_fs;
+pub use crev_common::{run_with_shell_cmd, store_str_to_file, store_to_file_with};
+use crev_data::proof;
 
 pub mod git;
 
@@ -19,7 +20,8 @@ pub fn get_documentation_for(content: &impl proof::Content) -> &'static str {
 
 #[cfg(target_family = "unix")]
 pub fn chmod_path_to_600(path: &Path) -> io::Result<()> {
-    use std::{fs::Permissions, os::unix::fs::PermissionsExt};
+    use std::fs::Permissions;
+    use std::os::unix::fs::PermissionsExt;
 
     std::fs::set_permissions(path, Permissions::from_mode(0o600))
 }
@@ -133,7 +135,8 @@ fn mark_dangerous_name(
             ));
             alt
         }
-        // Are there legit use-cases for Unicode names? Killing it avoids risk of homograph or BIDI spoofing
+        // Are there legit use-cases for Unicode names? Killing it avoids risk of homograph or BIDI
+        // spoofing
         n if n.as_bytes().iter().any(|&c| {
             c < b' '
                 || c >= 0x7F
@@ -155,7 +158,8 @@ fn mark_dangerous_name(
     }
 }
 
-/// Make a copy of the directory, but skip or rename all files that are potentially dangerous in Cargo projects
+/// Make a copy of the directory, but skip or rename all files that are
+/// potentially dangerous in Cargo projects
 pub fn copy_dir_sanitized(
     src_dir: &Path,
     dest_dir: &Path,

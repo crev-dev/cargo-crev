@@ -1,10 +1,11 @@
-use crate::{
-    Error, Result, Url,
-    id::UnlockedId,
-    proof::{self, Content, ContentExt, ContentWithDraft, Proof},
-};
+use std::default::Default;
+use std::path::PathBuf;
+
 use semver::Version;
-use std::{default::Default, path::PathBuf};
+
+use crate::id::UnlockedId;
+use crate::proof::{self, Content, ContentExt, ContentWithDraft, Proof};
+use crate::{Error, Result, Url};
 
 #[test]
 pub fn signed_parse() -> Result<()> {

@@ -1,11 +1,14 @@
 // Oh dear, this module is called serde, and is in the root
 // so we have to import serde crate here
+use std::{error, fmt, io};
+
+use chrono::offset::FixedOffset;
+use chrono::prelude::*;
+use chrono::{self};
+use hex::{self, FromHex, FromHexError};
 use serde;
 
 use self::serde::Deserialize;
-use chrono::{self, offset::FixedOffset, prelude::*};
-use hex::{self, FromHex, FromHexError};
-use std::{error, fmt, io};
 
 // {{{ Serde serialization
 pub trait MyTryFromBytes: Sized {

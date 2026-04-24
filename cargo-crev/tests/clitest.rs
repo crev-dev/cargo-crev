@@ -1,7 +1,10 @@
-use std::{ffi::*, io::Write, path::*, process::*};
+use std::ffi::*;
+use std::io::Write;
+use std::path::*;
+use std::process::*;
 
-/// Fixture: a package-review proof body (without the `----- BEGIN CREV PROOF -----`
-/// envelope or signature), as it would be produced by
+/// Fixture: a package-review proof body (without the `----- BEGIN CREV PROOF
+/// -----` envelope or signature), as it would be produced by
 /// `cargo crev review --no-store --print-unsigned > file`. Modeled after a
 /// real review from an existing proof repository.
 const UNSIGNED_REVIEW_FIXTURE: &str = r#"kind: package review

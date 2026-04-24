@@ -1,7 +1,8 @@
 /// # User documentation
 ///
-/// New users are advised to start by reading the [Getting Started Guide](`self::user::getting_started`)
-/// and [Glossary](`self::user::glossary`) modules.
+/// New users are advised to start by reading the [Getting Started
+/// Guide](`self::user::getting_started`) and [Glossary](`self::user::glossary`)
+/// modules.
 ///
 /// Please be aware that all user documentation is
 /// a continuous work in progress, and can be incorrect

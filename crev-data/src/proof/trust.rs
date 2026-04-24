@@ -1,15 +1,12 @@
-use crate::{
-    Error, Level, ParseError, Result,
-    proof::{self, CommonOps, Content, content::ValidationResult},
-    serde_content_serialize, serde_draft_serialize,
-};
+use std::fmt;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-use std::fmt;
-
 use super::{OverrideItem, OverrideItemDraft};
+use crate::proof::content::ValidationResult;
+use crate::proof::{self, CommonOps, Content};
+use crate::{Error, Level, ParseError, Result, serde_content_serialize, serde_draft_serialize};
 
 const CURRENT_TRUST_PROOF_SERIALIZATION_VERSION: i64 = -1;
 

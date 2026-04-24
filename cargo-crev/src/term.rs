@@ -1,13 +1,10 @@
+use std::env;
+use std::fmt::Arguments;
+use std::io::{self, Write};
+
 use crev_lib::VerificationStatus;
-use std::{
-    env,
-    fmt::Arguments,
-    io::{self, Write},
-};
-use term::{
-    self, StderrTerminal, StdoutTerminal,
-    color::{self, Color},
-};
+use term::color::{self, Color};
+use term::{self, StderrTerminal, StdoutTerminal};
 
 #[cfg(target_os = "macos")]
 use crate::creds;

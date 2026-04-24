@@ -1,6 +1,8 @@
-use crate::prelude::*;
 use std::path::Path;
+
 use tokei::{Config, LanguageType, Languages};
+
+use crate::prelude::*;
 
 pub fn get_rust_line_count(path: &Path) -> Result<usize> {
     let excluded = &["tests/", "examples/"];

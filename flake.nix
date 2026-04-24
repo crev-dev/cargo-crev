@@ -141,17 +141,11 @@
       in
       {
         packages = {
+          treefmt = treefmt;
           default = multiBuild.cargo-crev;
           cargo-crev = multiBuild.cargo-crev;
 
-          ci = {
-            cargo-crev = multiBuild.cargo-crev;
-            workspace = multiBuild.workspace;
-            workspaceDeps = multiBuild.workspaceDeps;
-            clippy = multiBuild.clippy;
-            treefmt = fmtCheck;
-            tests = multiBuild.tests;
-          };
+
 
           container = {
             cargo-crev = cargo-crev-container;

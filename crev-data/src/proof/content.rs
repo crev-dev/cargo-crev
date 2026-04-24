@@ -1,12 +1,14 @@
-use crate::{Error, ParseError, Result, proof, proof::Proof};
-use chrono::{self, prelude::*};
-use crev_common::{
-    self,
-    serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed},
-};
+use std::{fmt, io};
+
+use chrono::prelude::*;
+use chrono::{self};
+use crev_common::serde::{as_base64, as_rfc3339_fixed, from_base64, from_rfc3339_fixed};
+use crev_common::{self};
 use derive_builder::Builder;
 use serde::{self, Deserialize, Serialize};
-use std::{fmt, io};
+
+use crate::proof::Proof;
+use crate::{Error, ParseError, Result, proof};
 
 pub type Date = chrono::DateTime<FixedOffset>;
 

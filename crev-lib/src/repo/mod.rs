@@ -1,12 +1,12 @@
-use crate::{Error, Result, local::Local, util, verify_package_digest};
+use std::collections::HashSet;
+use std::fs;
+use std::path::{Path, PathBuf};
+
 use crev_data::{Digest, proof};
 use serde::{Deserialize, Serialize};
 
-use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
-};
+use crate::local::Local;
+use crate::{Error, Result, util, verify_package_digest};
 
 pub mod staging;
 

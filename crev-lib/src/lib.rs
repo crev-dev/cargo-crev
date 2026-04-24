@@ -13,26 +13,22 @@ pub mod proof;
 pub mod repo;
 pub mod staging;
 pub mod util;
-pub use crate::local::Local;
+use std::collections::{HashMap, HashSet};
+use std::error::Error as _;
+use std::fmt;
+use std::path::{Path, PathBuf};
+
 pub use activity::{ReviewActivity, ReviewMode};
-use crev_data::{
-    self, Digest, Id, RegistrySource, Version,
-    id::IdError,
-    proof::{
-        CommonOps,
-        review::{self, Rating},
-        trust::TrustLevel,
-    },
-};
+use crev_data::id::IdError;
+use crev_data::proof::CommonOps;
+use crev_data::proof::review::{self, Rating};
+use crev_data::proof::trust::TrustLevel;
+use crev_data::{self, Digest, Id, RegistrySource, Version};
 use crev_wot::PkgVersionReviewId;
 pub use crev_wot::TrustDistanceParams;
 use log::warn;
-use std::error::Error as _;
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-    path::{Path, PathBuf},
-};
+
+pub use crate::local::Local;
 
 /// Failures that can happen in this library
 #[derive(Debug, thiserror::Error)]
@@ -97,7 +93,8 @@ pub enum Error {
     #[error("Id not specified and current id not set")]
     IDNotSpecifiedAndCurrentIDNotSet,
 
-    /// crev uses git checkouts, and needs to know their URLs. Delete the repo and try again.
+    /// crev uses git checkouts, and needs to know their URLs. Delete the repo
+    /// and try again.
     #[error("origin has no url at {}", _0.display())]
     OriginHasNoURL(Box<Path>),
 
@@ -185,7 +182,8 @@ pub enum Error {
 /// [`crate::Error`]
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Trait representing a place that can keep proofs (all reviews and trust proofs)
+/// Trait representing a place that can keep proofs (all reviews and trust
+/// proofs)
 ///
 /// See [`::crev_wot::ProofDb`] and [`crate::Local`].
 ///
@@ -459,7 +457,8 @@ pub fn find_latest_trusted_version(
         .map(|review| review.package.id.version.clone())
 }
 
-/// Check whether code at this path has reviews, and the reviews meet the requirements.
+/// Check whether code at this path has reviews, and the reviews meet the
+/// requirements.
 ///
 /// See also `verify_package_digest`
 pub fn dir_or_git_repo_verify(
@@ -483,7 +482,8 @@ pub fn dir_or_git_repo_verify(
     ))
 }
 
-/// Check whether code at this path has reviews, and the reviews meet the requirements
+/// Check whether code at this path has reviews, and the reviews meet the
+/// requirements
 ///
 /// Same as `dir_or_git_repo_verify`, except it doesn't handle .git dirs
 pub fn dir_verify(
@@ -503,7 +503,8 @@ pub fn dir_verify(
     ))
 }
 
-/// Scan dir and hash everything in it, to get a unique identifier of the package's source code
+/// Scan dir and hash everything in it, to get a unique identifier of the
+/// package's source code
 pub fn get_dir_digest(path: &Path, ignore_list: &fnv::FnvHashSet<PathBuf>) -> Result<Digest> {
     Ok(Digest::from_bytes(&util::get_recursive_digest_for_dir(path, ignore_list)?).unwrap())
 }

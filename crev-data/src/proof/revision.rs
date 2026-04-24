@@ -1,6 +1,7 @@
-use crate::proof;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+
+use crate::proof;
 
 #[derive(Clone, Debug, Builder, Serialize, Deserialize)]
 pub struct Revision {

@@ -1,19 +1,20 @@
 //! Some common stuff for both Review and Trust Proofs
 
-pub use crate::proof::content::{
-    Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
-};
-use crate::{Error, ParseError, PublicId, Result};
-use chrono::{self, prelude::*};
+use std::fmt;
+use std::io::{self, BufRead};
+
+use chrono::prelude::*;
+use chrono::{self};
 pub use package_info::*;
 pub use review::{Code as CodeReview, Package as PackageReview, *};
 pub use revision::*;
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt,
-    io::{self, BufRead},
-};
 pub use trust::*;
+
+pub use crate::proof::content::{
+    Common, CommonOps, Content, ContentDeserialize, ContentExt, ContentWithDraft, Draft, WithReview,
+};
+use crate::{Error, ParseError, PublicId, Result};
 
 pub mod content;
 pub mod package_info;
@@ -110,7 +111,8 @@ impl Proof {
         &self.digest
     }
 
-    /// Read the YAML with serde, you should already know which type to expect from context
+    /// Read the YAML with serde, you should already know which type to expect
+    /// from context
     pub fn parse_content<T: ContentDeserialize>(&self) -> std::result::Result<T, Error> {
         T::deserialize_from(self.body.as_bytes())
     }

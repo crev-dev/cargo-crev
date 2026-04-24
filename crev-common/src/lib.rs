@@ -9,18 +9,18 @@ pub mod fs;
 pub mod rand;
 pub mod serde;
 
-pub use crate::blake2b256::Blake2b256;
+use std::collections::HashSet;
+use std::ffi::OsStr;
+use std::io::{self, BufRead, Write};
+use std::path::{Path, PathBuf};
+use std::process;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use blake2::{Digest, digest::FixedOutput};
-use std::{
-    collections::HashSet,
-    ffi::OsStr,
-    io::{self, BufRead, Write},
-    path::{Path, PathBuf},
-    process,
-};
+use blake2::Digest;
+use blake2::digest::FixedOutput;
+
+pub use crate::blake2b256::Blake2b256;
 
 #[derive(Debug, thiserror::Error)]
 pub enum YAMLIOError {
@@ -93,8 +93,8 @@ pub fn sanitize_name_for_fs(s: &str) -> PathBuf {
             'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => buffer.push(ch),
             _ => {
                 // Intentionally 'escaped' here:
-                //  '.' (path navigation attacks, and windows doesn't like leading/trailing '.'s)
-                //  ':' (windows reserves this for drive letters)
+                //  '.' (path navigation attacks, and windows doesn't like leading/trailing
+                // '.'s)  ':' (windows reserves this for drive letters)
                 //  '/', '\\' (path navigation attacks)
                 // Unicode, Punctuation (out of an abundance of cross platform paranoia)
                 buffer.push('_');
@@ -142,8 +142,8 @@ pub fn sanitize_url_for_fs(url: &str) -> PathBuf {
             'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => buffer.push(ch),
             _ => {
                 // Intentionally 'escaped' here:
-                //  '.' (path navigation attacks, and windows doesn't like leading/trailing '.'s)
-                //  ':' (windows reserves this for drive letters)
+                //  '.' (path navigation attacks, and windows doesn't like leading/trailing
+                // '.'s)  ':' (windows reserves this for drive letters)
                 //  '/', '\\' (path navigation attacks)
                 // Unicode, Punctuation (out of an abundance of cross platform paranoia)
                 buffer.push('_');
@@ -245,9 +245,10 @@ pub fn run_with_shell_cmd_custom(
     capture_stdout: bool,
 ) -> io::Result<std::process::Output> {
     if cfg!(windows) {
-        // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes .arg()'s built-in escaping problematic:
-        // https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
-        // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode still works.
+        // cmd.exe /c "..." or cmd.exe /k "..." avoid unescaping "...", which makes
+        // .arg()'s built-in escaping problematic: https://github.com/rust-lang/rust/blob/379c380a60e7b3adb6c6f595222cbfa2d9160a20/src/libstd/sys/windows/process.rs#L488
+        // We can bypass this by (ab)using env vars.  Bonus points:  invalid unicode
+        // still works.
         let mut proc = process::Command::new("cmd.exe");
         if let Some(arg) = arg {
             proc.arg("/c").arg("%CREV_CMD% %CREV_ARG%");

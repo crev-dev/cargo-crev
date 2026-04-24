@@ -1,6 +1,7 @@
 use std::fmt;
 
-/// This is a cryptographic hash of everything in a crate, which reliably identifies its exact source code
+/// This is a cryptographic hash of everything in a crate, which reliably
+/// identifies its exact source code
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Digest([u8; 32]);
 

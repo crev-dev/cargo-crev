@@ -1,24 +1,22 @@
 // Here are the structs and functions which still need to be sorted
 //
-use crate::{
-    deps::scan::{self, RequiredDetails},
-    edit, opts,
-    opts::{CrateSelector, ReviewCrateSelector},
-    prelude::*,
-    repo::Repo,
-};
+use std::collections::HashSet;
+use std::ffi::{OsStr, OsString};
+use std::path::{Path, PathBuf};
+use std::{env, io, process};
+
 use anyhow::{Context, Result, format_err};
-use crev_data::{SOURCE_CRATES_IO, proof, review::Package};
-use crev_lib::{self, ProofStore, ReviewMode, local::Local};
+use crev_data::review::Package;
+use crev_data::{SOURCE_CRATES_IO, proof};
+use crev_lib::local::Local;
+use crev_lib::{self, ProofStore, ReviewMode};
 use serde::Deserialize;
-use std::{
-    collections::HashSet,
-    env,
-    ffi::{OsStr, OsString},
-    io,
-    path::{Path, PathBuf},
-    process,
-};
+
+use crate::deps::scan::{self, RequiredDetails};
+use crate::opts::{CrateSelector, ReviewCrateSelector};
+use crate::prelude::*;
+use crate::repo::Repo;
+use crate::{edit, opts};
 
 /// Name of ENV with original location `crev goto` was called from
 pub const GOTO_ORIGINAL_DIR_ENV: &str = "CARGO_CREV_GOTO_ORIGINAL_DIR";
@@ -79,7 +77,8 @@ pub fn cargo_full_ignore_list(ignore_cargo_lock: bool) -> fnv::FnvHashSet<PathBu
     ignore_list
 }
 
-/// Ignore only the marker added by `cargo` after fully downloading and extracting crate
+/// Ignore only the marker added by `cargo` after fully downloading and
+/// extracting crate
 pub fn cargo_min_ignore_list() -> fnv::FnvHashSet<PathBuf> {
     let mut ignore_list = HashSet::default();
     ignore_list.insert(PathBuf::from(".cargo-ok"));
@@ -154,8 +153,8 @@ pub fn expand_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     let crate_ = repo.get_crate(&crate_id)?;
     let crate_dir = crate_.root();
 
-    // TODO: discover all the entrypoint, iterate over them, take care of formatting and
-    // comments
+    // TODO: discover all the entrypoint, iterate over them, take care of formatting
+    // and comments
     println!(
         "{}",
         syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs")).into_token_stream()
@@ -294,8 +293,9 @@ pub fn crate_open(
     let version = cargo_crate.version();
     let src_dir = cargo_crate.root();
 
-    // It's not safe to open Cargo's crate dir directly, because editor integration (like cargo check)
-    // could automatically start running crate's potentially malicious build script or proc macros.
+    // It's not safe to open Cargo's crate dir directly, because editor integration
+    // (like cargo check) could automatically start running crate's potentially
+    // malicious build script or proc macros.
     let dest_dir = local.sanitized_crate_copy(SOURCE_CRATES_IO, &name, version, src_dir)?;
 
     let open_cmd = match cmd {
@@ -441,8 +441,8 @@ pub fn check_package_clean_state(
 
     let digest_clean =
         crev_lib::get_recursive_digest_for_dir(crate_root, &cargo_min_ignore_list())?;
-    // if the `Cargo.lock` not exist in the clean package, we can ignore it being created
-    // in the reviewed version; that's normal
+    // if the `Cargo.lock` not exist in the clean package, we can ignore it being
+    // created in the reviewed version; that's normal
     let ignore_cargo_lock = !crate_root.join("Cargo.lock").exists();
     let digest_reviewed = crev_lib::get_recursive_digest_for_dir(
         &reviewed_pkg_dir,
@@ -533,8 +533,9 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 
     match command.status() {
         Err(ref err) if err.kind() == io::ErrorKind::NotFound && cfg!(windows) => {
-            // On Windows, diff is likely available but *not* in %PATH.  Specifically, the git installer warns that
-            // adding *nix tools to %PATH% will change the behavior of some built in windows commands like "find", and
+            // On Windows, diff is likely available but *not* in %PATH.  Specifically, the
+            // git installer warns that adding *nix tools to %PATH% will change
+            // the behavior of some built in windows commands like "find", and
             // by default doesn't do this to avoid breaking anything.
 
             let program_files =

@@ -1,15 +1,15 @@
-use crate::{
-    ParseError, Result, proof, proof::content::ValidationResult, serde_content_serialize,
-    serde_draft_serialize,
-};
-use crev_common::{
-    self,
-    serde::{as_base64, from_base64},
-};
+use std::default::Default;
+use std::path::PathBuf;
+use std::{self, fmt};
+
+use crev_common::serde::{as_base64, from_base64};
+use crev_common::{self};
 use derive_builder::Builder;
 use proof::{CommonOps, Content};
 use serde::{Deserialize, Serialize};
-use std::{self, default::Default, fmt, path::PathBuf};
+
+use crate::proof::content::ValidationResult;
+use crate::{ParseError, Result, proof, serde_content_serialize, serde_draft_serialize};
 
 const CURRENT_CODE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
 

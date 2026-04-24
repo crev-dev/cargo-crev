@@ -1,23 +1,18 @@
-use crate::{
-    Error, Level, ParseError,
-    proof::{
-        self, OverrideItem, OverrideItemDraft,
-        content::{OriginalReference, ValidationError, ValidationResult},
-    },
-    serde_content_serialize, serde_draft_serialize,
-};
+use std::collections::HashSet;
+use std::default::Default;
+use std::fmt::{self, Debug};
+use std::ops;
+
 use crev_common::{self, is_equal_default, is_set_empty, is_vec_empty};
 use derive_builder::Builder;
 use proof::{CommonOps, Content};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashSet,
-    default::Default,
-    fmt::{self, Debug},
-    ops,
-};
 use typed_builder::TypedBuilder;
+
+use crate::proof::content::{OriginalReference, ValidationError, ValidationResult};
+use crate::proof::{self, OverrideItem, OverrideItemDraft};
+use crate::{Error, Level, ParseError, serde_content_serialize, serde_draft_serialize};
 
 const CURRENT_PACKAGE_REVIEW_PROOF_SERIALIZATION_VERSION: i64 = -1;
 
@@ -171,7 +166,8 @@ impl Package {
 
     pub fn ensure_kind_is_backfilled(&mut self) {
         if self.common.kind.is_none() {
-            // backfill "kind" for old reviews. Don't use common().kind() here, it will panic.
+            // backfill "kind" for old reviews. Don't use common().kind() here, it will
+            // panic.
             self.common.kind = Some(self.kind().to_string());
         }
     }

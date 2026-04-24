@@ -1,32 +1,28 @@
-use crate::{
-    Error, ProofStore, Result, Warning,
-    activity::{LatestReviewActivity, ReviewActivity},
-    id::{self, LockedId, PassphraseFn},
-    util::{self, git::is_unrecoverable},
-};
-use crev_common::{
-    self, sanitize_name_for_fs, sanitize_url_for_fs,
-    serde::{as_base64, from_base64},
-};
-use crev_data::{
-    Id, PublicId, RegistrySource, Url,
-    id::UnlockedId,
-    proof::{self, OverrideItem, trust::TrustLevel},
-};
+use std::collections::HashSet;
+use std::ffi::OsString;
+use std::fs;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+
+use crev_common::serde::{as_base64, from_base64};
+use crev_common::{self, sanitize_name_for_fs, sanitize_url_for_fs};
+use crev_data::id::UnlockedId;
+use crev_data::proof::trust::TrustLevel;
+use crev_data::proof::{self, OverrideItem};
+use crev_data::{Id, PublicId, RegistrySource, Url};
 use default::default;
 use directories::ProjectDirs;
 use log::{debug, error, info, warn};
 use resiter::{FilterMap, Map};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashSet,
-    ffi::OsString,
-    fs,
-    io::{BufRead, BufReader, Write},
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+
+use crate::activity::{LatestReviewActivity, ReviewActivity};
+use crate::id::{self, LockedId, PassphraseFn};
+use crate::util::git::is_unrecoverable;
+use crate::util::{self};
+use crate::{Error, ProofStore, Result, Warning};
 
 const CURRENT_USER_CONFIG_SERIALIZATION_VERSION: i64 = -1;
 
@@ -530,8 +526,8 @@ impl Local {
         }
     }
 
-    /// Changes the repo URL for the ID. Adopts existing temporary/local repo if any.
-    /// Previous remote URL is abandoned.
+    /// Changes the repo URL for the ID. Adopts existing temporary/local repo if
+    /// any. Previous remote URL is abandoned.
     /// For crev id set-url command.
     pub fn change_locked_id_url(
         &self,
@@ -561,7 +557,8 @@ impl Local {
         id.url = Some(new_url);
         self.save_locked_id(id)?;
 
-        // commit uncommitted changes, if there are any. Otherwise the next pull may fail
+        // commit uncommitted changes, if there are any. Otherwise the next pull may
+        // fail
         let _ = self.proof_dir_commit("Setting up new CrevID URL");
         let _ = self.run_git(
             vec!["pull".into(), "--rebase".into(), "-Xours".into()],
@@ -601,7 +598,8 @@ impl Local {
         Ok(())
     }
 
-    /// Git clone or init new remote Github crev-proof repo for the current user.
+    /// Git clone or init new remote Github crev-proof repo for the current
+    /// user.
     ///
     /// Saves to `user_proofs_path`, so it's trusted as user's own proof repo.
     pub fn clone_proof_dir_from_git(
@@ -821,13 +819,15 @@ impl Local {
         Ok(from_id.create_trust_proof(&public_ids, trust_level, override_)?)
     }
 
-    /// Fetch other people's proof repository from a git URL, into the current database on disk
+    /// Fetch other people's proof repository from a git URL, into the current
+    /// database on disk
     pub fn fetch_url(&self, url: &str) -> Result<()> {
         let mut db = self.load_db()?;
         self.fetch_url_into(url, &mut db)
     }
 
-    /// Fetch other people's proof repository from a git URL, directly into the given db (and disk too)
+    /// Fetch other people's proof repository from a git URL, directly into the
+    /// given db (and disk too)
     pub fn fetch_url_into(&self, url: &str, db: &mut crev_wot::ProofDB) -> Result<()> {
         info!("Fetching {url}... ");
         let dir = self.fetch_remote_git(url)?;
@@ -863,7 +863,8 @@ impl Local {
             if let Some(for_id) = self.get_for_id_from_str_opt(for_id)? {
                 db.calculate_trust_set(&for_id, params)
             } else {
-                // when running without an id (explicit, or current), just use an empty trust set
+                // when running without an id (explicit, or current), just use an empty trust
+                // set
                 crev_wot::TrustSet::default()
             },
         )
@@ -1030,7 +1031,8 @@ impl Local {
         Ok(new_path)
     }
 
-    /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for the URL.
+    /// `LocalUser` if it's current user's URL, or `crev_wot::FetchSource` for
+    /// the URL.
     fn get_fetch_source_for_url(&self, url: Url) -> Result<crev_wot::FetchSource> {
         if let Ok(own_url) = self.get_cur_url()
             && own_url == url
