@@ -121,6 +121,14 @@ pub fn edit_proof_content_iteractively<C: proof::ContentWithDraft>(
     }
     loop {
         text = edit_text_iteractively_until_written_to(&text)?;
+
+        let has_non_comment_content = text
+            .lines()
+            .any(|line| !line.starts_with('#') && !line.trim().is_empty());
+        if !has_non_comment_content {
+            bail!("Aborted due to empty review");
+        }
+
         match content.apply_draft(&text) {
             Err(e) => {
                 eprintln!("There was an error parsing content: {e}");
