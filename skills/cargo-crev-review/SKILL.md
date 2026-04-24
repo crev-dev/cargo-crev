@@ -176,20 +176,37 @@ be meaningless until the WoT is set up.
 
 When the user hasn't named a specific crate, first make sure the WoT
 is fresh (see "Refreshing the web of trust" above), then capture a
-full stats dump of their dependencies. This is a potentially slow
-operation (it walks every dep, downloads metadata, etc.), so **run it
-once and store the output in a file** — don't re-run it unless the
-user asks.
+stats dump of their dependencies.
+
+**`cargo crev verify` is slow** — it walks every dependency, downloads
+metadata from crates.io, and computes trust graphs. On a non-trivial
+project it can take **30 seconds to several minutes**. Therefore:
+
+- **Run it exactly once per session** and save the output to a file.
+- **Never re-run it** unless the user explicitly asks or the dependency
+  tree has changed (e.g. after `cargo update`).
+- All candidate discovery, sorting, and filtering works on the saved
+  file — re-read the file instead of re-running the command.
 
 ```sh
-cargo crev verify --show-all --force-print-header \
+cargo crev verify \
+    --show-reviews true --show-downloads true \
+    --show-loc true --show-flags true \
+    --force-print-header \
     > target/crev-verify.txt 2>&1
 ```
 
 Notes:
 
-- `--show-all` enables every available column (reviews, issues, owners,
-  downloads, loc, lpidx, geiger, flags, latest trusted version, …).
+- Only request the columns you actually need for candidate selection:
+  `reviews`, `downloads`, `loc`, and `flags`. The default output
+  already includes `status`, `name`, and `version`.
+- Do **not** use `--show-all` — it enables many extra columns (geiger,
+  owners, issues, lpidx, latest trusted version, …) that produce
+  wide, hard-to-parse output and are not needed for picking
+  candidates. If you need a specific extra column later (e.g.
+  `--show-geiger true` for a particular analysis), add it to a
+  one-off query for that crate, not to the full dump.
 - `--force-print-header` makes the tool print the column header even
   when stdout is redirected. **Always** use this when capturing — the
   header is the only reliable way to know which column is which.
@@ -210,9 +227,12 @@ Notes:
     see this, stop and tell the user they should set up trust first
     (`cargo crev trust <id>`) before candidate discovery is meaningful.
 
-Once the file exists, pick candidates from it. Before narrowing down,
-confirm the criteria with the user — see the "Picking candidates"
-section below.
+Once the file exists, **work from it for all subsequent candidate
+selection in this session**. If you need to re-examine the data, read
+`target/crev-verify.txt` — do not re-run `cargo crev verify`.
+
+Before narrowing down, confirm the criteria with the user — see the
+"Picking candidates" section below.
 
 ## Picking candidates
 
@@ -261,28 +281,25 @@ same captured file (or re-capture if it's stale) to pick the next one.
 
 ### Column legend
 
-`cargo crev verify --help` ends with a full column legend.
-Reproduced here so agents can interpret the captured stats file without
-re-running the command:
+These are the columns present in the recommended `cargo crev verify`
+output (with `--show-reviews`, `--show-downloads`, `--show-loc`,
+`--show-flags`). Run `cargo crev verify --help` for the full legend
+including columns not shown by default.
 
 ```
 - status     - Trust check result: `pass` for trusted, `none` for lacking reviews,
                `flagged` or `dangerous` for crates with problem reports.
                `N/A` when crev is not configured yet.
 - reviews    - Number of reviews for the specific version and for all available
-               versions (total)
-- issues     - Number of issues reported (from trusted sources / all)
-- owner      - Owner counts from crates.io (known / all) in non-recursive mode
-- downloads  - Download counts from crates.io (version / total)
+               versions (total). Two sub-columns: version count / total count.
+- downloads  - Download counts from crates.io (version / total).
+               Two sub-columns: version count / total count.
 - loc        - Lines of Rust code
-- lpidx      - "left-pad" index (ratio of downloads to lines of code)
-- geiger     - Geiger score: number of `unsafe` lines
 - flgs       - Flags for specific types of packages
   - CB         - Custom Build (runs arbitrary code at build time)
   - UM         - Unmaintained crate
-- name       - Crate name
+- crate      - Crate name
 - version    - Crate version
-- latest_t   - Latest trusted version
 ```
 
 ## External verification
@@ -1109,7 +1126,10 @@ sub-agents, but only under these conditions:
 
 2. **Include the exact proof YAML template** with the user's crev id,
    proof URL, and package digest already filled in, so the sub-agent
-   doesn't have to guess or look them up.
+   doesn't have to guess or look them up. Also pass the path to the
+   already-captured `target/crev-verify.txt` file and tell the
+   sub-agent to **read it, not re-run `cargo crev verify`** — the
+   command is slow and has already been run.
 
 3. **Specify the thoroughness floor.** Tell the sub-agent which
    thoroughness level to target (based on LoC) and that it must not
