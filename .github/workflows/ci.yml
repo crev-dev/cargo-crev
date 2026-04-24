@@ -129,25 +129,6 @@ jobs:
       if: matrix.target != ''
       run: ${{ env.CARGO }} test --verbose --workspace ${{ env.TARGET_FLAGS }}
 
-  rustfmt:
-    name: rustfmt
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        profile: minimal
-        components: rustfmt
-    - name: Check formatting
-      run: |
-        rustfmt --version
-        cargo fmt --all -- --check
-
   docs:
     name: docs
     runs-on: ubuntu-24.04

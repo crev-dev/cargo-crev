@@ -2,6 +2,11 @@
 set -eou pipefail
 
 function job_lint() {
+  selfci step start "cargo fmt"
+  if ! nix build -L .#ci.cargoFmt ; then
+    selfci step fail
+  fi
+
   selfci step start "treefmt"
   if ! nix build -L .#ci.fmt ; then
     selfci step fail

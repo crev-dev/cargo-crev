@@ -27,6 +27,12 @@ jobs:
           name: cargo-crev
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      - name: Check Rust formatting
+        run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#ci.cargoFmt
+
+      - name: Check all formatting
+        run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#treefmt
+
       - name: Build workspace
         run: nix build -L --extra-experimental-features nix-command --extra-experimental-features flakes .#ci.workspace
 
