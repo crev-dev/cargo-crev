@@ -3,7 +3,7 @@ set -eou pipefail
 
 function job_lint() {
   selfci step start "treefmt"
-  if ! treefmt --ci ; then
+  if ! nix build -L .#ci.fmt ; then
     selfci step fail
   fi
 }
@@ -40,8 +40,7 @@ case "$SELFCI_JOB_NAME" in
     job_cargo
     ;;
   lint)
-    export -f job_lint
-    nix develop -c bash -c "job_lint"
+    job_lint
     ;;
   *)
     echo "Unknown job: $SELFCI_JOB_NAME"
