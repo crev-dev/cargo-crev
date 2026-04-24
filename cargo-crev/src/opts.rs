@@ -379,7 +379,7 @@ impl CrateVerifyColumns {
     show_x!(show_owners, false);
     show_x!(show_issues, true);
     show_x!(show_loc, false);
-    show_x!(show_geiger, false);
+    show_x!(show_geiger, true);
 }
 
 #[derive(Debug, StructOpt, Clone, Default)]
@@ -443,6 +443,11 @@ pub struct CrateVerify {
     /// Always print the column header, even when stdout is not a TTY (useful
     /// for capturing the output into a file for later processing).
     pub force_print_header: bool,
+
+    #[structopt(long = "human-metrics")]
+    /// Human-friendly output: truncate long columns, use M suffix for large
+    /// download counts. Set to false for machine-parseable output [default: true]
+    pub human_metrics: Option<bool>,
 }
 
 #[derive(Debug, StructOpt, Clone)]

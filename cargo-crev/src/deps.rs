@@ -320,8 +320,9 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
 
     let scanner = scan::Scanner::new(crate_, &args)?;
     let has_trusted_ids = scanner.has_trusted_ids;
+    let human = args.human_metrics.unwrap_or(true);
     let column_widths =
-        print_term::VerifyOutputColumnWidths::from_pkgsids(scanner.all_crates_ids.iter());
+        print_term::VerifyOutputColumnWidths::from_pkgsids(scanner.all_crates_ids.iter(), human);
 
     let trust_set = scanner.trust_set.clone();
 
