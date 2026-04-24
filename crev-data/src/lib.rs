@@ -14,20 +14,17 @@ pub mod proof;
 pub mod url;
 #[macro_use]
 pub mod util;
-use crate::{id::IdError, proof::content::ValidationError};
 pub use semver::Version;
 
-pub use crate::{
-    digest::Digest,
-    id::{Id, PublicId, UnlockedId},
-    level::Level,
-    proof::{
-        review,
-        review::{Rating, Review},
-        trust::TrustLevel,
-    },
-    url::Url,
-};
+pub use crate::digest::Digest;
+use crate::id::IdError;
+pub use crate::id::{Id, PublicId, UnlockedId};
+pub use crate::level::Level;
+use crate::proof::content::ValidationError;
+pub use crate::proof::review;
+pub use crate::proof::review::{Rating, Review};
+pub use crate::proof::trust::TrustLevel;
+pub use crate::url::Url;
 
 /// It's just a string. See [`SOURCE_CRATES_IO`]
 pub type RegistrySource<'a> = &'a str;

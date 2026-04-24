@@ -1,12 +1,13 @@
+use std::fmt::Write;
+use std::path::{Path, PathBuf};
+use std::{env, ffi};
+
 use anyhow::{Result, bail};
 use crev_common::{CancelledError, run_with_shell_cmd};
-use crev_data::{proof, proof::content::ContentExt};
-use crev_lib::{local::Local, util::get_documentation_for};
-use std::{
-    env, ffi,
-    fmt::Write,
-    path::{Path, PathBuf},
-};
+use crev_data::proof;
+use crev_data::proof::content::ContentExt;
+use crev_lib::local::Local;
+use crev_lib::util::get_documentation_for;
 
 fn get_git_default_editor() -> Result<String> {
     let cfg = git2::Config::open_default()?;
@@ -25,7 +26,8 @@ fn get_editor_to_use() -> Result<ffi::OsString> {
     })
 }
 
-/// Returns the edited string, and bool indicating if the file was ever written to/ (saved).
+/// Returns the edited string, and bool indicating if the file was ever written
+/// to/ (saved).
 fn edit_text_iteractively_raw(text: &str) -> Result<(String, bool)> {
     let dir = tempfile::tempdir()?;
     let file_path = dir.path().join("crev.review.yaml");

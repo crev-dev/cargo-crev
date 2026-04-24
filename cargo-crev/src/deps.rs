@@ -1,17 +1,20 @@
+use std::collections::{HashMap, HashSet};
+use std::io;
+use std::io::Write as _;
+use std::ops::Add;
+use std::path::PathBuf;
+
 use ::term::color::YELLOW;
+use cargo::core::PackageId;
 use crev_data::{Digest, PublicId, Version, proof, review};
 use crev_lib::VerificationStatus;
 use crev_wot::TrustSet;
-use std::{io, io::Write as _, path::PathBuf};
-
-use crate::{opts::*, prelude::*, shared::CommandExitStatus, term};
-use cargo::core::PackageId;
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Add,
-};
 
 use self::scan::RequiredDetails;
+use crate::opts::*;
+use crate::prelude::*;
+use crate::shared::CommandExitStatus;
+use crate::term;
 
 mod print_term;
 pub mod scan;

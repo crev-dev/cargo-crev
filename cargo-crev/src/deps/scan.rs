@@ -1,33 +1,30 @@
-use crate::{
-    crates_io,
-    deps::{
-        AccumulativeCrateDetails, CountWithTotal, CrateDetails, CrateInfo, CrateStats, OwnerSetSet,
-    },
-    opts::{CargoOpts, CrateSelector, CrateVerify},
-    prelude::*,
-    repo::Repo,
-    shared::{
-        cargo_full_ignore_list, cargo_min_ignore_list, get_crate_digest_mismatches,
-        get_geiger_count, read_known_owners_list,
-    },
-};
+use std::collections::{HashMap, HashSet};
+use std::default::Default;
+use std::path::PathBuf;
+use std::sync::atomic::{self, AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread::sleep;
+use std::time::Duration;
+
 use cargo::core::PackageId;
 use crev_data::SOURCE_CRATES_IO;
 use crev_data::proof::{self, CommonOps};
 use crev_lib::{self, VerificationStatus};
 use crev_wot::{self, ProofDB, TrustSet};
-use crossbeam::{self, channel::unbounded};
+use crossbeam::channel::unbounded;
+use crossbeam::{self};
 use log::debug;
-use std::{
-    collections::{HashMap, HashSet},
-    default::Default,
-    path::PathBuf,
-    sync::{
-        Arc, Mutex,
-        atomic::{self, AtomicBool, Ordering},
-    },
-    thread::sleep,
-    time::Duration,
+
+use crate::crates_io;
+use crate::deps::{
+    AccumulativeCrateDetails, CountWithTotal, CrateDetails, CrateInfo, CrateStats, OwnerSetSet,
+};
+use crate::opts::{CargoOpts, CrateSelector, CrateVerify};
+use crate::prelude::*;
+use crate::repo::Repo;
+use crate::shared::{
+    cargo_full_ignore_list, cargo_min_ignore_list, get_crate_digest_mismatches, get_geiger_count,
+    read_known_owners_list,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -76,9 +73,10 @@ pub struct Scanner {
     crate_details_by_id: Arc<Mutex<HashMap<PackageId, CrateDetails>>>,
 }
 
-// Something in (presumably) in the C bindings we're using is unsound and will SIGSEGV
-// if the threads are still running while the main thread terminated. To prevent that
-// we wrap all handles in this struct that will `join` them on `drop`.
+// Something in (presumably) in the C bindings we're using is unsound and will
+// SIGSEGV if the threads are still running while the main thread terminated. To
+// prevent that we wrap all handles in this struct that will `join` them on
+// `drop`.
 pub struct ScannerHandle {
     threads: Vec<std::thread::JoinHandle<()>>,
     canceled_flag: Arc<AtomicBool>,

@@ -1,33 +1,29 @@
-use crate::{opts, opts::CrateSelector};
+use std::collections::hash_map::Entry;
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::env;
+use std::path::PathBuf;
+use std::str::{self, FromStr};
+
 use anyhow::format_err;
-use cargo::GlobalContext;
+use cargo::core::dependency::{DepKind, Dependency};
+use cargo::core::manifest::ManifestMetadata;
+use cargo::core::package::PackageSet;
+use cargo::core::registry::PackageRegistry;
+use cargo::core::resolver::{CliFeatures, HasDevUnits};
+use cargo::core::{Package, PackageId, Resolve, SourceId, Workspace};
 use cargo::sources::SourceConfigMap;
 use cargo::sources::source::{QueryKind, Source, SourceMap};
-use cargo::{
-    core::{
-        Package, PackageId, Resolve, SourceId, Workspace,
-        dependency::{DepKind, Dependency},
-        manifest::ManifestMetadata,
-        package::PackageSet,
-        registry::PackageRegistry,
-        resolver::{CliFeatures, HasDevUnits},
-    },
-    ops,
-    util::{
-        CargoResult, Rustc, cache_lock::CacheLockMode, context::ConfigValue,
-        important_paths::find_root_manifest_for_wd,
-    },
-};
+use cargo::util::cache_lock::CacheLockMode;
+use cargo::util::context::ConfigValue;
+use cargo::util::important_paths::find_root_manifest_for_wd;
+use cargo::util::{CargoResult, Rustc};
+use cargo::{GlobalContext, ops};
 use cargo_platform::Cfg;
 use petgraph::graph::NodeIndex;
-use std::{
-    collections::{BTreeSet, HashMap, HashSet, hash_map::Entry},
-    env,
-    path::PathBuf,
-    str::{self, FromStr},
-};
 
-use crate::{crates_io, prelude::*};
+use crate::opts::CrateSelector;
+use crate::prelude::*;
+use crate::{crates_io, opts};
 
 #[derive(Debug)]
 struct Node {
@@ -190,8 +186,9 @@ fn build_graph<'a>(
                 .filter(|d| d.matches_ignoring_source(raw_dep_id))
                 .filter(|d| {
                     let is_local = !d.source_id().is_registry();
-                    // Dev/build dependencies can lead to circular dependencies (in combination with normal deps),
-                    // so ignore dev deps on local crates, as it's not helpful anyway
+                    // Dev/build dependencies can lead to circular dependencies (in combination with
+                    // normal deps), so ignore dev deps on local crates, as it's
+                    // not helpful anyway
                     d.kind() == DepKind::Normal || (dev_dependencies && !is_local)
                 })
                 .filter(|d| {
@@ -224,7 +221,8 @@ fn build_graph<'a>(
     Ok(graph)
 }
 
-/// Modifies the given config so that directory source replacements are removed, and references to them as well.
+/// Modifies the given config so that directory source replacements are removed,
+/// and references to them as well.
 ///
 /// - For information on directory sources, [see here](https://doc.rust-lang.org/cargo/reference/source-replacement.html#directory-sources)
 /// - For information on source replacement, [see here](https://doc.rust-lang.org/cargo/reference/config.html#source)
@@ -232,10 +230,11 @@ fn prune_directory_source_replacements(
     config: &mut HashMap<String, ConfigValue>,
 ) -> CargoResult<()> {
     if let Some(ConfigValue::Table(source_config, _)) = config.get_mut("source") {
-        // To do the pruning, first, generate a graph of registry sources, where the node are the sources, and there is an edge if a source
-        //  defines that it is replaced with another source.
-        // Then, find the directory sources, and traverse the graph in reverse to find all the sources that are directory sources, or reference them
-        //  directly or indirectly.
+        // To do the pruning, first, generate a graph of registry sources, where the
+        // node are the sources, and there is an edge if a source  defines that
+        // it is replaced with another source. Then, find the directory sources,
+        // and traverse the graph in reverse to find all the sources that are directory
+        // sources, or reference them  directly or indirectly.
         // Then, the found sources can be removed from the config.
         let mut source_graph = petgraph::Graph::<String, ()>::new();
         let nodes = source_config
@@ -326,8 +325,9 @@ impl Repo {
 
         // how it used to be; can't find it anywhere anymore
         // let features_set =
-        //     Method::split_features(&[cargo_opts.features.clone().unwrap_or_else(String::new)]);
-        // let features_list = features_set.iter().map(|i| i.as_str().to_owned()).collect();
+        //     Method::split_features(&[cargo_opts.features.clone().
+        // unwrap_or_else(String::new)]); let features_list =
+        // features_set.iter().map(|i| i.as_str().to_owned()).collect();
         let features_list = cargo_opts
             .features
             .clone()
@@ -662,24 +662,27 @@ impl Repo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use cargo::util::context::Definition;
+
+    use super::*;
 
     #[test]
     fn test_prune_directory_source_replacement() {
         // Test that:
         // {
-        //     "source": {"crates-io": {"replace-with": my-vendor-source (from --config cli option)},
-        //                "another-source": {"registry": path/to/registry (from --config cli option)},
-        //                "my-vendor-source": {"directory": vendor (from --config cli option)}},
+        //     "source": {"crates-io": {"replace-with": my-vendor-source (from --config
+        // cli option)},                "another-source": {"registry":
+        // path/to/registry (from --config cli option)},
+        // "my-vendor-source": {"directory": vendor (from --config cli option)}},
         // }
         // becomes:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)}},
-        // }
+        //     "source": {"another-source": {"registry": path/to/registry (from --config
+        // cli option)}}, }
         //
-        // the "my-vendor-source" should get removed because it's a directory source replacement,
-        // and "crates-io" should get removed because it referenced the removed "my-vendor-source"
+        // the "my-vendor-source" should get removed because it's a directory source
+        // replacement, and "crates-io" should get removed because it referenced
+        // the removed "my-vendor-source"
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),
@@ -747,19 +750,21 @@ mod tests {
     fn test_prune_directory_source_replacement_nested() {
         // Test that:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)},
-        //                "nested-vendor-source": {"directory": vendor (from --config cli option)},
-        //                "my-vendor-source": {"replace-with": nested-vendor-source (from --config cli option)},
-        //                "crates-io": {"replace-with": my-vendor-source (from --config cli option)}},
-        // }
+        //     "source": {"another-source": {"registry": path/to/registry (from --config
+        // cli option)},                "nested-vendor-source": {"directory":
+        // vendor (from --config cli option)},
+        // "my-vendor-source": {"replace-with": nested-vendor-source (from --config cli
+        // option)},                "crates-io": {"replace-with":
+        // my-vendor-source (from --config cli option)}}, }
         // becomes:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config cli option)}},
-        // }
+        //     "source": {"another-source": {"registry": path/to/registry (from --config
+        // cli option)}}, }
         //
-        // the "nested-vendor-source" should get removed because it's a directory source replacement,
-        // and "my-vendor-source" should get removed because it referenced the removed "nested-vendor-source"
-        // and "crates-io" should get removed because it referenced the removed "my-vendor-source"
+        // the "nested-vendor-source" should get removed because it's a directory source
+        // replacement, and "my-vendor-source" should get removed because it
+        // referenced the removed "nested-vendor-source" and "crates-io" should
+        // get removed because it referenced the removed "my-vendor-source"
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),

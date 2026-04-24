@@ -31,6 +31,14 @@
             github.ci.buildOutputs = [ ".#ci.${projectName}" ];
             just.importPaths = [ "justfile.custom.just" ];
             just.rules.watch.enable = false;
+            toolchain.components = [
+              "rustc"
+              "cargo"
+              "clippy"
+              "rust-analyzer"
+              "rust-src"
+              "rustfmt"
+            ];
           };
         };
 
@@ -97,12 +105,31 @@
               cargoArtifacts = workspaceDeps;
             };
 
+            cargoFmt = craneLib.cargoFmt { };
+
             cargo-crev = craneLib.buildPackage {
               cargoArtifacts = workspaceDeps;
               cargoExtraArgs = "--bin cargo-crev";
             };
           }
         );
+
+        treefmt =
+          pkgs.runCommand "treefmt-check"
+            {
+              nativeBuildInputs = [
+                pkgs.treefmt
+                pkgs.nixfmt-rfc-style
+                pkgs.rustfmt
+              ];
+              src = self;
+            }
+            ''
+              cp -r $src work && chmod -R u+w work
+              cd work
+              treefmt --ci
+              touch $out
+            '';
 
         cargo-crev-container = pkgs.dockerTools.buildLayeredImage {
           name = projectName;
@@ -114,16 +141,9 @@
       in
       {
         packages = {
+          treefmt = treefmt;
           default = multiBuild.cargo-crev;
           cargo-crev = multiBuild.cargo-crev;
-
-          ci = {
-            cargo-crev = multiBuild.cargo-crev;
-            workspace = multiBuild.workspace;
-            workspaceDeps = multiBuild.workspaceDeps;
-            clippy = multiBuild.clippy;
-            tests = multiBuild.tests;
-          };
 
           container = {
             cargo-crev = cargo-crev-container;

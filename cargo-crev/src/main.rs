@@ -1,5 +1,4 @@
 //! `cargo-crev` - `crev` ecosystem fronted for Rusti (`cargo` integration)
-//!
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 #![type_length_limit = "1932159"]
@@ -7,21 +6,23 @@
     feature = "documentation",
     doc = "See [user documentation module](./doc/user/index.html)."
 )]
-use crate::prelude::*;
-use crev_data::{SOURCE_CRATES_IO, UnlockedId, proof::ContentExt};
+use std::collections::{HashMap, HashSet};
+use std::ffi::OsString;
+use std::fmt::Write as _;
+use std::io::{self, BufRead, Write as _};
+use std::panic;
+use std::path::PathBuf;
+
+use crev_data::proof::ContentExt;
+use crev_data::{SOURCE_CRATES_IO, UnlockedId};
 use crev_lib::id::LockedId;
-use crev_lib::{self, local::Local};
+use crev_lib::local::Local;
+use crev_lib::{self};
 use log::info;
 use opts::ReviewCrateSelector;
-use std::{
-    collections::{HashMap, HashSet},
-    ffi::OsString,
-    fmt::Write as _,
-    io::{self, BufRead, Write as _},
-    panic,
-    path::PathBuf,
-};
 use structopt::StructOpt;
+
+use crate::prelude::*;
 
 #[cfg(feature = "documentation")]
 /// Documentation
@@ -44,15 +45,14 @@ mod wot;
 #[cfg(target_os = "macos")]
 mod creds;
 
-use crate::{
-    repo::Repo,
-    review::{create_review_proof, list_reviews},
-    shared::*,
-};
 use crev_data::{Id, TrustLevel, proof};
 use crev_lib::{TrustProofType, Warning};
 use crev_wot::{PkgVersionReviewId, ProofDB, TrustSet, UrlOfId};
 use log::debug;
+
+use crate::repo::Repo;
+use crate::review::{create_review_proof, list_reviews};
+use crate::shared::*;
 
 /// Additional functions to extend `Local` by behaviors
 /// that are `cargo-crev` specific, like printing
@@ -827,7 +827,8 @@ fn ai_review_loop(args: &opts::AiReviewLoop) -> Result<CommandExitStatus> {
 
     eprintln!("Signing script: target/crev/sign-all.sh");
 
-    // Preparation iteration: update WoT, capture verify output, clean up sign-all.sh
+    // Preparation iteration: update WoT, capture verify output, clean up
+    // sign-all.sh
     eprintln!("=== Preparation ===");
     {
         let prep_prompt = include_str!(concat!(
@@ -955,7 +956,8 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             }
         }
 
-        // if an old one couldn't be reconfigured automatically, help how to do it manually
+        // if an old one couldn't be reconfigured automatically, help how to do it
+        // manually
         if let Some(example) = existing_usable.first() {
             if local
                 .get_current_userid()

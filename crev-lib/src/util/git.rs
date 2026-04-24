@@ -1,7 +1,9 @@
-use crate::Result;
+use std::path::Path;
+
 use git2::{ErrorClass, ErrorCode};
 use log::debug;
-use std::path::Path;
+
+use crate::Result;
 
 #[derive(PartialEq, Debug, Default)]
 pub struct GitUrlComponents {

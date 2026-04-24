@@ -1,10 +1,13 @@
-use std::{io, io::Write as _};
+use std::io;
+use std::io::Write as _;
 
-use crate::{opts::WotOpts, term, url_to_status_str};
 use ::term::color::{BLUE, GREEN, RED, YELLOW};
 use anyhow::Result;
 use crev_wot::trust_set::TraverseLogItem::{Edge, Node};
 use itertools::Itertools;
+
+use crate::opts::WotOpts;
+use crate::{term, url_to_status_str};
 
 pub fn print_log(wot_opts: WotOpts) -> Result<()> {
     let mut term = term::Term::new();

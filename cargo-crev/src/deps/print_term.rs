@@ -1,9 +1,11 @@
 // Functions related to writing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
+use std::io::Write;
+use std::{io, write, writeln};
+
 use super::*;
 use crate::term::{self, Term};
-use std::{io, io::Write, write, writeln};
 
 const CRATE_VERIFY_CRATE_COLUMN_TITLE: &str = "crate";
 const CRATE_VERIFY_VERSION_COLUMN_TITLE: &str = "version";
@@ -41,11 +43,7 @@ impl VerifyOutputColumnWidths {
         } else {
             version
         };
-        let latest_trusted = if human {
-            TRUNCATED_LATEST_T_WIDTH
-        } else {
-            12
-        };
+        let latest_trusted = if human { TRUNCATED_LATEST_T_WIDTH } else { 12 };
 
         Self {
             name,

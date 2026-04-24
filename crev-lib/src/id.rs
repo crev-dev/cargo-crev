@@ -1,15 +1,18 @@
-//! `LockedId` is for you, the local crev user. `Id` is for identifying other users.
+//! `LockedId` is for you, the local crev user. `Id` is for identifying other
+//! users.
 
-use crate::{Error, Result};
+use std::io::BufReader;
+use std::path::Path;
+use std::{self, fmt};
+
 use aes_siv::KeyInit;
 use argon2::{self, Config};
-use crev_common::{
-    rand::random_vec,
-    serde::{as_base64, from_base64},
-};
+use crev_common::rand::random_vec;
+use crev_common::serde::{as_base64, from_base64};
 use crev_data::id::{PublicId, UnlockedId};
 use serde::{Deserialize, Serialize};
-use std::{self, fmt, io::BufReader, path::Path};
+
+use crate::{Error, Result};
 
 const CURRENT_LOCKED_ID_SERIALIZATION_VERSION: i64 = -1;
 
@@ -101,7 +104,8 @@ impl LockedId {
 
         let seal_nonce = random_vec(32);
         let sealed_secret_key = {
-            use aes_siv::{aead::generic_array::GenericArray, siv::IV_SIZE};
+            use aes_siv::aead::generic_array::GenericArray;
+            use aes_siv::siv::IV_SIZE;
 
             let secret = unlocked_id.keypair.secret.as_bytes();
             let mut siv = aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&pwhash));
@@ -131,7 +135,8 @@ impl LockedId {
         })
     }
 
-    /// Extract only the public identity part from all data. Useful for displaying user's identity.
+    /// Extract only the public identity part from all data. Useful for
+    /// displaying user's identity.
     #[must_use]
     pub fn to_public_id(&self) -> PublicId {
         PublicId::new_from_pubkey(self.public_key.clone(), self.url.clone())
@@ -201,7 +206,9 @@ impl LockedId {
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
 
             let secret_key = {
-                use aes_siv::{Tag, aead::generic_array::GenericArray, siv::IV_SIZE};
+                use aes_siv::Tag;
+                use aes_siv::aead::generic_array::GenericArray;
+                use aes_siv::siv::IV_SIZE;
 
                 let mut siv =
                     aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&passphrase_hash));
@@ -227,13 +234,15 @@ impl LockedId {
         }
     }
 
-    /// Used for temporary/default identity, but obviously not very secure to store
+    /// Used for temporary/default identity, but obviously not very secure to
+    /// store
     #[must_use]
     pub fn has_no_passphrase(&self) -> bool {
         self.passphrase_config.iterations == 1 && self.to_unlocked("").is_ok()
     }
 
-    /// Config for empty passphrase. User chose no security, so they're getting none.
+    /// Config for empty passphrase. User chose no security, so they're getting
+    /// none.
     fn weak_passphrase_config() -> Config<'static> {
         Config {
             variant: argon2::Variant::Argon2id,

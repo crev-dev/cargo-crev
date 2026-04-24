@@ -1,15 +1,14 @@
-use crate::{
-    Repo,
-    deps::{
-        AccumulativeCrateDetails,
-        scan::{self, RequiredDetails},
-    },
-    opts::{CrateSelector, CrateVerify, CrateVerifyCommon, WotOpts},
-};
+use std::collections::HashSet;
+use std::io;
+
 use anyhow::{Result, bail};
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, io};
+
+use crate::Repo;
+use crate::deps::AccumulativeCrateDetails;
+use crate::deps::scan::{self, RequiredDetails};
+use crate::opts::{CrateSelector, CrateVerify, CrateVerifyCommon, WotOpts};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

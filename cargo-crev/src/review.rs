@@ -1,19 +1,17 @@
-use crate::{
-    edit,
-    opts::CargoOpts,
-    opts::{self, ReviewCrateSelector},
-    prelude::*,
-    term, url_to_status_str,
-};
-use anyhow::format_err;
-use crev_data::{
-    Rating, SOURCE_CRATES_IO,
-    proof::{self, ContentExt},
-};
-use crev_lib::{self, TrustProofType, local::Local};
-use std::{default::Default, fmt::Write};
+use std::default::Default;
+use std::fmt::Write;
 
-use crate::{repo::Repo, shared::*};
+use anyhow::format_err;
+use crev_data::proof::{self, ContentExt};
+use crev_data::{Rating, SOURCE_CRATES_IO};
+use crev_lib::local::Local;
+use crev_lib::{self, TrustProofType};
+
+use crate::opts::{self, CargoOpts, ReviewCrateSelector};
+use crate::prelude::*;
+use crate::repo::Repo;
+use crate::shared::*;
+use crate::{edit, term, url_to_status_str};
 
 /// Review a crate
 ///
@@ -40,22 +38,25 @@ pub fn create_review_proof(
     let crate_root = crate_.root();
     let effective_crate_version = crate_.version();
 
-    // We check the working directory because of how check_package_clean_state modifies the
-    // contents of the crate root, moving everything out of the directory.
-    // Therefore, it’s acceptable to run from the crate root directory or from outside the crate
-    // root directory, but not from a subdirectory of the crate root, because it may fail or
-    // misbehave on some platforms and is likely to exhibit confusing behaviour elsewhere.
+    // We check the working directory because of how check_package_clean_state
+    // modifies the contents of the crate root, moving everything out of the
+    // directory. Therefore, it’s acceptable to run from the crate root
+    // directory or from outside the crate root directory, but not from a
+    // subdirectory of the crate root, because it may fail or misbehave on some
+    // platforms and is likely to exhibit confusing behaviour elsewhere.
     //
-    // (While talking of problematic working directories: the "{crate_root}.crev.reviewed"
-    // directory would be bad, but is not trivially (in lines of code) to detect since
-    // OsStr::starts_with doesn’t exist; and symlinks can probably wreak havoc. But neither of
-    // these are likely to be encountered accidentally, so they’re not worth worrying about.)
+    // (While talking of problematic working directories: the
+    // "{crate_root}.crev.reviewed" directory would be bad, but is not trivially
+    // (in lines of code) to detect since OsStr::starts_with doesn’t exist; and
+    // symlinks can probably wreak havoc. But neither of these are likely to be
+    // encountered accidentally, so they’re not worth worrying about.)
     //
     // FIXME: in goto shells, cwd has already been changed to the GOTO_ORIGINAL_DIR,
-    // but we should actually be checking the process’s original cwd, either instead of or as well
-    // as, as that’s the cwd from the *user’s* perspective. As it stands, you could easily goto a
-    // crate, switch to a subdirectory, review, and either have fs errors (Windows, probably) or be
-    // returned to a deleted directory (most other OSes).
+    // but we should actually be checking the process’s original cwd, either instead
+    // of or as well as, as that’s the cwd from the *user’s* perspective. As it
+    // stands, you could easily goto a crate, switch to a subdirectory, review,
+    // and either have fs errors (Windows, probably) or be returned to a deleted
+    // directory (most other OSes).
     let cwd = std::env::current_dir()?;
     assert!(
         !cwd.starts_with(crate_root) || cwd == crate_root,

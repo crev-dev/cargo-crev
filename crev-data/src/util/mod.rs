@@ -1,5 +1,6 @@
-use rand::{self, Rng};
 use std::fmt;
+
+use rand::{self, Rng};
 
 #[must_use]
 pub fn random_id_str() -> String {

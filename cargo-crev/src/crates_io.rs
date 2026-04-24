@@ -1,11 +1,13 @@
-use crate::{deps::DownloadsStats, prelude::*};
-use serde::{Serialize, de::DeserializeOwned};
-use std::{
-    fs,
-    io::Read,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::fs;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
+use crate::deps::DownloadsStats;
+use crate::prelude::*;
 
 pub struct Client {
     client: crates_io_api::SyncClient,

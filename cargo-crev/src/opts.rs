@@ -1,6 +1,8 @@
+use std::ffi::OsString;
+use std::path::PathBuf;
+
 use anyhow::{Result, bail};
 use crev_data::{Level, Version};
-use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 use term::color;
 
@@ -135,13 +137,15 @@ impl CargoOpts {
 #[derive(Debug, StructOpt, Clone)]
 pub struct IdNew {
     #[structopt(long = "url")]
-    /// Publicly-visible HTTPS URL of a git repository to be associated with the new Id
+    /// Publicly-visible HTTPS URL of a git repository to be associated with the
+    /// new Id
     pub url: Option<String>,
     #[structopt(long = "github-username")]
     /// Github username (instead of --url)
     pub github_username: Option<String>,
     #[structopt(long = "https-push")]
-    /// Use public HTTP URL for both pulling and pushing. Otherwise SSH is used for push
+    /// Use public HTTP URL for both pulling and pushing. Otherwise SSH is used
+    /// for push
     pub use_https_push: bool,
 }
 
@@ -159,22 +163,28 @@ pub struct TrustDistanceParams {
     pub direct: bool,
 
     #[structopt(long = "depth", default_value = "20")]
-    /// [trust-graph-traversal] Maximum allowed distance from the root identity when traversing trust graph
+    /// [trust-graph-traversal] Maximum allowed distance from the root identity
+    /// when traversing trust graph
     pub depth: u64,
 
-    /// [trust-graph-traversal] Cost of traversing trust graph edge of high trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of high
+    /// trust level
     #[structopt(long = "high-cost", default_value = "0")]
     pub high_cost: u64,
-    /// [trust-graph-traversal] Cost of traversing trust graph edge of medium trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of medium
+    /// trust level
     #[structopt(long = "medium-cost", default_value = "1")]
     pub medium_cost: u64,
-    /// [trust-graph-traversal] Cost of traversing trust graph edge of low trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of low trust
+    /// level
     #[structopt(long = "low-cost", default_value = "5")]
     pub low_cost: u64,
-    /// [trust-graph-traversal] Cost of traversing trust graph edge of none trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of none
+    /// trust level
     #[structopt(long = "none-cost", default_value = "21")]
     pub none_cost: u64,
-    /// [trust-graph-traversal] Cost of traversing trust graph edge of distrust trust level
+    /// [trust-graph-traversal] Cost of traversing trust graph edge of distrust
+    /// trust level
     #[structopt(long = "distrust-cost", default_value = "21")]
     pub distrust_cost: u64,
 }
@@ -282,7 +292,8 @@ pub struct WotOpts {
     pub trust_params: TrustDistanceParams,
 
     #[structopt(long = "for-id")]
-    /// Root identity to calculate the Web of Trust for [default: current user id]
+    /// Root identity to calculate the Web of Trust for [default: current user
+    /// id]
     pub for_id: Option<String>,
 }
 
@@ -446,7 +457,8 @@ pub struct CrateVerify {
 
     #[structopt(long = "human-metrics")]
     /// Human-friendly output: truncate long columns, use M suffix for large
-    /// download counts. Set to false for machine-parseable output [default: true]
+    /// download counts. Set to false for machine-parseable output [default:
+    /// true]
     pub human_metrics: Option<bool>,
 }
 
@@ -477,7 +489,8 @@ pub struct TrustUrls {
     pub public_ids_or_urls: Vec<String>,
 
     /// Shortcut for setting trust level without editing.
-    /// Possible values are: "none" or "untrust", "low", "medium", "high" and "distrust".
+    /// Possible values are: "none" or "untrust", "low", "medium", "high" and
+    /// "distrust".
     #[structopt(long = "level")]
     pub level: Option<crev_data::TrustLevel>,
 
@@ -635,7 +648,8 @@ pub struct ReviewCrateSelector {
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct CrateOpen {
-    /// Shell command to execute with crate directory as an argument. Eg. "code --wait -n" for VSCode
+    /// Shell command to execute with crate directory as an argument. Eg. "code
+    /// --wait -n" for VSCode
     #[structopt(long = "cmd")]
     pub cmd: Option<String>,
 
@@ -1056,7 +1070,8 @@ pub enum Command {
 
     /// Shortcut for `crate open`
     ///
-    /// Crev will remember the last crate you've opened and default `crev review` to the same crate.
+    /// Crev will remember the last crate you've opened and default `crev
+    /// review` to the same crate.
     #[structopt(name = "open")]
     Open(CrateOpen),
 
@@ -1155,7 +1170,8 @@ User documentation: https://docs.rs/crate/cargo-crev
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(about = "Distributed code review system")]
-// without this the name will be `cargo-crev-crev` because the `crev` main command will be automatically appended
+// without this the name will be `cargo-crev-crev` because the `crev` main command will be
+// automatically appended
 #[structopt(bin_name = "cargo")]
 #[structopt(global_setting = structopt::clap::AppSettings::ColoredHelp)]
 #[structopt(global_setting = structopt::clap::AppSettings::InferSubcommands)]

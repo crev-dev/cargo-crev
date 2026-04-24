@@ -4,10 +4,8 @@
 //! Eg. when user reviews a package we record details
 //! and  we  can warn them if they attempt to create
 //! a proof review which they haven't previously reviewed.
-use crev_common::{
-    self,
-    serde::{as_rfc3339_fixed, from_rfc3339_fixed},
-};
+use crev_common::serde::{as_rfc3339_fixed, from_rfc3339_fixed};
+use crev_common::{self};
 use crev_data::Version;
 use serde::{Deserialize, Serialize};
 

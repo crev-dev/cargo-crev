@@ -1,7 +1,5 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Move dir content from `from` dir to `to` dir
 pub fn move_dir_content(from: &Path, to: &Path) -> std::io::Result<()> {

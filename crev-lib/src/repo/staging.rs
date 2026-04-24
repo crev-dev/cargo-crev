@@ -1,12 +1,12 @@
-use crate::{Error, Result};
+use std::collections::HashMap;
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
 use crev_data::proof;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fs,
-    io::Write,
-    path::{Path, PathBuf},
-};
+
+use crate::{Error, Result};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StagingPathInfo {

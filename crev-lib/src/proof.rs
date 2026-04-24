@@ -1,6 +1,8 @@
-use crate::{ProofStore, TrustLevel};
-use crev_data::proof::{self, CommonOps};
 use std::path::PathBuf;
+
+use crev_data::proof::{self, CommonOps};
+
+use crate::{ProofStore, TrustLevel};
 
 fn proof_store_names(proof: &proof::Proof) -> (&str, Option<&str>) {
     match proof.kind() {
