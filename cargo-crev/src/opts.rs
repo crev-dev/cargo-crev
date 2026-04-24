@@ -399,7 +399,7 @@ Column description:
 - downloads  - Download counts from crates.io for the specific version and all versions
 - loc        - Lines of Rust code
 - lpidx      - "left-pad" index (ratio of downloads to lines of code)
-- geiger     - Geiger score: number of `unsafe` lines
+- geiger     - Geiger score: number of `unsafe` lines (requires "geiger" build feature)
 - flgs       - Flags for specific types of packages
   - CB         - Custom Build (runs arbitrary code at build time)
   - UM         - Unmaintained crate
