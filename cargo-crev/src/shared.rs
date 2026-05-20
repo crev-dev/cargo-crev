@@ -52,8 +52,17 @@ impl VcsInfoJson {
 
         if path.exists() {
             let txt = std::fs::read_to_string(&path)?;
-            let info: VcsInfoJson = serde_json::from_str(&txt)?;
-            Ok(Some(info))
+            match serde_json::from_str(&txt) {
+                Ok(info) => Ok(Some(info)),
+                Err(err) => {
+                    eprintln!(
+                        "Warning: ignoring unparsable {} at {}: {err}",
+                        VCS_INFO_JSON_FILE,
+                        path.display()
+                    );
+                    Ok(None)
+                }
+            }
         } else {
             Ok(None)
         }
@@ -95,6 +104,16 @@ mod tests {
         .unwrap();
 
         assert_eq!(vcs_info_to_revision_string(Some(vcs)), "abc");
+    }
+
+    #[test]
+    fn vcs_info_read_ignores_parse_errors() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(VCS_INFO_JSON_FILE), "invalid json").unwrap();
+
+        let vcs = VcsInfoJson::read_from_crate_dir(dir.path()).unwrap();
+
+        assert!(vcs.is_none());
     }
 }
 
