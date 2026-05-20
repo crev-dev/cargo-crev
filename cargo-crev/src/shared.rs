@@ -42,9 +42,8 @@ pub fn vcs_info_to_revision_string(vcs: Option<VcsInfoJson>) -> String {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub enum VcsInfoJsonGit {
-    #[serde(rename = "sha1")]
-    Sha1(String),
+pub struct VcsInfoJsonGit {
+    sha1: String,
 }
 
 impl VcsInfoJson {
@@ -60,8 +59,42 @@ impl VcsInfoJson {
         }
     }
     fn get_git_revision(&self) -> String {
-        let VcsInfoJsonGit::Sha1(ref s) = self.git;
-        s.to_string()
+        self.git.sha1.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vcs_info_parses_sha1() {
+        let vcs: VcsInfoJson = serde_json::from_str(
+            r#"{
+                "git": {
+                    "sha1": "abc"
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(vcs_info_to_revision_string(Some(vcs)), "abc");
+    }
+
+    #[test]
+    fn vcs_info_parses_dirty_and_path_in_vcs() {
+        let vcs: VcsInfoJson = serde_json::from_str(
+            r#"{
+                "git": {
+                    "sha1": "abc",
+                    "dirty": true
+                },
+                "path_in_vcs": ""
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(vcs_info_to_revision_string(Some(vcs)), "abc");
     }
 }
 
