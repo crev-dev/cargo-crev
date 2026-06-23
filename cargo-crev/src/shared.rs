@@ -319,6 +319,7 @@ pub fn crate_open(
     crate_sel: &ReviewCrateSelector,
     cmd: Option<String>,
     cmd_save: bool,
+    print_path: bool,
 ) -> Result<()> {
     let local = Local::auto_create_or_open()?;
     let repo = Repo::auto_open_cwd_default()?;
@@ -349,6 +350,11 @@ pub fn crate_open(
     // (like cargo check) could automatically start running crate's potentially
     // malicious build script or proc macros.
     let dest_dir = local.sanitized_crate_copy(SOURCE_CRATES_IO, &name, version, src_dir)?;
+
+    if print_path {
+        println!("{}", dest_dir.display());
+        return Ok(());
+    }
 
     let open_cmd = match cmd {
         Some(cmd) => cmd,
