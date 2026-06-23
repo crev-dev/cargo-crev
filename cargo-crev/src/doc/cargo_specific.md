@@ -19,7 +19,7 @@ To address this problem, `cargo-crev` allows reasoning about trustworthinnes of
 crates by the reputation of their authors.
 
 Every crev identity can create and maintain a "known owners" list. Use `cargo
-crev config edit known` command to edit it. Each line is crates.io username or
+crev repo edit known` command to edit it. Each line is crates.io username or
 group name that will be considered somewhat trustworthy.
 
 During dependency verification a `--skip-known-owners` argument can be used to

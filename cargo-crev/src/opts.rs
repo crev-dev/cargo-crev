@@ -439,7 +439,7 @@ pub struct CrateVerify {
     pub skip_verified: bool,
 
     #[structopt(long = "skip-known-owners")]
-    /// Skip crate from known owners (use `edit known` to edit the list)
+    /// Skip crate from known owners (use `cargo crev repo edit known` to edit the list)
     pub skip_known_owners: bool,
 
     #[structopt(long = "skip-indirect")]
@@ -623,7 +623,7 @@ pub enum RepoEdit {
     #[structopt(name = "readme")]
     Readme,
 
-    /// Edit your KNOWN_CRATE_OWNERS.md file
+    /// Edit your known_cargo_owners.txt file
     #[structopt(name = "known")]
     Known,
 }
