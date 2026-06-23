@@ -657,6 +657,10 @@ pub struct CrateOpen {
     #[structopt(long = "cmd-save")]
     pub cmd_save: bool,
 
+    /// Print the extracted crate path to stdout instead of running an editor
+    #[structopt(long = "print-path")]
+    pub print_path: bool,
+
     #[structopt(flatten)]
     pub common: ReviewCrateSelector,
 }
