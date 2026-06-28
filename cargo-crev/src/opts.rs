@@ -829,7 +829,7 @@ pub enum Crate {
     #[structopt(name = "goto")]
     Goto(CrateSelector),
 
-    /// Open the source code of a crate
+    /// Start a review by opening source code of a crate
     #[structopt(name = "open")]
     Open(CrateOpen),
 
@@ -859,7 +859,7 @@ pub enum Crate {
     #[structopt(name = "digest")]
     Digest(CrateDigest),
 
-    /// Verify dependencies
+    /// Check which dependencies have reviews
     #[structopt(name = "verify")]
     Verify(CrateVerifyFull),
 
@@ -876,15 +876,17 @@ pub enum Crate {
         crate_: CrateSelector,
     },
 
-    /// Review a crate (code review, security advisory, flag issues)
+    /// Finalize a code review, security advisory, flag issues
+    ///
+    /// You can omit crate name if you've called `open` recently.
     #[structopt(name = "review")]
     Review(CrateReview),
 
-    /// Unreview (overwrite with an null review)
+    /// Undo an old review by replacing it with a null review
     #[structopt(name = "unreview")]
     Unreview(CrateReview),
 
-    /// Search crates on crates.io sorting by review count
+    /// Find crates on crates.io sorting by review count
     #[structopt(name = "search")]
     Search(CrateSearch),
 
@@ -971,7 +973,7 @@ pub struct ProofReissue {
 #[derive(Debug, StructOpt, Clone)]
 /// Local Proof Repository
 pub enum Repo {
-    /// Publish to remote repository
+    /// Upload your reviews to your crev-proofs remote repository
     #[structopt(name = "publish")]
     Publish,
 
@@ -1045,55 +1047,65 @@ pub enum Command {
     #[structopt(name = "crate")]
     Crate(Crate),
 
-    /// Id (own and of other users)
+    /// Manage identities (your own and of other users)
     #[structopt(name = "id")]
     Id(Id),
 
-    /// Find a proof in the proof repo
+    /// Find a proof (review, trust) in the proof repo
     #[structopt(name = "proof")]
     Proof(Proof),
 
-    /// Proof Repository
+    /// Proof Repository management (fetch and publish reviews, get dir)
     #[structopt(name = "repo")]
     Repo(Repo),
 
-    /// Add a Trust proof by an Id or a URL
+    /// Add a Trust proof (trust a reviewer) by an Id or a URL
     Trust(TrustUrls),
 
-    /// Web of Trust
+    /// Debug web-of-trust (reviewers trusted indirectly)
     #[structopt(name = "wot")]
     Wot(Wot),
 
+    /// Start a shell in source directory of a crate under review
+    ///
     /// Shortcut for `crate goto`
     #[structopt(name = "goto")]
     Goto(CrateSelector),
 
-    /// Shortcut for `crate open`
+    /// Start a review by opening source code of a crate
     ///
     /// Crev will remember the last crate you've opened and default `crev
     /// review` to the same crate.
     #[structopt(name = "open")]
     Open(CrateOpen),
 
+    /// Upload your reviews to your crev-proofs remote repository
+    ///
     /// Shortcut for `repo publish`
     #[structopt(name = "publish")]
     Publish,
 
-    /// Shortcut for `crate review`
+    /// Finalize a code review, security advisory, flag issues
     ///
-    /// You can omit crate name if you're called `open` recently.
+    /// You can omit crate name if you've called `open` recently.
+    ///
+    /// Shortcut for `crate review`
     #[structopt(name = "review")]
     Review(CrateReview),
 
+    /// Update data from online sources (proof repositories, crates.io)
+    ///
     /// Shortcut for `repo update`
     #[structopt(name = "update")]
     Update(Update),
 
+    /// Check which dependencies have reviews
+    ///
     /// Shortcut for `crate verify`
     #[structopt(name = "verify")]
     Verify(CrateVerifyFull),
 
-    /// AI-related commands
+    /// Helpers for LLM-powered reviews
     #[structopt(name = "ai")]
     Ai(Ai),
 }
