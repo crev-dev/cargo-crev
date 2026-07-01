@@ -328,16 +328,21 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         print_term::VerifyOutputColumnWidths::from_pkgsids(scanner.all_crates_ids.iter(), human);
 
     let trust_set = scanner.trust_set.clone();
+    let json = args.json;
 
-    let events = scanner.run(&RequiredDetails {
-        geiger: args.columns.show_geiger(),
-        owners: args.columns.show_owners() || args.skip_known_owners,
-        downloads: args.columns.show_downloads() || args.columns.show_leftpad_index(),
-        loc: args.columns.show_loc() || args.columns.show_leftpad_index(),
+    let events = scanner.run(&if json {
+        RequiredDetails::none()
+    } else {
+        RequiredDetails {
+            geiger: args.columns.show_geiger(),
+            owners: args.columns.show_owners() || args.skip_known_owners,
+            downloads: args.columns.show_downloads() || args.columns.show_leftpad_index(),
+            loc: args.columns.show_loc() || args.columns.show_leftpad_index(),
+        }
     });
 
     // print header, only after `scanner` had a chance to download everything
-    if term.is_interactive() || args.force_print_header {
+    if !json && (term.is_interactive() || args.force_print_header) {
         print_term::print_header(&mut term, &args.columns, column_widths)?;
     }
 
@@ -347,13 +352,17 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
         .filter(|stats| !args.skip_known_owners || !crate_has_known_owner(stats))
         .filter(|stats| !args.skip_verified || !stats.details.accumulative.verified)
         .map(|stats| {
-            print_term::print_dep(
-                &stats,
-                &mut term,
-                &args.columns,
-                args.recursive,
-                column_widths,
-            )?;
+            if json {
+                print_term::print_json_line(&stats)?;
+            } else {
+                print_term::print_dep(
+                    &stats,
+                    &mut term,
+                    &args.columns,
+                    args.recursive,
+                    column_widths,
+                )?;
+            }
             Ok(stats)
         })
         .collect::<Result<_>>()?;

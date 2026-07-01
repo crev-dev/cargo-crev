@@ -1,11 +1,14 @@
 // Functions related to writing dependencies in the standard
 // terminal (not in the context of a real terminal application)
 
+use super::*;
+
+use cargo::core::SourceId;
+use crate::term::{self, Term};
+use crev_lib::VerificationStatus;
+use serde::Serialize;
 use std::io::Write;
 use std::{io, write, writeln};
-
-use super::*;
-use crate::term::{self, Term};
 
 const CRATE_VERIFY_CRATE_COLUMN_TITLE: &str = "crate";
 const CRATE_VERIFY_VERSION_COLUMN_TITLE: &str = "version";
@@ -340,5 +343,28 @@ pub fn print_dep(
     }
 
     writeln!(io::stdout())?;
+    Ok(())
+}
+
+/// Minimal JSON-line record for `cargo crev verify --json`
+#[derive(Serialize)]
+struct VerifyJsonLine<'a> {
+    name: &'a str,
+    version: &'a Version,
+    source: &'a SourceId,
+    status: &'a str,
+}
+
+/// Print one JSONL entry for the given crate stats.
+pub fn print_json_line(stats: &CrateStats) -> Result<()> {
+    let details = stats.details();
+    let mut out = io::stdout().lock();
+    serde_json::to_writer(&mut out, &VerifyJsonLine {
+        name: stats.info.id.name().as_str(),
+        version: &stats.info.id.version(),
+        source: &stats.info.id.source_id(),
+        status: &details.accumulative.trust.to_string(),
+    })?;
+    writeln!(out)?;
     Ok(())
 }

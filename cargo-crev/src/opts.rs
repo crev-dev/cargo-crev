@@ -460,6 +460,11 @@ pub struct CrateVerify {
     /// download counts. Set to false for machine-parseable output [default:
     /// true]
     pub human_metrics: Option<bool>,
+
+    #[structopt(long = "json")]
+    /// Output in JSONL format (one JSON object per line) instead of ASCII table.
+    /// Only a minimal subset of fields is included.
+    pub json: bool,
 }
 
 #[derive(Debug, StructOpt, Clone)]
