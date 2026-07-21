@@ -439,7 +439,8 @@ pub struct CrateVerify {
     pub skip_verified: bool,
 
     #[structopt(long = "skip-known-owners")]
-    /// Skip crate from known owners (use `cargo crev repo edit known` to edit the list)
+    /// Skip crate from known owners (use `cargo crev repo edit known` to edit
+    /// the list)
     pub skip_known_owners: bool,
 
     #[structopt(long = "skip-indirect")]
@@ -462,8 +463,8 @@ pub struct CrateVerify {
     pub human_metrics: Option<bool>,
 
     #[structopt(long = "json")]
-    /// Output in JSONL format (one JSON object per line) instead of ASCII table.
-    /// Only a minimal subset of fields is included.
+    /// Output in JSONL format (one JSON object per line) instead of ASCII
+    /// table. Only a minimal subset of fields is included.
     pub json: bool,
 }
 

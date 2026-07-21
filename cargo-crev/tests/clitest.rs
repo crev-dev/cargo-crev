@@ -37,38 +37,24 @@ version = "555.666.777"
 
     // Run verify --json with an isolated crev home
     let c = Cli::new();
-    let out = c.run_with_cwd(
-        &["verify", "--json"],
-        "",
-        project_path,
-    );
+    let out = c.run_with_cwd(&["verify", "--json"], "", project_path);
 
     // The command may exit non-zero (no trusted reviews) but stdout should
     // still contain valid JSONL.
     let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(!stdout.is_empty(), "expected JSONL output\nstderr={}",
-        String::from_utf8_lossy(&out.stderr));
+    assert!(
+        !stdout.is_empty(),
+        "expected JSONL output\nstderr={}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 
     // Each line must be valid JSON with the required fields
     for line in stdout.lines() {
-        let val: serde_json::Value =
-            serde_json::from_str(line).expect("line is not valid JSON");
-        assert!(
-            val.get("name").is_some(),
-            "missing 'name' in {line}"
-        );
-        assert!(
-            val.get("version").is_some(),
-            "missing 'version' in {line}"
-        );
-        assert!(
-            val.get("source").is_some(),
-            "missing 'source' in {line}"
-        );
-        assert!(
-            val.get("status").is_some(),
-            "missing 'status' in {line}"
-        );
+        let val: serde_json::Value = serde_json::from_str(line).expect("line is not valid JSON");
+        assert!(val.get("name").is_some(), "missing 'name' in {line}");
+        assert!(val.get("version").is_some(), "missing 'version' in {line}");
+        assert!(val.get("source").is_some(), "missing 'source' in {line}");
+        assert!(val.get("status").is_some(), "missing 'status' in {line}");
     }
 
     // The local crate should have status "local" and null source/version
@@ -76,8 +62,7 @@ version = "555.666.777"
         .lines()
         .find(|l| l.contains(r#""name":"test-crate""#))
         .unwrap_or_else(|| panic!("expected test-crate in output:\n{stdout}"));
-    let local_val: serde_json::Value =
-        serde_json::from_str(local_line).unwrap();
+    let local_val: serde_json::Value = serde_json::from_str(local_line).unwrap();
     assert_eq!(local_val["status"], "locl");
     assert_eq!(local_val["source"], serde_json::Value::Null);
     assert_eq!(local_val["version"].as_str().unwrap(), "555.666.777");
