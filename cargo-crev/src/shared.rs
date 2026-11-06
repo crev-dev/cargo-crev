@@ -743,13 +743,20 @@ pub fn iter_rs_files_in_dir(dir: &Path) -> impl Iterator<Item = Result<PathBuf>>
     let walker = walkdir::WalkDir::new(dir).into_iter();
     walker
         .map(|entry| {
-            let entry = entry?;
+            let entry = entry.map_err(|err| Box::new(anyhow::Error::from(err)))?;
             if !is_file_with_ext(&entry, "rs") {
                 return Ok(None);
             }
-            Ok(Some(entry.path().canonicalize()?))
+            Ok(Some(
+                entry
+                    .path()
+                    .canonicalize()
+                    .map_err(|err| Box::new(anyhow::Error::from(err)))?,
+            ))
         })
-        .filter_map(|res| res.transpose())
+        .filter_map(|res: Result<Option<PathBuf>, Box<anyhow::Error>>| {
+            res.transpose().map(|path| path.map_err(|err| *err))
+        })
 }
 
 // Note: this function is very slow
@@ -758,9 +765,9 @@ pub fn get_geiger_count(path: &Path) -> Result<u64> {
     use resiter::flat_map::FlatMap;
 
     let mut count = 0;
-    for metrics in iter_rs_files_in_dir(path)
-        .flat_map_ok(|path| geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No))
-    {
+    for metrics in iter_rs_files_in_dir(path).flat_map_ok(|path| {
+        geiger::find::find_unsafe_in_file(&path, geiger::IncludeTests::No).map_err(Box::new)
+    }) {
         let counters = metrics?.counters;
         count += counters.functions.unsafe_
             + counters.exprs.unsafe_

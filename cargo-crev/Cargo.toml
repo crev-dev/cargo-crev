@@ -4,7 +4,6 @@ categories = ["development-tools::cargo-plugins"]
 default-run = "cargo-crev"
 description = "Distributed Code REView system for verifying security and quality of Cargo dependencies"
 documentation = "https://docs.rs/cargo-crev"
-homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "supply-chain", "security", "distributed"]
 readme = "README.md"
 include = ["src/**", "Cargo.toml", "README.md", "LICENSE-MIT", "skills/**"]
@@ -32,11 +31,11 @@ anyhow = "1.0.93"
 atty = "0.2.14"
 curl-sys = { version = "0.4", features = ["force-system-lib-on-osx"] }
 cargo.workspace = true
-cargo-platform = "0.3.0"
+cargo-platform = "0.3.3"
 crates_io_api = "0.12.0"
-crossbeam = "0.8.2"
+crossbeam = "0.8.5"
 chrono.workspace = true
-env_logger = { version = "0.11.3", default-features = false, features = ["auto-color", "humantime"] }
+env_logger = { version = "0.11.11", default-features = false, features = ["auto-color", "humantime"] }
 fnv = "1.0.7"
 geiger = { version = "0.5.0", optional = true }
 itertools.workspace = true
@@ -50,8 +49,8 @@ serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true
 structopt = "0.3.26"
-time = "0.3.41"
-tokei = "13.0.0-alpha.9"
+time = "0.3.55"
+tokei = "15.0.0"
 walkdir = "2.5.0"
 openssl-sys = "0.9.109"
 git2.workspace = true
@@ -60,11 +59,11 @@ rprompt = "2.2.0"
 thiserror.workspace = true
 log.workspace = true
 term = "1.2"
-syn-inline-mod = "0.6.0"
-quote = "1.0.33"
+syn-inline-mod = "0.7.0"
+quote = "1.0.47"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-security-framework = "3.5.1"
+security-framework = "3.7.0"
 
 [features]
 default = ["openssl-sys/vendored"]

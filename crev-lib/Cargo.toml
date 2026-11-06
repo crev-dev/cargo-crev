@@ -2,7 +2,6 @@
 name = "crev-lib"
 description = "Library interface for programmatic access to crate reviews of cargo-crev"
 documentation = "https://docs.rs/crev-lib"
-homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["code", "review", "assessment", "dependency", "assurance"]
 categories = ["development-tools", "database"]
 readme = "README.md"
@@ -24,7 +23,7 @@ crev-recursive-digest = "0.6"
 default.workspace = true
 directories = { version = "2", package = "directories-next" }
 fnv = "1.0.7"
-rust-argon2 = "2.0.0"
+rust-argon2 = "3.0.0"
 git2.workspace = true
 log.workspace = true
 resiter.workspace = true
@@ -34,8 +33,7 @@ serde_yaml.workspace = true
 walkdir = "2.5.0"
 thiserror.workspace = true
 rayon.workspace = true
-aes-siv = "0.7.0"
-bstr = "1.12.0"
+aes-siv = "0.8.0"
 
 [package.metadata.release]
 shared-version=true

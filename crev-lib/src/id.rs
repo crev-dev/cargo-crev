@@ -6,7 +6,7 @@ use std::path::Path;
 use std::{self, fmt};
 
 use aes_siv::KeyInit;
-use argon2::{self, Config};
+use argon2::{self, Config, ThreadMode};
 use crev_common::rand::random_vec;
 use crev_common::serde::{as_base64, from_base64};
 use crev_data::id::{PublicId, UnlockedId};
@@ -82,6 +82,7 @@ impl LockedId {
             Config {
                 variant: argon2::Variant::Argon2id,
                 version: argon2::Version::Version13,
+                thread_mode: ThreadMode::Sequential,
 
                 hash_length: 64,
                 mem_cost: 4096,
@@ -104,18 +105,14 @@ impl LockedId {
 
         let seal_nonce = random_vec(32);
         let sealed_secret_key = {
-            use aes_siv::aead::generic_array::GenericArray;
-            use aes_siv::siv::IV_SIZE;
+            use aes_siv::siv::Aes256Siv;
 
             let secret = unlocked_id.keypair.secret.as_bytes();
-            let mut siv = aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&pwhash));
-            let mut buffer = vec![0; IV_SIZE + secret.len()];
-            buffer[IV_SIZE..].copy_from_slice(secret);
-            let tag = siv
-                .encrypt_in_place_detached([&[] as &[u8], &seal_nonce], &mut buffer[IV_SIZE..])
-                .expect("aes-encrypt");
-            buffer[..IV_SIZE].copy_from_slice(&tag);
-            buffer
+            let key = aes_siv::Key::<Aes256Siv>::try_from(pwhash.as_slice())
+                .expect("passphrase hash must be 64 bytes");
+            let mut siv = Aes256Siv::new(&key);
+            siv.encrypt([&[] as &[u8], &seal_nonce], secret)
+                .expect("aes-encrypt")
         };
 
         Ok(LockedId {
@@ -180,6 +177,7 @@ impl LockedId {
             let mut config = Config {
                 variant: argon2::Variant::from_str(&passphrase_config.variant)?,
                 version: argon2::Version::Version13,
+                thread_mode: ThreadMode::Sequential,
 
                 hash_length: 64,
                 mem_cost: passphrase_config.memory_size,
@@ -206,22 +204,13 @@ impl LockedId {
                 argon2::hash_raw(passphrase.as_bytes(), &passphrase_config.salt, &config)?;
 
             let secret_key = {
-                use aes_siv::Tag;
-                use aes_siv::aead::generic_array::GenericArray;
-                use aes_siv::siv::IV_SIZE;
+                use aes_siv::siv::Aes256Siv;
 
-                let mut siv =
-                    aes_siv::siv::Aes256Siv::new(&GenericArray::clone_from_slice(&passphrase_hash));
-                let mut buffer = sealed_secret_key.clone();
-                let tag = Tag::clone_from_slice(&buffer[..IV_SIZE]);
-                siv.decrypt_in_place_detached(
-                    [&[] as &[u8], seal_nonce],
-                    &mut buffer[IV_SIZE..],
-                    &tag,
-                )
-                .map_err(|_| Error::IncorrectPassphrase)?;
-                buffer.drain(..IV_SIZE);
-                buffer
+                let key = aes_siv::Key::<Aes256Siv>::try_from(passphrase_hash.as_slice())
+                    .expect("passphrase hash must be 64 bytes");
+                let mut siv = Aes256Siv::new(&key);
+                siv.decrypt([&[] as &[u8], seal_nonce], sealed_secret_key)
+                    .map_err(|_| Error::IncorrectPassphrase)?
             };
 
             assert!(!secret_key.is_empty());
@@ -247,6 +236,7 @@ impl LockedId {
         Config {
             variant: argon2::Variant::Argon2id,
             version: argon2::Version::Version13,
+            thread_mode: ThreadMode::Sequential,
 
             hash_length: 64,
             mem_cost: 16,

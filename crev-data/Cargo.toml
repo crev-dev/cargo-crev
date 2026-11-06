@@ -16,10 +16,10 @@ version.workspace = true
 crev-common.workspace = true
 
 chrono.workspace = true
-derive_builder = "0.20.0"
-ed25519-dalek = { version = "2.1", features = ["rand_core"] }
-typed-builder = "0.22"
-rand = "0.8.5"
+derive_builder = "0.20.2"
+ed25519-dalek = { version = "3.0", features = ["rand_core"] }
+typed-builder = "0.23"
+rand = "0.10.3"
 semver.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true

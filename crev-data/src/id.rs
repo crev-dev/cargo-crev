@@ -5,7 +5,6 @@ use crev_common::serde::{as_base64, from_base64};
 use crev_common::{self};
 use derive_builder::Builder;
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::Url;
@@ -262,7 +261,7 @@ impl UnlockedId {
     }
 
     pub fn generate(url: Option<Url>) -> Self {
-        let secret = ed25519_dalek::SigningKey::generate(&mut OsRng);
+        let secret = ed25519_dalek::SigningKey::generate(&mut rand::rng());
         let public = secret.verifying_key();
         Self {
             id: PublicId::new_from_pubkey(public.as_bytes().to_vec(), url)

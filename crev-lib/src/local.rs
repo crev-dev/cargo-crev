@@ -1157,7 +1157,7 @@ impl Local {
         let remote = repo.find_remote("origin")?;
         let url = remote
             .url()
-            .ok_or_else(|| Error::OriginHasNoURL(repo.path().into()))?;
+            .map_err(|_| Error::OriginHasNoURL(repo.path().into()))?;
         Ok(url.to_string())
     }
 
@@ -1379,7 +1379,7 @@ fn remotes_checkouts_iter(path: PathBuf) -> Result<impl Iterator<Item = (PathBuf
         .filter_map(move |path| {
             let repo = git2::Repository::open(&path).ok()?;
             let origin = repo.find_remote("origin").ok()?;
-            let url = Url::new_git(origin.url()?);
+            let url = Url::new_git(origin.url().ok()?);
             Some((path, url))
         }))
 }

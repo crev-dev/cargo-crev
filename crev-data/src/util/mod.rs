@@ -1,11 +1,9 @@
 use std::fmt;
 
-use rand::{self, Rng};
-
 #[must_use]
 pub fn random_id_str() -> String {
     let mut out = [0u8; 32];
-    rand::thread_rng().fill(&mut out[..]);
+    rand::fill(&mut out);
     crev_common::base64_encode(&out)
 }
 

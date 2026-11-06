@@ -13,7 +13,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-base64 = "0.22"
+base64 = "0.23"
 blake2.workspace = true
 chrono.workspace = true
 hex = "0.4.3"
@@ -22,7 +22,7 @@ serde.workspace = true
 serde_yaml.workspace = true
 shell-escape = "0.1.5"
 thiserror.workspace = true
-rand = "0.8.5"
+rand = "0.10.3"
 
 [package.metadata.release]
 shared-version = true

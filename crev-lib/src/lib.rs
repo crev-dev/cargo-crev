@@ -522,7 +522,7 @@ pub fn get_recursive_digest_for_git_dir(
     status_opts.include_unmodified(true);
     status_opts.include_untracked(false);
     for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
-        let entry_path = PathBuf::from(entry.path().ok_or(Error::GitEntryWithoutAPath)?);
+        let entry_path = PathBuf::from(entry.path().map_err(|_| Error::GitEntryWithoutAPath)?);
         if ignore_list.contains(&entry_path) {
             continue;
         };

@@ -2,7 +2,6 @@
 name = "crev-wot"
 description = "Scalable, social, Code REView system that we desperately need - Web of Trust library"
 documentation = "https://docs.rs/cargo-crev"
-homepage = "https://github.com/crev-dev/cargo-crev"
 keywords = ["web-of-trust", "dependency", "peer", "review", "identity"]
 readme = "README.md"
 include = ["src/**", "Cargo.toml", "README.md", "LICENSE-MIT"]
