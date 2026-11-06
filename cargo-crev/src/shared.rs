@@ -68,7 +68,7 @@ impl VcsInfoJson {
         }
     }
     fn get_git_revision(&self) -> String {
-        self.git.sha1.to_string()
+        self.git.sha1.clone()
     }
 }
 
@@ -162,7 +162,7 @@ pub fn exec_into(mut command: process::Command) -> Result<()> {
 pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     if env::var(GOTO_ORIGINAL_DIR_ENV).is_ok() {
         bail!("You're already in a `cargo crev goto` shell");
-    };
+    }
     let repo = Repo::auto_open_cwd_default()?;
     selector.ensure_name_given()?;
 
@@ -183,7 +183,7 @@ pub fn goto_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     let cwd = env::current_dir()?;
 
     eprintln!("Opening shell in: {}", crate_dir.display());
-    eprintln!("Use `exit` or Ctrl-D to return to the original project.",);
+    eprintln!("Use `exit` or Ctrl-D to return to the original project.");
     eprintln!("Use `cargo crev review` without any arguments to review this crate.");
     let mut command = process::Command::new(shell);
     command
@@ -205,8 +205,8 @@ pub fn expand_crate_src(selector: &opts::CrateSelector) -> Result<()> {
     let crate_ = repo.get_crate(&crate_id)?;
     let crate_dir = crate_.root();
 
-    // TODO: discover all the entrypoint, iterate over them, take care of formatting
-    // and comments
+    // TODO: discover all the entrypoint, iterate over them, take care of
+    // formatting and comments
     println!(
         "{}",
         syn_inline_mod::parse_and_inline_modules(&crate_dir.join("src/lib.rs")).into_token_stream()
@@ -346,9 +346,9 @@ pub fn crate_open(
     let version = cargo_crate.version();
     let src_dir = cargo_crate.root();
 
-    // It's not safe to open Cargo's crate dir directly, because editor integration
-    // (like cargo check) could automatically start running crate's potentially
-    // malicious build script or proc macros.
+    // It's not safe to open Cargo's crate dir directly, because editor
+    // integration (like cargo check) could automatically start running crate's
+    // potentially malicious build script or proc macros.
     let dest_dir = local.sanitized_crate_copy(SOURCE_CRATES_IO, &name, version, src_dir)?;
 
     if print_path {
@@ -369,7 +369,7 @@ pub fn crate_open(
     let status = crev_lib::util::run_with_shell_cmd(open_cmd.as_ref(), Some(&dest_dir))?;
 
     if !status.success() {
-        bail!("Shell returned {}", status);
+        bail!("Shell returned {status}");
     }
 
     Ok(())
@@ -499,15 +499,17 @@ pub fn check_package_clean_state(
 
     let digest_clean =
         crev_lib::get_recursive_digest_for_dir(crate_root, &cargo_min_ignore_list())?;
-    // if the `Cargo.lock` not exist in the clean package, we can ignore it being
-    // created in the reviewed version; that's normal
+    // if the `Cargo.lock` not exist in the clean package, we can ignore it
+    // being created in the reviewed version; that's normal
     let ignore_cargo_lock = !crate_root.join("Cargo.lock").exists();
     let digest_reviewed = crev_lib::get_recursive_digest_for_dir(
         &reviewed_pkg_dir,
         &cargo_full_ignore_list(ignore_cargo_lock),
     )?;
 
-    if digest_clean != digest_reviewed {
+    if digest_clean == digest_reviewed {
+        std::fs::remove_dir_all(&reviewed_pkg_dir)?;
+    } else {
         eprintln!(
             r#"The digest of the reviewed source code is different from the digest of a freshly downloaded copy.
             This is most probably caused by your actions: creating new or modified files.
@@ -517,8 +519,6 @@ pub fn check_package_clean_state(
             crate_root.display(),
             reviewed_pkg_dir.display(),
         );
-    } else {
-        std::fs::remove_dir_all(&reviewed_pkg_dir)?;
     }
 
     let vcs = VcsInfoJson::read_from_crate_dir(crate_root)?;
@@ -591,10 +591,11 @@ pub fn run_diff(args: &opts::Diff) -> Result<std::process::ExitStatus> {
 
     match command.status() {
         Err(ref err) if err.kind() == io::ErrorKind::NotFound && cfg!(windows) => {
-            // On Windows, diff is likely available but *not* in %PATH.  Specifically, the
-            // git installer warns that adding *nix tools to %PATH% will change
-            // the behavior of some built in windows commands like "find", and
-            // by default doesn't do this to avoid breaking anything.
+            // On Windows, diff is likely available but *not* in %PATH.
+            // Specifically, the git installer warns that adding *nix tools to
+            // %PATH% will change the behavior of some built in windows commands
+            // like "find", and by default doesn't do this to avoid breaking
+            // anything.
 
             let program_files =
                 env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".to_owned());
@@ -719,7 +720,7 @@ where
                 )
                 .auto_unrelated()?,
             });
-        };
+        }
         let sel = sel.as_ref().unwrap_or(args);
         sel.crate_.ensure_name_given()?;
         f(sel)?;
@@ -735,7 +736,7 @@ pub fn is_file_with_ext(entry: &walkdir::DirEntry, file_ext: &str) -> bool {
     entry
         .path()
         .extension()
-        .map_or(false, |ext| ext.to_string_lossy().as_ref() == file_ext)
+        .is_some_and(|ext| ext.to_string_lossy().as_ref() == file_ext)
 }
 
 #[cfg(feature = "geiger")]

@@ -34,9 +34,7 @@ impl CrateSelector {
     pub fn version(&self) -> Result<Option<&Version>> {
         match (self.version_positional.as_ref(), self.version.as_ref()) {
             (Some(p), Some(np)) => bail!(
-                "Can't use both positional (`{}`) and non-positional (`{}`) version argument",
-                p,
-                np
+                "Can't use both positional (`{p}`) and non-positional (`{np}`) version argument"
             ),
             (Some(p), None) => Ok(Some(p)),
             (None, Some(np)) => Ok(Some(np)),
@@ -192,7 +190,7 @@ pub struct TrustDistanceParams {
 impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
     fn from(params: TrustDistanceParams) -> Self {
         if params.direct {
-            crev_lib::TrustDistanceParams {
+            Self {
                 max_distance: 1,
                 high_trust_distance: 1,
                 medium_trust_distance: 1,
@@ -201,7 +199,7 @@ impl From<TrustDistanceParams> for crev_lib::TrustDistanceParams {
                 distrust_distance: 1000,
             }
         } else {
-            crev_lib::TrustDistanceParams {
+            Self {
                 max_distance: params.depth,
                 high_trust_distance: params.high_cost,
                 medium_trust_distance: params.medium_cost,
@@ -270,7 +268,7 @@ pub struct VerificationRequirements {
 
 impl From<VerificationRequirements> for crev_lib::VerificationRequirements {
     fn from(req: VerificationRequirements) -> Self {
-        crev_lib::VerificationRequirements {
+        Self {
             trust_level: req.trust_level.trust_level,
             redundancy: req.redundancy,
             understanding: req.understanding_level,
@@ -629,7 +627,7 @@ pub enum RepoEdit {
     #[structopt(name = "readme")]
     Readme,
 
-    /// Edit your known_cargo_owners.txt file
+    /// Edit your `known_cargo_owners.txt` file
     #[structopt(name = "known")]
     Known,
 }

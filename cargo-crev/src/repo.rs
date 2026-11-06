@@ -186,9 +186,9 @@ fn build_graph<'a>(
                 .filter(|d| d.matches_ignoring_source(raw_dep_id))
                 .filter(|d| {
                     let is_local = !d.source_id().is_registry();
-                    // Dev/build dependencies can lead to circular dependencies (in combination with
-                    // normal deps), so ignore dev deps on local crates, as it's
-                    // not helpful anyway
+                    // Dev/build dependencies can lead to circular dependencies
+                    // (in combination with normal deps), so ignore dev deps on
+                    // local crates, as it's not helpful anyway
                     d.kind() == DepKind::Normal || (dev_dependencies && !is_local)
                 })
                 .filter(|d| {
@@ -230,12 +230,12 @@ fn prune_directory_source_replacements(
     config: &mut HashMap<String, ConfigValue>,
 ) -> CargoResult<()> {
     if let Some(ConfigValue::Table(source_config, _)) = config.get_mut("source") {
-        // To do the pruning, first, generate a graph of registry sources, where the
-        // node are the sources, and there is an edge if a source  defines that
-        // it is replaced with another source. Then, find the directory sources,
-        // and traverse the graph in reverse to find all the sources that are directory
-        // sources, or reference them  directly or indirectly.
-        // Then, the found sources can be removed from the config.
+        // To do the pruning, first, generate a graph of registry sources, where
+        // the node are the sources, and there is an edge if a source  defines
+        // that it is replaced with another source. Then, find the directory
+        // sources, and traverse the graph in reverse to find all the sources
+        // that are directory sources, or reference them  directly or
+        // indirectly. Then, the found sources can be removed from the config.
         let mut source_graph = petgraph::Graph::<String, ()>::new();
         let nodes = source_config
             .keys()
@@ -586,7 +586,8 @@ impl Repo {
         version: Option<&Version>,
     ) -> Result<Option<PackageId>> {
         let mut source = if let Some(version) = version {
-            // special case - we need to whitelist the crate, in case it was yanked
+            // special case - we need to whitelist the crate, in case it was
+            // yanked
             let mut yanked_whitelist = HashSet::default();
             let source_id = SourceId::crates_io(&self.config)?;
             yanked_whitelist.insert(PackageId::new(name.into(), version.clone(), source_id));
@@ -670,19 +671,19 @@ mod tests {
     fn test_prune_directory_source_replacement() {
         // Test that:
         // {
-        //     "source": {"crates-io": {"replace-with": my-vendor-source (from --config
-        // cli option)},                "another-source": {"registry":
+        //     "source": {"crates-io": {"replace-with": my-vendor-source (from
+        // --config cli option)},                "another-source": {"registry":
         // path/to/registry (from --config cli option)},
-        // "my-vendor-source": {"directory": vendor (from --config cli option)}},
-        // }
+        // "my-vendor-source": {"directory": vendor (from --config cli
+        // option)}}, }
         // becomes:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config
-        // cli option)}}, }
+        //     "source": {"another-source": {"registry": path/to/registry (from
+        // --config cli option)}}, }
         //
-        // the "my-vendor-source" should get removed because it's a directory source
-        // replacement, and "crates-io" should get removed because it referenced
-        // the removed "my-vendor-source"
+        // the "my-vendor-source" should get removed because it's a directory
+        // source replacement, and "crates-io" should get removed because it
+        // referenced the removed "my-vendor-source"
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),
@@ -750,21 +751,22 @@ mod tests {
     fn test_prune_directory_source_replacement_nested() {
         // Test that:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config
-        // cli option)},                "nested-vendor-source": {"directory":
-        // vendor (from --config cli option)},
-        // "my-vendor-source": {"replace-with": nested-vendor-source (from --config cli
-        // option)},                "crates-io": {"replace-with":
+        //     "source": {"another-source": {"registry": path/to/registry (from
+        // --config cli option)},                "nested-vendor-source":
+        // {"directory": vendor (from --config cli option)},
+        // "my-vendor-source": {"replace-with": nested-vendor-source (from
+        // --config cli option)},                "crates-io": {"replace-with":
         // my-vendor-source (from --config cli option)}}, }
         // becomes:
         // {
-        //     "source": {"another-source": {"registry": path/to/registry (from --config
-        // cli option)}}, }
+        //     "source": {"another-source": {"registry": path/to/registry (from
+        // --config cli option)}}, }
         //
-        // the "nested-vendor-source" should get removed because it's a directory source
-        // replacement, and "my-vendor-source" should get removed because it
-        // referenced the removed "nested-vendor-source" and "crates-io" should
-        // get removed because it referenced the removed "my-vendor-source"
+        // the "nested-vendor-source" should get removed because it's a
+        // directory source replacement, and "my-vendor-source" should get
+        // removed because it referenced the removed "nested-vendor-source" and
+        // "crates-io" should get removed because it referenced the removed
+        // "my-vendor-source"
         let crates_io_source_replacement = ConfigValue::Table(
             [(
                 "replace-with".into(),

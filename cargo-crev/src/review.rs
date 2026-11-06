@@ -51,12 +51,12 @@ pub fn create_review_proof(
     // symlinks can probably wreak havoc. But neither of these are likely to be
     // encountered accidentally, so they’re not worth worrying about.)
     //
-    // FIXME: in goto shells, cwd has already been changed to the GOTO_ORIGINAL_DIR,
-    // but we should actually be checking the process’s original cwd, either instead
-    // of or as well as, as that’s the cwd from the *user’s* perspective. As it
-    // stands, you could easily goto a crate, switch to a subdirectory, review,
-    // and either have fs errors (Windows, probably) or be returned to a deleted
-    // directory (most other OSes).
+    // FIXME: in goto shells, cwd has already been changed to the
+    // GOTO_ORIGINAL_DIR, but we should actually be checking the process’s
+    // original cwd, either instead of or as well as, as that’s the cwd from the
+    // *user’s* perspective. As it stands, you could easily goto a crate, switch
+    // to a subdirectory, review, and either have fs errors (Windows, probably)
+    // or be returned to a deleted directory (most other OSes).
     let cwd = std::env::current_dir()?;
     assert!(
         !cwd.starts_with(crate_root) || cwd == crate_root,
@@ -170,7 +170,7 @@ pub fn create_review_proof(
             .review(default_review_content)
             .diff_base(diff_base)
             .build()
-            .map_err(|e| format_err!("{}", e))?;
+            .map_err(|e| format_err!("{e}"))?;
 
         if let Some(diff_base_version) = diff_base_version.clone()
             && let Some(base_review) = db.get_pkg_review(
@@ -247,7 +247,7 @@ pub fn create_review_proof(
 
     let commit_msg = format!(
         "{add_or_overwrite} review for {crate} v{version}",
-        crate = &crate_.name(),
+        crate = crate_.name(),
         version = effective_crate_version,
         add_or_overwrite = if previous_date.is_some() {
             "Overwrite"
@@ -306,8 +306,8 @@ pub fn import_unsigned_and_sign(
 
         let commit_msg = format!(
             "Add review for {crate_} v{version} (imported)",
-            crate_ = &review.package.id.id.name,
-            version = &review.package.id.version,
+            crate_ = review.package.id.id.name,
+            version = review.package.id.version,
         );
         maybe_store(
             local,

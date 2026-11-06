@@ -161,7 +161,8 @@ impl Local {
         }
         fs::create_dir_all(&repo.data_path)?;
 
-        // Before early 2022, proofs were in the config dir instead of the data dir.
+        // Before early 2022, proofs were in the config dir instead of the data
+        // dir.
         let old_proofs = repo.config_path.join("proofs");
         let new_proofs = repo.data_path.join("proofs");
         if !new_proofs.exists() && old_proofs.exists() {
@@ -557,8 +558,8 @@ impl Local {
         id.url = Some(new_url);
         self.save_locked_id(id)?;
 
-        // commit uncommitted changes, if there are any. Otherwise the next pull may
-        // fail
+        // commit uncommitted changes, if there are any. Otherwise the next pull
+        // may fail
         let _ = self.proof_dir_commit("Setting up new CrevID URL");
         let _ = self.run_git(
             vec!["pull".into(), "--rebase".into(), "-Xours".into()],
@@ -658,7 +659,8 @@ impl Local {
             }
             Err(e) => {
                 let error_string = e.to_string();
-                // git2 seems to have a bug, and auth error is reported as GenericError
+                // git2 seems to have a bug, and auth error is reported as
+                // GenericError
                 let is_auth_error = e.code() == git2::ErrorCode::Auth
                     || error_string.contains("remote authentication required");
                 return Err(Error::CouldNotCloneGitHttpsURL(Box::new((
@@ -803,7 +805,8 @@ impl Local {
                 }
                 crev_wot::UrlOfId::FromOthers(maybe_url) => {
                     let maybe_url = maybe_url.url.clone();
-                    // Ignore errors - if we weren't able to fetch it, that's OK.
+                    // Ignore errors - if we weren't able to fetch it, that's
+                    // OK.
                     let _ = self.fetch_url_into(&maybe_url, &mut db);
                     db.lookup_url(&id).from_self()
                 }
@@ -863,8 +866,8 @@ impl Local {
             if let Some(for_id) = self.get_for_id_from_str_opt(for_id)? {
                 db.calculate_trust_set(&for_id, params)
             } else {
-                // when running without an id (explicit, or current), just use an empty trust
-                // set
+                // when running without an id (explicit, or current), just use
+                // an empty trust set
                 crev_wot::TrustSet::default()
             },
         )
@@ -1096,7 +1099,7 @@ impl Local {
             (true, true) => {
                 format!("new: {new_trust_count} trust, {new_pkg_review_count} package reviews")
             }
-            (true, false) => format!("new: {new_trust_count} trust",),
+            (true, false) => format!("new: {new_trust_count} trust"),
             (false, true) => format!("new: {new_pkg_review_count} package reviews"),
             (false, false) => "no updates".into(),
         };

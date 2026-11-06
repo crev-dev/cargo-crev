@@ -120,8 +120,8 @@ fn overwriting_reviews() -> Result<()> {
         .as_public_id()
         .create_package_review_proof(package.clone(), default(), vec![], "a".into())?
         .sign_by(&a)?;
-    // it's lame, but oh well... ; we need to make sure there's a time delay between
-    // the two proofs
+    // it's lame, but oh well... ; we need to make sure there's a time delay
+    // between the two proofs
     #[allow(deprecated)]
     std::thread::sleep_ms(1);
     let proof2 = a
@@ -242,7 +242,8 @@ fn proofdb_trust_ignore_override() -> Result<()> {
 
     trustdb.import_from_iter(
         vec![
-            // a trust b and c, but c more, c overrides (ignores) trust of b in d
+            // a trust b and c, but c more, c overrides (ignores) trust of b in
+            // d
             trust_medium(&a, &b)?,
             trust_high(&a, &c)?,
             trust_high(&b, &d)?,
@@ -280,7 +281,8 @@ fn proofdb_trust_ignore_override() -> Result<()> {
 
         trustdb.import_from_iter(
             vec![
-                // a trust b and c, but c more, c overrides (ignores) trust of b in d
+                // a trust b and c, but c more, c overrides (ignores) trust of b
+                // in d
                 trust_high(&a, &b)?,
                 trust_high(&a, &c)?,
                 trust_high(&b, &d)?,

@@ -27,7 +27,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
             "TRUST",
             "DIST"
         )?;
-        writeln!(io::stderr(), "\\_ status URL",)?;
+        writeln!(io::stderr(), "\\_ status URL")?;
         writeln!(
             io::stderr(),
             "  {:^43} {:>6} {:>6} +{:<3} notes",
@@ -36,14 +36,14 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
             "E.TRST",
             "DIS"
         )?;
-        writeln!(io::stderr(), "  \\_ status URL",)?;
+        writeln!(io::stderr(), "  \\_ status URL")?;
     }
     for log_item in trust_set.traverse_log {
         match log_item {
             Node(node) => {
                 let (status, url) = url_to_status_str(&db.lookup_url(&node.id));
 
-                term.print(format_args!("{}", &node.id), GREEN)?;
+                term.print(format_args!("{}", node.id), GREEN)?;
 
                 writeln!(
                     io::stdout(),
@@ -58,7 +58,7 @@ pub fn print_log(wot_opts: WotOpts) -> Result<()> {
 
                 write!(io::stdout(), "  ")?;
 
-                term.print(format_args!("{}", &edge.to), BLUE)?;
+                term.print(format_args!("{}", edge.to), BLUE)?;
 
                 write!(
                     io::stdout(),

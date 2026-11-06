@@ -135,8 +135,8 @@ fn mark_dangerous_name(
             ));
             alt
         }
-        // Are there legit use-cases for Unicode names? Killing it avoids risk of homograph or BIDI
-        // spoofing
+        // Are there legit use-cases for Unicode names? Killing it avoids risk
+        // of homograph or BIDI spoofing
         n if n.as_bytes().iter().any(|&c| {
             c < b' '
                 || c >= 0x7F

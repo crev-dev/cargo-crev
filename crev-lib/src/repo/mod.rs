@@ -173,7 +173,7 @@ impl Repo {
         status_opts.include_unmodified(true);
         status_opts.include_untracked(false);
         let mut unclean_found = false;
-        for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
+        for entry in &git_repo.statuses(Some(&mut status_opts))? {
             if entry.status() != git2::Status::CURRENT {
                 unclean_found = true;
             }

@@ -166,7 +166,8 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
 
     for orig_review in iter {
         if !args.skip_reissue_check {
-            // check if already reissued this review previously to prevent bloating the db
+            // check if already reissued this review previously to prevent
+            // bloating the db
             if db.get_pkg_reviews_for_source(SOURCE_CRATES_IO).any(
                 |review: &proof::review::Package| {
                     review.common.from.id == sign_id.id.id && review.package == orig_review.package
@@ -175,10 +176,10 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
                 println!(
                     "Review of crate {crate_} v{version} rev {rev} from id {orig_id} is already \
                      signed by current id. Skipping reissue. Use `--skip-reissue-check` to override.",
-                    crate_ = &orig_review.package.id.id.name,
-                    version = &orig_review.package.id.version,
-                    rev = &orig_review.package.revision,
-                    orig_id = &orig_review.common.from.id
+                    crate_ = orig_review.package.id.id.name,
+                    version = orig_review.package.id.version,
+                    rev = orig_review.package.revision,
+                    orig_id = orig_review.common.from.id
                 );
                 continue;
             }
@@ -190,8 +191,8 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
             None => {
                 println!(
                     "Missing proof digest on review of {crate_} v{version}. Skipping",
-                    crate_ = &orig_review.package.id.id.name,
-                    version = &orig_review.package.id.version
+                    crate_ = orig_review.package.id.id.name,
+                    version = orig_review.package.id.version
                 );
                 continue;
             }
@@ -199,9 +200,9 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
 
         println!(
             "Reissuing review of crate {crate_} v{version} from crev id {id}",
-            crate_ = &orig_review.package.id.id.name,
-            version = &orig_review.package.id.version,
-            id = &orig_review.common.from.id
+            crate_ = orig_review.package.id.id.name,
+            version = orig_review.package.id.version,
+            id = orig_review.common.from.id
         );
 
         let mut reissue_review = orig_review.clone();
@@ -219,10 +220,10 @@ pub fn proof_reissue(args: opts::ProofReissue) -> Result<()> {
              New id: {new_id}\n\
              Previous id: {orig_id}\n\
              Previous proof digest: {digest_base64}\n",
-            crate = &reissue_review.package.id.id.name,
-            version = &reissue_review.package.id.version,
-            new_id = &reissue_review.common.from.id,
-            orig_id = &orig_review.common.from.id,
+            crate = reissue_review.package.id.id.name,
+            version = reissue_review.package.id.version,
+            new_id = reissue_review.common.from.id,
+            orig_id = orig_review.common.from.id,
             digest_base64 = crev_common::base64_encode(&orig_proof_digest.0)
         );
 
@@ -284,8 +285,7 @@ fn crate_review(args: &opts::CrateReview, default_trust_type: TrustProofType) ->
         )?;
         let has_public_url = local
             .read_current_locked_id()
-            .ok()
-            .is_some_and(|l| l.to_public_id().url.is_some());
+            .is_ok_and(|l| l.to_public_id().url.is_some());
         if !has_public_url {
             eprintln!("Your review is not shared yet. You need to set up a proof repository.");
             eprintln!("Run `cargo crev publish` for more information.");
@@ -623,7 +623,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                 } else {
                     handle_goto_mode_command(
                         &ReviewCrateSelector {
-                            crate_: args.clone(),
+                            crate_: args,
                             diff: None,
                         },
                         None,
@@ -633,7 +633,7 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
             }
             opts::Crate::Dir(args) => show_dir(&args.common.crate_.auto_unrelated()?)?,
             opts::Crate::Digest(args) => {
-                shared::show_crate_digest(&args.common.crate_.auto_unrelated()?)?
+                shared::show_crate_digest(&args.common.crate_.auto_unrelated()?)?;
             }
 
             opts::Crate::Review(args) => crate_review(&args, TrustProofType::Trust)?,
@@ -677,11 +677,12 @@ fn run_command(command: opts::Command) -> Result<CommandExitStatus> {
                     "elvish" => Shell::Elvish,
                     "fish" => Shell::Fish,
                     other => {
-                        bail!("{} shell not supported", other);
+                        bail!("{other} shell not supported");
                     }
                 };
                 opts::Opts::clap().gen_completions_to(
-                    // we have to pretend, we're generating for main cargo binary
+                    // we have to pretend, we're generating for main cargo
+                    // binary
                     "cargo",
                     shell,
                     &mut std::io::stdout(),
@@ -966,13 +967,12 @@ fn generate_new_id_interactively(url: Option<&str>, use_https_push: bool) -> Res
             }
         }
 
-        // if an old one couldn't be reconfigured automatically, help how to do it
-        // manually
+        // if an old one couldn't be reconfigured automatically, help how to do
+        // it manually
         if let Some(example) = existing_usable.first() {
             if local
                 .get_current_userid()
-                .ok()
-                .is_some_and(|cur| cur == example.id)
+                .is_ok_and(|cur| cur == example.id)
             {
                 eprintln!(
                     "You can configure the existing CrevID with `cargo crev set-url` and `cargo crev id passwd`\n"
@@ -1119,7 +1119,7 @@ fn ids_from_string(id_strings: &[String]) -> Result<Vec<Id>> {
         .iter()
         .map(|s| match Id::crevid_from_str(s) {
             Ok(s) => Ok(s),
-            Err(e) => bail!("'{}' is not a valid crev Id: {}", s, e),
+            Err(e) => bail!("'{s}' is not a valid crev Id: {e}"),
         })
         .collect()
 }
@@ -1277,7 +1277,7 @@ fn handle_command_result_and_panics(
         let panic_str = if let Some(io_error) = panic_err.downcast_ref::<Box<&'static str>>() {
             io_error.to_string()
         } else if let Some(io_error) = panic_err.downcast_ref::<String>() {
-            io_error.to_string()
+            io_error.clone()
         } else if let Some(io_error) = panic_err.downcast_ref::<&'static str>() {
             (*io_error).to_string()
         } else {

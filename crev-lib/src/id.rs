@@ -77,8 +77,10 @@ impl std::str::FromStr for LockedId {
 
 impl LockedId {
     /// Encrypt and throw away the key
-    pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<LockedId> {
-        let config = if !passphrase.is_empty() {
+    pub fn from_unlocked_id(unlocked_id: &UnlockedId, passphrase: &str) -> Result<Self> {
+        let config = if passphrase.is_empty() {
+            Self::weak_passphrase_config()
+        } else {
             Config {
                 variant: argon2::Variant::Argon2id,
                 version: argon2::Version::Version13,
@@ -95,8 +97,6 @@ impl LockedId {
                 ad: &[],
                 secret: &[],
             }
-        } else {
-            Self::weak_passphrase_config()
         };
 
         let pwsalt = random_vec(32);

@@ -9,7 +9,7 @@ pub fn parse_dyn_content(proof: &proof::Proof) -> Result<Box<dyn DynContent>> {
         proof::CodeReview::KIND => Box::new(proof.parse_content::<proof::review::Code>()?),
         proof::PackageReview::KIND => Box::new(proof.parse_content::<proof::review::Package>()?),
         proof::Trust::KIND => Box::new(proof.parse_content::<proof::Trust>()?),
-        kind => bail!("Unsupported proof kind: {}", kind),
+        kind => bail!("Unsupported proof kind: {kind}"),
     })
 }
 

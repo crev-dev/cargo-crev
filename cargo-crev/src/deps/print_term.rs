@@ -329,7 +329,7 @@ pub fn print_dep(
         } else {
             s
         };
-        write!(io::stdout(), "{:<w$}", s)?;
+        write!(io::stdout(), "{s:<w$}")?;
     }
 
     if columns.show_digest() {
@@ -364,7 +364,7 @@ pub fn print_json_line(stats: &CrateStats) -> Result<()> {
         &mut out,
         &VerifyJsonLine {
             name: stats.info.id.name().as_str(),
-            version: &stats.info.id.version(),
+            version: stats.info.id.version(),
             source: &stats.info.id.source_id(),
             status: &details.accumulative.trust.to_string(),
         },

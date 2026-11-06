@@ -55,7 +55,7 @@ impl RequiredDetails {
 pub struct Scanner {
     pub db: Arc<ProofDB>,
     pub trust_set: TrustSet,
-    /// True if trust_set is not empty
+    /// True if `trust_set` is not empty
     pub has_trusted_ids: bool,
     min_ignore_list: fnv::FnvHashSet<PathBuf>,
     full_ignore_list: fnv::FnvHashSet<PathBuf>,
@@ -139,18 +139,13 @@ impl Scanner {
         let all_crates_ids = crate_info_by_id.keys().copied().collect();
 
         let selected_crates_ids = crate_info_by_id
-            .iter()
-            .filter_map(|(id, _crate_info)| {
-                if !args.skip_indirect
-                    || roots_set.contains(id)
+            .keys()
+            .filter(|id| {
+                !args.skip_indirect
+                    || roots_set.contains(*id)
                     || graph
-                        .get_reverse_dependencies_of(*id)
+                        .get_reverse_dependencies_of(**id)
                         .any(|r_dep| roots.contains(&r_dep))
-                {
-                    Some(id)
-                } else {
-                    None
-                }
             })
             .copied()
             .collect();

@@ -72,12 +72,12 @@ pub struct TrustSet {
     pub trusted: HashMap<Id, TrustedIdDetails>,
     pub distrusted: HashMap<Id, DistrustedIdDetails>,
 
-    // "ignore trust from `Id` to `Id`, as overridden by some other Ids with an effective
-    // `TrustLevel`s
+    // "ignore trust from `Id` to `Id`, as overridden by some other Ids with an
+    // effective `TrustLevel`s
     pub trust_ignore_overrides: HashMap<(Id, Id), OverrideSourcesDetails>,
 
-    // "ignore specific package review by `Id`, as overridden by some other Ids with an effective
-    // `TrustLevel`s
+    // "ignore specific package review by `Id`, as overridden by some other Ids
+    // with an effective `TrustLevel`s
     pub package_review_ignore_override: HashMap<PkgVersionReviewId, OverrideSourcesDetails>,
 }
 
@@ -162,9 +162,9 @@ impl TrustSet {
                 total_distance: current.distance,
             });
 
-            // did we just move from processing higher effective trust level id to a lower
-            // ones? if so, now would be a good time to check if anyone got
-            // banned, and then restart processing of the WoT
+            // did we just move from processing higher effective trust level id
+            // to a lower ones? if so, now would be a good time to check if
+            // anyone got banned, and then restart processing of the WoT
             if current.effective_trust_level != previous_iter_trust_level {
                 debug!("No more nodes with effective_trust_level of {previous_iter_trust_level}");
                 assert!(current.effective_trust_level < previous_iter_trust_level);
@@ -194,8 +194,8 @@ impl TrustSet {
                 let direct_trust = trust_details.level;
                 let current_overrides = &trust_details.override_;
 
-                // Note: we keep visiting nodes, even banned ones, just like they were
-                // originally reported
+                // Note: we keep visiting nodes, even banned ones, just like
+                // they were originally reported
                 let effective_trust_level =
                     std::cmp::min(direct_trust, current.effective_trust_level);
                 debug!("Effective trust for {candidate_id} {effective_trust_level}");
@@ -272,17 +272,18 @@ impl TrustSet {
                 }
                 // Note: lower trust node can ban higher trust node, but only
                 // if it wasn't banned by a higher trust node beforehand.
-                // However banning by the same trust level node, does not prevent
-                // the node from banning others.
+                // However banning by the same trust level node, does not
+                // prevent the node from banning others.
                 if direct_trust == TrustLevel::Distrust {
                     debug!(
                         "Adding {} to distrusted list (via {})",
                         candidate_id, current.id
                     );
-                    // We discard the result, because we actually want to make as much
-                    // progress as possible before restaring building the WoT, and
-                    // we will not visit any node that was marked as distrusted,
-                    // because we check it for every node to be visited
+                    // We discard the result, because we actually want to make
+                    // as much progress as possible before restaring building
+                    // the WoT, and we will not visit any node that was marked
+                    // as distrusted, because we check it for every node to be
+                    // visited
                     let _ = current_trust_set
                         .record_distrusted_id(candidate_id.clone(), current.id.clone());
 

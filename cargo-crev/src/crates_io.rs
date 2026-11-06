@@ -18,7 +18,7 @@ fn is_fresh(path: &Path) -> Result<bool> {
     let metadata = fs::metadata(path)?;
     let created = metadata.created().or_else(|_e| metadata.modified())?;
     let now = std::time::SystemTime::now();
-    Ok(((now - Duration::from_secs(60 * 60 * 72)) < created) && (created < now))
+    Ok(((now - Duration::from_hours(72)) < created) && (created < now))
 }
 
 trait Cacheable: Sized {

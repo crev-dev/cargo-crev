@@ -106,7 +106,7 @@ pub enum Error {
     #[error("Error iterating local ProofStore at {}: {}", _0.0.display(), _0.1)]
     ErrorIteratingLocalProofStore(Box<(PathBuf, String)>),
 
-    /// blake_hash mismatch
+    /// `blake_hash` mismatch
     #[error("File {} not current. Review again use `crev add` to update.", _0.display())]
     FileNotCurrent(Box<Path>),
 
@@ -219,10 +219,7 @@ impl TrustProofType {
     /// Is this person trusted at all? (regardless of level of trust)
     #[must_use]
     pub fn is_trust(self) -> bool {
-        if let TrustProofType::Trust = self {
-            return true;
-        }
-        false
+        self == Self::Trust
     }
 
     /// Make review template. See [`crev_data::Review`]
@@ -273,7 +270,7 @@ impl Default for VerificationRequirements {
 pub enum VerificationStatus {
     /// That's bad!
     Negative,
-    /// VerificationRequirements set too high
+    /// `VerificationRequirements` set too high
     Insufficient,
     /// Okay
     Verified,
@@ -521,11 +518,11 @@ pub fn get_recursive_digest_for_git_dir(
 
     status_opts.include_unmodified(true);
     status_opts.include_untracked(false);
-    for entry in git_repo.statuses(Some(&mut status_opts))?.iter() {
+    for entry in &git_repo.statuses(Some(&mut status_opts))? {
         let entry_path = PathBuf::from(entry.path().map_err(|_| Error::GitEntryWithoutAPath)?);
         if ignore_list.contains(&entry_path) {
             continue;
-        };
+        }
 
         paths.insert(entry_path);
     }

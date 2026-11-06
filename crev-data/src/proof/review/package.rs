@@ -166,8 +166,8 @@ impl Package {
 
     pub fn ensure_kind_is_backfilled(&mut self) {
         if self.common.kind.is_none() {
-            // backfill "kind" for old reviews. Don't use common().kind() here, it will
-            // panic.
+            // backfill "kind" for old reviews. Don't use common().kind() here,
+            // it will panic.
             self.common.kind = Some(self.kind().to_string());
         }
     }
@@ -215,8 +215,9 @@ impl From<Package> for Draft {
             issues: package.issues,
             comment: package.comment,
             alternatives: if package.alternatives.is_empty() {
-                // To give user a convenient template, we pre-fill with the same `source`,
-                // and an empty `name`. If undedited, this entry will be deleted on parsing.
+                // To give user a convenient template, we pre-fill with the same
+                // `source`, and an empty `name`. If undedited, this entry will
+                // be deleted on parsing.
                 vec![proof::PackageId {
                     source: package.package.id.id.source,
                     name: String::new(),

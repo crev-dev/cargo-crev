@@ -74,7 +74,7 @@ impl OwnerSetSet {
     }
 
     pub fn to_total_owners(&self) -> usize {
-        let all_owners: HashSet<_> = self.0.iter().flat_map(|(_pkg, set)| set).collect();
+        let all_owners: HashSet<_> = self.0.values().flatten().collect();
 
         all_owners.len()
     }
@@ -89,11 +89,13 @@ impl OwnerSetSet {
                 }
 
                 if group.iter().all(|member| other_group.contains(member)) {
-                    // there is an `other_group` that is a super-set of this `group`
+                    // there is an `other_group` that is a super-set of this
+                    // `group`
                     continue 'outer;
                 }
             }
-            // there was no other_group that would contain all members of this one
+            // there was no other_group that would contain all members of this
+            // one
             count += 1;
         }
 
@@ -178,7 +180,8 @@ pub struct CrateDetails {
     pub accumulative_own: AccumulativeCrateDetails,
     // total recursive stats
     pub accumulative_recursive: AccumulativeCrateDetails,
-    // in recursive mode this is the same as `accumulative_recursive` otherwise `accumulative_own`
+    // in recursive mode this is the same as `accumulative_recursive` otherwise
+    // `accumulative_own`
     pub accumulative: AccumulativeCrateDetails,
 }
 
@@ -412,14 +415,14 @@ pub fn verify_deps(crate_: CrateSelector, args: CrateVerify) -> Result<CommandEx
                     term.eprint(
                         format_args!(
                             "Crate {:<name_column_width$} {:<version_column_width$}; local digest: {} != {} reported by {} ({})\n",
-                            &dep.info.id.name(),
-                            &dep.info.id.version(),
-                            &dep.details
+                            dep.info.id.name(),
+                            dep.info.id.version(),
+                            dep.details
                                 .digest
                                 .clone().map_or_else(|| "-".to_string(), |d| d.to_string()),
-                            &Digest::from_bytes(&mismatch.package.digest).map_or_else(|| "-".to_string(), |d| d.to_string()),
-                            &mismatch.common.from.id,
-                            &mismatch.common.from.url_display(),
+                            Digest::from_bytes(&mismatch.package.digest).map_or_else(|| "-".to_string(), |d| d.to_string()),
+                            mismatch.common.from.id,
+                            mismatch.common.from.url_display(),
                         ),
                         ::term::color::RED,
                     )?;

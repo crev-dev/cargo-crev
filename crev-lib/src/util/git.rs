@@ -17,7 +17,7 @@ pub struct GitUrlComponents {
 pub fn parse_git_url_https(http_url: &str) -> Option<GitUrlComponents> {
     let mut split: Vec<_> = http_url.split('/').collect();
 
-    while let Some(&"") = split.last() {
+    while split.last() == Some(&"") {
         split.pop();
     }
     if split.len() != 5 {

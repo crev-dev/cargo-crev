@@ -260,6 +260,7 @@ impl UnlockedId {
         Self::generate(Some(Url::new_git(url.to_owned())))
     }
 
+    #[must_use]
     pub fn generate(url: Option<Url>) -> Self {
         let secret = ed25519_dalek::SigningKey::generate(&mut rand::rng());
         let public = secret.verifying_key();

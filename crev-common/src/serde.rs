@@ -91,7 +91,7 @@ where
 impl MyTryFromBytes for Vec<u8> {
     type Err = io::Error;
     fn try_from(slice: &[u8]) -> Result<Self, Self::Err> {
-        Ok(Vec::from(slice))
+        Ok(Self::from(slice))
     }
 }
 // }}}

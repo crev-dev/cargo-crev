@@ -291,7 +291,8 @@ pub struct ProofDB {
 
     package_flags: HashMap<proof::PackageId, HashMap<Id, TimestampedFlags>>,
 
-    // given an Id of an author, get the list of all package version id that were produced by it
+    // given an Id of an author, get the list of all package version id that
+    // were produced by it
     from_id_to_package_reviews: HashMap<Id, HashSet<proof::PackageVersionId>>,
 
     // original data about pkg alternatives
@@ -658,14 +659,14 @@ impl ProofDB {
         trust_set: &TrustSet,
         trust_level_required: TrustLevel,
     ) -> HashMap<String, IssueDetails> {
-        // This is one of the most complicated calculations in whole crev. I hate this
-        // code already, and I have barely put it together.
+        // This is one of the most complicated calculations in whole crev. I
+        // hate this code already, and I have barely put it together.
 
         // Here we track all the reported issue by issue id
         let mut issue_reports_by_id: HashMap<String, IssueDetails> = HashMap::new();
 
-        // First we go through all the reports in previous versions with `issues` fields
-        // and collect these. Easy.
+        // First we go through all the reports in previous versions with
+        // `issues` fields and collect these. Easy.
         for (review, issue) in self
             .get_pkg_reviews_lte_version(source, name, queried_version)
             .filter(|review| {
@@ -687,15 +688,16 @@ impl ProofDB {
                 .insert(PkgVersionReviewId::from(review));
         }
 
-        // Now the complicated part. We go through all the advisories for all the
-        // versions of given package.
+        // Now the complicated part. We go through all the advisories for all
+        // the versions of given package.
         //
-        // Advisories itself have two functions: first, they might have report an issue
-        // by advertising that a given version should be upgraded to a newer version.
+        // Advisories itself have two functions: first, they might have report
+        // an issue by advertising that a given version should be upgraded to a
+        // newer version.
         //
-        // Second - they might cancel `issues` inside `issue_reports_by_id` because they
-        // advertise a fix that happened somewhere between the `issue` report and
-        // the current `queried_version`.
+        // Second - they might cancel `issues` inside `issue_reports_by_id`
+        // because they advertise a fix that happened somewhere between the
+        // `issue` report and the current `queried_version`.
         for (review, advisory) in self
             .get_pkg_reviews_for_name(source, name)
             .filter(|review| {
